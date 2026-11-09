@@ -1,13 +1,19 @@
 name: flow-ci
 
-# Push runs on the long-lived feature branch and on the correction branch, so a
-# fix is verified before a PR is even opened. Pull requests target `dev` (the
-# main line) or `feat/flow-verified-foundation` (the correction base).
+# Push runs on every long-lived Flow branch, so a fix is verified before a PR is
+# even opened. Pull requests are verified for the whole stacked series:
+#   feat/flow-mvp-0.1 -> fix/flow-foundation-proof-gates -> feat/flow-verified-foundation -> dev -> main
 on:
   push:
-    branches: [feat/flow-verified-foundation, fix/flow-foundation-proof-gates]
+    branches:
+      - feat/flow-mvp-0.1
+      - fix/flow-foundation-proof-gates
+      - feat/flow-verified-foundation
   pull_request:
-    branches: [dev, feat/flow-verified-foundation]
+    branches:
+      - dev
+      - feat/flow-verified-foundation
+      - fix/flow-foundation-proof-gates
 
 permissions:
   contents: read
@@ -16,11 +22,14 @@ concurrency:
   group: flow-ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   test:
-    name: ${{ matrix.os }}
+    name: test ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -37,9 +46,9 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --locked --all-targets -- -D warnings
 
-      # Counting *discovered* tests lets a deleted test pass silently. This step
+      # Counting *executed* tests lets a deleted test pass silently. This step
       # counts the tests that actually ran, refuses any `ignored` test (a skip is
-      # not a pass), and then requires every blocking P0 gate to appear as
+      # not a pass), and then requires every blocking gate to appear as
       # `... ok` by name, so removing or renaming one fails the build.
       - name: cargo test (unit + integration), executed and gated
         shell: bash
@@ -63,8 +72,8 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 83 ]; then
-            echo "::error::expected at least 83 executed passing tests, got $passed"
+          if [ "$passed" -lt 128 ]; then
+            echo "::error::expected at least 128 executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -88,7 +97,27 @@ jobs:
             p0a_case_colliding_tree_is_refused_not_certified \
             p0a_symlink_rewritten_as_a_file_is_refused \
             p0c_one_outcome_cannot_close_two_intents \
-            two_concurrent_publishes_publish_at_most_once ; do
+            two_concurrent_publishes_publish_at_most_once \
+            m1_two_disjoint_agents_publish_exactly_the_verified_tree \
+            m2_three_agents_collision_is_diagnosed_and_resolved_explicitly \
+            m3_stale_base_is_refused_and_a_rebased_proposal_succeeds \
+            m6_user_files_and_index_are_preserved_through_the_whole_cycle \
+            admission_is_idempotent_and_immutable \
+            proposals_outside_the_trusted_surface_are_refused \
+            assembly_reports_order_and_stays_deterministic \
+            publish_dry_run_plans_without_mutating_anything \
+            publishing_a_candidate_requires_a_verified_receipt \
+            binary_and_mode_changes_survive_the_cycle \
+            eight_concurrent_publishes_publish_at_most_once \
+            a_live_old_lock_is_never_stolen \
+            an_unparseable_lock_is_refused_and_preserved \
+            a_dead_owners_lock_is_recovered \
+            obligation_stdout_is_bounded_through_the_cli \
+            nonblocking_hooks_are_dispatched_by_run_and_publish \
+            blocking_post_checkout_makes_run_refuse_the_scratch \
+            blocking_reference_transaction_aborts_publish_without_moving_the_ref \
+            hijacked_git_environment_does_not_redirect_the_cli \
+            missing_toolchain_is_unsupported_and_never_publishable ; do
             if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
               echo "::error::required gate '$gate' did not run or did not pass"
               missing=1
@@ -110,3 +139,36 @@ jobs:
           name: flow-test-output-${{ matrix.os }}
           path: test-output.txt
           if-no-files-found: warn
+
+  # The polyglot demo is the "a reader can reproduce it" gate: three real
+  # toolchains, offline, with a green run, a real publication, and a red edit that
+  # must be refused. It is a separate job so a fixture failure is unambiguous.
+  polyglot:
+    name: polyglot ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: polyglot demo (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bash examples/polyglot/run-demo.sh all
+
+      - name: polyglot demo (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: pwsh -NoProfile -File examples/polyglot/run-demo.ps1 -Fixture all
