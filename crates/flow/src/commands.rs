@@ -579,6 +579,10 @@ pub fn cmd_run(
             ),
             ("duration_ms", Json::Num(outcome.duration_ms as f64)),
             ("timed_out", Json::Bool(outcome.timed_out)),
+            // A truncated log is incomplete evidence: say so in the receipt
+            // rather than presenting a clipped stream as the whole output.
+            ("stdout_truncated", Json::Bool(outcome.stdout_truncated)),
+            ("stderr_truncated", Json::Bool(outcome.stderr_truncated)),
             ("stdout_preview", Json::str(preview(&stdout_clean, 400))),
             ("stderr_preview", Json::str(preview(&stderr_clean, 400))),
         ]));

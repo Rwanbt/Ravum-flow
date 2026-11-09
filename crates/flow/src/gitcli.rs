@@ -256,14 +256,8 @@ pub struct Outcome {
     pub stderr: String,
     /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stdout; the
     /// surplus was drained and discarded (it is not buffered anywhere).
-    ///
-    /// `allow(dead_code)`: this is the public hook the caller uses to report
-    /// truncation; the binary target does not read it until `commands.rs` is
-    /// wired (the field is already exercised by the unit and isolation tests).
-    #[allow(dead_code)]
     pub stdout_truncated: bool,
     /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stderr.
-    #[allow(dead_code)]
     pub stderr_truncated: bool,
 }
 
