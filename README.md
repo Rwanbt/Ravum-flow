@@ -65,6 +65,6 @@ One physical workspace does **not** give arbitrary processes distinct isolated v
 
 ## Human decisions still pending
 
-H1 select a provisional option; H2 code ownership/licensing vs clean-room; H3 Windows/Linux sandbox guarantee; H4 S9 thresholds and budget; H5 whether to allow disposable R0 fixtures; H6 whether to hand P0 findings to the separate Ravum session. See the decision register.
+H1 select a provisional option (OPEN); H2 licence — **decided by the owner on 2026-11-09: MPL-2.0** (provenance/clean-room review still required before reusing external source); H3 Windows/Linux sandbox guarantee (OPEN); H4 S9 confirmatory thresholds and budget (OPEN — the exploratory pilot ran without them); H5 disposable R0 fixtures (**granted 2026-11-09** by the owner for this branch); H6 P0 handoff to the separate Ravum session (OPEN); H7 internal-first use (OPEN); H8 stop rule for documentary reviews (OPEN). See the decision register.
 
 **License:** [Mozilla Public License 2.0](LICENSE) applies to original Ravum Flow material licensed by its rightsholders. Third-party materials retain their existing license terms. The H2 provenance/ownership and clean-room review remains open; no Ravum source may be copied into Flow without separate rights review.

@@ -4,7 +4,7 @@ No choice below is accepted merely because documentation has been uploaded. Mark
 | ID | Decision | Current state | Candidate direction | Evidence required |
 |---|---|---|---|---|
 | H1 | Provisional design O0/O1/O2/O3 | OPEN | Compare O0, O1, O3; keep O2 as subset | S9 + safety + maintainability |
-| H2 | License, rights, extraction vs clean-room | OPEN / BLOCKER for copying | Decide ownership and provenance first | rights inventory + legal review where needed |
+| H2 | License, rights, extraction vs clean-room | **HUMAN_DECIDED 2026-11-09**: MPL-2.0 for original Flow material (PR #49 main, #50 dev). Copying/deriving external code still **OPEN** | provenance + clean-room review before any external reuse | rights inventory; per-file third-party declaration |
 | H3 | Untrusted sandbox Windows/Linux policy | OPEN | refuse/fail-closed where isolation unsupported | actual OS-level containment tests |
 | H4 | S9 threshold and resource budget | OPEN — **no numbers granted** | pre-register paired difference, cost and stop criteria | human-set numeric threshold/budget before run |
 | H5 | R0 fixtures authorization, then minimal implementation | **HUMAN_DECIDED 2026-11-09** (owner-delegated GOAL, bounded) | R0-a/b/c on synthetic fixtures, then smallest useful core only if O0 is demonstrably insufficient | this GOAL's scope; results in `FLOW-FOUNDATION-VERIFIED-REPORT.md` |
@@ -24,12 +24,12 @@ No choice below is accepted merely because documentation has been uploaded. Mark
 - `GO_PRODUCTION` = future release authorization, not implied.
 
 ## Decisions this GOAL does **not** ratify
-The owner's operational GOAL is not a ratification of `H1`, `H2`, `H3`, `H4`, `H6`, `H7`, `H8`, of any `RAVUM-ADR-*`, or of any `FLOW-ADR-*`. It does not select a license, does not close `D3`, and does not authorize a merge into `dev` or `main`.
+The owner's operational GOAL is not a ratification of `H1`, `H3`, `H4`, `H6`, `H7`, `H8`, of any `RAVUM-ADR-*`, or of any `FLOW-ADR-*`. `H2` was decided separately by the owner (MPL-2.0, PRs #49/#50). The GOAL does not close `D3` and does not authorize a merge into `dev` or `main`.
 
 ## Pending architecture decisions
 - RF-RFC-001..012 retain historical `PROPOSED` meanings. Proposed RF-RFC-013..024 are only ideas.
 - No new file may silently mark a Ravum ADR or Flow ADR `ACCEPTED`.
-- No GPL/FSL/copyleft code reuse without precise license/legal assessment. No implicit MIT/Apache license in Flow.
+- Original Flow material is licensed MPL-2.0 by its rightsholders. No GPL/FSL/copyleft or external code reuse without a precise licence/rights assessment; no implicit MIT/Apache grant.
 - Canonical ADR namespaces: `RAVUM-ADR-*` vs `FLOW-ADR-*` (see [TRACEABILITY](TRACEABILITY.md)); bare `ADR-0NN` is ambiguous.
 
 ## Evidence labeling

@@ -3,7 +3,7 @@ name = "flow"
 version = "0.1.0"
 edition = "2021"
 description = "Ravum Flow — minimal verified-tree receipt CLI (no dependencies)"
-license = "UNLICENSED"
+license = "MPL-2.0"
 
 [[bin]]
 name = "flow"

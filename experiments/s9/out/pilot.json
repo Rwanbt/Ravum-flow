@@ -2,10 +2,10 @@
   "schema": "flow-s9-pilot/1",
   "kind": "EXPLORATORY_PILOT",
   "confirmatory": false,
-  "started_at": "2026-11-09T17:23:37Z",
+  "started_at": "2026-11-09T17:25:28Z",
   "fixture": {
     "path": "experiments/s9/work/base",
-    "sha": "ab1e6c5121efa9eb1d0192940bfabf5b0afdae78",
+    "sha": "b04b0b92f64a90334f21f1e2de7cde6399b51fdd",
     "agents": 3,
     "think_ms": 0
   },
@@ -31,21 +31,21 @@
       "run": 1,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4779,
+        "t_work": 1.7344,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0466
+        "t_final_verify": 0.4828
       },
-      "t_verified_s": 0.5245,
-      "ok": false,
+      "t_verified_s": 2.2172,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
@@ -53,111 +53,111 @@
       "run": 1,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4282,
+        "t_work": 1.7515,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.048
+        "t_final_verify": 0.5157
       },
-      "t_verified_s": 0.4762,
-      "ok": false,
+      "t_verified_s": 2.2672,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "E",
       "run": 1,
       "phases": {
-        "t_setup": 0.217,
-        "t_work": 0.3778,
-        "t_verify": 0.2961,
-        "t_integrate": 0.2522,
-        "t_final_verify": 0.0531,
-        "t_cleanup": 0.1119
+        "t_setup": 0.2669,
+        "t_work": 0.4536,
+        "t_verify": 1.8926,
+        "t_integrate": 0.3662,
+        "t_final_verify": 0.5554,
+        "t_cleanup": 0.1328
       },
-      "t_verified_s": 1.1961,
-      "ok": false,
+      "t_verified_s": 3.5347,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "A",
       "run": 1,
       "phases": {
-        "t_setup": 0.7138,
-        "t_work": 0.3227,
-        "t_verify": 0.167,
-        "t_integrate": 0.7487,
-        "t_final_verify": 0.0487
+        "t_setup": 0.7653,
+        "t_work": 0.3347,
+        "t_verify": 1.6816,
+        "t_integrate": 0.907,
+        "t_final_verify": 0.6306
       },
-      "t_verified_s": 2.0009,
-      "ok": false,
+      "t_verified_s": 4.3193,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "B",
       "run": 1,
       "phases": {
-        "t_setup": 0.2255,
-        "t_work": 0.3837,
-        "t_verify": 0.1454,
-        "t_integrate": 0.2278,
-        "t_final_verify": 0.0528,
-        "t_cleanup": 0.1277
+        "t_setup": 0.3916,
+        "t_work": 0.6534,
+        "t_verify": 1.5353,
+        "t_integrate": 0.2813,
+        "t_final_verify": 0.4959,
+        "t_cleanup": 0.1252
       },
-      "t_verified_s": 1.0352,
-      "ok": false,
+      "t_verified_s": 3.3574,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "A",
       "run": 2,
       "phases": {
-        "t_setup": 0.5794,
-        "t_work": 0.2621,
-        "t_verify": 0.1943,
-        "t_integrate": 0.6626,
-        "t_final_verify": 0.0504
+        "t_setup": 0.6408,
+        "t_work": 0.3325,
+        "t_verify": 1.4279,
+        "t_integrate": 0.7466,
+        "t_final_verify": 0.4973
       },
-      "t_verified_s": 1.7488,
-      "ok": false,
+      "t_verified_s": 3.6452,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
@@ -165,21 +165,21 @@
       "run": 2,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4198,
+        "t_work": 1.7847,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0463
+        "t_final_verify": 0.4995
       },
-      "t_verified_s": 0.4661,
-      "ok": false,
+      "t_verified_s": 2.2842,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
@@ -187,67 +187,67 @@
       "run": 2,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.3962,
+        "t_work": 2.2649,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.082
+        "t_final_verify": 0.732
       },
-      "t_verified_s": 0.4781,
-      "ok": false,
+      "t_verified_s": 2.9969,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "B",
       "run": 2,
       "phases": {
-        "t_setup": 0.2434,
-        "t_work": 0.4088,
-        "t_verify": 0.1864,
-        "t_integrate": 0.3045,
-        "t_final_verify": 0.0574,
-        "t_cleanup": 0.1147
+        "t_setup": 0.3867,
+        "t_work": 0.6649,
+        "t_verify": 1.5604,
+        "t_integrate": 0.3015,
+        "t_final_verify": 0.5251,
+        "t_cleanup": 0.1162
       },
-      "t_verified_s": 1.2004,
-      "ok": false,
+      "t_verified_s": 3.4386,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
       "arm": "E",
       "run": 2,
       "phases": {
-        "t_setup": 0.2537,
-        "t_work": 0.4795,
-        "t_verify": 0.2888,
-        "t_integrate": 0.2542,
-        "t_final_verify": 0.0641,
-        "t_cleanup": 0.1297
+        "t_setup": 0.2843,
+        "t_work": 0.4796,
+        "t_verify": 1.8807,
+        "t_integrate": 0.2744,
+        "t_final_verify": 0.4657,
+        "t_cleanup": 0.1464
       },
-      "t_verified_s": 1.3403,
-      "ok": false,
+      "t_verified_s": 3.3847,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": true
     },
     {
@@ -255,21 +255,21 @@
       "run": 3,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4363,
+        "t_work": 1.6799,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0542
+        "t_final_verify": 0.4703
       },
-      "t_verified_s": 0.4906,
-      "ok": false,
+      "t_verified_s": 2.1502,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -277,89 +277,89 @@
       "run": 3,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4203,
+        "t_work": 1.7129,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0486
+        "t_final_verify": 0.4795
       },
-      "t_verified_s": 0.4689,
-      "ok": false,
+      "t_verified_s": 2.1924,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "E",
       "run": 3,
       "phases": {
-        "t_setup": 0.2221,
-        "t_work": 0.3954,
-        "t_verify": 0.2425,
-        "t_integrate": 0.2206,
-        "t_final_verify": 0.0472,
-        "t_cleanup": 0.099
+        "t_setup": 0.2455,
+        "t_work": 0.3959,
+        "t_verify": 1.4753,
+        "t_integrate": 0.2299,
+        "t_final_verify": 0.4394,
+        "t_cleanup": 0.1349
       },
-      "t_verified_s": 1.1277,
-      "ok": false,
+      "t_verified_s": 2.786,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "A",
       "run": 3,
       "phases": {
-        "t_setup": 0.6695,
-        "t_work": 0.307,
-        "t_verify": 0.1788,
-        "t_integrate": 0.8059,
-        "t_final_verify": 0.0639
+        "t_setup": 0.6199,
+        "t_work": 0.2965,
+        "t_verify": 1.4107,
+        "t_integrate": 0.7066,
+        "t_final_verify": 0.4727
       },
-      "t_verified_s": 2.0252,
-      "ok": false,
+      "t_verified_s": 3.5064,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "B",
       "run": 3,
       "phases": {
-        "t_setup": 0.2785,
-        "t_work": 0.3649,
-        "t_verify": 0.1462,
-        "t_integrate": 0.2222,
-        "t_final_verify": 0.0483,
-        "t_cleanup": 0.0982
+        "t_setup": 0.2251,
+        "t_work": 0.4037,
+        "t_verify": 1.3226,
+        "t_integrate": 0.2653,
+        "t_final_verify": 0.4453,
+        "t_cleanup": 0.1041
       },
-      "t_verified_s": 1.0601,
-      "ok": false,
+      "t_verified_s": 2.662,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -367,66 +367,66 @@
       "run": 4,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.412,
+        "t_work": 1.5311,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0464
+        "t_final_verify": 0.4725
       },
-      "t_verified_s": 0.4584,
-      "ok": false,
+      "t_verified_s": 2.0036,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "E",
       "run": 4,
       "phases": {
-        "t_setup": 0.218,
-        "t_work": 0.4465,
-        "t_verify": 0.3159,
-        "t_integrate": 0.2741,
-        "t_final_verify": 0.0626,
-        "t_cleanup": 0.0977
+        "t_setup": 0.2252,
+        "t_work": 0.3988,
+        "t_verify": 1.4613,
+        "t_integrate": 0.2373,
+        "t_final_verify": 0.4455,
+        "t_cleanup": 0.1078
       },
-      "t_verified_s": 1.3171,
-      "ok": false,
+      "t_verified_s": 2.7681,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "A",
       "run": 4,
       "phases": {
-        "t_setup": 0.6825,
-        "t_work": 0.2978,
-        "t_verify": 0.1833,
-        "t_integrate": 0.8886,
-        "t_final_verify": 0.0559
+        "t_setup": 0.6377,
+        "t_work": 0.2706,
+        "t_verify": 1.4002,
+        "t_integrate": 0.6875,
+        "t_final_verify": 0.4452
       },
-      "t_verified_s": 2.1081,
-      "ok": false,
+      "t_verified_s": 3.4412,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -434,89 +434,89 @@
       "run": 4,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.5488,
+        "t_work": 1.5831,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0581
+        "t_final_verify": 0.4787
       },
-      "t_verified_s": 0.6069,
-      "ok": false,
+      "t_verified_s": 2.0618,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "B",
       "run": 4,
       "phases": {
-        "t_setup": 0.2457,
-        "t_work": 0.4218,
-        "t_verify": 0.1466,
-        "t_integrate": 0.2203,
-        "t_final_verify": 0.047,
-        "t_cleanup": 0.0991
+        "t_setup": 0.2307,
+        "t_work": 0.4076,
+        "t_verify": 1.3631,
+        "t_integrate": 0.2574,
+        "t_final_verify": 0.4426,
+        "t_cleanup": 0.1036
       },
-      "t_verified_s": 1.0813,
-      "ok": false,
+      "t_verified_s": 2.7014,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "A",
       "run": 5,
       "phases": {
-        "t_setup": 0.6534,
-        "t_work": 0.2838,
-        "t_verify": 0.1708,
-        "t_integrate": 0.6797,
-        "t_final_verify": 0.0476
+        "t_setup": 0.6982,
+        "t_work": 0.2626,
+        "t_verify": 1.4082,
+        "t_integrate": 0.7069,
+        "t_final_verify": 0.4421
       },
-      "t_verified_s": 1.8353,
-      "ok": false,
+      "t_verified_s": 3.518,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "E",
       "run": 5,
       "phases": {
-        "t_setup": 0.224,
-        "t_work": 0.395,
-        "t_verify": 0.2469,
-        "t_integrate": 0.2238,
-        "t_final_verify": 0.0532,
-        "t_cleanup": 0.0967
+        "t_setup": 0.268,
+        "t_work": 0.3586,
+        "t_verify": 1.4768,
+        "t_integrate": 0.2613,
+        "t_final_verify": 0.4398,
+        "t_cleanup": 0.1006
       },
-      "t_verified_s": 1.143,
-      "ok": false,
+      "t_verified_s": 2.8045,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -524,21 +524,21 @@
       "run": 5,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4288,
+        "t_work": 1.5492,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0508
+        "t_final_verify": 0.4306
       },
-      "t_verified_s": 0.4796,
-      "ok": false,
+      "t_verified_s": 1.9798,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -546,66 +546,66 @@
       "run": 5,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4087,
+        "t_work": 1.5374,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0481
+        "t_final_verify": 0.4425
       },
-      "t_verified_s": 0.4568,
-      "ok": false,
+      "t_verified_s": 1.9799,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "B",
       "run": 5,
       "phases": {
-        "t_setup": 0.2502,
-        "t_work": 0.3901,
-        "t_verify": 0.1492,
-        "t_integrate": 0.2349,
-        "t_final_verify": 0.0515,
-        "t_cleanup": 0.1572
+        "t_setup": 0.2231,
+        "t_work": 0.3883,
+        "t_verify": 1.3824,
+        "t_integrate": 0.2313,
+        "t_final_verify": 0.4527,
+        "t_cleanup": 0.137
       },
-      "t_verified_s": 1.076,
-      "ok": false,
+      "t_verified_s": 2.6778,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "A",
       "run": 6,
       "phases": {
-        "t_setup": 0.8048,
-        "t_work": 0.3545,
-        "t_verify": 0.1744,
-        "t_integrate": 0.7797,
-        "t_final_verify": 0.0481
+        "t_setup": 0.6548,
+        "t_work": 0.315,
+        "t_verify": 1.3935,
+        "t_integrate": 0.7126,
+        "t_final_verify": 0.4681
       },
-      "t_verified_s": 2.1615,
-      "ok": false,
+      "t_verified_s": 3.544,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -613,44 +613,44 @@
       "run": 6,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.3958,
+        "t_work": 1.6467,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0472
+        "t_final_verify": 0.4406
       },
-      "t_verified_s": 0.443,
-      "ok": false,
+      "t_verified_s": 2.0874,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "E",
       "run": 6,
       "phases": {
-        "t_setup": 0.2648,
-        "t_work": 0.3534,
-        "t_verify": 0.2561,
-        "t_integrate": 0.2944,
-        "t_final_verify": 0.0607,
-        "t_cleanup": 0.1314
+        "t_setup": 0.2558,
+        "t_work": 0.357,
+        "t_verify": 1.4711,
+        "t_integrate": 0.2282,
+        "t_final_verify": 0.4732,
+        "t_cleanup": 0.1062
       },
-      "t_verified_s": 1.2294,
-      "ok": false,
+      "t_verified_s": 2.7853,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -658,89 +658,89 @@
       "run": 6,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4363,
+        "t_work": 1.6609,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0469
+        "t_final_verify": 0.4252
       },
-      "t_verified_s": 0.4833,
-      "ok": false,
+      "t_verified_s": 2.0861,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "B",
       "run": 6,
       "phases": {
-        "t_setup": 0.2195,
-        "t_work": 0.3863,
-        "t_verify": 0.1517,
-        "t_integrate": 0.2537,
-        "t_final_verify": 0.0522,
-        "t_cleanup": 0.1077
+        "t_setup": 0.2262,
+        "t_work": 0.3727,
+        "t_verify": 1.3385,
+        "t_integrate": 0.2231,
+        "t_final_verify": 0.4752,
+        "t_cleanup": 0.1024
       },
-      "t_verified_s": 1.0634,
-      "ok": false,
+      "t_verified_s": 2.6357,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "E",
       "run": 7,
       "phases": {
-        "t_setup": 0.2502,
-        "t_work": 0.3572,
-        "t_verify": 0.2511,
-        "t_integrate": 0.2489,
-        "t_final_verify": 0.0501,
-        "t_cleanup": 0.0977
+        "t_setup": 0.2222,
+        "t_work": 0.4553,
+        "t_verify": 1.4848,
+        "t_integrate": 0.2308,
+        "t_final_verify": 0.4395,
+        "t_cleanup": 0.1008
       },
-      "t_verified_s": 1.1575,
-      "ok": false,
+      "t_verified_s": 2.8326,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "receipts_ok": [
-        false,
-        false,
-        false
+        true,
+        true,
+        true
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "A",
       "run": 7,
       "phases": {
-        "t_setup": 0.6963,
-        "t_work": 0.2671,
-        "t_verify": 0.1804,
-        "t_integrate": 0.6983,
-        "t_final_verify": 0.052
+        "t_setup": 0.6958,
+        "t_work": 0.298,
+        "t_verify": 1.3969,
+        "t_integrate": 0.7259,
+        "t_final_verify": 0.4988
       },
-      "t_verified_s": 1.894,
-      "ok": false,
+      "t_verified_s": 3.6156,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -748,21 +748,21 @@
       "run": 7,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.4246,
+        "t_work": 1.6328,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0477
+        "t_final_verify": 0.445
       },
-      "t_verified_s": 0.4723,
-      "ok": false,
+      "t_verified_s": 2.0778,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
@@ -770,95 +770,165 @@
       "run": 7,
       "phases": {
         "t_setup": 0.0,
-        "t_work": 0.3954,
+        "t_work": 1.6869,
         "t_verify": 0.0,
         "t_integrate": 0.0,
-        "t_final_verify": 0.0491
+        "t_final_verify": 0.4738
       },
-      "t_verified_s": 0.4445,
-      "ok": false,
+      "t_verified_s": 2.1607,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     },
     {
       "arm": "B",
       "run": 7,
       "phases": {
-        "t_setup": 0.2248,
-        "t_work": 0.3975,
-        "t_verify": 0.159,
-        "t_integrate": 0.2531,
-        "t_final_verify": 0.0475,
-        "t_cleanup": 0.1005
+        "t_setup": 0.2394,
+        "t_work": 0.4132,
+        "t_verify": 1.3678,
+        "t_integrate": 0.2692,
+        "t_final_verify": 0.4556,
+        "t_cleanup": 0.1057
       },
-      "t_verified_s": 1.0819,
-      "ok": false,
+      "t_verified_s": 2.7453,
+      "ok": true,
       "conflicts": 0,
       "lost_edits": [],
       "verify_rc": [
-        101,
-        101,
-        101
+        0,
+        0,
+        0
       ],
-      "final_rc": 101,
+      "final_rc": 0,
       "calibration": false
     }
   ],
   "summary": {
     "per_arm": {
       "A": {
-        "n": 0
+        "n": 5,
+        "median_s": 3.518,
+        "min_s": 3.4412,
+        "max_s": 3.6156,
+        "mean_s": 3.525
       },
       "B": {
-        "n": 0
+        "n": 5,
+        "median_s": 2.6778,
+        "min_s": 2.6357,
+        "max_s": 2.7453,
+        "mean_s": 2.6844
       },
       "C": {
-        "n": 0
+        "n": 5,
+        "median_s": 2.0778,
+        "min_s": 1.9799,
+        "max_s": 2.1502,
+        "mean_s": 2.0595
       },
       "D": {
-        "n": 0
+        "n": 5,
+        "median_s": 2.0874,
+        "min_s": 1.9798,
+        "max_s": 2.1924,
+        "mean_s": 2.0964
       },
       "E": {
-        "n": 0
+        "n": 5,
+        "median_s": 2.786,
+        "min_s": 2.7681,
+        "max_s": 2.8326,
+        "mean_s": 2.7953
       }
     },
     "pairs": {
       "A-B": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 0.8444,
+        "median_ratio": 1.317,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "A-C": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 1.4579,
+        "median_ratio": 1.7175,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "A-D": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 1.4549,
+        "median_ratio": 1.6733,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "A-E": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 0.7204,
+        "median_ratio": 1.2586,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "B-C": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 0.6675,
+        "median_ratio": 1.3213,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "B-D": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": 0.5846,
+        "median_ratio": 1.2706,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "B-E": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": -0.124,
+        "median_ratio": 0.9555,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "C-D": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": -0.0422,
+        "median_ratio": 0.9808,
+        "a_slower_wins": 1,
+        "one_sided_sign_p": 0.96875,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "C-E": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": -0.7548,
+        "median_ratio": 0.7335,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       },
       "D-E": {
-        "n": 0
+        "n": 5,
+        "median_diff_s": -0.6979,
+        "median_ratio": 0.7494,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
       }
     }
   },
