@@ -222,16 +222,89 @@ No CPU/RAM profiling campaign was run: it is not authorized and `H4` is open.
 unchanged and proves nothing about productivity; no confirmatory campaign was
 started.
 
-## 8. Adversarial review
+## 8. Adversarial review (independent, and it found real defects)
 
 An independent reviewer (`qa` teammate, no write access to `crates/flow/src`)
-attacked the CLI on disposable fixtures. Result recorded in
-`docs/reviews/MVP-QA-ADVERSARIAL-REPORT.md` (see §9 for its status). Its purpose
-is to contradict this report, not to decorate it.
+wrote a 102-scenario harness on disposable fixtures and ran it against `d884e29`
+(the branch point). Result: [`docs/reviews/MVP-QA-ADVERSARIAL-REPORT.md`](MVP-QA-ADVERSARIAL-REPORT.md),
+raw data in `experiments/mvp-qa/results.json`. The harness was run twice with
+identical verdicts (104 s total, slowest scenario 3.4 s).
 
-Earlier independent review of the foundation (`#52`) already found and closed two
-false-`PASSED` defects (unverified materialisation, one outcome closing two
-intents) — both still have their failing-on-baseline tests in `tests/cli.rs`.
+| Axis | Executed | Reproduced | Refuted | NOT_RUN |
+|---|---|---|---|---|
+| identity | 20 | 0 | 20 | 0 |
+| scope | 11 | 0 | 11 | 0 |
+| git | 12 | 2 | 10 | 0 |
+| durable | 10 | 0 | 10 | 1 |
+| files | 14 | 7 | 7 | 1 |
+| process | 13 | 2 | 11 | 0 |
+| proof | 6 | 5 | 1 | 0 |
+| compat | 7 | 1 | 6 | 0 |
+| 0.1 surface | 0 | 0 | 0 | 7 |
+| **total** | **93** | **17** | **76** | **9** |
+
+Every core gate held: `NO_RECEIPT`, `STALE_POLICY` on any policy change,
+`RECEIPT_INTEGRITY`, `RECEIPT_SCHEMA_STALE`, `TREE_MISMATCH`, `PARTIAL` never
+publishable, `REQUIRED_NOT_PASSED`, `CORRUPT_JOURNAL`, `NEEDS_RECONCILIATION`,
+crash recovery without double publication, `STALE_REF` for a moved ref.
+
+### 8.1 The four P0 findings, and what this branch did about them
+
+The harness found that a repository can ship `.flow/journal.jsonl` or
+`.flow/receipts` as a **symlink**; cloning it with `core.symlinks=true` (the
+default on Linux/macOS) then makes Flow append or write **outside the
+workspace**. That is a workspace escape on the attacker's terms, so it blocked
+the MVP.
+
+Fixed in `064d008`: every write below `.flow/` now refuses a symlink or a
+Windows reparse point on any existing path component
+(`state::guard_below_flow`, applied in `write_atomic_bytes` and
+`append_journal`). Regression test:
+`a_symlinked_journal_is_never_written_through` (refusal + outside file
+byte-identical + ref unmoved). The receipts-directory and clone variants use the
+same guard; they are `CODE_READ` coverage, not separately reproduced.
+
+Two other findings were also closed on this branch:
+
+- **FIL-08 (P1, false green)**: a checkout that converts bytes
+  (`core.autocrlf`, `core.eol`, `.gitattributes`) made an obligation assert on
+  bytes the tree does not hold while the receipt said `PASSED`. Now the checkout
+  is compared with the tree's blob sizes and refused
+  (`UNSUPPORTED_CHECKOUT`) when they differ. Test:
+  `a_converted_checkout_is_refused_not_certified`. Residual: a filter that
+  rewrites without changing length is not detected (documented).
+- **PRC-11 (P1)**: unknown options and value flags without a value were silently
+  ignored — `publish --dry-run` on a binary that does not know the flag
+  published. Now a usage error, exit 2, before any mutation. Test:
+  `unknown_and_valueless_options_are_usage_errors`.
+
+Also closed before this review: the symref target (GIT-09/GIT-10 shape) is
+refused (`REF_IS_SYMREF`), and the ref is read back after the CAS.
+
+### 8.2 Findings still open (recorded, not argued away)
+
+| ID | Severity | Finding | State |
+|---|---|---|---|
+| FIL-15 | P1 | a cloned repo can commit `.flow/config.json` with an arbitrary program; after adoption it runs. The adoption gate now makes that an explicit act, but there is no provenance display | mitigated, not closed |
+| PRF-01 | P2 | a receipt re-sealed after editing (integrity recomputed) publishes: integrity is not a signature (documented non-guarantee) | accepted limitation |
+| PRF-02 | P3 | receipt log files can be deleted; publish still reports their count | open, cosmetic |
+| PRF-04 | P2 | `status`/`explain` display a tampered receipt as `PASSED` while `publish` refuses it | open, documented |
+| PRF-05 | P2 | `doctor` exits 0 with `overall: FAILED` (torn journal) | open, documented |
+| PRF-06 | P2 | `explain --tree` reads an arbitrary path (`../` or absolute) as JSON | open |
+| FIL-11 | P2 | a junction inside `.flow/logs/<tree>` redirects a log write (inside the repo only) | open |
+| PRC-10 | P3 | `FLOW_TEST_CRASH` is honoured in the shipped binary (exit 89 outside the 0/1/2 contract) | open, test hook |
+| CMP-01 | P3 | `help`/no-args print text, while the README says every command prints JSON | open, documentation |
+
+**The harness was not re-run against the new head.** It was written for
+`d884e29`; its fixtures write `.flow/config.json` directly, which the adoption
+gate now refuses before the attacked gate is reached, so a re-run without
+updating the harness would produce misleading verdicts. Re-running it on
+`feat/flow-mvp-0.1` is `NOT_RUN` and is the first thing to do after this PR is
+reviewed.
+
+Earlier independent review of the foundation (`#52`) had already found and
+closed two false-`PASSED` defects (unverified materialisation, one outcome
+closing two intents) — both still have their failing-on-baseline tests.
 
 ## 9. What is incomplete, and why
 
