@@ -111,7 +111,6 @@ const ENV_PROBE_ARG: &str = "FLOW_ISOLATION_ENV_PROBE_CHILD";
 const FLOOD_ARG: &str = "FLOW_ISOLATION_FLOOD_CHILD";
 const TIMEOUT_ARG: &str = "FLOW_ISOLATION_TIMEOUT_CHILD";
 const GRANDCHILD_ARG: &str = "FLOW_ISOLATION_GRANDCHILD_CHILD";
-const HOLD_ARG: &str = "FLOW_ISOLATION_HOLD_PIPE_CHILD";
 
 fn arg_present(marker: &str) -> bool {
     std::env::args().any(|arg| arg == marker)
@@ -168,31 +167,32 @@ fn timeout_child_probe() {
     std::thread::sleep(Duration::from_secs(120));
 }
 
-/// Holds the inherited obligation pipes open after its parent exited. 15 s is
-/// well beyond the runner's reader grace, so a runner that joined its reader
-/// threads could not return within the bounded assertion below.
-#[test]
-fn hold_pipe_child_probe() {
-    if !arg_present(HOLD_ARG) {
-        return;
-    }
-    std::thread::sleep(Duration::from_secs(15));
-}
-
-/// Spawns `hold_pipe_child_probe`, which inherits this process's stdout/stderr
-/// (the obligation pipes) and outlives it, then exits immediately.
+/// Spawns a survivor that inherits this process's stdout/stderr (the obligation
+/// pipes), outlives it, and then exits. A system sleeper is used on purpose: the
+/// survivor must not be an image of this test executable, because on Windows a
+/// running image cannot be relinked and the orphan would break later builds.
 #[test]
 fn grandchild_child_probe() {
     if !arg_present(GRANDCHILD_ARG) {
         return;
     }
-    let mut cmd = Command::new(std::env::current_exe().expect("test executable"));
-    cmd.args(["--exact", "hold_pipe_child_probe", "--nocapture", HOLD_ARG]);
     // Intentionally not waited on: the grandchild must outlive this process and
     // keep the inherited obligation pipes open, which is exactly the case the
-    // parent test exercises. It self-terminates after a few seconds.
+    // parent test exercises. It self-terminates after the hold period.
     #[allow(clippy::zombie_processes)]
-    let _grandchild = cmd.spawn().expect("grandchild spawns");
+    let _holder = spawn_pipe_holder().expect("surviving grandchild spawns");
+}
+
+#[cfg(windows)]
+fn spawn_pipe_holder() -> std::io::Result<std::process::Child> {
+    Command::new("powershell")
+        .args(["-NoProfile", "-Command", "Start-Sleep -Seconds 15"])
+        .spawn()
+}
+
+#[cfg(unix)]
+fn spawn_pipe_holder() -> std::io::Result<std::process::Child> {
+    Command::new("sleep").arg("15").spawn()
 }
 
 /// Runs in a child process whose environment carries hostile `GIT_*` values.
@@ -429,6 +429,59 @@ fn scratch_refuses_a_base_that_redirects_into_the_repository() {
     assert!(err.contains("inside the repository"), "{err}");
     assert!(link.exists(), "the refused link itself must not be deleted");
     let _ = fs::remove_dir(&link);
+}
+
+#[test]
+fn scratch_never_follows_or_deletes_a_preexisting_candidate_link() {
+    let _guard = scratch::TEST_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let repo = new_repo("scratch-candidate-link");
+    let git = Git::new(&repo.path);
+    let head = git.head_oid().expect("head oid");
+    let base = std::env::temp_dir().join(format!(
+        "flow-scratch-linkbase-{}-{}",
+        std::process::id(),
+        next_id()
+    ));
+    let target = std::env::temp_dir().join(format!(
+        "flow-scratch-linktarget-{}-{}",
+        std::process::id(),
+        next_id()
+    ));
+    fs::create_dir_all(&base).expect("scratch base");
+    fs::create_dir(&target).expect("link target");
+    let first = scratch::next_sequence();
+    let occupied = scratch::candidate_path(&base, first + 1);
+    if let Err(e) = make_dir_link(&target, &occupied) {
+        eprintln!("SKIP scratch_never_follows_or_deletes_a_preexisting_candidate_link: cannot create a directory link ({e})");
+        let _ = remove_tree(&base);
+        let _ = remove_tree(&target);
+        return;
+    }
+
+    let scratch = scratch::materialise_in(&base, &git, &head, &repo.path)
+        .expect("materialise must retry around a pre-existing link");
+    assert_ne!(
+        fs::canonicalize(scratch.path()).expect("scratch canonical"),
+        fs::canonicalize(&occupied).expect("link canonical"),
+        "a pre-existing link must not be adopted as the scratch directory"
+    );
+    let used = scratch.path().to_path_buf();
+    drop(scratch);
+    assert!(!used.exists(), "the owned scratch directory is removed");
+    assert!(
+        fs::symlink_metadata(&occupied).is_ok(),
+        "the pre-existing link itself must not be deleted"
+    );
+    assert!(
+        target.is_dir(),
+        "the link target must not be followed or deleted"
+    );
+
+    let _ = fs::remove_dir(&occupied);
+    let _ = remove_tree(&base);
+    let _ = remove_tree(&target);
 }
 
 #[cfg(windows)]
