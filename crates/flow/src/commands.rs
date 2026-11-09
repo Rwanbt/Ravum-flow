@@ -1,6 +1,16 @@
 //! Flow CLI commands: init, doctor, status, run, publish, reconcile, explain,
 //! disable/enable. Everything returns structured JSON; refusals are explicit.
+//!
+//! The publication gate is the whole point of this crate, so the rules are
+//! stated once, here, and enforced in one place:
+//!
+//! * a receipt proves exactly one *effective policy* on exactly one Git tree;
+//! * a selective (`--obligation`) run is diagnostic and never publishable;
+//! * `publish` recomputes the policy identity instead of trusting the receipt;
+//! * recovery observes, never guesses, and refuses to report a corrupt journal
+//!   as a success.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,6 +24,21 @@ fn refused(why: impl Into<String>) -> Json {
         ("status", Json::str("REFUSED")),
         ("reason", Json::str(why.into())),
     ])
+}
+
+/// A refusal that carries a stable machine-readable code. The `status` stays
+/// `REFUSED` so callers (and the exit-code contract) never have to special-case
+/// the reason, while tests and operators can assert on the precise cause.
+fn refused_code(code: &str, why: impl Into<String>) -> Json {
+    Json::obj(vec![
+        ("status", Json::str("REFUSED")),
+        ("code", Json::str(code)),
+        ("reason", Json::str(why.into())),
+    ])
+}
+
+fn short(digest: &str) -> String {
+    digest.chars().take(12).collect()
 }
 
 fn current_ref(git: &Git) -> Result<String, String> {
@@ -41,13 +66,20 @@ pub fn cmd_init(root: &Path, force: bool) -> Result<Json, String> {
     if !state::journal_path(root).exists() {
         state::write_atomic(&state::journal_path(root), "")?;
     }
+    // Flow's own state must never become part of the tree it verifies: if it
+    // did, every policy change would move the tree OID and a receipt could
+    // never be compared with "the same tree under a different policy".
+    let gitignore = dir.join(".gitignore");
+    if !gitignore.exists() {
+        state::write_atomic(&gitignore, "*\n")?;
+    }
     let config = Config::default();
     state::save_config(root, &config)?;
     Ok(Json::obj(vec![
         ("status", Json::str("INITIALIZED")),
         ("flow_dir", Json::str(".flow")),
         ("policy_version", Json::str(state::POLICY_VERSION)),
-        ("note", Json::str("no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations")),
+        ("note", Json::str("no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations; .flow/.gitignore keeps Flow state out of the verified tree")),
     ]))
 }
 
@@ -181,6 +213,35 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
         format!("disabled={disabled}"),
     );
 
+    let journal = match state::read_journal(root) {
+        Ok(records) => Json::obj(vec![
+            ("status", Json::str("OK")),
+            ("records", Json::Num(records.len() as f64)),
+        ]),
+        Err(e) => Json::obj(vec![
+            ("status", Json::str("FAILED")),
+            ("detail", Json::str(e.to_string())),
+        ]),
+    };
+    push(
+        "journal",
+        journal
+            .get("status")
+            .and_then(Json::as_str)
+            .unwrap_or("FAILED"),
+        journal
+            .get("detail")
+            .and_then(Json::as_str)
+            .map(str::to_string)
+            .or_else(|| {
+                journal
+                    .get("records")
+                    .and_then(Json::as_num)
+                    .map(|n| format!("{n} records readable"))
+            })
+            .unwrap_or_else(|| "unreadable".to_string()),
+    );
+
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
         ("overall", Json::str(if checks.iter().any(|c| c.get("status").and_then(Json::as_str) == Some("FAILED")) { "FAILED" } else { "OK" })),
@@ -188,9 +249,10 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
         (
             "guarantees",
             Json::Arr(vec![
-                Json::str("receipts bind an exact Git tree OID"),
+                Json::str("receipts bind an exact Git tree OID and one effective policy digest"),
                 Json::str("publication uses ref CAS with a durable intent/outcome journal"),
                 Json::str("a required obligation that cannot run makes the result UNSUPPORTED, never PASSED"),
+                Json::str("a selective run is recorded as PARTIAL and is never publishable"),
             ]),
         ),
         (
@@ -199,6 +261,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
                 Json::str("no OS-level isolation of obligations"),
                 Json::str("no execution of Git hooks"),
                 Json::str("no completeness proof of the build context"),
+                Json::str("no cryptographic protection of a receipt against a writer who can rewrite config and receipt together"),
             ]),
         ),
     ]))
@@ -262,6 +325,14 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
                         ),
                         ("status", value.get("status").cloned().unwrap_or(Json::Null)),
                         (
+                            "scope",
+                            value
+                                .get("verification_scope")
+                                .and_then(|s| s.get("mode"))
+                                .cloned()
+                                .unwrap_or(Json::Null),
+                        ),
+                        (
                             "context_id",
                             value.get("context_id").cloned().unwrap_or(Json::Null),
                         ),
@@ -274,7 +345,8 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
             }
         }
     }
-    let pending = pending_intents(root).len();
+    // An unreadable journal must not be reported as "nothing pending".
+    let pending = pending_intents(root)?.len();
 
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
@@ -294,6 +366,84 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
     ]))
 }
 
+// ------------------------------------------------------- policy identity
+fn obligation_json(o: &Obligation) -> Json {
+    Json::obj(vec![
+        ("id", Json::str(o.id.clone())),
+        ("program", Json::str(o.program.clone())),
+        (
+            "args",
+            Json::Arr(o.args.iter().map(|a| Json::str(a.clone())).collect()),
+        ),
+        ("required", Json::Bool(o.required)),
+        ("timeout_s", Json::Num(o.timeout_s as f64)),
+    ])
+}
+
+/// The effective verification policy: every input that changes what a `PASSED`
+/// means. Anything that can silently weaken the gate belongs here.
+fn effective_policy(config: &Config, obligations: &[Obligation]) -> Json {
+    Json::obj(vec![
+        ("policy_version", Json::str(config.policy_version.clone())),
+        (
+            "execution_boundary",
+            Json::str(config.execution_boundary.clone()),
+        ),
+        (
+            "obligations",
+            Json::Arr(obligations.iter().map(obligation_json).collect()),
+        ),
+        (
+            "obligation_env",
+            Json::Arr(
+                gitcli::env_allowlist()
+                    .iter()
+                    .map(|n| Json::str(*n))
+                    .collect(),
+            ),
+        ),
+    ])
+}
+
+fn policy_digest(policy: &Json) -> String {
+    sha256::sha256_hex(policy.to_string().as_bytes())
+}
+
+fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
+    let context = Json::obj(vec![
+        ("codec", Json::str(state::CONTEXT_CODEC)),
+        ("tree_oid", Json::str(tree)),
+        ("policy", policy.clone()),
+        ("git_version", Json::str(git.version())),
+        ("os", Json::str(std::env::consts::OS)),
+        ("arch", Json::str(std::env::consts::ARCH)),
+    ]);
+    sha256::sha256_hex(context.to_string().as_bytes())
+}
+
+/// Refuse a policy that cannot express a meaningful proof, or whose ids would
+/// collide as log file names.
+fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    for ob in obligations {
+        crate::paths::validate_relative(&format!(".flow/logs/{}", ob.id))
+            .map_err(|reason| format!("unsafe obligation id {:?}: {reason}", ob.id))?;
+        if !seen.insert(ob.id.as_str()) {
+            return Err(format!(
+                "duplicate obligation id {:?}: ids key the logs and the receipt, so they must be unique",
+                ob.id
+            ));
+        }
+    }
+    if !obligations.iter().any(|o| o.required) {
+        return Err(
+            "the policy declares no required obligation: nothing would be proven, so no receipt is publishable"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 // -------------------------------------------------------------------- run
 pub fn cmd_run(
     root: &Path,
@@ -302,7 +452,8 @@ pub fn cmd_run(
 ) -> Result<Json, String> {
     let config = state::load_config(root)?;
     if config.disabled {
-        return Ok(refused(
+        return Ok(refused_code(
+            "DISABLED",
             "Flow is disabled in this repository (`flow enable` to re-enable)",
         ));
     }
@@ -315,6 +466,56 @@ pub fn cmd_run(
             ),
         ]));
     }
+    // The effective policy includes any --timeout override: the receipt must
+    // prove the deadline that was actually applied, not the configured one.
+    let mut effective: Vec<Obligation> = config.obligations.clone();
+    if let Some(t) = timeout_override {
+        for ob in &mut effective {
+            ob.timeout_s = t;
+        }
+    }
+    if let Err(reason) = validate_obligations(&effective) {
+        return Ok(refused_code("INVALID_POLICY", reason));
+    }
+
+    let selection: Option<Vec<Obligation>> = match &only {
+        None => None,
+        Some(ids) => {
+            let mut seen: BTreeSet<&str> = BTreeSet::new();
+            for id in ids {
+                if !seen.insert(id.as_str()) {
+                    return Ok(refused_code(
+                        "DUPLICATE_OBLIGATION_ID",
+                        format!(
+                            "obligation {id:?} is requested more than once: a selection is a set"
+                        ),
+                    ));
+                }
+                if !effective.iter().any(|o| &o.id == id) {
+                    return Ok(refused_code(
+                        "UNKNOWN_OBLIGATION_ID",
+                        format!("obligation {id:?} is not declared in .flow/config.json"),
+                    ));
+                }
+            }
+            Some(
+                effective
+                    .iter()
+                    .filter(|o| ids.contains(&o.id))
+                    .cloned()
+                    .collect(),
+            )
+        }
+    };
+    // A selection is diagnostic only: it cannot prove the whole policy, so it
+    // is reported as PARTIAL and is never written to the complete receipt slot.
+    let scope_mode = if selection.is_some() {
+        "selected"
+    } else {
+        "complete"
+    };
+    let selected: Vec<Obligation> = selection.unwrap_or_else(|| effective.clone());
+
     let git = Git::new(root);
     let tree = git.write_tree()?;
     let started_at = state::iso8601_now();
@@ -345,53 +546,27 @@ pub fn cmd_run(
     if gitfile.is_file() {
         let _ = fs::remove_file(&gitfile);
     }
-
-    let selected: Vec<Obligation> = match &only {
-        None => config.obligations.clone(),
-        Some(ids) => config
-            .obligations
-            .iter()
-            .filter(|o| ids.contains(&o.id))
-            .cloned()
-            .collect(),
-    };
-    if selected.is_empty() {
-        let _ = fs::remove_dir_all(&scratch);
-        let _ = git.run(&["worktree", "prune"]);
-        return Ok(refused("none of the requested obligation ids is declared"));
-    }
-    // An obligation id becomes a log file name: refuse anything that is not a
-    // plain repository-relative component (path injection defence).
-    for ob in &selected {
-        if let Err(reason) = crate::paths::validate_relative(&format!(".flow/logs/{}", ob.id)) {
-            let _ = fs::remove_dir_all(&scratch);
-            let _ = git.run(&["worktree", "prune"]);
-            return Ok(refused(format!(
-                "unsafe obligation id {:?}: {reason}",
-                ob.id
-            )));
-        }
-    }
     // The verification directory must never live inside the repository.
     if crate::paths::lexically_inside(root, &scratch) {
         let _ = fs::remove_dir_all(&scratch);
         let _ = git.run(&["worktree", "prune"]);
-        return Ok(refused(
+        return Ok(refused_code(
+            "SCRATCH_INSIDE_REPO",
             "refusing to verify inside the repository working tree",
         ));
     }
 
-    let context_id = build_context_id(&git, &tree, &selected);
+    let policy = effective_policy(&config, &effective);
+    let policy_digest = policy_digest(&policy);
+    let context_id = build_context_id(&git, &tree, &policy);
     let log_dir = state::logs_dir(root).join(&tree);
     let mut outcomes = Vec::new();
     let mut logs = Vec::new();
-    let mut status = "PASSED";
+    let mut failed = false;
+    let mut timed_out = false;
+    let mut unsupported = false;
     for ob in &selected {
-        let mut spec = ob.clone();
-        if let Some(t) = timeout_override {
-            spec.timeout_s = t;
-        }
-        let outcome = gitcli::run_obligation(&spec, &scratch);
+        let outcome = gitcli::run_obligation(ob, &scratch);
         let stdout_clean = gitcli::redact(&outcome.stdout);
         let stderr_clean = gitcli::redact(&outcome.stderr);
         let stdout_rel = format!(".flow/logs/{tree}/{}.stdout.log", outcome.id);
@@ -409,11 +584,12 @@ pub fn cmd_run(
         logs.push(stdout_rel);
         logs.push(stderr_rel);
         if ob.required {
+            // A status outside this list is an unknown outcome: never a pass.
             match outcome.status {
-                "FAILED" => status = "FAILED",
-                "TIMEOUT" if status == "PASSED" => status = "TIMEOUT",
-                "UNSUPPORTED" if status == "PASSED" => status = "UNSUPPORTED",
-                _ => {}
+                "PASSED" => {}
+                "FAILED" => failed = true,
+                "TIMEOUT" => timed_out = true,
+                _ => unsupported = true,
             }
         }
         outcomes.push(Json::obj(vec![
@@ -445,18 +621,77 @@ pub fn cmd_run(
     let _ = fs::remove_dir_all(&scratch);
     let _ = git.run(&["worktree", "prune"]);
 
-    let receipt = Json::obj(vec![
+    let declared_ids: Vec<String> = effective.iter().map(|o| o.id.clone()).collect();
+    let required_ids: Vec<String> = effective
+        .iter()
+        .filter(|o| o.required)
+        .map(|o| o.id.clone())
+        .collect();
+    let selected_ids: Vec<String> = selected.iter().map(|o| o.id.clone()).collect();
+    let missing_required: Vec<String> = required_ids
+        .iter()
+        .filter(|id| !selected_ids.contains(id))
+        .cloned()
+        .collect();
+
+    let status = if scope_mode == "selected" {
+        "PARTIAL"
+    } else if !missing_required.is_empty() {
+        "INCOMPLETE"
+    } else if failed {
+        "FAILED"
+    } else if timed_out {
+        "TIMEOUT"
+    } else if unsupported {
+        "UNSUPPORTED"
+    } else {
+        "PASSED"
+    };
+
+    let scope = Json::obj(vec![
+        ("mode", Json::str(scope_mode)),
+        (
+            "declared",
+            Json::Arr(declared_ids.iter().map(|s| Json::str(s.clone())).collect()),
+        ),
+        (
+            "required",
+            Json::Arr(required_ids.iter().map(|s| Json::str(s.clone())).collect()),
+        ),
+        (
+            "selected",
+            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),
+        ),
+        (
+            "executed",
+            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),
+        ),
+        (
+            "missing_required",
+            Json::Arr(
+                missing_required
+                    .iter()
+                    .map(|s| Json::str(s.clone()))
+                    .collect(),
+            ),
+        ),
+    ]);
+
+    let receipt = state::seal_receipt(&Json::obj(vec![
         ("schema", Json::str(state::SCHEMA_RECEIPT)),
         ("tree_oid", Json::str(tree.clone())),
         ("commit_oid", Json::str(commit)),
         ("parent_oid", Json::str(parent)),
         ("context_id", Json::str(context_id)),
+        ("policy_digest", Json::str(policy_digest)),
+        ("policy", policy),
         ("policy_version", Json::str(config.policy_version.clone())),
         (
             "execution_boundary",
             Json::str(config.execution_boundary.clone()),
         ),
         ("status", Json::str(status)),
+        ("verification_scope", scope),
         ("started_at", Json::str(started_at)),
         ("finished_at", Json::str(state::iso8601_now())),
         ("obligations", Json::Arr(outcomes)),
@@ -470,11 +705,13 @@ pub fn cmd_run(
         ),
         (
             "scope_note",
-            Json::str(
-                "verified for the declared obligations only; undeclared inputs are not covered",
-            ),
+            Json::str(if scope_mode == "selected" {
+                "diagnostic run: only the selected obligations were executed, so this receipt proves nothing about the rest of the policy and is never publishable"
+            } else {
+                "verified for the declared obligations only; undeclared inputs are not covered"
+            }),
         ),
-    ]);
+    ]));
     let path = state::save_receipt(root, &receipt)?;
     let mut out = receipt.clone();
     if let Json::Obj(pairs) = &mut out {
@@ -494,31 +731,6 @@ fn preview(text: &str, limit: usize) -> String {
     out
 }
 
-fn build_context_id(git: &Git, tree: &str, obligations: &[Obligation]) -> String {
-    let obs = obligations
-        .iter()
-        .map(|o| {
-            Json::obj(vec![
-                ("id", Json::str(o.id.clone())),
-                ("program", Json::str(o.program.clone())),
-                (
-                    "args",
-                    Json::Arr(o.args.iter().map(|a| Json::str(a.clone())).collect()),
-                ),
-            ])
-        })
-        .collect();
-    let context = Json::obj(vec![
-        ("tree_oid", Json::str(tree)),
-        ("policy_version", Json::str(state::POLICY_VERSION)),
-        ("git_version", Json::str(git.version())),
-        ("os", Json::str(std::env::consts::OS)),
-        ("arch", Json::str(std::env::consts::ARCH)),
-        ("obligations", Json::Arr(obs)),
-    ]);
-    sha256::sha256_hex(context.to_string().as_bytes())
-}
-
 // ---------------------------------------------------------------- publish
 pub fn cmd_publish(
     root: &Path,
@@ -528,53 +740,224 @@ pub fn cmd_publish(
 ) -> Result<Json, String> {
     let config = state::load_config(root)?;
     if config.disabled {
-        return Ok(refused("Flow is disabled in this repository"));
+        return Ok(refused_code(
+            "DISABLED",
+            "Flow is disabled in this repository",
+        ));
+    }
+    if let Err(reason) = validate_obligations(&config.obligations) {
+        return Ok(refused_code("INVALID_POLICY", reason));
     }
     let git = Git::new(root);
-    // Publish exactly the tree that `run` verified: the index tree. A receipt is
-    // bound to that OID, so a different index (or HEAD) can never be published by
-    // accident.
+
+    // Publish to a branch only. `HEAD`, a tag or a remote ref is either
+    // ambiguous or the wrong object to move for "this tree is verified".
+    let reference = match reference {
+        Some(r) => {
+            if !r.starts_with("refs/heads/") {
+                return Ok(refused_code(
+                    "REF_NOT_ALLOWED",
+                    format!("--ref {r:?} must be a full branch ref under refs/heads/"),
+                ));
+            }
+            r
+        }
+        None => current_ref(&git)?,
+    };
+    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') {
+        return Ok(refused_code(
+            "REF_NOT_ALLOWED",
+            format!("--ref {reference:?} is not a usable ref name"),
+        ));
+    }
+
+    let _lock = match state::acquire_lock(root, "publish") {
+        Ok(guard) => guard,
+        Err(e) => return Ok(refused_code("LOCKED", e)),
+    };
+
+    // Publish exactly the tree that `run` verified: the index tree.
     let tree = git.write_tree()?;
     let receipt = match Receipt::load(root, &tree)? {
         Some(r) => r,
         None => {
-            return Ok(refused(format!(
-                "no receipt for tree {tree}: run `flow run` and verify this exact tree first"
-            )))
+            return Ok(refused_code(
+                "NO_RECEIPT",
+                format!("no complete receipt for tree {tree}: run `flow run` on this exact index tree first (a selective run never produces one)"),
+            ))
         }
     };
+
+    // 1. the receipt must be written by this version, unaltered.
+    if receipt.schema != state::SCHEMA_RECEIPT {
+        return Ok(refused_code(
+            "RECEIPT_SCHEMA_STALE",
+            format!(
+                "receipt schema {:?} is not {}: re-run `flow run`",
+                receipt.schema,
+                state::SCHEMA_RECEIPT
+            ),
+        ));
+    }
+    if let Err(e) = state::verify_receipt_integrity(&receipt.json) {
+        return Ok(refused_code("RECEIPT_INTEGRITY", e));
+    }
+    // 2. it must name this tree, and cover the whole declared policy.
     if receipt.tree_oid != tree {
-        return Ok(refused(format!(
-            "receipt integrity error: file for {tree} names tree {:?}",
-            receipt.tree_oid
-        )));
+        return Ok(refused_code(
+            "TREE_MISMATCH",
+            format!(
+                "receipt integrity error: file for {tree} names tree {:?}",
+                receipt.tree_oid
+            ),
+        ));
+    }
+    if receipt.scope_mode != "complete" {
+        return Ok(refused_code(
+            "SCOPE_INCOMPLETE",
+            format!(
+                "receipt scope is {:?}: a selective run is diagnostic and never publishable",
+                receipt.scope_mode
+            ),
+        ));
+    }
+    if !receipt.missing_required.is_empty() {
+        return Ok(refused_code(
+            "MISSING_REQUIRED",
+            format!(
+                "receipt does not cover required obligations {:?}",
+                receipt.missing_required
+            ),
+        ));
+    }
+    // 3. the policy must still be the policy the receipt proves. This is
+    //    recomputed from the current configuration, never read from the receipt.
+    let policy = effective_policy(&config, &config.obligations);
+    let expected_digest = policy_digest(&policy);
+    if receipt.policy_digest != expected_digest {
+        return Ok(refused_code(
+            "STALE_POLICY",
+            format!(
+                "the receipt proves policy {} but the current policy is {}: the configuration changed since the run",
+                short(&receipt.policy_digest),
+                short(&expected_digest)
+            ),
+        ));
+    }
+    if receipt.policy_version != config.policy_version {
+        return Ok(refused_code(
+            "POLICY_VERSION_MISMATCH",
+            format!(
+                "receipt policy_version {:?} != current {:?}",
+                receipt.policy_version, config.policy_version
+            ),
+        ));
+    }
+    if receipt.execution_boundary != config.execution_boundary {
+        return Ok(refused_code(
+            "EXECUTION_BOUNDARY_MISMATCH",
+            format!(
+                "receipt execution_boundary {:?} != current {:?}",
+                receipt.execution_boundary, config.execution_boundary
+            ),
+        ));
+    }
+    // 4. every currently required obligation must be present *and* passed. The
+    //    global status alone is not enough: a missing entry is not a pass.
+    for ob in config.obligations.iter().filter(|o| o.required) {
+        match receipt
+            .obligations
+            .iter()
+            .find(|x| x.get("id").and_then(Json::as_str) == Some(ob.id.as_str()))
+        {
+            None => {
+                return Ok(refused_code(
+                    "MISSING_REQUIRED",
+                    format!("required obligation {:?} is absent from the receipt", ob.id),
+                ))
+            }
+            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => {
+                return Ok(refused_code(
+                    "REQUIRED_NOT_PASSED",
+                    format!(
+                        "required obligation {:?} has status {:?}",
+                        ob.id,
+                        entry
+                            .get("status")
+                            .and_then(Json::as_str)
+                            .unwrap_or("UNKNOWN")
+                    ),
+                ))
+            }
+            Some(_) => {}
+        }
     }
     if receipt.status != "PASSED" {
-        return Ok(refused(format!(
-            "receipt status is {}: a non-PASSED receipt is never publishable",
-            receipt.status
-        )));
+        return Ok(refused_code(
+            "STATUS_NOT_PASSED",
+            format!(
+                "receipt status is {}: a non-PASSED receipt is never publishable",
+                receipt.status
+            ),
+        ));
     }
-    let reference = match reference {
-        Some(r) => r,
-        None => current_ref(&git)?,
-    };
+    // 5. the verification commit must still describe the same tree, when the
+    //    object still exists (it may have been pruned; absence is not a failure).
+    if !receipt.commit_oid.is_empty() {
+        if let Ok(t) = git.capture(&["rev-parse", &format!("{}^{{tree}}", receipt.commit_oid)]) {
+            if t != tree {
+                return Ok(refused_code(
+                    "RECEIPT_COMMIT_MISMATCH",
+                    format!(
+                        "receipt commit {} carries tree {t}, not the verified {tree}",
+                        receipt.commit_oid
+                    ),
+                ));
+            }
+        }
+    }
+
     let old = match expected_old {
         Some(o) => o,
         None => match git.show_ref(&reference)? {
             Some(o) => o,
-            None => return Ok(refused(format!("cannot resolve {reference}"))),
+            None => {
+                return Ok(refused_code(
+                    "UNKNOWN_REF",
+                    format!("cannot resolve {reference}"),
+                ))
+            }
         },
     };
     let current = git.show_ref(&reference)?;
     if current.as_deref() != Some(old.as_str()) {
-        return Ok(refused(format!(
-            "stale expected old OID: ref is {:?}, expected {old}",
-            current
-        )));
+        return Ok(refused_code(
+            "STALE_REF",
+            format!("stale expected old OID: ref is {current:?}, expected {old}"),
+        ));
     }
+    // Publishing a tree the ref already carries would only add an empty commit.
+    if let Ok(current_tree) = git.capture(&["rev-parse", &format!("{old}^{{tree}}")]) {
+        if current_tree == tree {
+            return Ok(refused_code(
+                "ALREADY_PUBLISHED",
+                format!("{reference} already points at a commit whose tree is {tree}: nothing to publish"),
+            ));
+        }
+    }
+
     let message = message.unwrap_or_else(|| format!("flow: publish verified tree {tree}"));
     let commit = git.commit_tree(&tree, &old, &message)?;
+    // The commit we are about to publish must carry exactly the qualified tree.
+    let prepared_tree = git.capture(&["rev-parse", &format!("{commit}^{{tree}}")])?;
+    if prepared_tree != tree {
+        return Ok(refused_code(
+            "COMMIT_TREE_MISMATCH",
+            format!(
+                "prepared commit {commit} carries tree {prepared_tree}, not the verified {tree}"
+            ),
+        ));
+    }
     let id = format!(
         "{}-{}",
         state::iso8601_now(),
@@ -607,7 +990,8 @@ pub fn cmd_publish(
                 ("at", Json::str(state::iso8601_now())),
             ]),
         )?;
-        return Ok(refused(
+        return Ok(refused_code(
+            "REF_MOVED",
             "ref moved between intent and CAS: nothing was published",
         ));
     }
@@ -623,10 +1007,10 @@ pub fn cmd_publish(
                 ("at", Json::str(state::iso8601_now())),
             ]),
         )?;
-        return Ok(refused(format!(
-            "git update-ref refused: {}",
-            res.stderr.trim()
-        )));
+        return Ok(refused_code(
+            "UPDATE_REF_REFUSED",
+            format!("git update-ref refused: {}", res.stderr.trim()),
+        ));
     }
     if std::env::var("FLOW_TEST_CRASH").as_deref() == Ok("after-ref") {
         std::process::exit(89);
@@ -648,6 +1032,7 @@ pub fn cmd_publish(
         ("commit", Json::str(commit)),
         ("tree", Json::str(tree)),
         ("context_id", Json::str(receipt.context_id.clone())),
+        ("policy_digest", Json::str(receipt.policy_digest.clone())),
         ("policy_version", Json::str(receipt.policy_version.clone())),
         (
             "execution_boundary",
@@ -692,83 +1077,186 @@ pub fn cmd_publish(
 }
 
 // -------------------------------------------------------------- reconcile
-fn pending_intents(root: &Path) -> Vec<Json> {
-    let Ok(records) = state::read_journal(root) else {
-        return Vec::new();
-    };
-    let mut done: Vec<String> = Vec::new();
-    for record in &records {
-        if record.get("event").and_then(Json::as_str) == Some("outcome") {
-            if let Some(id) = record.get("id").and_then(Json::as_str) {
-                done.push(id.to_string());
-            }
-        }
-    }
-    records
+/// Intents that have no terminal outcome yet. An unreadable journal is an
+/// error, never an empty list.
+fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
+    let records = state::read_journal(root)?;
+    let done: BTreeSet<String> = records
+        .iter()
+        .filter(|r| r.get("event").and_then(Json::as_str) == Some("outcome"))
+        .filter_map(|r| r.get("id").and_then(Json::as_str).map(str::to_string))
+        .collect();
+    Ok(records
         .into_iter()
         .filter(|r| r.get("event").and_then(Json::as_str) == Some("intent"))
         .filter(|r| {
             r.get("id")
                 .and_then(Json::as_str)
-                .map(|id| !done.contains(&id.to_string()))
+                .map(|id| !done.contains(id))
                 .unwrap_or(false)
         })
-        .collect()
+        .collect())
+}
+
+/// The explicit state of "we could not even read the journal".
+fn journal_failure(root: &Path, err: state::JournalError) -> Json {
+    let (status, code) = match &err {
+        state::JournalError::Io(_) => (state::STATE_UNKNOWN_OUTCOME, "JOURNAL_UNREADABLE"),
+        state::JournalError::Corrupt(_) => (state::STATE_CORRUPT_JOURNAL, "JOURNAL_CORRUPT"),
+    };
+    Json::obj(vec![
+        ("status", Json::str(status)),
+        ("code", Json::str(code)),
+        ("error", Json::str(err.to_string())),
+        (
+            "journal_path",
+            Json::str(state::journal_path(root).to_string_lossy().to_string()),
+        ),
+        ("journal_preserved", Json::Bool(true)),
+        ("manual_required", Json::Bool(true)),
+        ("resolved", Json::Arr(Vec::new())),
+        (
+            "note",
+            Json::str(
+                "recovery refuses to guess: the journal was not rewritten and no ref was moved",
+            ),
+        ),
+    ])
 }
 
 pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
     let git = Git::new(root);
-    let pending = pending_intents(root);
-    let mut resolved = Vec::new();
-    for intent in &pending {
+    let _lock = match state::acquire_lock(root, "reconcile") {
+        Ok(guard) => guard,
+        Err(e) => return Ok(refused_code("LOCKED", e)),
+    };
+    let records = match state::read_journal(root) {
+        Ok(records) => records,
+        Err(e) => return Ok(journal_failure(root, e)),
+    };
+
+    let done: BTreeSet<String> = records
+        .iter()
+        .filter(|r| r.get("event").and_then(Json::as_str) == Some("outcome"))
+        .filter_map(|r| r.get("id").and_then(Json::as_str).map(str::to_string))
+        .collect();
+    let mut occurrences: BTreeMap<String, usize> = BTreeMap::new();
+    for record in &records {
+        if record.get("event").and_then(Json::as_str) == Some("intent") {
+            let id = record
+                .get("id")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            *occurrences.entry(id).or_insert(0) += 1;
+        }
+    }
+
+    let mut resolved: Vec<Json> = Vec::new();
+    let mut needs_human = false;
+    for intent in &records {
+        if intent.get("event").and_then(Json::as_str) != Some("intent") {
+            continue;
+        }
         let id = intent
             .get("id")
             .and_then(Json::as_str)
             .unwrap_or("")
             .to_string();
-        let reference = intent
-            .get("ref")
-            .and_then(Json::as_str)
-            .unwrap_or("")
-            .to_string();
-        let old = intent
-            .get("old")
-            .and_then(Json::as_str)
-            .unwrap_or("")
-            .to_string();
-        let new = intent
-            .get("new")
-            .and_then(Json::as_str)
-            .unwrap_or("")
-            .to_string();
-        let observed = git.show_ref(&reference)?.unwrap_or_default();
-        let status = if observed == new {
+        if done.contains(&id) {
+            continue;
+        }
+        // Two intents sharing one id cannot be distinguished: the outcome of
+        // one would silently close the other.
+        if occurrences.get(&id).copied().unwrap_or(0) > 1 {
+            needs_human = true;
+            resolved.push(Json::obj(vec![
+                ("id", Json::str(id)),
+                ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                ("reason", Json::str("DUPLICATE_INTENT_ID")),
+            ]));
+            continue;
+        }
+        let field = |k: &str| {
+            intent
+                .get(k)
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string()
+        };
+        let (reference, old, new) = (field("ref"), field("old"), field("new"));
+        if reference.is_empty() || old.is_empty() || new.is_empty() {
+            needs_human = true;
+            resolved.push(Json::obj(vec![
+                ("id", Json::str(id)),
+                ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                ("reason", Json::str("INCOMPLETE_INTENT")),
+            ]));
+            continue;
+        }
+        let observed = match git.show_ref(&reference) {
+            Ok(Some(oid)) => oid,
+            Ok(None) => {
+                needs_human = true;
+                resolved.push(Json::obj(vec![
+                    ("id", Json::str(id)),
+                    ("ref", Json::str(reference)),
+                    ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                    ("reason", Json::str("REF_ABSENT")),
+                ]));
+                continue;
+            }
+            Err(e) => {
+                needs_human = true;
+                resolved.push(Json::obj(vec![
+                    ("id", Json::str(id)),
+                    ("ref", Json::str(reference)),
+                    ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                    ("reason", Json::str(format!("REF_UNREADABLE: {e}"))),
+                ]));
+                continue;
+            }
+        };
+        let resolution = if observed == new {
             "PUBLISHED"
         } else if observed == old {
             "NOT_PUBLISHED"
         } else {
-            "NEEDS_RECONCILIATION"
+            state::STATE_NEEDS_RECONCILIATION
         };
-        state::append_journal(
-            root,
-            &Json::obj(vec![
-                ("event", Json::str("outcome")),
-                ("id", Json::str(id.clone())),
-                ("status", Json::str(format!("RECONCILED_{status}"))),
-                ("observed", Json::str(observed.clone())),
-                ("at", Json::str(state::iso8601_now())),
-            ]),
-        )?;
+        // Only a decisive observation is recorded. An ambiguous one stays open
+        // so it is re-examined instead of being closed by a guess.
+        if resolution != state::STATE_NEEDS_RECONCILIATION {
+            state::append_journal(
+                root,
+                &Json::obj(vec![
+                    ("event", Json::str("outcome")),
+                    ("id", Json::str(id.clone())),
+                    ("status", Json::str(format!("RECONCILED_{resolution}"))),
+                    ("observed", Json::str(observed.clone())),
+                    ("at", Json::str(state::iso8601_now())),
+                ]),
+            )?;
+        } else {
+            needs_human = true;
+        }
         resolved.push(Json::obj(vec![
             ("id", Json::str(id)),
             ("ref", Json::str(reference)),
             ("observed", Json::str(observed)),
-            ("resolution", Json::str(status)),
+            ("resolution", Json::str(resolution)),
         ]));
     }
+
+    let status = if needs_human {
+        state::STATE_NEEDS_RECONCILIATION
+    } else {
+        "RECONCILED"
+    };
     Ok(Json::obj(vec![
-        ("status", Json::str("RECONCILED")),
+        ("status", Json::str(status)),
         ("resolved", Json::Arr(resolved)),
+        ("manual_required", Json::Bool(needs_human)),
         (
             "note",
             Json::str("reconciliation never moves a ref: it only records what is observable"),

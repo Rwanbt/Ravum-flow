@@ -8,15 +8,51 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::gitcli::Obligation;
 use crate::json::{self, Json};
 
 pub const POLICY_VERSION: &str = "FLOW-POLICY-1";
 pub const SCHEMA_CONFIG: &str = "flow-config/1";
-pub const SCHEMA_RECEIPT: &str = "flow-receipt/1";
+/// Bumped whenever the receipt's semantics change. A receipt written under an
+/// older schema is never silently reinterpreted: publication refuses it.
+pub const SCHEMA_RECEIPT: &str = "flow-receipt/2";
 pub const SCHEMA_JOURNAL: &str = "flow-journal/1";
+/// Identity of the way a context digest is computed. Part of the digest itself,
+/// so a future codec change invalidates older receipts instead of reusing them.
+pub const CONTEXT_CODEC: &str = "flow-context/2";
+
+/// A journal read failure, kept typed so the CLI can distinguish "the file
+/// could not be read" (outcome unknown) from "the file is torn" (corruption).
+/// Collapsing both into an empty journal is the P0-C defect.
+#[derive(Debug)]
+pub enum JournalError {
+    /// The journal could not be opened or read: the outcome is genuinely unknown.
+    Io(String),
+    /// A line was read but is not a valid record: the journal is corrupt.
+    Corrupt(String),
+}
+
+impl std::fmt::Display for JournalError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JournalError::Io(m) => write!(f, "journal unreadable: {m}"),
+            JournalError::Corrupt(m) => write!(f, "journal corrupt: {m}"),
+        }
+    }
+}
+
+impl From<JournalError> for String {
+    fn from(e: JournalError) -> String {
+        e.to_string()
+    }
+}
+
+/// Machine state reported when recovery cannot decide on its own.
+pub const STATE_CORRUPT_JOURNAL: &str = "CORRUPT_JOURNAL";
+pub const STATE_UNKNOWN_OUTCOME: &str = "UNKNOWN_OUTCOME";
+pub const STATE_NEEDS_RECONCILIATION: &str = "NEEDS_RECONCILIATION";
 
 pub struct Config {
     pub policy_version: String,
@@ -214,32 +250,53 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
     Ok(())
 }
 
-pub fn read_journal(root: &Path) -> Result<Vec<Json>, String> {
+/// Read every journal record.
+///
+/// A missing journal is an empty journal (a fresh repository). Anything else
+/// that prevents a faithful read is an error — never silently an empty set.
+pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {
     let path = journal_path(root);
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let file = File::open(&path).map_err(|e| format!("cannot open journal: {e}"))?;
+    let file =
+        File::open(&path).map_err(|e| JournalError::Io(format!("cannot open journal: {e}")))?;
     let mut records = Vec::new();
     for (lineno, line) in BufReader::new(file).lines().enumerate() {
-        let line = line.map_err(|e| format!("cannot read journal line {}: {e}", lineno + 1))?;
+        let line =
+            line.map_err(|e| JournalError::Io(format!("cannot read line {}: {e}", lineno + 1)))?;
         if line.trim().is_empty() {
             continue;
         }
-        let record = json::parse(&line)
-            .map_err(|e| format!("torn or invalid journal line {}: {e}", lineno + 1))?;
+        let record = json::parse(&line).map_err(|e| {
+            JournalError::Corrupt(format!("torn or invalid line {}: {e}", lineno + 1))
+        })?;
         records.push(record);
     }
     Ok(records)
 }
 
+/// Epoch seconds, used for lock ages.
+pub fn unix_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
 pub struct Receipt {
+    pub schema: String,
     pub tree_oid: String,
     pub commit_oid: String,
     pub context_id: String,
+    /// Digest of the *effective verification policy* this receipt proves.
+    pub policy_digest: String,
     pub policy_version: String,
     pub execution_boundary: String,
     pub status: String,
+    /// `complete` or `selected`: only a complete scope is publishable.
+    pub scope_mode: String,
+    pub missing_required: Vec<String>,
     pub started_at: String,
     pub finished_at: String,
     pub obligations: Vec<Json>,
@@ -249,6 +306,10 @@ pub struct Receipt {
 }
 
 impl Receipt {
+    /// Load the **complete** receipt for `tree_oid`.
+    ///
+    /// Selected (partial) executions are written to a different file, so a
+    /// partial run can never be mistaken for — or overwrite — a complete proof.
     pub fn load(root: &Path, tree_oid: &str) -> Result<Option<Receipt>, String> {
         let path = receipt_path(root, tree_oid);
         if !path.exists() {
@@ -263,13 +324,32 @@ impl Receipt {
                 .unwrap_or("")
                 .to_string()
         };
+        let scope = value.get("verification_scope");
+        let scope_mode = scope
+            .and_then(|s| s.get("mode"))
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string();
         Ok(Some(Receipt {
+            schema: get("schema"),
             tree_oid: get("tree_oid"),
             commit_oid: get("commit_oid"),
             context_id: get("context_id"),
+            policy_digest: get("policy_digest"),
             policy_version: get("policy_version"),
             execution_boundary: get("execution_boundary"),
             status: get("status"),
+            scope_mode,
+            missing_required: scope
+                .and_then(|s| s.get("missing_required"))
+                .and_then(Json::as_arr)
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|v| v.as_str().map(str::to_string))
+                        .collect()
+                })
+                .unwrap_or_default(),
             started_at: get("started_at"),
             finished_at: get("finished_at"),
             obligations: value
@@ -282,6 +362,46 @@ impl Receipt {
             json: value,
         }))
     }
+}
+
+/// Remove one top-level field, keeping every other pair in order.
+fn without_field(value: &Json, key: &str) -> Json {
+    let mut out = value.clone();
+    if let Json::Obj(pairs) = &mut out {
+        pairs.retain(|(k, _)| k != key);
+    }
+    out
+}
+
+/// Bind a receipt to its own content.
+///
+/// This detects accidental corruption and casual editing of a receipt on disk.
+/// It is **not** a signature and **not** protection against an attacker who can
+/// rewrite both the config and the receipt: that would require a key the Flow
+/// process does not have. The honest boundary is documented in the report.
+pub fn seal_receipt(value: &Json) -> Json {
+    let body = without_field(value, "integrity");
+    let digest = crate::sha256::sha256_hex(body.to_string().as_bytes());
+    let mut sealed = body;
+    if let Json::Obj(pairs) = &mut sealed {
+        pairs.push(("integrity".to_string(), Json::str(digest)));
+    }
+    sealed
+}
+
+pub fn verify_receipt_integrity(value: &Json) -> Result<(), String> {
+    let recorded = value
+        .get("integrity")
+        .and_then(Json::as_str)
+        .ok_or("receipt carries no integrity digest")?;
+    let body = without_field(value, "integrity");
+    let computed = crate::sha256::sha256_hex(body.to_string().as_bytes());
+    if computed != recorded {
+        return Err(format!(
+            "receipt content does not match its integrity digest (recorded {recorded}, computed {computed})"
+        ));
+    }
+    Ok(())
 }
 
 fn string_list(value: &Json, key: &str) -> Vec<String> {
@@ -297,17 +417,132 @@ fn string_list(value: &Json, key: &str) -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Where a *partial* (selected) execution is recorded. Deliberately a different
+/// file from the complete slot so the two can never shadow one another.
+pub fn partial_receipt_path(root: &Path, tree_oid: &str, context_id: &str) -> PathBuf {
+    let prefix: String = context_id.chars().take(12).collect();
+    receipts_dir(root).join(format!("{tree_oid}.partial.{prefix}.json"))
+}
+
 pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
     let tree = receipt
         .get("tree_oid")
         .and_then(Json::as_str)
         .ok_or("receipt without tree_oid")?;
-    let path = receipt_path(root, tree);
+    let mode = receipt
+        .get("verification_scope")
+        .and_then(|s| s.get("mode"))
+        .and_then(Json::as_str)
+        .unwrap_or("");
+    let path = match mode {
+        // The complete slot is keyed by tree: a re-run on the same tree replaces
+        // the previous complete proof, which is the intended behaviour.
+        "complete" => receipt_path(root, tree),
+        "selected" => {
+            let context = receipt
+                .get("context_id")
+                .and_then(Json::as_str)
+                .ok_or("selected receipt without context_id")?;
+            partial_receipt_path(root, tree, context)
+        }
+        other => {
+            return Err(format!(
+                "receipt has unknown verification_scope.mode {other:?}: refusing to pick a slot"
+            ))
+        }
+    };
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("cannot create receipts dir: {e}"))?;
     }
     write_atomic(&path, &(receipt.to_string_pretty() + "\n"))?;
     Ok(path)
+}
+
+// ------------------------------------------------------------------- lock
+//
+// A local, advisory lock between Flow processes. It serialises the short
+// mutations (`publish`, `reconcile`) so two writers cannot interleave journal
+// appends and produce a torn line. It is NOT a distributed lease, it does not
+// fence a foreign `git` writer, and a stale lock is recovered by observing that
+// its owner is gone — never by assuming the worst case is impossible.
+
+const LOCK_MAX_AGE_S: u64 = 120;
+
+pub struct LockGuard {
+    path: PathBuf,
+}
+
+impl Drop for LockGuard {
+    fn drop(&mut self) {
+        let _ = fs::remove_file(&self.path);
+    }
+}
+
+#[cfg(windows)]
+fn pid_alive(pid: u32) -> Option<bool> {
+    let out = std::process::Command::new("tasklist")
+        .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
+}
+
+#[cfg(not(windows))]
+fn pid_alive(pid: u32) -> Option<bool> {
+    let status = std::process::Command::new("kill")
+        .args(["-0", &pid.to_string()])
+        .status()
+        .ok()?;
+    Some(status.success())
+}
+
+fn lock_is_stale(path: &Path) -> bool {
+    let Ok(text) = fs::read_to_string(path) else {
+        return false;
+    };
+    let mut parts = text.split_whitespace();
+    // An unparseable lock cannot be attributed: treat it as abandoned.
+    let Some(pid) = parts.next().and_then(|p| p.parse::<u32>().ok()) else {
+        return true;
+    };
+    let at = parts
+        .next()
+        .and_then(|p| p.parse::<u64>().ok())
+        .unwrap_or(0);
+    if unix_now().saturating_sub(at) > LOCK_MAX_AGE_S {
+        return true;
+    }
+    // Undeterminable liveness is treated as alive: never steal on ignorance.
+    matches!(pid_alive(pid), Some(false))
+}
+
+pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, String> {
+    let path = flow_dir(root).join("lock");
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
+    }
+    for _ in 0..40 {
+        match OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(mut file) => {
+                let _ = writeln!(file, "{} {} {}", std::process::id(), unix_now(), purpose);
+                let _ = file.sync_all();
+                return Ok(LockGuard { path });
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                if lock_is_stale(&path) {
+                    let _ = fs::remove_file(&path);
+                    continue;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(e) => return Err(format!("cannot create {}: {e}", path.display())),
+        }
+    }
+    Err(format!(
+        "another flow process holds {} (remove it only if you are sure no flow process is running)",
+        path.display()
+    ))
 }
 
 /// Civil date/time from the Unix epoch, UTC, without a dependency.

@@ -164,6 +164,13 @@ const ENV_ALLOWLIST: &[&str] = &[
     "TZ",
 ];
 
+/// The environment names an obligation may inherit. This list is part of the
+/// policy identity: widening it changes what a receipt proves, so it is hashed
+/// into the policy digest and invalidates older receipts.
+pub fn env_allowlist() -> &'static [&'static str] {
+    ENV_ALLOWLIST
+}
+
 fn allowed_env() -> Vec<(String, String)> {
     let mut kept = Vec::new();
     for name in ENV_ALLOWLIST {
