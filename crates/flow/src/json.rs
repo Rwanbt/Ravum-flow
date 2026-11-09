@@ -328,9 +328,16 @@ impl<'a> Parser<'a> {
             }
         }
         let s = std::str::from_utf8(&self.bytes[start..self.pos]).map_err(|_| "bad number")?;
-        s.parse::<f64>()
-            .map(Json::Num)
-            .map_err(|_| format!("invalid number {:?}", s))
+        let value: f64 = s.parse().map_err(|_| format!("invalid number {:?}", s))?;
+        // JSON has no infinity and no NaN. Accepting `1e999` would make `7` print
+        // `inf`, i.e. output that is not JSON — a machine-contract break found by
+        // the seeded fuzzer.
+        if !value.is_finite() {
+            return Err(format!(
+                "number {s:?} is not finite; JSON has no infinity, so it is refused"
+            ));
+        }
+        Ok(Json::Num(value))
     }
 }
 
@@ -373,5 +380,19 @@ mod tests {
         assert!(parse(r#"{"required":true,"required":false}"#).is_err());
         assert!(parse(r#"{"a":{"b":1,"b":2}}"#).is_err());
         assert!(parse(r#"{"a":1,"b":2}"#).is_ok());
+    }
+    #[test]
+    fn a_non_finite_number_is_refused_not_printed_as_inf() {
+        // 1e999 overflows f64 to infinity; JSON cannot represent it, and printing
+        // `inf` would produce output that is not JSON.
+        assert!(parse("1e999").is_err());
+        assert!(parse("-1e999").is_err());
+        assert!(parse("1e308").is_ok());
+        let value = parse("1e308").unwrap();
+        let text = value.to_string();
+        assert!(
+            parse(&text).is_ok(),
+            "printed output must still be JSON: {text}"
+        );
     }
 }

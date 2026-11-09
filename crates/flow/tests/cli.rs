@@ -1445,3 +1445,31 @@ fn crash_before_intent_leaves_no_pending_intent() {
         Some(false)
     );
 }
+
+/// A durable record containing a non-finite number must be refused, not echoed
+/// back as `inf` (which is not JSON). Found by the seeded fuzzer.
+#[test]
+fn a_non_finite_number_in_local_state_is_refused_not_printed() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let dir = repo.path.join(".flow").join("proposals");
+    fs::create_dir_all(&dir).unwrap();
+    let id = "0123456789abcdef0123456789abcdef";
+    fs::write(
+        dir.join(format!("{id}.json")),
+        format!(
+            r#"{{"schema":"flow-proposal/1","proposal_id":"{id}","agent_id":"a","task_id":"T","base_commit":"0000000000000000000000000000000000000000","base_tree":"0000000000000000000000000000000000000000","tree_oid":"0000000000000000000000000000000000000000","content_digest":"x","patch_bytes":1e999,"created_at":"x","changes":[]}}"#
+        ),
+    )
+    .unwrap();
+    let (code, out) = flow(&repo.path, &["proposals", "show", id]);
+    assert_eq!(code, 1, "a non-finite number must be refused: {out}");
+    let text = out.to_string();
+    // The output must still be JSON (the harness parsed it) and must not carry a
+    // bare `inf` value; the human message may of course mention infinity.
+    assert_eq!(status_of(&out), "ERROR");
+    assert!(
+        !text.contains(":inf"),
+        "the CLI must never print an inf value: {text}"
+    );
+    assert!(text.contains("not finite"), "{text}");
+}
