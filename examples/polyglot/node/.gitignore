@@ -1,0 +1,3 @@
+# A dependency-free Node fixture. Flow materialises the verified tree in a
+# throwaway directory; node_modules is never created or needed.
+/node_modules/
