@@ -320,8 +320,10 @@ closing two intents) — both still have their failing-on-baseline tests.
 
 ## 10. CI
 
-Head `6a0013dc2003844d4f2bcbe5861c2612bb7f9820` (code head `064d008`, the two
-commits above it are documentation only). Two workflow runs, both fully green:
+Code head `064d00816e1011fda654de541447a47875865dc2`; verified tree
+`6a0013dc2003844d4f2bcbe5861c2612bb7f9820`. CI is green on that head **and** on
+the later documentation-only head `95a7e8cf5a27ed3e45719ec32e93cd3812b881f6`
+(runs `42697735376` and `42697748553`, all four jobs). Runs for `6a0013d`:
 
 | Run | Trigger | Job | OS | Result | Time |
 |---|---|---|---|---|---|
