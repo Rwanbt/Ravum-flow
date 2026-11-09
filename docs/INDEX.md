@@ -32,6 +32,12 @@ Ten consolidated deliverables, plus eight raw sub-agent reports in [`reviews/raw
 - [07 — Adversarial dissent and resolved/open disagreements](reviews/DEEPSEEK-07-ADVERSARIAL-DISSENT.md)
 - [Execution GOAL draft — **not launched**](reviews/DEEPSEEK-EXECUTION-GOAL-DRAFT.md)
 
-No ADR/RFC is ratified, no GO is granted, and no code was written by this dossier.
+No ADR/RFC is ratified, no GO is granted by this dossier alone, and no code was written by it.
+
+## Branch and authorization status (2026-11-09)
+
+- `docs/deepseek-d0-d4-review@f113791` is **isolated**: never merged into `dev`, kept for provenance; PR #33 is untouched. The dossier is therefore *not* part of `dev` documentation yet.
+- Canonical form corrections (`X-05` state machine, `X-06` S9 letters, `X-07` test IDs, `X-11` ADR namespaces, S8 metric framing, `H5`/`H7`/`H8`) are applied on `feat/flow-verified-foundation`, branched from `f113791`.
+- `GO_R0_FIXTURES` was **granted on 2026-11-09** by the owner's operational GOAL, bounded to synthetic fixtures and this branch; it ratifies no ADR, no license and no S9 threshold.
 
 **All technical choices remain proposals until a human sign-off.**

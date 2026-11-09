@@ -21,13 +21,13 @@ Sans S9, H1 ne peut être qu'une préférence. **C'est pour cela que H4 et H5 so
 
 ## 2. Audit de S8 — ce que l'artefact dit vraiment
 
-Source : `Rwanbt/Ravum@6b0ac7b6` → `evidence/mvp0c-s8-live-summary-2026-11-09.json` (lu le 2026-11-09). `n = 3` par bras.
+Source : `Rwanbt/Ravum@6b0ac7b6` → `evidence/mvp0c-s8-live-summary-2026-11-09.json` (lu le 2026-11-09). `n = 3` par bras. **Attention :** les lettres A/B/C ci-dessous sont celles de **S8**, pas les bras canoniques A–G (voir §3 et `BENCHMARK_S9.md`).
 
-| Bras | échantillons (ms) | médiane | plage | chevauchement |
-|---|---|---|---|---|
-| A — copies privées | 100 664 / 111 110 / 208 694 | 111 110 | 100,7–208,7 s | **avec B** |
-| B — dossier partagé + garde | 126 224 / 237 674 / 286 275 | 237 674 | 126,2–286,3 s | **avec A** |
-| C — séquentiel | 269 594 / 528 481 / 611 003 | 528 481 | 269,6–611,0 s | avec B |
+| Bras S8 | canonique | échantillons (ms) | médiane | plage | chevauchement |
+|---|---|---|---|---|---|
+| S8-A — copies privées | **A** | 100 664 / 111 110 / 208 694 | 111 110 | 100,7–208,7 s | **avec S8-B** |
+| S8-B — dossier partagé + garde | **C** | 126 224 / 237 674 / 286 275 | 237 674 | 126,2–286,3 s | **avec S8-A** |
+| S8-C — séquentiel | **D** | 269 594 / 528 481 / 611 003 | 528 481 | 269,6–611,0 s | avec S8-B |
 
 **Ce que S8 prouve :** des campagnes réelles ont eu lieu (27 sessions), avec des durées mesurées, sur une fixture Rust réduite, avec `zero_lost` et `all_tests_green` **déclarés** à 9/9.
 
@@ -56,7 +56,7 @@ L'agent E a dérivé des données par campagne, au-delà de l'agrégat :
 
 ## 3. Comparateurs canoniques (résout `X-06`)
 
-`BENCHMARK_S9.md` et la V6 §6.2 utilisent les mêmes lettres pour des bras différents. **Décision de forme proposée (non ratifiée) : la table ci-dessous est la seule nomenclature S9.** L'ancienne table de `BENCHMARK_S9.md:8` est déclarée **superseded** et conservée pour l'historique.
+`BENCHMARK_S9.md` et la V6 §6.2 ont utilisé les mêmes lettres pour des bras différents. **Correction appliquée (Lot A, `X-06`) : `BENCHMARK_S9.md` est désormais la source unique de nomenclature et porte la table d'alias.** Ce tableau en donne la justification et le détail opérationnel ; l'ancienne table de `BENCHMARK_S9.md` est **superseded** et conservée dans son tableau d'alias.
 
 | Lettre | Bras | Définition opérationnelle | Disponibilité à enregistrer |
 |---|---|---|---|
