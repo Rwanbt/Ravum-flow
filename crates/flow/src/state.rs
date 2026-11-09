@@ -8,7 +8,7 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::gitcli::Obligation;
 use crate::json::{self, Json};
@@ -473,92 +473,8 @@ pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-// ------------------------------------------------------------------- lock
-//
-// A local, advisory lock between Flow processes. It serialises the short
-// mutations (`publish`, `reconcile`) so two writers cannot interleave journal
-// appends and produce a torn line. It is NOT a distributed lease, it does not
-// fence a foreign `git` writer, and a stale lock is recovered by observing that
-// its owner is gone — never by assuming the worst case is impossible.
-
-const LOCK_MAX_AGE_S: u64 = 120;
-
-pub struct LockGuard {
-    path: PathBuf,
-}
-
-impl Drop for LockGuard {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.path);
-    }
-}
-
-#[cfg(windows)]
-fn pid_alive(pid: u32) -> Option<bool> {
-    let out = std::process::Command::new("tasklist")
-        .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
-        .output()
-        .ok()?;
-    let text = String::from_utf8_lossy(&out.stdout);
-    Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
-}
-
-#[cfg(not(windows))]
-fn pid_alive(pid: u32) -> Option<bool> {
-    let status = std::process::Command::new("kill")
-        .args(["-0", &pid.to_string()])
-        .status()
-        .ok()?;
-    Some(status.success())
-}
-
-fn lock_is_stale(path: &Path) -> bool {
-    let Ok(text) = fs::read_to_string(path) else {
-        return false;
-    };
-    let mut parts = text.split_whitespace();
-    // An unparseable lock cannot be attributed: treat it as abandoned.
-    let Some(pid) = parts.next().and_then(|p| p.parse::<u32>().ok()) else {
-        return true;
-    };
-    let at = parts
-        .next()
-        .and_then(|p| p.parse::<u64>().ok())
-        .unwrap_or(0);
-    if unix_now().saturating_sub(at) > LOCK_MAX_AGE_S {
-        return true;
-    }
-    // Undeterminable liveness is treated as alive: never steal on ignorance.
-    matches!(pid_alive(pid), Some(false))
-}
-
-pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, String> {
-    let path = flow_dir(root).join("lock");
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
-    }
-    for _ in 0..40 {
-        match OpenOptions::new().write(true).create_new(true).open(&path) {
-            Ok(mut file) => {
-                let _ = writeln!(file, "{} {} {}", std::process::id(), unix_now(), purpose);
-                let _ = file.sync_all();
-                return Ok(LockGuard { path });
-            }
-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                if lock_is_stale(&path) {
-                    let _ = fs::remove_file(&path);
-                    continue;
-                }
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            Err(e) => return Err(format!("cannot create {}: {e}", path.display())),
-        }
-    }
-    Err(format!(
-        "another flow process holds {} (remove it only if you are sure no flow process is running)",
-        path.display()
-    ))
-}
+// The publication lock moved to `crate::lock` (contract `flow-lock/2`): its
+// attribution rules are the whole point, and they live next to their tests.
 
 /// Civil date/time from the Unix epoch, UTC, without a dependency.
 pub fn iso8601_now() -> String {

@@ -880,9 +880,9 @@ pub fn cmd_publish(
         ));
     }
 
-    let _lock = match state::acquire_lock(root, "publish") {
+    let _lock = match crate::lock::acquire_lock(root, "publish") {
         Ok(guard) => guard,
-        Err(e) => return Ok(refused_code("LOCKED", e)),
+        Err(e) => return Ok(lock_refusal(root, e)),
     };
 
     // Publish exactly the tree that `run` verified: the index tree.
@@ -1202,6 +1202,26 @@ pub fn cmd_publish(
 
 // -------------------------------------------------------------- reconcile
 /// Count journal records by `id` for one event kind.
+/// A lock refusal carries its own code: a held lock and an unattributable one
+/// have different remedies, and the second must never look like "try again".
+fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {
+    match err {
+        crate::lock::LockError::Held(why) => refused_code("LOCKED", why),
+        crate::lock::LockError::Unknown(why) => {
+            let mut value = refused_code("LOCK_UNKNOWN", why);
+            if let Json::Obj(pairs) = &mut value {
+                pairs.push(("manual_required".into(), Json::Bool(true)));
+                pairs.push((
+                    "lock_path".into(),
+                    Json::str(crate::lock::lock_path(root).to_string_lossy().to_string()),
+                ));
+            }
+            value
+        }
+        crate::lock::LockError::Io(why) => refused_code("LOCK_IO", why),
+    }
+}
+
 fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
     for record in records {
@@ -1277,9 +1297,9 @@ fn journal_failure(root: &Path, err: state::JournalError) -> Json {
 
 pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
     let git = Git::new(root);
-    let _lock = match state::acquire_lock(root, "reconcile") {
+    let _lock = match crate::lock::acquire_lock(root, "reconcile") {
         Ok(guard) => guard,
-        Err(e) => return Ok(refused_code("LOCKED", e)),
+        Err(e) => return Ok(lock_refusal(root, e)),
     };
     let records = match state::read_journal(root) {
         Ok(records) => records,

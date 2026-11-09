@@ -9,6 +9,7 @@
 mod commands;
 mod gitcli;
 mod json;
+mod lock;
 mod paths;
 mod scratch;
 mod sha256;
