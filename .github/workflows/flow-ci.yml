@@ -74,8 +74,8 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 148 ]; then
-            echo "::error::expected at least 148 executed passing tests, got $passed"
+          if [ "$passed" -lt 150 ]; then
+            echo "::error::expected at least 150 executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -106,6 +106,8 @@ jobs:
             m9_a_hostile_cloned_repository_cannot_execute_or_escape \
             m10_a_record_from_another_schema_is_refused \
             a_non_finite_number_in_local_state_is_refused_not_printed \
+            a_hardlinked_journal_is_not_written_through \
+            obligation_ids_that_differ_only_by_case_are_refused \
             p0c_corrupt_journal_is_not_reported_as_reconciled \
             p0c_duplicate_intent_id_requires_a_human \
             p0c_ref_moved_elsewhere_needs_reconciliation \

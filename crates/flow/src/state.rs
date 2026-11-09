@@ -374,33 +374,29 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
             pairs.insert(0, ("schema".to_string(), Json::str(SCHEMA_JOURNAL)));
         }
     }
-    let record = &tagged;
     let path = journal_path(root);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
     }
     guard_below_flow(&path)?;
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|e| format!("cannot open journal: {e}"))?;
-    let mut line = record.to_string();
+    // The journal is rewritten and renamed rather than opened with `O_APPEND`.
+    // A rename replaces the directory entry, so a *hard link* to an outside file
+    // can no longer be written through — the case the `nlink > 1` check cannot see
+    // on Windows. It also makes every append atomic: a torn line is impossible.
+    // The cost is O(journal size) per append, which is bounded in practice and
+    // documented; the alternative is a write primitive with worse failure modes.
+    let mut content = match fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(e) => return Err(format!("cannot read journal {}: {e}", path.display())),
+    };
+    // `tagged`, not `record`: the schema stamp is what lets a future reader
+    // refuse a record it does not understand.
+    let mut line = tagged.to_string();
     line.push('\n');
-    file.write_all(line.as_bytes())
-        .map_err(|e| format!("cannot append journal: {e}"))?;
-    // fsync the file and the directory (best effort on Windows).
-    file.sync_all()
-        .map_err(|e| format!("cannot fsync journal: {e}"))?;
-    #[cfg(not(windows))]
-    if let Some(parent) = path.parent() {
-        if let Ok(dir) = File::open(parent) {
-            let _ = dir.sync_all();
-        }
-    }
-    Ok(())
+    content.extend_from_slice(line.as_bytes());
+    write_atomic_bytes(&path, &content).map_err(|e| format!("cannot append journal: {e}"))
 }
-
 /// Read every journal record.
 ///
 /// A missing journal is an empty journal (a fresh repository). Anything else

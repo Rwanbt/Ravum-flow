@@ -44,6 +44,7 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
 
 function Fail([string]$Message) {
+    if ($script:Stage) { $Message = "[$script:Stage] $Message" }
     throw $Message
 }
 
@@ -229,12 +230,14 @@ function Invoke-OneFixture([string]$Name) {
             # 2. A real change under verification, so the index tree differs from
             #    the baseline commit; publishing an already-published tree is
             #    refused as ALREADY_PUBLISHED.
+            $script:Stage = 'demo change'
             $editFile = Join-Path $work $spec.EditPath
             [IO.File]::AppendAllText($editFile, $spec.EditAppend)
             & git add -A
             if ($LASTEXITCODE -ne 0) { Fail 'git add failed after the demo change' }
 
             $indexTree = (& git write-tree).Trim()
+            $script:Stage = 'first run'
             $run1 = Invoke-Flow -Arguments @('run', '--json') -Expect @(0)
             $receipt1 = $run1.Json
             if ($receipt1.status -ne 'PASSED') {
@@ -252,8 +255,10 @@ function Invoke-OneFixture([string]$Name) {
                 }
             }
 
+            $script:Stage = 'first publish'
             $publish1 = Invoke-Flow -Arguments @('publish', '--expected-old', $baseline, '--json') -Expect @(0)
             if ($publish1.Json.status -ne 'PUBLISHED') { Fail "expected PUBLISHED, got $($publish1.Json.status)" }
+            $script:Stage = 'ref read-back'
             $published = (& git rev-parse refs/heads/main).Trim()
             if ($published -eq $baseline) { Fail 'publish did not move the branch' }
             if ($published -ne $publish1.Json.commit) { Fail 'published ref does not name the returned commit' }
@@ -262,18 +267,21 @@ function Invoke-OneFixture([string]$Name) {
 
             # 3. The documented red edit: verification fails, publication refuses,
             #    and the ref does not move.
+            $script:Stage = 'red edit'
             Edit-Text -Path (Join-Path $work $spec.RedPath) -Old $spec.RedOld -New $spec.RedNew -What 'red edit'
             & git add -A
             if ($LASTEXITCODE -ne 0) { Fail 'git add failed after the red edit' }
             $redTree = (& git write-tree).Trim()
             if ($redTree -eq $receipt1.tree_oid) { Fail 'the red edit did not change the index tree' }
 
+            $script:Stage = 'red run'
             $run2 = Invoke-Flow -Arguments @('run', '--json') -Expect @(1)
             $receipt2 = $run2.Json
             if ($receipt2.status -ne 'FAILED') { Fail "expected FAILED on the red edit, got $($receipt2.status)" }
             $failing = @($receipt2.obligations | Where-Object { $_.status -ne 'PASSED' } | ForEach-Object { "$($_.id)=$($_.status)" })
             if ($failing.Count -eq 0) { Fail 'the red run is FAILED but every obligation reports PASSED' }
 
+            $script:Stage = 'red publish'
             $publish2 = Invoke-Flow -Arguments @('publish', '--expected-old', $published, '--json') -Expect @(1)
             if ($publish2.Json.status -ne 'REFUSED') { Fail "expected REFUSED, got $($publish2.Json.status)" }
             if (-not $publish2.Json.code) { Fail 'the refusal carries no machine-readable code' }

@@ -1374,6 +1374,14 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
     for entry in fs::read_dir(&log_dir).unwrap().flatten() {
         fs::remove_file(entry.path()).unwrap();
     }
+    let (code, status) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{status}");
+    let latest = status.get("latest_receipt").cloned().unwrap_or(Json::Null);
+    assert_eq!(
+        latest.get("evidence_complete").and_then(Json::as_bool),
+        Some(false),
+        "status must also say the evidence is incomplete: {status}"
+    );
     let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
     assert_eq!(code, 0, "{explain}");
     assert_eq!(
@@ -1397,12 +1405,14 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
     );
 }
 
-/// A hard link cannot be distinguished from a regular file on Windows without
-/// Win32, so this closes the shape where the OS exposes it.
-#[cfg(unix)]
+/// A hard-linked journal must never be written through, on any platform.
+///
+/// The journal is rewritten and renamed, so a hard link is replaced instead of
+/// appended to: the outside file keeps its bytes. (The Unix `nlink > 1` check is
+/// a second line of defence; Windows has no portable link count in std.)
 #[test]
 fn a_hardlinked_journal_is_not_written_through() {
-    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (repo, _, _) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
     let outside = std::env::temp_dir().join(format!("flow-hardlink-{}", std::process::id()));
@@ -1411,9 +1421,25 @@ fn a_hardlinked_journal_is_not_written_through() {
     let _ = fs::remove_file(&journal);
     fs::hard_link(&outside, &journal).unwrap();
     let (code, out) = flow(&repo.path, &["publish"]);
-    assert_eq!(code, 1, "a hardlinked journal must be refused: {out}");
-    assert_eq!(fs::read_to_string(&outside).unwrap(), "outside\n");
-    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+    assert_eq!(
+        fs::read_to_string(&outside).unwrap(),
+        "outside\n",
+        "the outside file must keep its bytes: {out}"
+    );
+    let outside_text = fs::read_to_string(&outside).unwrap();
+    assert!(
+        !outside_text.contains("flow-journal/1"),
+        "no journal record may reach the outside file"
+    );
+    // When the publication succeeds, the record landed in the repository's own
+    // file: the hard link was replaced, not appended to.
+    if code == 0 {
+        let in_repo = fs::read_to_string(&journal).unwrap_or_default();
+        assert!(
+            in_repo.contains("flow-journal/1"),
+            "a successful publication must write its record inside the repository: {in_repo}"
+        );
+    }
     let _ = fs::remove_file(&outside);
 }
 
@@ -1472,4 +1498,19 @@ fn a_non_finite_number_in_local_state_is_refused_not_printed() {
         "the CLI must never print an inf value: {text}"
     );
     assert!(text.contains("not finite"), "{text}");
+}
+
+/// Two obligation ids that differ only by case would share one log file on a
+/// case-insensitive filesystem and silently lose evidence.
+#[test]
+fn obligation_ids_that_differ_only_by_case_are_refused() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    write_config_unapproved(
+        &repo.path,
+        r#"{"id":"PROBE","program":"git","args":["--version"],"required":true,"timeout_s":30},{"id":"probe","program":"git","args":["--version"],"required":true,"timeout_s":30}"#,
+    );
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "case-colliding ids must be refused: {out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert!(out.to_string().contains("differ only by case"), "{out}");
 }

@@ -538,6 +538,21 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
                     } else {
                         Json::str("RECEIPT_INTEGRITY_INVALID")
                     };
+                    let logs: Vec<String> = value
+                        .get("logs")
+                        .and_then(Json::as_arr)
+                        .map(|items| {
+                            items
+                                .iter()
+                                .filter_map(|v| v.as_str().map(str::to_string))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    let missing: Vec<String> = logs
+                        .iter()
+                        .filter(|rel| !root.join(rel.as_str()).is_file())
+                        .cloned()
+                        .collect();
                     latest = Json::obj(vec![
                         (
                             "tree_oid",
@@ -545,6 +560,14 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
                         ),
                         ("status", displayed_status),
                         ("trust", Json::str(trust)),
+                        (
+                            "evidence_complete",
+                            Json::Bool(trust == "INTEGRITY_OK" && missing.is_empty()),
+                        ),
+                        (
+                            "missing_logs",
+                            Json::Arr(missing.into_iter().map(Json::str).collect()),
+                        ),
                         (
                             "scope",
                             value
@@ -688,6 +711,7 @@ fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
 /// collide as log file names.
 fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
     let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut folded: BTreeMap<String, String> = BTreeMap::new();
     for ob in obligations {
         crate::paths::validate_relative(&format!(".flow/logs/{}", ob.id))
             .map_err(|reason| format!("unsafe obligation id {:?}: {reason}", ob.id))?;
@@ -697,6 +721,16 @@ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
                 ob.id
             ));
         }
+        // Log files are named after the id. On a case-insensitive filesystem two
+        // ids differing only by case would write to one file and lose evidence,
+        // so the collision is refused on every platform.
+        if let Some(other) = folded.get(&ob.id.to_lowercase()) {
+            return Err(format!(
+                "obligation ids {:?} and {:?} differ only by case: their log files would collide on a case-insensitive filesystem",
+                other, ob.id
+            ));
+        }
+        folded.insert(ob.id.to_lowercase(), ob.id.clone());
     }
     if !obligations.iter().any(|o| o.required) {
         return Err(
