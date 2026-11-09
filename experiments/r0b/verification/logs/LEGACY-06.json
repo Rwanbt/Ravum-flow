@@ -1,10 +1,10 @@
 {
   "apply_check_rc": 0,
   "apply_rc": 0,
-  "base": "0828fb2e95f8a2f42a4f51aca742ada7daf85164",
+  "base": "f894739c2e0ff79b6a605b0648e130dbd3e40378",
   "fixture": "legacy06",
   "patch": "logs/artifacts/legacy06-textual-break.patch",
-  "semantic_break": "542a63de2c72445b92e57b4eb4ec645f28b82ee1",
+  "semantic_break": "2949acb0d5693c694c759657c16d0e8c80e07b58",
   "status_after": [
     " M api.py"
   ],

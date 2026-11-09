@@ -3,7 +3,7 @@
   "cpu_count": 16,
   "cwd_redacted": "<REPO>/experiments/r0b/verification",
   "fixture_provenance": "fixtures reconstructed in scratch from experiments/r0a/harness/fixtures.py definitions (build_f4_e2e, build_f5_crash, build_f7_context); the r0a work/fixtures tree was empty at start because the validated gate-B run ends with cleanup(). The scratch f7 build script is a deliberate variant: it reads the ignored .cache/tool.bin and one undeclared env var while its context_id stays declared-only, because the unmodified r0a build script does not consume the cache and the test would otherwise be vacuous. No write ever targeted experiments/r0a/",
-  "generated_at": "2026-11-09T17:07:58Z",
+  "generated_at": "2026-11-09T18:55:12Z",
   "git": "git version 2.51.1.windows.1",
   "network_used": false,
   "os": "win32",

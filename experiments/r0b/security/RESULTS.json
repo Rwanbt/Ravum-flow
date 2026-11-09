@@ -1,7 +1,7 @@
 {
   "schema": "r0b-security-results/1",
-  "generated_at_utc": "2026-11-09T17:03:28+00:00",
-  "duration_s": 19.0,
+  "generated_at_utc": "2026-11-09T18:54:54+00:00",
+  "duration_s": 17.5,
   "host": {
     "os": "win32",
     "os_name": "nt",
@@ -26,7 +26,7 @@
         "naive": {
           "canary_var_present": true,
           "sha256_prefix_matches": true,
-          "env_var_count": 72,
+          "env_var_count": 69,
           "sensitive_names_present": [
             "APPDATA",
             "LOCALAPPDATA",
@@ -102,32 +102,32 @@
         "attempts": [
           {
             "rc": 10061,
-            "ms": 2023,
+            "ms": 2011,
             "mode": "blocking"
           },
           {
             "rc": 10061,
-            "ms": 2018,
+            "ms": 2003,
             "mode": "blocking"
           },
           {
             "rc": 10061,
-            "ms": 2036,
+            "ms": 2008,
             "mode": "blocking"
           },
           {
             "rc": 10035,
-            "ms": 509,
+            "ms": 497,
             "mode": "timeout_0.5"
           },
           {
             "rc": 10035,
-            "ms": 502,
+            "ms": 504,
             "mode": "timeout_0.5"
           },
           {
             "rc": 10035,
-            "ms": 503,
+            "ms": 500,
             "mode": "timeout_0.5"
           }
         ],
@@ -300,8 +300,8 @@
         "writer_held_lock": true,
         "external_commit_returncode": 0,
         "external_commit_stderr": "",
-        "head_before": "e6fd74e2fe7c246b8a715115c099895b1a038c60",
-        "head_after": "b74224f9ea462f1302f431aa559eb29bc4203399",
+        "head_before": "490270450189d120a1806d39256a6eca12f704e1",
+        "head_after": "129f742543e13ab993cb1b2be6b94343afc00caf",
         "heads_differ": true,
         "detection_by_reread": true,
         "prevention_by_lock": false
@@ -313,7 +313,7 @@
       "REPRODUCED": 7
     },
     "canary_scan": {
-      "files_scanned": 14,
+      "files_scanned": 15,
       "excluded": [
         "scratch/ (fixture canary: fake-home/.ssh/id_fixture)"
       ],

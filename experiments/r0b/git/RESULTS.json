@@ -96,12 +96,12 @@
       "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked config r0b.shared written-from-linked",
       "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\gitdir-main config --get r0b.shared",
       "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked commit --allow-empty -q -m linked-commit",
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked update-ref refs/heads/moved 5311cd80d06fb3af72063515ec4a53aab513cab2",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked update-ref refs/heads/moved b2da58b6b60a4b731818a4a22f276bd0499b8ec6",
       "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-private-copy config r0b.shared only-in-copy",
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-private-copy update-ref refs/heads/copyref bb140b83f1d9a92b8e2bae3bc4a0e57214491446",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-private-copy update-ref refs/heads/copyref 1e1b4ed85f661b51529511d35d74647fab4b93b0",
       "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\gitdir-main config --get r0b.shared"
     ],
-    "observation": "Depuis le worktree lié (<REPO>/experiments/r0b/git/fixtures/gitdir-main/.git/worktrees/gitdir-linked), `git config` écrit dans le `.git/config` commun (visible depuis le dépôt principal) et `git update-ref` déplace une ref du dépôt principal (5311cd80d06f…). Une copie privée complète n'a aucun de ces effets sur l'original : seule la copie est isolée.",
+    "observation": "Depuis le worktree lié (<REPO>/experiments/r0b/git/fixtures/gitdir-main/.git/worktrees/gitdir-linked), `git config` écrit dans le `.git/config` commun (visible depuis le dépôt principal) et `git update-ref` déplace une ref du dépôt principal (b2da58b6b60a…). Une copie privée complète n'a aucun de ces effets sur l'original : seule la copie est isolée.",
     "scope": "Git 2.51.1 for Windows, local NTFS. Shows shared control files of a linked worktree; does not claim a sandbox escape or a privilege boundary bypass.",
     "evidence": "logs/HOOK-GITDIR-19.log"
   },
@@ -111,10 +111,10 @@
     "fixture": "r0b-local:refcas (R0-a fixtures absent)",
     "os": "Windows 11 (win32); git version 2.51.1.windows.1",
     "commands": [
-      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x bb140b83f1d9a92b8e2bae3bc4a0e57214491446",
-      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 41b27b98e741f593e05a4812642283c0805ccda9 bb140b83f1d9a92b8e2bae3bc4a0e57214491446",
-      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 89fb556b7c973061549c49c744ed108a1e5208e9 bb140b83f1d9a92b8e2bae3bc4a0e57214491446",
-      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 89fb556b7c973061549c49c744ed108a1e5208e9 41b27b98e741f593e05a4812642283c0805ccda9"
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x d2aca5a262c3c2db2ce0ea16de6445f247f277b8 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 7940136b9e3efeb57c8d388632bd4d5d6c492cb3 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 7940136b9e3efeb57c8d388632bd4d5d6c492cb3 d2aca5a262c3c2db2ce0ea16de6445f247f277b8"
     ],
     "observation": "CAS à trois arguments : l'ancien OID périmé est refusé sans déplacer la ref ; le CAS avec l'ancien OID courant réussit. La comparaison porte sur la valeur courante de la ref.",
     "scope": "Git 2.51.1 `update-ref` CAS semantics on local refs. Does not cover packed-refs races, reflog-less setups, or network filesystems.",
@@ -126,8 +126,8 @@
     "fixture": "r0b-local:fence-a (R0-a fixtures absent)",
     "os": "Windows 11 (win32); git version 2.51.1.windows.1",
     "commands": [
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main b06a88c8707682ec82dfb27139eb024c8ec94924 6722bc408ea1dd5d02aefe19aee323c17cdf5278",
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main 95a19c5c3276f9da70b78a3980845e2f8e237ab5 6722bc408ea1dd5d02aefe19aee323c17cdf5278"
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main e3f4a8ca57762e86d019b446a3690bf8d8fbc46e 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main 7d87ebdc0c07cea8e1787877b67a53402bbbb136 1e1b4ed85f661b51529511d35d74647fab4b93b0"
     ],
     "observation": "L'écrivain périmé (même `old`) est refusé après qu'un autre écrivain a publié : le CAS de ref suffit entre écrivains coopérants. Aucun epoch n'est nécessaire pour ce cas.",
     "scope": "Two cooperating writers using `git update-ref` CAS. Shows only that the stale writer is refused; does not implement an epoch or a lease.",
@@ -140,8 +140,8 @@
     "os": "Windows 11 (win32); git version 2.51.1.windows.1",
     "commands": [
       "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b commit -q --allow-empty -m external-writer",
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b update-ref refs/heads/main 77736f82990e3791021b7e208909c5c0a75de23d 6722bc408ea1dd5d02aefe19aee323c17cdf5278",
-      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b merge-base --is-ancestor 77736f82990e3791021b7e208909c5c0a75de23d refs/heads/main"
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b update-ref refs/heads/main 90cb48fa738b555da59e9957996524ef9a93850a 94fa76249a4a3970c7aec610a82409a7c4ca7979",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b merge-base --is-ancestor 90cb48fa738b555da59e9957996524ef9a93850a refs/heads/main"
     ],
     "observation": "Un `git commit` externe réussit entre la lecture de l'ancien OID et notre CAS ; notre CAS refuse ensuite et notre candidat devient inatteignable. Le contournement n'est pas empêché : il est seulement détecté (trop tard).",
     "scope": "Shows that an external `git` writer bypasses any Flow-side lock/epoch. The external write is deliberately successful; no prevention mechanism is tested because none exists.",
@@ -184,7 +184,7 @@
     "fixture": "r0b-local:f3-filetypes/{base,link,case} (R0-a fixtures absent)",
     "os": "Windows 11 (win32); git version 2.51.1.windows.1",
     "commands": [
-      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\base diff -M --summary 10837262a4ab27cb098651dac249bef387cdd28e 196f61666ac4e8ea8cec225b3803d27cc822b2c0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\base diff -M --summary f51aa1a389da7a3a598ecd8791b2ae5f7ec95f6d 506c749fc06dc0db41a1cd25ddb85fe905e3a397",
       "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\link worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\file09-link HEAD",
       "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\case worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\file09-case HEAD",
       "git -C <REPO>\\experiments\\r0b\\git\\scratch\\file09-case status --porcelain"

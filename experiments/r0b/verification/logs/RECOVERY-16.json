@@ -3,19 +3,19 @@
   "intact_bytes": 271,
   "intact_robust": {
     "rc": 0,
-    "stdout": "{\"status\": \"COMPLETE\", \"records\": 2, \"ref\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\"}"
+    "stdout": "{\"status\": \"COMPLETE\", \"records\": 2, \"ref\": \"905176d066d3e7d158ea2d3f16dc9b0ce854eb8b\"}"
   },
   "intent_only_robust": {
     "rc": 0,
-    "stdout": "{\"status\": \"RECONCILED_PUBLISHED_FROM_REF\", \"records\": 1, \"ref\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\"}"
+    "stdout": "{\"status\": \"RECONCILED_PUBLISHED_FROM_REF\", \"records\": 1, \"ref\": \"905176d066d3e7d158ea2d3f16dc9b0ce854eb8b\"}"
   },
   "journal_records": 2,
   "publisher_rc": 0,
-  "ref": "12c39f33b2cd44592e6fc2916c15792059d6ba93",
+  "ref": "905176d066d3e7d158ea2d3f16dc9b0ce854eb8b",
   "truncated_bytes": 259,
   "truncated_naive_skip": {
     "rc": 0,
-    "stdout": "{\"bad_lines\": 1, \"last\": {\"event\": \"intent\", \"new\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\", \"old\": \"5c6fdc31e3e095e1c15ff9d5ee5c4ece54a59ac4\", \"tree\": \"75bfee933fa5995f8d4b46df01db4f3963b34112\"}, \"last_event\": \"intent\", \"records\": 1, \"would_republish\": true}"
+    "stdout": "{\"bad_lines\": 1, \"last\": {\"event\": \"intent\", \"new\": \"905176d066d3e7d158ea2d3f16dc9b0ce854eb8b\", \"old\": \"f3aa15999835c8399f09b052e6e883a860517e30\", \"tree\": \"75bfee933fa5995f8d4b46df01db4f3963b34112\"}, \"last_event\": \"intent\", \"records\": 1, \"would_republish\": true}"
   },
   "truncated_naive_strict": {
     "rc": 1,
