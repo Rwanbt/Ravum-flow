@@ -168,6 +168,53 @@ fn nonce() -> String {
     format!("{:x}-{:x}-{:x}", std::process::id(), nanos, n)
 }
 
+/// How long a reader waits for a concurrent creator to finish writing the lock
+/// record before concluding that the file is unattributable.
+const CREATE_GRACE: Duration = Duration::from_millis(750);
+
+/// Create the lock file **with its full content** in one atomic step.
+///
+/// `create_new` followed by `write` exposes a window in which another process
+/// reads an empty file — a real race that was observed on Linux with eight
+/// concurrent publishers. Writing the record to a unique temporary file and then
+/// hard-linking it makes the appearance of the lock atomic: the name never exists
+/// without content, and the link fails if a lock already exists. The temporary
+/// name is removed on every path.
+fn create_lock_file(path: &Path, nonce: &str, purpose: &str) -> std::io::Result<()> {
+    let tmp = path.with_file_name(format!("lock.{nonce}.tmp"));
+    let line = format!(
+        "{LOCK_SCHEMA} {} {} {nonce} {purpose}\n",
+        std::process::id(),
+        crate::state::unix_now()
+    );
+    {
+        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;
+        file.write_all(line.as_bytes())?;
+        file.sync_all()?;
+    }
+    let linked = fs::hard_link(&tmp, path);
+    let _ = fs::remove_file(&tmp);
+    linked
+}
+
+/// Read the lock record, tolerating a creator that is still writing it.
+fn wait_for_record(path: &Path, first: String) -> Option<Owner> {
+    if let Some(owner) = parse(&first) {
+        return Some(owner);
+    }
+    let deadline = Instant::now() + CREATE_GRACE;
+    while Instant::now() < deadline {
+        std::thread::sleep(POLL_INTERVAL);
+        let Ok(text) = fs::read_to_string(path) else {
+            return None;
+        };
+        if let Some(owner) = parse(&text) {
+            return Some(owner);
+        }
+    }
+    None
+}
+
 pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
     let path = lock_path(root);
     if let Some(parent) = path.parent() {
@@ -177,29 +224,12 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
     let deadline = Instant::now() + ACQUIRE_BUDGET;
     loop {
         let ours = nonce();
-        match OpenOptions::new().write(true).create_new(true).open(&path) {
-            Ok(mut file) => {
-                let line = format!(
-                    "{LOCK_SCHEMA} {} {} {} {}\n",
-                    std::process::id(),
-                    crate::state::unix_now(),
-                    ours,
-                    purpose
-                );
-                if let Err(e) = file
-                    .write_all(line.as_bytes())
-                    .and_then(|_| file.sync_all())
-                {
-                    let _ = fs::remove_file(&path);
-                    return Err(LockError::Io(format!(
-                        "cannot write {}: {e}",
-                        path.display()
-                    )));
-                }
+        match create_lock_file(&path, &ours, purpose) {
+            Ok(()) => {
                 return Ok(LockGuard {
                     path: path.clone(),
                     nonce: ours,
-                });
+                })
             }
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
                 let text = match fs::read_to_string(&path) {
@@ -212,13 +242,19 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                         )))
                     }
                 };
-                let Some(owner) = parse(&text) else {
-                    return Err(LockError::Unknown(format!(
-                        "lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it",
-                        path.display(),
-                        LOCK_SCHEMA,
-                        path.display()
-                    )));
+                // A creator may have created the file and not finished writing it
+                // yet. Wait for the record to appear before concluding anything:
+                // "empty right now" is not "unattributable forever".
+                let owner = match wait_for_record(&path, text) {
+                    Some(owner) => owner,
+                    None => {
+                        return Err(LockError::Unknown(format!(
+                            "lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it",
+                            path.display(),
+                            LOCK_SCHEMA,
+                            path.display()
+                        )))
+                    }
                 };
                 if owner.pid == std::process::id() {
                     return Err(LockError::Held(format!(
