@@ -9,7 +9,7 @@ Raw evidence that the three blocking defects exist **before** any correction.
 | Correction branch | `fix/flow-foundation-proof-gates` |
 | Host | Windows 11, Rust 1.95.0, git 2.51.1.windows.1 |
 | Command | `cargo test --locked --test cli` |
-| Result | **13 failed, 20 passed** |
+| Result | **16 failed, 20 passed** |
 
 `cli-tests-baseline.log` is the verbatim, unedited output of that command, run
 with the **final** test file (the one shipped on the correction branch), against
@@ -34,6 +34,9 @@ credential, no real path outside the disposable fixtures, no Ravum content.
 | `p0c_duplicate_intent_id_requires_a_human` | two intents sharing one id are both "resolved" | **P0-C** ambiguous recovery |
 | `p0c_ref_moved_elsewhere_needs_reconciliation` | `NEEDS_RECONCILIATION` is reported inside a successful `RECONCILED` run, exit **0** | **P0-C** non-success rendered as success |
 | `p0c_status_refuses_to_guess_on_a_corrupt_journal` | `flow status` reports `pending_intents: 0` on an unreadable journal | **P0-C** silent empty read |
+| `p0a_case_colliding_tree_is_refused_not_certified` | a tree holding `Case.txt` and `case.txt` is checked out as one file; `run` returns **PASSED** and `publish` **PUBLISHED** for the two-entry tree | **P0-1** materialisation fidelity never verified |
+| `p0a_symlink_rewritten_as_a_file_is_refused` | with `core.symlinks=false`, a `120000` entry becomes a regular file holding the target path; an obligation asserting that content passes and `publish` publishes | **P0-1** same class |
+| `p0c_one_outcome_cannot_close_two_intents` | two intents share one id (same tree, same second, two refs) and one outcome closes both: `reconcile` exits 0 `RECONCILED` while one ref was never published | **P0-2** duplicate-id masking |
 
 ## Guards (green on both sides by design)
 

@@ -420,8 +420,8 @@ fn unsafe_obligation_id_is_refused() {
 #[test]
 fn obligation_timeout_is_timeout_not_pass() {
     if !program_exists("python") {
-        eprintln!("SKIP obligation_timeout_is_timeout_not_pass: python not available");
-        return;
+        // A skipped gate is not a pass: the CI job requires this test to run.
+        panic!("this gate requires `python` on PATH; installing it is a prerequisite, not a skip");
     }
     let repo = new_repo();
     flow(&repo.path, &["init"]);
@@ -959,4 +959,130 @@ fn p0b_an_ambiguous_config_is_refused_not_guessed() {
     let (code, out) = flow(&repo.path, &["run"]);
     assert_ne!(code, 0, "duplicate keys make the policy ambiguous: {out}");
     assert_eq!(status_of(&out), "ERROR");
+}
+
+// ------------------------------------------- materialisation fidelity (P0-1)
+//
+// `git worktree add` exits 0, with an empty stderr, on trees the host cannot
+// reproduce. A required obligation then runs on content that is not the tree,
+// while the receipt claims the tree was verified: a false PASSED with no
+// tampering involved.
+
+#[test]
+fn p0a_case_colliding_tree_is_refused_not_certified() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    fs::write(repo.path.join("one.bin"), "ONE\n").unwrap();
+    fs::write(repo.path.join("two.bin"), "TWO\n").unwrap();
+    let one = git(&repo.path, &["hash-object", "-w", "one.bin"]);
+    let two = git(&repo.path, &["hash-object", "-w", "two.bin"]);
+    for (blob, path) in [(&one, "src/Case.txt"), (&two, "src/case.txt")] {
+        git(
+            &repo.path,
+            &[
+                "update-index",
+                "--add",
+                "--cacheinfo",
+                &format!("100644,{blob},{path}"),
+            ],
+        );
+    }
+    let tree = git(&repo.path, &["write-tree"]);
+    let names = git(&repo.path, &["ls-tree", "-r", "--name-only", &tree]);
+    assert_eq!(
+        names.lines().filter(|l| l.starts_with("src/")).count(),
+        2,
+        "the fixture must really carry a case collision: {names}"
+    );
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 1,
+        "a tree this host cannot reproduce must never be certified: {out}"
+    );
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("UNSUPPORTED_CHECKOUT")
+    );
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(code2, 1, "and nothing may be published: {out2}");
+}
+
+#[test]
+fn p0a_symlink_rewritten_as_a_file_is_refused() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    // With symlinks disabled, Git writes the link target as file content: a
+    // transient, silent rewrite of the tree the obligations would inspect.
+    git(&repo.path, &["config", "core.symlinks", "false"]);
+    fs::write(repo.path.join("target.txt"), "SECRET\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let blob = git(&repo.path, &["hash-object", "-w", "target.txt"]);
+    git(
+        &repo.path,
+        &[
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            &format!("120000,{blob},link"),
+        ],
+    );
+    let tree = git(&repo.path, &["write-tree"]);
+    let listing = git(&repo.path, &["ls-tree", "-r", &tree]);
+    assert!(
+        listing.contains("120000"),
+        "the fixture must hold a symlink entry: {listing}"
+    );
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 1,
+        "a symlink checked out as a file is not the tree: {out}"
+    );
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("UNSUPPORTED_CHECKOUT")
+    );
+}
+
+// ------------------------------------------------ duplicate ids (P0-2)
+
+#[test]
+fn p0c_one_outcome_cannot_close_two_intents() {
+    let (repo, tree, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let other = git(
+        &repo.path,
+        &["commit-tree", &tree, "-p", &head_before, "-m", "x"],
+    );
+    let intent = format!(
+        "{{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"dup-1\",\"ref\":\"refs/heads/main\",\"old\":\"{head_before}\",\"new\":\"{other}\",\"tree\":\"{tree}\",\"at\":\"2026-11-09T00:00:00Z\"}}\n"
+    );
+    let outcome = "{\"schema\":\"flow-journal/1\",\"event\":\"outcome\",\"id\":\"dup-1\",\"status\":\"PUBLISHED\",\"at\":\"2026-11-09T00:00:01Z\"}\n";
+    fs::write(
+        journal_file(&repo.path),
+        format!("{intent}{intent}{outcome}"),
+    )
+    .unwrap();
+
+    let (code2, out2) = flow(&repo.path, &["reconcile"]);
+    assert_ne!(
+        code2, 0,
+        "one outcome must not be allowed to close two intents: {out2}"
+    );
+    assert_eq!(status_of(&out2), "NEEDS_RECONCILIATION");
+
+    let (_, out3) = flow(&repo.path, &["status"]);
+    assert_ne!(
+        out3.get("pending_intents").and_then(Json::as_num),
+        Some(0.0),
+        "status must not report zero pending intents over an unresolved twin: {out3}"
+    );
 }

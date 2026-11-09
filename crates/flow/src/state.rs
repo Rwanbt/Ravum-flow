@@ -286,6 +286,19 @@ pub fn unix_now() -> u64 {
         .unwrap_or(0)
 }
 
+/// Nanosecond-resolution suffix for journal intent ids.
+///
+/// The id used to be `second + commit prefix`. Two publications of the same
+/// tree to two refs within one second produce the same commit (same tree, same
+/// parent, same default message), hence the same id, and one of the two intents
+/// could then be closed by the other's outcome.
+pub fn unique_suffix() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0)
+}
+
 pub struct Receipt {
     pub schema: String,
     pub tree_oid: String,

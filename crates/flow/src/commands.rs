@@ -132,10 +132,10 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
         "hooks",
         if hooks.is_empty() { "OK" } else { "WARN" },
         if hooks.is_empty() {
-            "no hook installed".to_string()
+            "no hook installed. Flow dispatches no hook of its own; the Git plumbing it calls can still run post-checkout and reference-transaction if you add them".to_string()
         } else {
             format!(
-                "hooks present ({}) are NOT executed by Flow: obligations are declared in .flow/config.json",
+                "hooks present ({}): Flow dispatches none of its own, but the Git plumbing it calls runs post-checkout on `worktree add` and reference-transaction on `update-ref`, and a blocking reference-transaction hook aborts publish. Obligations are declared in .flow/config.json",
                 hooks.join(", ")
             )
         },
@@ -259,9 +259,10 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             "non_guarantees",
             Json::Arr(vec![
                 Json::str("no OS-level isolation of obligations"),
-                Json::str("no execution of Git hooks"),
+                Json::str("no hook dispatch of its own: Git plumbing may still run post-checkout on `worktree add` and reference-transaction on `update-ref`"),
                 Json::str("no completeness proof of the build context"),
-                Json::str("no cryptographic protection of a receipt against a writer who can rewrite config and receipt together"),
+                Json::str("no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one"),
+                Json::str("a checkout that cannot reproduce the tree is refused, not repaired"),
             ]),
         ),
     ]))
@@ -445,6 +446,131 @@ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
 }
 
 // -------------------------------------------------------------------- run
+
+/// Refuse to certify a checkout that is not a faithful copy of the tree.
+///
+/// `git worktree add` exits 0, with an empty stderr, on trees the host cannot
+/// represent: two paths differing only by case on a case-insensitive filesystem,
+/// a symlink when `core.symlinks=false`, a gitlink whose content is not
+/// materialised. Without this check a required obligation runs on content that is
+/// not the verified tree while the receipt claims the tree was checked, which is
+/// a false `PASSED` with no tampering involved.
+fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
+    /// A tree beyond this size is not a realistic verification target; refusing
+    /// keeps the walk bounded.
+    const MAX_ENTRIES: usize = 200_000;
+
+    // The listing comes from the source repository: the checkout deliberately
+    // has no `.git`, so it cannot answer for itself.
+    let listing = git.run(&["ls-tree", "-r", "-z", tree])?;
+    if listing.status != 0 {
+        return Err(format!(
+            "cannot list tree {tree}: {}",
+            listing.stderr.trim()
+        ));
+    }
+    let mut expected: Vec<(String, String)> = Vec::new();
+    for entry in listing.stdout.split('\0') {
+        if entry.trim().is_empty() {
+            continue;
+        }
+        let (meta, path) = entry
+            .split_once('\t')
+            .ok_or_else(|| format!("unparsable ls-tree entry {entry:?}"))?;
+        let mode = meta.split_whitespace().next().unwrap_or("").to_string();
+        if path.is_empty() {
+            continue;
+        }
+        expected.push((mode, path.replace('\\', "/")));
+    }
+    if expected.len() > MAX_ENTRIES {
+        return Err(format!(
+            "tree {tree} has {} entries, above the {MAX_ENTRIES}-entry fidelity budget",
+            expected.len()
+        ));
+    }
+
+    // Two paths differing only by case cannot both exist on a case-insensitive
+    // filesystem: the checkout silently keeps one of them.
+    let mut folded: BTreeMap<String, usize> = BTreeMap::new();
+    for (_, path) in &expected {
+        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
+    }
+    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) {
+        return Err(format!(
+            "tree {tree} holds {count} paths that differ only by case (for example {name:?}): this host cannot represent them faithfully, so the obligations would not see the verified tree"
+        ));
+    }
+
+    // Everything the tree names must actually exist on disk.
+    let mut actual: Vec<String> = Vec::new();
+    collect_files(scratch, scratch, &mut actual)?;
+    let present: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
+    let mut missing: Vec<&str> = expected
+        .iter()
+        .map(|(_, path)| path.as_str())
+        .filter(|path| !present.contains(path))
+        .collect();
+    if !missing.is_empty() {
+        missing.sort_unstable();
+        return Err(format!(
+            "the checkout is missing {} of {} tree entries (for example {:?}): the obligations would not see the verified tree",
+            missing.len(),
+            expected.len(),
+            &missing[..missing.len().min(3)]
+        ));
+    }
+
+    // And each entry must have the type the tree declares.
+    for (mode, path) in &expected {
+        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+        let meta = fs::symlink_metadata(&full)
+            .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+        match mode.as_str() {
+            "120000" if !meta.file_type().is_symlink() => {
+                return Err(format!(
+                    "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
+                ));
+            }
+            "160000" => {
+                return Err(format!(
+                    "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+                ));
+            }
+            "100644" | "100755" if !meta.is_file() => {
+                return Err(format!(
+                    "tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file"
+                ));
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> Result<(), String> {
+    let entries = fs::read_dir(dir).map_err(|e| format!("cannot read {}: {e}", dir.display()))?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+        // Flow's own markers are not part of the verified tree.
+        if dir == root && (name == ".git" || name.starts_with(".flow-scratch")) {
+            continue;
+        }
+        let Ok(meta) = fs::symlink_metadata(&path) else {
+            continue;
+        };
+        if meta.is_dir() && !meta.file_type().is_symlink() {
+            collect_files(root, &path, out)?;
+        } else {
+            let rel = path
+                .strip_prefix(root)
+                .map_err(|_| format!("{} escaped the checkout", path.display()))?;
+            out.push(rel.to_string_lossy().replace('\\', "/"));
+        }
+    }
+    Ok(())
+}
 pub fn cmd_run(
     root: &Path,
     only: Option<Vec<String>>,
@@ -529,6 +655,10 @@ pub fn cmd_run(
         Ok(scratch) => scratch,
         Err(reason) => return Ok(refused_code("SCRATCH_REFUSED", reason)),
     };
+    // A checkout that does not reproduce the tree exactly is not the tree.
+    if let Err(reason) = verify_checkout_fidelity(&git, scratch.path(), &tree) {
+        return Ok(refused_code("UNSUPPORTED_CHECKOUT", reason));
+    }
 
     let policy = effective_policy(&config, &effective);
     let policy_digest = policy_digest(&policy);
@@ -841,6 +971,20 @@ pub fn cmd_publish(
             ),
         ));
     }
+    // The context covers the toolchain and platform the run actually used; a Git
+    // upgrade between run and publish changes it, and the receipt is then no
+    // longer a statement about the tool that would publish.
+    let expected_context = build_context_id(&git, &tree, &policy);
+    if receipt.context_id != expected_context {
+        return Ok(refused_code(
+            "CONTEXT_MISMATCH",
+            format!(
+                "the receipt context is {} but this environment now computes {}: the toolchain or platform changed since the run",
+                short(&receipt.context_id),
+                short(&expected_context)
+            ),
+        ));
+    }
     // 4. every currently required obligation must be present *and* passed. The
     //    global status alone is not enough: a missing entry is not a pass.
     for ob in config.obligations.iter().filter(|o| o.required) {
@@ -938,9 +1082,10 @@ pub fn cmd_publish(
         ));
     }
     let id = format!(
-        "{}-{}",
+        "{}-{}-{}",
         state::iso8601_now(),
-        &commit[..12.min(commit.len())]
+        &commit[..12.min(commit.len())],
+        state::unique_suffix()
     );
     state::append_journal(
         root,
@@ -1056,25 +1201,52 @@ pub fn cmd_publish(
 }
 
 // -------------------------------------------------------------- reconcile
-/// Intents that have no terminal outcome yet. An unreadable journal is an
-/// error, never an empty list.
+/// Count journal records by `id` for one event kind.
+fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
+    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+    for record in records {
+        if record.get("event").and_then(Json::as_str) == Some(event) {
+            let id = record
+                .get("id")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            *counts.entry(id).or_insert(0) += 1;
+        }
+    }
+    counts
+}
+
+/// Intents that no outcome can be attributed to.
+///
+/// Counting, not set membership: an intent is closed only when the journal holds
+/// at least as many outcomes as intents for that id. One outcome must never
+/// close two intents.
 fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
     let records = state::read_journal(root)?;
-    let done: BTreeSet<String> = records
-        .iter()
-        .filter(|r| r.get("event").and_then(Json::as_str) == Some("outcome"))
-        .filter_map(|r| r.get("id").and_then(Json::as_str).map(str::to_string))
-        .collect();
-    Ok(records
-        .into_iter()
-        .filter(|r| r.get("event").and_then(Json::as_str) == Some("intent"))
-        .filter(|r| {
-            r.get("id")
-                .and_then(Json::as_str)
-                .map(|id| !done.contains(id))
-                .unwrap_or(false)
-        })
-        .collect())
+    let outcomes = count_by_id(&records, "outcome");
+    let mut seen: BTreeMap<String, usize> = BTreeMap::new();
+    let mut pending = Vec::new();
+    for record in records {
+        if record.get("event").and_then(Json::as_str) != Some("intent") {
+            continue;
+        }
+        let id = record
+            .get("id")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string();
+        let position = {
+            let slot = seen.entry(id.clone()).or_insert(0);
+            let position = *slot;
+            *slot += 1;
+            position
+        };
+        if position >= outcomes.get(&id).copied().unwrap_or(0) {
+            pending.push(record);
+        }
+    }
+    Ok(pending)
 }
 
 /// The explicit state of "we could not even read the journal".
@@ -1114,22 +1286,8 @@ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
         Err(e) => return Ok(journal_failure(root, e)),
     };
 
-    let done: BTreeSet<String> = records
-        .iter()
-        .filter(|r| r.get("event").and_then(Json::as_str) == Some("outcome"))
-        .filter_map(|r| r.get("id").and_then(Json::as_str).map(str::to_string))
-        .collect();
-    let mut occurrences: BTreeMap<String, usize> = BTreeMap::new();
-    for record in &records {
-        if record.get("event").and_then(Json::as_str) == Some("intent") {
-            let id = record
-                .get("id")
-                .and_then(Json::as_str)
-                .unwrap_or("")
-                .to_string();
-            *occurrences.entry(id).or_insert(0) += 1;
-        }
-    }
+    let occurrences = count_by_id(&records, "intent");
+    let outcome_counts = count_by_id(&records, "outcome");
 
     let mut resolved: Vec<Json> = Vec::new();
     let mut needs_human = false;
@@ -1142,18 +1300,23 @@ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
             .and_then(Json::as_str)
             .unwrap_or("")
             .to_string();
-        if done.contains(&id) {
+        let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);
+        let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);
+        // A shared id cannot be attributed to one intent. Checking `done` first
+        // would let one duplicate's outcome silently close the other, which is
+        // exactly how an unresolved publication can be reported as reconciled.
+        if intents_for_id > 1 {
+            if intents_for_id > outcomes_for_id {
+                needs_human = true;
+                resolved.push(Json::obj(vec![
+                    ("id", Json::str(id)),
+                    ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                    ("reason", Json::str("DUPLICATE_INTENT_ID")),
+                ]));
+            }
             continue;
         }
-        // Two intents sharing one id cannot be distinguished: the outcome of
-        // one would silently close the other.
-        if occurrences.get(&id).copied().unwrap_or(0) > 1 {
-            needs_human = true;
-            resolved.push(Json::obj(vec![
-                ("id", Json::str(id)),
-                ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
-                ("reason", Json::str("DUPLICATE_INTENT_ID")),
-            ]));
+        if outcomes_for_id > 0 {
             continue;
         }
         let field = |k: &str| {

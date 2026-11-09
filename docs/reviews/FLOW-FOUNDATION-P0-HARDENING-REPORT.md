@@ -37,11 +37,11 @@ Every claim below carries one of these, and they are not interchangeable.
 
 ## 3. The baseline had three blocking defects
 
-Thirteen tests were written against the observable CLI contract (JSON + exit codes) and run **before** any fix, on a throwaway worktree of `832f499` with the final test file copied in.
+Sixteen tests were written against the observable CLI contract (JSON + exit codes) and run **before** any fix, on a throwaway worktree of `832f499` with the final test file copied in.
 
 ```
 cargo test --locked --test cli
-test result: FAILED. 20 passed; 13 failed
+test result: FAILED. 20 passed; 16 failed
 ```
 
 Verbatim output and the per-test explanation: [`experiments/p0/baseline/`](../experiments/p0/baseline/). Four further tests pass on both sides by design and are labelled guards there, not reproductions.
@@ -152,11 +152,18 @@ A local advisory lock now serialises `publish` and `reconcile`. It is a lock fil
 
 R0-a/R0-b are **not** tests of this patch. They describe Git and OS risks measured on this host; the replay confirms the corpus still reproduces and that no verdict was rewritten.
 
-**Tests executed, not merely discovered (`REPRODUCED`):** 80 tests, 0 ignored — 21 unit, 34 CLI, 25 isolation.
+**Tests executed, not merely discovered (`REPRODUCED`):** 83 tests, 0 ignored — 21 unit, 37 CLI, 25 isolation.
 
-**CI on the final code SHA (`REPRODUCED`):** runs `42680405452` (push) and `42680418661` (pull request) at `9b96011`, both `success`: `ubuntu-latest` 18–20 s, `windows-latest` 1 m 50 s – 1 m 55 s. The job refuses any `ignored` test, requires at least 80 executed passes, and requires all 17 named gate tests to appear as `... ok`, so deleting or filtering one fails the build. The raw output is uploaded as `flow-test-output-{ubuntu,windows}-latest`.
+**CI on the final code SHA (`REPRODUCED`):** runs `42680405452` (push) and `42680418661` (pull request) at `9b96011`, both `success`: `ubuntu-latest` 18–20 s, `windows-latest` 1 m 50 s – 1 m 55 s. The job refuses any `ignored` test, requires at least 83 executed passes, and requires each named gate test to appear as `... ok`, so deleting or filtering one fails the build. The raw output is uploaded as `flow-test-output-{ubuntu,windows}-latest`.
 
-**Independent review.** The P1 isolation lot was reviewed separately; that review found two real defects in the merged test (a probe that spawned a second copy of the test binary and held its image open on Windows, and an assertion too loose to detect a join-based runner). Both are fixed in `f209408`. A targeted adversarial review of the P0 diff — forged receipts, policy replay, journal corruption, ref games — was run in a separate throwaway worktree; its outcome and any accepted finding are recorded in PR #52 rather than restated here as if self-certified.
+**Independent adversarial review.** A separate reviewer attacked the diff in its own throwaway worktree and independently reproduced the baseline claim (20 passed / 11 failed on `832f499` at the time). It found **no path that lands a commit carrying a tree other than the receipt's tree**, and every selection, policy-identity, receipt-edit, ref-name, expected-old, index-change and journal-corruption attempt was refused with a specific code. It did find two defects that survived the first correction, both since fixed and both now covered by a test that fails on `832f499`:
+
+- **P0-1 — materialisation fidelity was never verified.** `git worktree add` exits 0, with an empty stderr, on trees the host cannot represent. With a tree holding `Case.txt` and `case.txt`, the checkout contained one file and `run` still returned `PASSED`; with a `120000` entry and `core.symlinks=false`, the link was written as a regular file holding the target path, and an obligation asserting that content passed. A false `PASSED` with no tampering involved. **Fixed:** before any obligation runs, the tree listing is compared with the checkout — case-folded duplicates, missing entries, a symlink checked out as a file, and a gitlink are all refused (`UNSUPPORTED_CHECKOUT`).
+- **P0-2 — one outcome could close two intents.** The intent id was `second + commit prefix`; publishing the same tree to two refs within one second produced the same commit, hence the same id, and `reconcile` consulted the "already has an outcome" set *before* the duplicate check, so it reported `RECONCILED` with exit 0 while a branch was never published. **Fixed:** ids carry a nanosecond suffix, and reconciliation counts intents against outcomes per id — one outcome can never close two intents, in `reconcile` or in `status`.
+
+The review also corrected three overclaims, now fixed in the wording rather than argued: `doctor` said no Git hook runs (the plumbing does dispatch `post-checkout` and `reference-transaction`, and a blocking `reference-transaction` hook aborts `publish`); the receipt non-guarantee said "config **and** receipt together" when rewriting only the receipt suffices; and `context_id` was recorded but never compared, so `publish` now recomputes and compares it (`CONTEXT_MISMATCH`).
+
+Residual, recorded rather than fixed: a repository can ship `.flow/config.json` and have it used without `flow init`; a stale lock older than 120 s is stolen even from a live owner; `git status`-class plumbing still uses an unbounded `Command::output()`; the `.flow-scratch-owned` marker is visible to obligations; and `publish --ref` accepts a symref, which moves the target while reporting the branch name (the commit still carries the verified tree).
 
 **Resource envelope on this host (16 GB), measured:** CLI suite 7.92 s wall, peak working set ≈ 464 MB (34 tests in parallel, each spawning `flow` and `git`); isolation suite 2.11 s, ≈ 32 MB; unit suite < 0.1 s. Peak memory per stream is bounded by construction at 1 MiB. The suite needs no `-j1`; nothing approaches the machine's limits.
 
@@ -183,7 +190,7 @@ These are not caveats in passing; they are the boundary of the claim.
 
 ## 11. Verdict
 
-**`READY_FOR_REVIEW`.** The three blocking defects have a committed failing test on the baseline and a passing test after the fix. The publication gate fails closed on selection changes, policy changes, receipt edits, ambiguous JSON, unbounded output, hijacked Git environments and an unreadable journal. No user file was lost or modified in any scenario exercised. CI on Ubuntu and Windows counts executed tests and refuses a skipped one.
+**`READY_FOR_REVIEW`.** Five blocking defects have a committed failing test on the baseline and a passing test after the fix — the three found by construction (partial proof, stale receipt, masked corruption) and the two found by the independent review (unverified materialisation, one outcome closing two intents). The publication gate fails closed on selection changes, policy changes, receipt edits, ambiguous JSON, unfaithful checkouts, unbounded output, hijacked Git environments and an unreadable journal. No user file was lost or modified in any scenario exercised. CI on Ubuntu and Windows counts executed tests and refuses a skipped one.
 
 **`FOUNDATION_PARTIAL` stands** for the foundation as a whole: a useful, honest core whose unqualified capabilities are refused rather than simulated.
 
