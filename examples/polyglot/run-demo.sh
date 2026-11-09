@@ -10,11 +10,14 @@
 #   5. applies the fixture's documented red edit, shows `flow run` -> FAILED and
 #      `flow publish` -> REFUSED with a non-zero exit and an unchanged ref.
 #
-# Usage: ./run-demo.sh [rust|node|python|all]     (default: rust)
+# Usage: ./run-demo.sh [rust|node|python|typescript|all]     (default: rust)
 #        FLOW_BIN=/path/to/flow ./run-demo.sh
 #        KEEP_TEMP=1 ./run-demo.sh rust
 #
 # Requires: bash, git, and the fixture's own toolchain; no network.
+# The typescript fixture additionally requires a TypeScript compiler (tsc) on
+# PATH; without it the driver prints UNSUPPORTED and exits non-zero instead of
+# skipping the fixture silently.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,9 +25,9 @@ repo_root="$(cd "${script_dir}/../.." && pwd)"
 fixture="${1:-rust}"
 
 case "${fixture}" in
-  rust | node | python | all) ;;
+  rust | node | python | typescript | all) ;;
   *)
-    printf 'usage: %s [rust|node|python|all]\n' "$0" >&2
+    printf 'usage: %s [rust|node|python|typescript|all]\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -36,6 +39,13 @@ fail() {
 
 require() {
   command -v "$1" >/dev/null 2>&1 || fail "fixture needs '$1' on PATH; it is missing, so no pass can be claimed"
+}
+
+# The TypeScript fixture is the one fixture whose prerequisite is not the
+# language runtime itself. A skipped run must never look like a verified one, so
+# a missing compiler is an explicit UNSUPPORTED failure with a non-zero exit.
+require_tsc() {
+  command -v tsc >/dev/null 2>&1 || fail "UNSUPPORTED: the TypeScript fixture requires a TypeScript compiler on PATH ('tsc', tested with 5.8.2) and Node >= 22.6 for 'node --test' on .ts files; 'tsc' is missing. No pass is claimed and the demo exits non-zero. One-time prerequisite: npm i -g typescript@5.8.2"
 }
 
 demo_root="$(mktemp -d "${TMPDIR:-/tmp}/flow-demo-polyglot-XXXXXX")"
@@ -141,6 +151,15 @@ run_fixture() {
       red_new='self.assertEqual(add(2, 3), 6)'
       require python
       ;;
+    typescript)
+      edit_path='src/math.ts'
+      append_line=$'\n// demo change: a second, verified tree.\n'
+      red_path='test/math.test.ts'
+      red_old='assert.equal(add(2, 3), 5);'
+      red_new='assert.equal(add(2, 3), 6);'
+      require node
+      require_tsc
+      ;;
     *) fail "unknown fixture ${name}" ;;
   esac
 
@@ -239,6 +258,7 @@ case "${fixture}" in
     run_fixture rust
     run_fixture node
     run_fixture python
+    run_fixture typescript
     ;;
   *)
     run_fixture "${fixture}"

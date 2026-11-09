@@ -2,3 +2,8 @@
 # the one that must not be checked out with CRLF on Windows (the shebang and
 # every `#!/usr/bin/env bash` interpreter would see a trailing carriage return).
 *.sh text eol=lf
+
+# The TypeScript fixture is checked byte-for-byte on Windows and Linux: source
+# files stay LF so a checkout cannot silently change what `tsc --noEmit` and
+# `node --test` read.
+*.ts text eol=lf

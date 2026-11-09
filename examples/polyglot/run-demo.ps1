@@ -13,7 +13,9 @@
     --target-dir and the Git work happens only in the temporary directory.
 
 .PARAMETER Fixture
-    rust (default), node, python, or all.
+    rust (default), node, python, typescript, or all.
+    The typescript fixture needs a TypeScript compiler (tsc) on PATH; without
+    it the driver prints UNSUPPORTED and exits non-zero instead of skipping.
 
 .PARAMETER KeepTemp
     Keep the temporary directory (its path is printed) for inspection.
@@ -25,7 +27,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('rust', 'node', 'python', 'all')]
+    [ValidateSet('rust', 'node', 'python', 'typescript', 'all')]
     [string]$Fixture = 'rust',
 
     [switch]$KeepTemp
@@ -71,6 +73,14 @@ $specs = @{
         RedOld    = 'self.assertEqual(add(2, 3), 5)'
         RedNew    = 'self.assertEqual(add(2, 3), 6)'
         Needs     = @('python')
+    }
+    typescript = @{
+        EditPath  = 'src/math.ts'
+        EditAppend = "`n// demo change: a second, verified tree.`n"
+        RedPath   = 'test/math.test.ts'
+        RedOld    = 'assert.equal(add(2, 3), 5);'
+        RedNew    = 'assert.equal(add(2, 3), 6);'
+        Needs     = @('node', 'tsc')
     }
 }
 
@@ -158,6 +168,16 @@ function Invoke-OneFixture([string]$Name) {
 
     foreach ($tool in $spec.Needs) {
         if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
+            if ($Name -eq 'typescript') {
+                # Fail loudly: a skipped TypeScript fixture must never look like
+                # a verified one. The obligation itself fails closed too (Flow
+                # reports UNSUPPORTED when the program cannot start), but saying
+                # so here names the missing prerequisite exactly.
+                Fail ("UNSUPPORTED: the TypeScript fixture requires a TypeScript compiler on PATH " +
+                    "('tsc', tested with 5.8.2) and Node >= 22.6 for 'node --test' on .ts files; " +
+                    "'$tool' is missing. No pass is claimed and the demo exits non-zero. " +
+                    "One-time prerequisite: npm i -g typescript@5.8.2")
+            }
             Fail "fixture $Name needs '$tool' on PATH; it is missing, so no pass can be claimed for this fixture"
         }
     }
@@ -299,7 +319,7 @@ function Invoke-OneFixture([string]$Name) {
 }
 
 # ------------------------------------------------------------------ main
-$names = if ($Fixture -eq 'all') { @('rust', 'node', 'python') } else { @($Fixture) }
+$names = if ($Fixture -eq 'all') { @('rust', 'node', 'python', 'typescript') } else { @($Fixture) }
 
 if (-not $env:FLOW_BIN) {
     Write-Host 'building flow (target directory kept outside the repository)...'

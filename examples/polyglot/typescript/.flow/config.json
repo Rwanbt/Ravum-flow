@@ -1,0 +1,22 @@
+{
+  "schema": "flow-config/1",
+  "policy_version": "FLOW-POLICY-1",
+  "execution_boundary": "local-trusted",
+  "obligations": [
+    {
+      "id": "tsc",
+      "program": "tsc",
+      "args": ["--noEmit"],
+      "required": true,
+      "timeout_s": 120
+    },
+    {
+      "id": "node-ts-test",
+      "program": "node",
+      "args": ["--test", "test/math.test.ts"],
+      "required": true,
+      "timeout_s": 120
+    }
+  ],
+  "disabled": false
+}

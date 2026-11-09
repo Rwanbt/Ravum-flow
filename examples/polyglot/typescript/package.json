@@ -1,0 +1,10 @@
+{
+  "name": "polyglot-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free TypeScript fixture verified by Ravum Flow",
+  "scripts": {
+    "test": "node --test test/math.test.ts"
+  }
+}
