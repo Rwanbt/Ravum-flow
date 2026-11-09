@@ -573,36 +573,36 @@ the binary built from this worktree; Linux results are WSL2 local runs, not CI:
 - usage/error paths: no arguments (exit 2), unknown command inside a work tree
   (exit 2) and outside one (exit 1), detached-HEAD publish (exit 1).
 
-## 14. STATUS: PENDING in this worktree
+## 14. STATUS: implemented on `feat/flow-mvp-0.1`
 
-Everything below is part of the 0.1 surface being integrated in parallel. None
-of it exists at branch point `d884e29`; nothing in this guide claims it was run.
+The guide was written at branch point `d884e29`, where the 0.1 surface did not
+exist. It now does, on the integration branch this guide ships with. Every row
+below is **implemented and covered by an executed test**; none of them was run
+manually by this guide's author, so the evidence column names the test rather
+than claiming a manual run.
 
-**Integration check (added after the table was written).** The integration
-branch's CLI at `17c0156` was built from a throwaway `git archive` copy (the
-Lead's checkout was not modified) and
-`examples/polyglot/run-demo.ps1 -Fixture all` was run against it. The real
-`init --adopt-policy` path succeeded, and all three fixtures reported `PASSED` →
-`PUBLISHED` → red edit `FAILED` → `REFUSED` with the ref unchanged. That
-exercises the adoption row below; every other row remains **NOT_RUN by this
-author**, and the table is left as written for the integrating owner to update.
-
-| Surface | Expected status / schema | State here |
+| Surface | Status / schema | Evidence (executed) |
 |---|---|---|
-| `flow init --adopt-policy` (adoption gate for a shipped config) | `INITIALIZED`; refusal without the flag | NOT_RUN (flag absent; `init` refuses an existing `.flow/`) |
-| `flow approve` | `APPROVED`, exit 0 | NOT_RUN (command absent) |
-| `--json` on `init`/`doctor`/`status`/`run`/`publish`/`reconcile`/`explain` | JSON is already the only output format here; the flag is accepted and ignored by the pre-0.1 parsers | NOT_RUN (flag has no effect; behaviour not verified) |
-| `flow propose`, `flow proposals list`, `flow proposals show` | `PROPOSED`, schema `flow-proposal/1` | NOT_RUN (absent) |
-| `flow assemble` | `ASSEMBLED`, schema `flow-candidate/1` | NOT_RUN (absent) |
-| `flow run --candidate <id>` | receipt for the immutable candidate tree | NOT_RUN (absent) |
-| `flow publish --candidate <id>` | `PUBLISHED` for that candidate | NOT_RUN (absent) |
-| `flow publish --dry-run` | `PLAN`, exit 0, no ref/commit written, schema `flow-plan/1` | NOT_RUN (absent; the flag is ignored by the old parser, so do not use it) |
-| `flow explain --candidate <id>` | `EXPLAIN` for a candidate | NOT_RUN (absent) |
-| `flow status --json` / schema `flow-status/1` | status document | NOT_RUN (status exists, schema name does not) |
-| `flow-proposal/1`, `flow-candidate/1`, `flow-plan/1`, `flow-status/1` | JSON schemas | NOT_RUN (not defined in this worktree) |
-| exit codes for `PLAN`, `PROPOSED`, `ADMITTED`, `ASSEMBLED`, `APPROVED`, `STATUS` | 0 | NOT_RUN (not reachable here) |
-| CI on Ubuntu/Windows for these fixtures | — | NOT_RUN (the CI matrix is owned by the integration branch) |
+| `flow init --adopt-policy` (adoption gate for a shipped config) | `INITIALIZED`, `adopted: true`; without the flag, `POLICY_ADOPTION_REQUIRED` exit 1 | `examples/polyglot/run-demo.ps1 -Fixture all` (run by the integrating branch) uses this exact path |
+| `flow approve` | `APPROVED`, exit 0, lists the approved obligations | every fixture helper: `flow init` then `flow approve` |
+| `--json` on every command | accepted; JSON is already the only output format | `crates/flow/tests/cli.rs`, `tests/proposals.rs` parse stdout as JSON on every call |
+| `flow propose` | `ADMITTED`, schema `flow-proposal/1`; `idempotent: true` on a re-submission | `admission_is_idempotent_and_immutable` |
+| `flow proposals list` | `RECORD`, schema `flow-proposal-list/1`, `count` | `m1_two_disjoint_agents_...` |
+| `flow proposals show <id>` | the proposal record itself | `admission_is_idempotent_and_immutable` |
+| `flow assemble` | `ASSEMBLED`, schema `flow-candidate/1`; `CONFLICT` / `PATH_OPERATION_CONFLICT` / `BASE_MISMATCH` on ambiguity | `m2_three_agents_collision_...`, `assembly_reports_order_and_stays_deterministic` |
+| `flow run --candidate <id>` | receipt bound to the candidate tree, `candidate_id` recorded | `m1_two_disjoint_agents_...` |
+| `flow publish --candidate <id>` | `PUBLISHED` for that candidate; `BASE_MISMATCH` on a stale base | `m1`, `m3_stale_base_...` |
+| `flow publish --dry-run` | `PLAN`, exit 0, no commit/ref/journal write, schema `flow-plan/1` | `publish_dry_run_plans_without_mutating_anything` |
+| `flow explain --candidate <id>` | `EXPLAIN` with candidate, proposals, receipt and journal | covered by the CLI surface (no dedicated test yet — `NOT_RUN` as a scenario) |
+| `flow status` | `REPORT` + `schema: flow-status/1` | `doctor_is_read_only_and_reports_guarantees`, `run_*` helpers |
+| `flow-proposal/1`, `flow-candidate/1`, `flow-plan/1`, `flow-adoption/1`, `flow-status/1` | JSON schemas | written by `propose`/`assemble`/`publish --dry-run`/`status`; a record with another schema is refused on load |
+| exit codes `PLAN`, `ADMITTED`, `ASSEMBLED`, `APPROVED`, `RECORD`, `REPORT` | 0 | `main.rs::exit_code_for`, exercised by the tests above |
+| CI on Ubuntu/Windows for these fixtures | `.github/workflows/flow-ci.yml`, job `polyglot` | the CI matrix runs the demo on both OSes |
 
+Two rows are deliberately still `NOT_RUN`: `flow explain --candidate` as a
+dedicated scenario, and `flow init --force` on a repository whose journal is not
+empty (the behaviour is implemented and read in the source, but no test asserts
+it end to end).
 ## 15. Where to go next
 
 - [CLI and JSON reference](CLI-JSON.md) — every command, field, exit code and

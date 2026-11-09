@@ -551,6 +551,7 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
 
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
+        ("schema", Json::str("flow-status/1")),
         ("branch", Json::str(branch)),
         ("head", Json::str(head)),
         ("tree", Json::str(tree)),
