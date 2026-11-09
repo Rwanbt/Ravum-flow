@@ -169,6 +169,14 @@ jobs:
         shell: bash
         run: bash examples/polyglot/run-demo.sh all
 
+      # The Rust fixture links a native test binary. Flow passes PATH through to
+      # obligations, so the job must put the real MSVC toolchain on PATH: on a
+      # bare Windows image a GNU `link.exe` from Git for Windows can shadow it and
+      # the obligation fails at link time (honest FAILED, never a false PASSED).
+      - name: MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: polyglot demo (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

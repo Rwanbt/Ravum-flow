@@ -165,6 +165,8 @@ function Invoke-OneFixture([string]$Name) {
     $temp = Join-Path ([IO.Path]::GetTempPath()) ('flow-demo-polyglot-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $temp | Out-Null
     $work = Join-Path $temp 'work'
+    # Remember the working copy so a failed obligation can print its own log.
+    $script:CurrentWork = $work
     $originalLocation = Get-Location
     try {
         Copy-FixtureTree -Source $source -Destination $work
