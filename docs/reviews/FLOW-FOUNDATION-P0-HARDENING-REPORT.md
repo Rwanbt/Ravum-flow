@@ -1,7 +1,7 @@
 # Flow foundation — P0 hardening report
 
 **Date:** 2026-11-09 (Europe/Paris) · **Branch:** `fix/flow-foundation-proof-gates` · **PR:** #52 (draft, base `feat/flow-verified-foundation`)
-**Code SHA under test:** `9b96011` · **Baseline:** `832f499`
+**Code SHA under test:** `3b51052` · **Baseline:** `832f499`
 **Verdict:** **`READY_FOR_REVIEW`** — the three blocking defects are reproduced, closed and re-tested; every gate fails closed on the attempts made against it. `FOUNDATION_PARTIAL` remains the verdict for the foundation as a whole, and the non-guarantees in §9 are unchanged.
 
 This report is deliberately narrow. It is not a new architecture study, not an ADR ratification, not a release, and not a merge authorization. PR #51 stays a draft and is untouched.
@@ -130,7 +130,7 @@ A local advisory lock now serialises `publish` and `reconcile`. It is a lock fil
 
 ## 8. Verification matrix
 
-| Scenario | Baseline (`832f499`) | Corrected (`9b96011`) | OS | Command | Artefact |
+| Scenario | Baseline (`832f499`) | Corrected (`3b51052`) | OS | Command | Artefact |
 |---|---|---|---|---|---|
 | selective run must not publish | FAIL (published) | PASS | Windows | `cargo test --locked --test cli` | `experiments/p0/baseline/cli-tests-baseline.log` |
 | policy change after run | FAIL (published) | PASS | Windows | idem | idem |
@@ -154,7 +154,7 @@ R0-a/R0-b are **not** tests of this patch. They describe Git and OS risks measur
 
 **Tests executed, not merely discovered (`REPRODUCED`):** 83 tests, 0 ignored — 21 unit, 37 CLI, 25 isolation.
 
-**CI on the final code SHA (`REPRODUCED`):** runs `42680405452` (push) and `42680418661` (pull request) at `9b96011`, both `success`: `ubuntu-latest` 18–20 s, `windows-latest` 1 m 50 s – 1 m 55 s. The job refuses any `ignored` test, requires at least 83 executed passes, and requires each named gate test to appear as `... ok`, so deleting or filtering one fails the build. The raw output is uploaded as `flow-test-output-{ubuntu,windows}-latest`.
+**CI on the final code SHA (`REPRODUCED`):** runs `42682497038` (push) and `42682508126` (pull request) at `3b51052`, both `success`: `ubuntu-latest` 20–21 s, `windows-latest` 1 m 43 s – 1 m 52 s. The previous head `9b96011` was green on runs `42680405452` / `42680418661`. The job refuses any `ignored` test, requires at least 83 executed passes, and requires each named gate test to appear as `... ok`, so deleting or filtering one fails the build. The raw output is uploaded as `flow-test-output-{ubuntu,windows}-latest`.
 
 **Independent adversarial review.** A separate reviewer attacked the diff in its own throwaway worktree and independently reproduced the baseline claim (20 passed / 11 failed on `832f499` at the time). It found **no path that lands a commit carrying a tree other than the receipt's tree**, and every selection, policy-identity, receipt-edit, ref-name, expected-old, index-change and journal-corruption attempt was refused with a specific code. It did find two defects that survived the first correction, both since fixed and both now covered by a test that fails on `832f499`:
 
