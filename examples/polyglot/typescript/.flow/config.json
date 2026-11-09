@@ -13,7 +13,7 @@
     {
       "id": "node-ts-test",
       "program": "node",
-      "args": ["--test", "test/math.test.ts"],
+      "args": ["--experimental-strip-types", "--test", "test/math.test.ts"],
       "required": true,
       "timeout_s": 120
     }

@@ -6,7 +6,7 @@ inside Flow's materialised copy of the verified tree:
 1. `tsc --noEmit` — the type gate. It reads `tsconfig.json` (`strict`,
    `noEmit`) and type-checks `src/` **and** `test/`: the tests are inside the
    compile scope, so a type error in a test is a failed obligation.
-2. `node --test test/math.test.ts` — the execution gate. Node ≥ 22.6 strips
+2. `node --experimental-strip-types --test test/math.test.ts` — the execution gate. Node ≥ 22.6 strips
    the type annotations and runs the real test file through the built-in test
    runner. Type stripping erases annotations, it does not check them: `tsc` is
    what makes them meaningful.
@@ -97,7 +97,7 @@ reports:
 ```
 
 with **exit 0** — a false green: a test obligation that executed nothing would
-be recorded as `PASSED`. Naming the file (`node --test test/math.test.ts`) fails
+be recorded as `PASSED`. Naming the file (`node --experimental-strip-types --test test/math.test.ts`) fails
 closed there instead: Node 20 exits 1 with `ERR_UNKNOWN_FILE_EXTENSION`, so the
 obligation is `FAILED` and nothing can be published. The exact path is a
 deliberate choice, not a missing glob.
@@ -123,7 +123,7 @@ Windows 11, `Node v26.13.0`, `tsc 5.8.2`, `git 2.51.1.windows.1`:
 | Command | Result |
 |---|---|
 | `tsc --noEmit` | PASS (exit 0), no diagnostics |
-| `node --test test/math.test.ts` | PASS (exit 0): 3 tests, 0 failures |
+| `node --experimental-strip-types --test test/math.test.ts` | PASS (exit 0): 3 tests, 0 failures |
 | `flow run` on the fixture index tree | `PASSED`, exit 0, `tsc=PASSED`, `node-ts-test=PASSED` |
 | `flow publish --expected-old <head>` | `PUBLISHED`, exit 0, published tree = receipt tree |
 | `flow run` after the red edit | `FAILED`, exit 1, `tsc=PASSED`, `node-ts-test=FAILED` (exit 1) |
