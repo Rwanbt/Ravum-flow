@@ -1,0 +1,1 @@
+["version", "--==refs/heads/main", "version", "--force", "--proposal", "a\\b", "--obligation", "explain", "--=", "--unknown", ".", "--force", "refs/heads/main", "0000000000000000000000000000000000000000", "--=", "--candidate", "../x", "version"]

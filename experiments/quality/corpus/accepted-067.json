@@ -1,0 +1,1 @@
+["version", "--dry-run", "..", "assemble=..", "--=", "--unknown", ".", ".", "--proposal"]

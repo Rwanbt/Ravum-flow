@@ -1,0 +1,1 @@
+["version", "assemble", "propose", "--proposal=--dry-run", "a\\b", "--force=HEAD"]

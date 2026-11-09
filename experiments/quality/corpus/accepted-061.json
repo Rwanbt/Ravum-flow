@@ -1,0 +1,1 @@
+["version", "assemble", "\u001f", "--task", "..", "--force", "list", "deadbeef", "-1", "init", "--agent", "-1", "green", "--json", "--=", "."]

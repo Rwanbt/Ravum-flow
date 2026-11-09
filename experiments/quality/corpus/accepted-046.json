@@ -1,0 +1,1 @@
+["version", "\u001f", "--force", ".", "---", "init", "deadbeef", "show", "0123456789abcdef0123456789abcdef", "-1", "init", "", "HEAD", "--json", "--=", ".", "deadbeef", "green"]

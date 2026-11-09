@@ -1,0 +1,1 @@
+["version", "propose", "--proposal=a/b", "a\\b"]

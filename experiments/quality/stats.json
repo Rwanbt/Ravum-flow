@@ -1,0 +1,25 @@
+{
+  "harness": "experiments/quality/fuzz/cli_fuzz.py",
+  "target": "flow CLI option parser (crates/flow/src/main.rs)",
+  "seed": 20261110,
+  "iterations": 351,
+  "ok": 103,
+  "usage": 213,
+  "refused": 7,
+  "findings": 28,
+  "elapsed_s": 60.114,
+  "seconds_budget": 60.0,
+  "per_run_timeout_s": 20.0,
+  "toolchain": {
+    "python": "3.13.7",
+    "platform": "win32"
+  },
+  "note": "seed fixes the argument sequence; with --seconds the prefix length depends on machine speed",
+  "first_finding": {
+    "kind": "non-json-stdout",
+    "detail": "Expecting value: line 1 column 1 (char 0): flow \u2014 verified-tree receipts and exact-tree assembly for Git repositories\n       (local, offline, no daemon, no LLM)\n\nUSAGE:\n  flow <command> [options]\n\nSETUP:\n  init [--force] [--adopt-policy]  create .flow/; adopt a repository policy only explicitly\n  approve                           record local approval of the current .flow/config.json\n  doctor                            read-only environment and guarantee report\n  status                            repository, dirty state, receipt, pending",
+    "argv": [
+      "help"
+    ]
+  }
+}
