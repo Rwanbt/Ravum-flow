@@ -63,8 +63,8 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 43 ]; then
-            echo "::error::expected at least 43 executed passing tests, got $passed"
+          if [ "$passed" -lt 80 ]; then
+            echo "::error::expected at least 80 executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -77,6 +77,8 @@ jobs:
             p0b_changing_a_timeout_makes_the_receipt_stale \
             p0b_changing_the_policy_version_makes_the_receipt_stale \
             p0b_a_tampered_receipt_is_not_publishable \
+            p0b_a_timeout_override_is_never_publishable \
+            p0b_an_ambiguous_config_is_refused_not_guessed \
             p0b_explicit_ref_must_name_a_branch \
             p0c_corrupt_journal_is_not_reported_as_reconciled \
             p0c_duplicate_intent_id_requires_a_human \
