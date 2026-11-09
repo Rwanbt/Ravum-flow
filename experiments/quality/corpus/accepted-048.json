@@ -1,1 +1,0 @@
-["version", "--tree", "..", "propose", "--proposal", "--obligations", "refs/heads/main"]
