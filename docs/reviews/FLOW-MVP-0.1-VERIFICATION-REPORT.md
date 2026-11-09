@@ -320,10 +320,23 @@ closing two intents) — both still have their failing-on-baseline tests.
 
 ## 10. CI
 
-| Run | OS | Result |
-|---|---|---|
-| (filled from `gh pr checks 53`) | Ubuntu | see below |
-| (filled from `gh pr checks 53`) | Windows | see below |
+Head `6a0013dc2003844d4f2bcbe5861c2612bb7f9820` (code head `064d008`, the two
+commits above it are documentation only). Two workflow runs, both fully green:
+
+| Run | Trigger | Job | OS | Result | Time |
+|---|---|---|---|---|---|
+| [`42697200214`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42697200214) | push | test | ubuntu-latest | success | 41 s |
+| `42697200214` | push | test | windows-latest | success | 2 m 17 s |
+| `42697200214` | push | polyglot | ubuntu-latest | success | 13 s |
+| `42697200214` | push | polyglot | windows-latest | success | 1 m 50 s |
+| [`42697212449`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42697212449) | pull_request | test | ubuntu-latest | success | 49 s |
+| `42697212449` | pull_request | test | windows-latest | success | 2 m 14 s |
+| `42697212449` | pull_request | polyglot | ubuntu-latest | success | 26 s |
+| `42697212449` | pull_request | polyglot | windows-latest | success | 1 m 7 s |
+
+The test job refuses a build where fewer than 132 tests actually ran, where any
+test is `ignored`, or where any of the 44 named gates is absent from the result
+lines. The polyglot job runs the three real toolchains offline on both OSes.
 
 The CI definition on this branch triggers on `feat/flow-mvp-0.1` and on every
 stacked base, runs `cargo fmt --check`, `cargo clippy -D warnings`, the gated test
@@ -332,10 +345,9 @@ demo on both OSes.
 
 ## 11. Verdict
 
-**`MVP_PARTIAL`** at the time this section was first written; the final verdict
-for the head under test is stated in §13, with the exact reasons. The distinction
-matters: `MVP_REVIEW_READY` requires every acceptance box to be factually true,
-and this branch is not `PRODUCTION_READY` in any case.
+**`MVP_PARTIAL`.** The engine works, the scenarios are tests, and CI is green on
+the head under test. Three acceptance boxes are not factually closed, so
+`MVP_REVIEW_READY` would be a false claim (§13.1).
 
 ## 12. Human merge checklist (nothing here is automatic)
 
@@ -352,11 +364,56 @@ and this branch is not `PRODUCTION_READY` in any case.
 
 ## 13. Final state of the head under test
 
-Filled after the last verified command of this wave (§13.1).
+**Head reviewed:** `6a0013d` (code `064d008` + documentation). **Base:** `d884e29`.
+**PR:** #53, draft, base `fix/flow-foundation-proof-gates`, not merged.
 
-### 13.1 Final verdict
+### 13.1 Final verdict: `MVP_PARTIAL`
 
-`MVP_REVIEW_READY` requires: all gates L0–L7 green, every scenario a test,
-CI green on the head, docs and vault consistent. Where any of these failed, the
-honest verdict is `MVP_PARTIAL` and the failing box is named below rather than
-argued away.
+Everything below is a statement about the head above, with its evidence.
+
+**Closed and proven**
+
+1. A local, offline, provider-free multi-agent cycle works end to end: propose →
+   assemble → run --candidate → publish --candidate, with the published tree
+   equal to the verified tree (M1, M2, M3, M6 are tests; CI green).
+2. No Flow command writes the user's worktree or index (M6 byte comparison).
+3. Fail-closed gates hold under adversarial attack on the pre-0.1 surface: 76 of
+   93 scenarios refuted, all identity/scope/durable gates held.
+4. The four P0 workspace-escape findings are fixed in code and covered by a
+   regression test; the converted-checkout false green and the silently ignored
+   options are fixed and covered.
+5. 132 tests executed, 0 ignored, on Windows locally and on Ubuntu + Windows in
+   CI, with 44 named gates and a test-count floor.
+6. Three real toolchains (Rust, Node, Python) run offline through the product on
+   both OSes, including a refusal after a documented red edit.
+
+**Not closed (this is why the verdict is `MVP_PARTIAL`)**
+
+1. **The independent adversarial harness was not re-run against this head**
+   (`NOT_RUN`). It was written for `d884e29` and its fixtures predate the
+   adoption gate, so its verdicts would be misleading without an update. The P0
+   fixes rest on this branch's own regression tests, not on an independent
+   replay.
+2. **Open non-P0 findings**: FIL-15 (provenance of a cloned policy is mitigated,
+   not closed), PRF-01/02/04/05/06, FIL-11, PRC-10, CMP-01. None authorizes a
+   publication that should be refused, but they are open.
+3. **`vault.py check` is red** for four pre-existing normalization-hash
+   mismatches in `projects/rimatrix` and `projects/seno-daw`, files this session
+   never touched. The vault updates for this session are written but **not
+   committed** (contract v4 forbids committing a red vault without an explicit
+   human instruction).
+4. **Performance is `PERFORMANCE_UNPROVEN`**: `H4` is open, no confirmatory
+   campaign exists, and no claim of productivity gain is made.
+5. **TypeScript specifically** is not exercised: the fixture is JavaScript
+   (`node --test`). A `tsc --noEmit` obligation is documented but `NOT_RUN`.
+
+**Next actions, in order**
+
+1. Update `experiments/mvp-qa/attacks.py` to adopt the policy (`flow approve`)
+   and to enable its seven `FUT-*` scenarios, then re-run it against this head;
+   fix or accept what it finds.
+2. Close FIL-15 (display the adopted policy digest and origin in `doctor`/
+   `status`) and PRF-06 (`explain --tree` must reject paths outside `.flow/`).
+3. Decide `H4` before any measurement campaign.
+4. Have a human review the stacked PRs #53 → #52 → #51 and decide the merge
+   order. Nothing is merged, no release is published, no ADR is ratified.
