@@ -74,6 +74,33 @@ $specs = @{
     }
 }
 
+<#
+    Print the tail of every non-PASSED obligation's stderr/stdout log. Bounded on
+    purpose: a failing CI job must show the real error without dumping megabytes.
+#>
+function Show-ObligationLogs {
+    param(
+        [Parameter(Mandatory)] [string]$Work,
+        [Parameter(Mandatory)] $Receipt
+    )
+    $tree = $Receipt.tree_oid
+    if (-not $tree) { return }
+    $logDir = Join-Path $Work ".flow/logs/$tree"
+    if (-not (Test-Path -LiteralPath $logDir)) { return }
+    foreach ($ob in $Receipt.obligations) {
+        if ($ob.status -eq 'PASSED') { continue }
+        foreach ($stream in @('stderr', 'stdout')) {
+            $path = Join-Path $logDir "$($ob.id).$stream.log"
+            if (-not (Test-Path -LiteralPath $path)) { continue }
+            $lines = @(Get-Content -LiteralPath $path -ErrorAction SilentlyContinue)
+            if ($lines.Count -eq 0) { continue }
+            Write-Host "  --- $($ob.id) $stream (last 40 of $($lines.Count) lines) ---"
+            $tail = if ($lines.Count -gt 40) { $lines[($lines.Count - 40)..($lines.Count - 1)] } else { $lines }
+            foreach ($line in $tail) { Write-Host "  $line" }
+        }
+    }
+}
+
 function Invoke-FlowRaw {
     param([string[]]$Arguments)
     $output = & $script:flowBin @Arguments
@@ -182,7 +209,12 @@ function Invoke-OneFixture([string]$Name) {
             $indexTree = (& git write-tree).Trim()
             $run1 = Invoke-Flow -Arguments @('run', '--json') -Expect @(0)
             $receipt1 = $run1.Json
-            if ($receipt1.status -ne 'PASSED') { Fail "expected PASSED, got $($receipt1.status)" }
+            if ($receipt1.status -ne 'PASSED') {
+        # Print the actual obligation output: a bare status is not diagnosable,
+        # and a failing CI run must say why in its own log.
+        Show-ObligationLogs -Work $work -Receipt $receipt1
+        Fail "expected PASSED, got $($receipt1.status)"
+    }
             if ($receipt1.tree_oid -ne $indexTree) {
                 Fail "receipt tree $($receipt1.tree_oid) is not the index tree $indexTree"
             }

@@ -81,3 +81,79 @@ Not implemented, and therefore not promised: VFS/CRDT, scheduler, merge semantic
 
 ## Decision needed before architecture freeze
 H1–H6 in [decision register](DECISION_REGISTER.md). Favor **candidate O3** for evaluation, not as accepted fact, unless O0/O1 wins empirical cost/correctness.
+---
+
+## MVP 0.1 — proposals, candidates and verified publication (implemented on `feat/flow-mvp-0.1`)
+
+This section describes what the code on this branch **does**, not a ratified
+architecture. The ADRs it implies remain `PROPOSED`.
+
+### Objects and identities
+
+| Object | Identity | Mutability | Where it lives |
+|---|---|---|---|
+| Proposal | `sha256("flow-proposal/1" + agent + task + base + idempotency_key)[0..32]` | immutable: an edit is a new proposal | `.flow/proposals/<id>.json` + `<id>.patch` |
+| Candidate | `sha256("flow-candidate/1" + base + tree + ordered proposal ids)[0..32]` | immutable: same inputs, same id | `.flow/candidates/<id>.json` |
+| Receipt | Git tree OID (the complete slot) | replaced only by a new complete run on that tree | `.flow/receipts/<tree>.json` |
+| Journal | none — append-only sequence | append-only, fsynced | `.flow/journal.jsonl` |
+| Adoption | policy digest | replaced only by an explicit `approve` | `.flow/adopted.json` |
+
+Namespaces are not interchangeable: a **tree OID** identifies verified content, a
+**commit OID** identifies a prepared publication, a **proposal id** identifies an
+attributed change set, and a **context id** identifies tree + effective policy +
+toolchain. Comparing across namespaces is a defect, not a shortcut.
+
+### Transport decision (provisional)
+
+A proposal is a **Git patch** (`git diff --binary`, byte-faithful for renames,
+modes, symlinks and binary blobs as Git itself represents them), applied with
+`git apply --cached --binary` to an index seeded by `git read-tree <base>` and
+written with `git write-tree`. The alternative — referencing an agent's own
+commit/tree — is not implemented; it would require the agent's objects to exist
+in this repository's object store, which a remote agent does not have.
+
+Consequences, stated honestly: the patch must apply to the exact base; the MVP
+does no 3-way merge and no rename detection (`--no-renames`), so a rename
+proposal is represented as a delete + an add and a rename/rename collision is
+refused as a path collision.
+
+### Pipeline
+
+```
+propose  ──> validation (identity, base is a commit, patch applies in a temp index,
+             paths safe, tree representable) ──> immutable record
+assemble ──> same base? same path operations compatible? patches apply in order
+             in ONE temp index ──> candidate tree ──> immutable record
+run      ──> materialise THAT tree in a scratch directory (`.git` link removed),
+             verify fidelity, run the declared obligations, seal a receipt
+publish  ──> receipt complete + policy/context still equal + candidate base == CAS old
+             + ref is a real branch ──> intent ──> CAS ──> read-back ──> outcome
+```
+
+Every stage is separately observable through the CLI and through `.flow/`
+artefacts; `flow explain --candidate <id>` joins proposal, candidate, receipt and
+journal for one tree.
+
+### Invariants (each has a test that fails if violated)
+
+1. No Flow command writes the user's worktree or index for a proposal, candidate,
+   verification or publication. (M6, `snapshot` byte comparison)
+2. A receipt is valid only for the exact tree it names and the exact effective
+   policy digest it embedded. (P0-A/P0-B gates)
+3. A candidate that is verified is the candidate that is published: the receipt's
+   tree must equal the candidate's tree, and the prepared commit must carry it.
+4. An interrupted publication is resolved by observation, never by replay.
+   (M5, journal gates)
+5. A ref is moved only by CAS from an expected old OID, only for a real branch
+   ref, and the result is read back. (`REF_IS_SYMREF`, `NEEDS_RECONCILIATION`)
+6. A policy is executed only in a working copy that adopted its digest.
+7. Fail-closed: anything not proven is refused with a stable machine code.
+
+### Rejected shortcuts
+
+- No second CAS/journal/receipt engine for candidates: `run --candidate` and
+  `publish --candidate` call the same functions as the index path.
+- No semantic merge, no AST merge, no automatic conflict resolution: overlap is
+  diagnosed, and resolution is an explicit act by the operator or the agent.
+- No daemon, no database, no network, no provider: the whole pipeline is local
+  processes over Git objects and files.

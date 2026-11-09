@@ -1,5 +1,5 @@
 # Ravum Flow
-> **Status: minimal MVP on `feat/flow-verified-foundation` — not production ready.**  
+> **Status: MVP 0.1 on `feat/flow-mvp-0.1` (draft PR #53) — not production ready, not merged.**  
 > This branch ships a small local CLI (`flow`) that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
@@ -10,21 +10,55 @@ It is **not** the [Ravum programming language](https://github.com/Rwanbt/Ravum),
 ## Minimal CLI — implemented and tested
 
 ```bash
-cargo build --release
-./target/release/flow init          # create .flow/ (config, journal, receipts)
-./target/release/flow doctor        # read-only: git, hooks, toolchains, guarantee limits
+cargo build --release                     # dependency-free, offline
+
+flow init                                 # create .flow/ ; adopts the policy it creates
+flow doctor                               # read-only: git, hooks, toolchains, limits, lock, adoption
 git add -A
-./target/release/flow run           # verify the INDEX tree in a disposable copy
-./target/release/flow publish       # ref CAS + durable intent/outcome journal
+flow run                                  # verify the INDEX tree in a disposable copy
+flow publish --expected-old <commit>      # ref CAS + durable intent/outcome journal
 ```
+
+Two or three agents, without any provider, daemon or network:
+
+```bash
+BASE=$(git rev-parse HEAD)
+
+# each agent edits its own copy and exports a Git patch (any tool, any model)
+git diff --binary "$BASE" > /tmp/agent-a.patch      # generated against BASE
+
+flow propose --agent A --task T1 --base "$BASE" --patch /tmp/agent-a.patch --key a1
+flow propose --agent B --task T2 --base "$BASE" --patch /tmp/agent-b.patch --key b1
+flow proposals list
+
+flow assemble --proposal <idA> --proposal <idB>      # immutable candidate tree, nothing moved
+flow run --candidate <candidate-id>                 # verify THAT tree
+flow publish --candidate <candidate-id> --expected-old "$BASE" --dry-run
+flow publish --candidate <candidate-id> --expected-old "$BASE"
+```
+
+If two agents touch the same hunk, `assemble` refuses with `CONFLICT` (or
+`PATH_OPERATION_CONFLICT` for rename/delete/mode collisions) and names the
+failing proposal. Resolution is explicit: publish the disjoint subset, then
+re-propose against the new base. A stale base is `BASE_MISMATCH`, never a forced
+update. `--dry-run` performs the whole preflight and prints a `PLAN` without
+creating a commit, moving a ref or writing the journal.
 
 | Command | State | Guarantee actually delivered |
 |---|---|---|
+| `init` | implemented | creates config/journal/receipts; adopts the policy it writes (`--adopt-policy` is required to adopt a `.flow/config.json` that arrived with a clone); never truncates a journal, a receipt or a proposal |
+| `approve` | implemented | records local approval of the current policy digest; the approval is a gate, not a formality |
+| `propose` | implemented | immutable, attributed proposal (agent, task, idempotency key, pinned base); applied only to a temporary index; same key + same bytes = same id, same key + different bytes = `IDEMPOTENCY_CONFLICT` |
+| `proposals list/show` | implemented | deterministic listing of admitted proposals |
+| `assemble` | implemented | immutable candidate tree from proposals sharing one base, in explicit order; ambiguity is refused, never merged silently |
+| `run --candidate` | implemented | verifies the candidate tree with the same receipt engine; the receipt names the tree, the candidate and the effective policy |
+| `publish --candidate` | implemented | requires a complete `PASSED` receipt for that tree, the candidate base equal to the CAS old OID, a real branch ref (no symref), and re-reads the ref after the CAS |
+| `publish --dry-run` | implemented | full preflight, `PLAN` output, zero mutation |
 | `init` | implemented | creates config/journal/receipts; refuses to overwrite without `--force` |
-| `doctor` | implemented | read-only report; lists what is **not** guaranteed |
-| `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents |
-| `run` | implemented | exports the exact index tree to a directory Flow owns (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID **and** to the effective policy digest. `--obligation ID` is diagnostic only: the run is `PARTIAL` and is never publishable |
-| `publish` | implemented (ref-only) | requires a **complete** `PASSED` receipt for that exact tree whose policy digest still matches the current config; verifies the receipt's integrity and every required obligation, appends a durable intent, re-reads the ref, then `git update-ref` CAS. Destination must be a full `refs/heads/...` ref; a tree the ref already carries is `ALREADY_PUBLISHED`. Outcomes `PUBLISHED` / `REFUSED` with a machine `code`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
+| `doctor` | implemented | read-only report; lists what is **not** guaranteed, plus the lock attribution and the policy adoption state |
+| `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents; a corrupt journal is an error, never "0 pending" |
+| `run` | implemented | exports the exact tree to a directory Flow owns (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID **and** to the effective policy digest. `--obligation ID` is diagnostic only: the run is `PARTIAL` and is never publishable |
+| `publish` | implemented (ref-only) | requires a **complete** `PASSED` receipt for that exact tree whose policy digest still matches the current config; verifies the receipt's integrity and every required obligation, appends a durable intent, re-reads the ref, then `git update-ref` CAS, then reads the ref back. Destination must be a real `refs/heads/...` ref (a symref is `REF_IS_SYMREF`); a tree the ref already carries is `ALREADY_PUBLISHED`. Outcomes `PUBLISHED` / `REFUSED` with a machine `code`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
 | `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref. An unreadable journal is `CORRUPT_JOURNAL` or `UNKNOWN_OUTCOME` with `manual_required: true` and a non-zero exit — never a successful empty reconciliation |
 | `explain` | implemented | receipt + journal entries for a tree |
 | `disable` / `enable` | implemented | mutating commands refuse while disabled |
@@ -33,9 +67,29 @@ git add -A
 
 **Non-guarantees (by design in this MVP):** no OS sandbox (obligations run with your rights and a scrubbed environment), no hook dispatch of its own — the Git plumbing it calls can still run `post-checkout` on `worktree add` and `reference-transaction` on `update-ref` — no completeness proof of the build context, no working-tree checkout after publishing, single local writer only. The receipt `integrity` digest detects accidental corruption and casual edits; it is not a signature, so anyone who can write `.flow/receipts` can forge a receipt. A tree this host cannot reproduce faithfully (case collisions, symlinks without `core.symlinks`, gitlinks) is refused rather than certified. The local advisory lock serialises Flow processes but does not fence an external `git` writer. Untrusted code execution is `UNSUPPORTED`.
 
-**Tested platforms:** Windows 11 + Rust 1.95 (local, see the verification report). Linux is exercised by CI only; a claim that is not in the report is not a claim.
+**Polyglot verification** — no language adapter is claimed; Flow runs the commands the policy declares:
 
-See [the verified-foundation report](docs/reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md) for evidence, measured limitations and residual risks.
+| Fixture | Obligations | Offline? |
+|---|---|---|
+| `examples/polyglot/rust` | `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --locked --offline` | yes (no dependencies) |
+| `examples/polyglot/node` | `node --test` (built-in runner) | yes (no `npm install`) |
+| `examples/polyglot/python` | `python -m unittest discover -v` | yes (stdlib) |
+
+```bash
+pwsh -File examples/polyglot/run-demo.ps1 -Fixture all   # Windows
+bash examples/polyglot/run-demo.sh all                   # Linux
+```
+
+Each demo copies the fixture to a throw-away directory, runs `init --adopt-policy`,
+verifies, publishes, applies the fixture's documented red edit, and shows that
+`run` fails and `publish` is refused. Nothing is written into this repository.
+
+**Tested platforms:** 129 tests executed on Windows 11 (Rust 1.95); Ubuntu and
+Windows in CI. A claim that is not in the report is not a claim.
+
+See [the MVP 0.1 verification report](docs/reviews/FLOW-MVP-0.1-VERIFICATION-REPORT.md),
+the [user guide](docs/MVP-USER-GUIDE.md), the [CLI/JSON contract](docs/CLI-JSON.md)
+and the [foundation report](docs/reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md).
 
 ## Work starts with evidence, not assumptions
 
@@ -58,6 +112,17 @@ One physical workspace does **not** give arbitrary processes distinct isolated v
 - [S9 experiment design](docs/BENCHMARK_S9.md) · [Security test matrix](docs/SECURITY_TESTS.md)
 - [Ravum / Flow boundary](docs/RAVUM_BOUNDARY.md) · [Traceability](docs/TRACEABILITY.md)
 - **[DeepSeek multi-agent GOAL — first review/decision phase](docs/DEEPSEEK_GOAL.md)**
+
+## What Flow does not do
+
+No OS sandbox (obligations run with your rights; untrusted code execution is
+`UNSUPPORTED`). No hook execution of Flow's own (the Git plumbing may still run
+`post-checkout`/`reference-transaction`; a blocking one aborts the command). No
+completeness proof of the build context. The receipt digest is integrity, not a
+signature. The lock serialises Flow processes but does not fence an external
+`git` writer. `publish` moves refs only: HEAD, index and worktree can diverge
+afterwards. File types this host cannot represent faithfully (case collisions,
+gitlinks, escaping symlinks, reserved names) are refused, not repaired.
 
 ## Repository workflow
 

@@ -17,10 +17,28 @@ No choice below is accepted merely because documentation has been uploaded. Mark
 | D3 | S9 protocol frozen | DRAFT | paired benchmark with real worktrees and tools | budget, threshold, seeds, gates |
 | D4 | reviewed human decision and scoped GO | PARTIAL (planning + R0 granted; D4 not closed) | separate planning, fixture and implementation permissions | dated explicit acceptance |
 
+## Mandate of 2026-11-09 (bounded, second wave) — recorded, not ratified
+The owner message that opened the MVP 0.1 wave is a **bounded technical mandate**, not a decision:
+it authorizes Flow branches, synthetic fixtures, tests, CI and **draft** PRs only. It does not
+ratify `H1`/`H3`/`H4`/`H6`/`H7`/`H8`, does not authorize a merge into `dev`/`main`, does not change
+branch protection, does not authorize a release or real secrets, and does not authorize any write,
+build or branch in `Rwanbt/Ravum`.
+
+| Recorded fact | Value |
+|---|---|
+| Branch | `feat/flow-mvp-0.1`, stacked on `fix/flow-foundation-proof-gates` (`d884e29`) |
+| PR | #53 (draft, base `fix/flow-foundation-proof-gates`) |
+| Scope actually executed | lock contract `flow-lock/2`; bounded Git execution; proposals/candidates; candidate `run`/`publish`; `--dry-run`; policy adoption gate; symref refusal; polyglot fixtures + demo; tests; CI |
+| Not executed | confirmatory S9 (`H4`), OS sandbox (`H3`), hook execution, ADR ratification, any merge |
+| Performance claim | none — `PERFORMANCE_UNPROVEN`; the existing S9 pilot stays exploratory |
+
 ## Scope of authorizations
 - `GO_PLANNING` = documents/issues/research only.
 - `GO_R0_FIXTURES` = **GRANTED 2026-11-09** by the owner's operational GOAL, bounded to: branch `feat/flow-verified-foundation`, disposable synthetic fixtures, fictitious canaries, no real credentials, no Ravum modification, pilot-scale measurement only.
 - `GO_R1`…`GO_R7` = separate scoped authorizations after each predecessor's evidence. The same GOAL permits only the *smallest useful core* after the R0 gate, with tests and CI; it is not a general implementation permission.
+- `GO_MVP_0_1` = **GRANTED 2026-11-09** by the owner message (second wave), bounded to: branches
+  `feat/flow-mvp-0.1` and the stacked bases, disposable synthetic fixtures, fictitious canaries,
+  tests/CI/draft PRs, no merge, no release, no ADR ratification, no Ravum write.
 - `GO_PRODUCTION` = future release authorization, not implied.
 
 ## Decisions this GOAL does **not** ratify
