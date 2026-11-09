@@ -157,7 +157,14 @@ pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, St
             "journal_preserved",
             Json::Bool(state::journal_path(root).exists()),
         ),
-        ("note", Json::str("no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations; .flow/.gitignore keeps Flow state out of the verified tree")),
+        (
+            "note",
+            Json::str(if config.obligations.is_empty() {
+                "no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations; .flow/.gitignore keeps Flow state out of the verified tree"
+            } else {
+                "the adopted policy declares obligations; `.flow/.gitignore` keeps Flow state out of the verified tree"
+            }),
+        ),
     ]))
 }
 

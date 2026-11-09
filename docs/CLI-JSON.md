@@ -778,43 +778,32 @@ See §2. Additional statuses in this worktree: `VERSION`, `REPORT`,
 `NEEDS_RECONCILIATION` (1). Any future status that is not added to the
 allowlist exits 1 by construction.
 
-## 10. Planned commands and schemas — NOT_RUN
+## 10. The 0.1 surface — implemented on `feat/flow-production-candidate`
 
-These are part of the final 0.1 surface. They do **not** exist in this
-worktree, so their JSON field lists are deliberately not documented here; only
-the command shape, status and schema name from the specification are repeated.
-Do not treat this section as evidence of implementation.
+This document was first written at `d884e29`, where the multi-agent surface did not exist. It does
+now. The table below is the authoritative status; the field lists above (§4–§9) describe the commands
+that already existed at `d884e29` and are unchanged except where this section says otherwise.
 
-`flow init --adopt-policy` is the one exception to the NOT_RUN label: the
-integration branch's CLI at `17c0156` was built in a throwaway copy and driven
-by `examples/polyglot/run-demo.ps1 -Fixture all`, which exercised the real
-adoption path on all three fixtures. Every other row below is unexecuted by
-this author.
-
-| Command | Expected status | Schema | State |
+| Command | Status emitted | Schema | Evidence |
 |---|---|---|---|
-| `flow init --adopt-policy` | `INITIALIZED`; refuses a shipped config without the flag | — | NOT_RUN |
-| `flow approve` | `APPROVED`, exit 0 | — | NOT_RUN |
-| `flow propose --agent A --task T1 --base <commit> --patch <file> [--key K] [--json]` | `PROPOSED` | `flow-proposal/1` | NOT_RUN |
-| `flow proposals list [--json]` | list document | `flow-proposal/1` (elements) | NOT_RUN |
-| `flow proposals show <id> [--json]` | proposal document | `flow-proposal/1` | NOT_RUN |
-| `flow assemble --proposal <id> [--proposal <id>]... [--json]` | `ASSEMBLED` (`ADMITTED` is in the specified status list) | `flow-candidate/1` | NOT_RUN |
-| `flow run --candidate <id> [--obligation ID]... [--timeout S] [--json]` | receipt for the candidate tree | `flow-receipt/2` expected (not confirmed) | NOT_RUN |
-| `flow publish --candidate <id> --dry-run [--json]` | `PLAN`, exit 0, no ref/commit written | `flow-plan/1` | NOT_RUN |
-| `flow publish --candidate <id> ...` (real) | `PUBLISHED` | — | NOT_RUN |
-| `flow explain --candidate <id> [--json]` | `EXPLAIN` | — | NOT_RUN |
-| `flow status --json` | status document | `flow-status/1` | NOT_RUN |
-| `flow reconcile [--json]` | as §5.5 | — | flag NOT_RUN (command implemented) |
+| `flow init --adopt-policy` | `INITIALIZED` (`adopted: true`, `adoption_source`); without the flag on a shipped config: `POLICY_ADOPTION_REQUIRED`, exit 1 | — | `examples/polyglot/run-demo.ps1` (four fixtures), CI job `polyglot` |
+| `flow approve` | `APPROVED` + the exact obligation commands and the policy digest | — | every fixture helper; `m9_a_hostile_cloned_repository_cannot_execute_or_escape` |
+| `flow propose` | `ADMITTED` (`idempotent: true` on re-submission); `IDEMPOTENCY_CONFLICT`, `PATCH_REFUSED`, `BASE_INVALID`, `FORBIDDEN_PATH` | `flow-proposal/1` | `admission_is_idempotent_and_immutable`, `proposals_outside_the_trusted_surface_are_refused` |
+| `flow proposals list` | `RECORD` + `count` | `flow-proposal-list/1` | `m1_two_disjoint_agents_…` |
+| `flow proposals show <id>` | the proposal record; `INVALID_RECORD_ID` for a non-hex id | `flow-proposal/1` | `m10_a_record_from_another_schema_is_refused` |
+| `flow assemble` | `ASSEMBLED`; `BASE_MISMATCH`, `PATH_OPERATION_CONFLICT`, `CONFLICT`, `DUPLICATE_PROPOSAL`, `UNKNOWN_PROPOSAL` | `flow-candidate/1` | M1, M2, `assembly_reports_order_and_stays_deterministic`, `m8_…` |
+| `flow run --candidate <id>` | receipt whose `candidate_id` and `tree_oid` name that candidate; `UNKNOWN_CANDIDATE`, `CANDIDATE_TREE_MISSING` | `flow-receipt/2` | M1 |
+| `flow publish --candidate <id> --dry-run` | `PLAN`, exit 0, no commit/ref/journal write | `flow-plan/1` | `publish_dry_run_plans_without_mutating_anything` |
+| `flow publish --candidate <id> --expected-old <oid>` | `PUBLISHED`; `BASE_MISMATCH` on a stale base, `NO_RECEIPT` without a verified candidate | — | M1, M3, `publishing_a_candidate_requires_a_verified_receipt` |
+| `flow explain --candidate <id>` | `EXPLAIN` + `proposals`, `receipt_trust`, `receipt_status_display`, `evidence_complete`, `missing_logs` | — | `status_and_explain_qualify_a_tampered_receipt`, `explain_reports_missing_logs_as_incomplete_evidence` |
+| `flow status --json` | `REPORT`, schema `flow-status/1`, `policy` block, `latest_receipt` with `trust` | `flow-status/1` | `status_reports_policy_provenance` |
 
-Summary of the planned statuses and exit codes: `PLAN`, `PROPOSED`, `ADMITTED`,
-`ASSEMBLED`, `APPROVED`, `STATUS` exit 0; `REFUSED` keeps exit 1. The
-candidate-flow semantics that will be documented once executable: `run` without
-`--candidate` verifies the Git index tree, `run --candidate` verifies the
-immutable candidate tree; `PASSED` requires the whole declared policy;
-`--obligation` yields `PARTIAL` (exit 1) and is never publishable; failure
-statuses never publish; the receipt stays bound to tree OID + effective policy
-digest + context.
+Two behaviour changes matter here and are documented in `FLOW-PRODUCTION-COMPATIBILITY.md`: an
+identifier that is not a hex object/record id is refused (`INVALID_TREE_ID` / `INVALID_RECORD_ID`),
+and `status`/`explain` refuse to present a receipt whose digest no longer matches as `PASSED`.
 
+The exit-code list in §2 is extended by the statuses above: `ADMITTED`, `ASSEMBLED`, `PLAN`,
+`APPROVED`, `RECORD` and `REPORT` exit 0; every refusal and `ERROR` exits 1; usage errors exit 2.
 ## 11. Schema versioning and compatibility policy
 
 | Artifact | Version token | Enforcement in this worktree |

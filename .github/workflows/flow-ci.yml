@@ -221,6 +221,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      # The TypeScript fixture declares `tsc --noEmit`. The compiler is a pinned
+      # one-time prerequisite, not a runtime dependency: without it the required
+      # obligation fails closed instead of skipping.
+      - name: TypeScript compiler (polyglot TypeScript fixture)
+        run: npm install -g typescript@5.8.2
+
       - name: polyglot demo (Linux)
         if: runner.os == 'Linux'
         shell: bash
