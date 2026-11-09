@@ -578,6 +578,15 @@ the binary built from this worktree; Linux results are WSL2 local runs, not CI:
 Everything below is part of the 0.1 surface being integrated in parallel. None
 of it exists at branch point `d884e29`; nothing in this guide claims it was run.
 
+**Integration check (added after the table was written).** The integration
+branch's CLI at `17c0156` was built from a throwaway `git archive` copy (the
+Lead's checkout was not modified) and
+`examples/polyglot/run-demo.ps1 -Fixture all` was run against it. The real
+`init --adopt-policy` path succeeded, and all three fixtures reported `PASSED` →
+`PUBLISHED` → red edit `FAILED` → `REFUSED` with the ref unchanged. That
+exercises the adoption row below; every other row remains **NOT_RUN by this
+author**, and the table is left as written for the integrating owner to update.
+
 | Surface | Expected status / schema | State here |
 |---|---|---|
 | `flow init --adopt-policy` (adoption gate for a shipped config) | `INITIALIZED`; refusal without the flag | NOT_RUN (flag absent; `init` refuses an existing `.flow/`) |

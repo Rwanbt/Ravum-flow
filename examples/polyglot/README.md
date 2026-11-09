@@ -89,9 +89,14 @@ exists and uses a shipped config implicitly.
 The drivers therefore detect the capability and, when the flag is absent, print
 one explicit line saying the shipped config is used as-is. That fallback is a
 pre-adoption behaviour, recorded here as a limitation, not a claim that the
-adoption gate has been exercised. The adoption path itself was **NOT_RUN** in
-this branch; see [the user guide](../../docs/MVP-USER-GUIDE.md) for the status
-table.
+adoption gate has been exercised.
+
+**Integration check (added later).** The integrated CLI at `17c0156` was built
+from a throwaway `git archive` copy and both drivers were run against it with
+`-Fixture all` / `all`: all three fixtures took the real
+`init --adopt-policy` path and passed the `PASSED` → `PUBLISHED` → `FAILED` →
+`REFUSED` sequence. The fallback text above still applies to the pre-adoption
+binary in this worktree.
 
 ## 4. Measured results (2026-11-09, local)
 

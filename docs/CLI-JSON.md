@@ -785,6 +785,12 @@ worktree, so their JSON field lists are deliberately not documented here; only
 the command shape, status and schema name from the specification are repeated.
 Do not treat this section as evidence of implementation.
 
+`flow init --adopt-policy` is the one exception to the NOT_RUN label: the
+integration branch's CLI at `17c0156` was built in a throwaway copy and driven
+by `examples/polyglot/run-demo.ps1 -Fixture all`, which exercised the real
+adoption path on all three fixtures. Every other row below is unexecuted by
+this author.
+
 | Command | Expected status | Schema | State |
 |---|---|---|---|
 | `flow init --adopt-policy` | `INITIALIZED`; refuses a shipped config without the flag | — | NOT_RUN |
@@ -843,7 +849,8 @@ Compatibility rules this document asserts, all grounded in the code above:
 
 ## 12. NOT_RUN inventory
 
-- `init --adopt-policy`, `approve`, `--json` flags, `status --json`.
+- `init --adopt-policy` (integration-checked at `17c0156` through the drivers,
+  not part of this worktree), `approve`, `--json` flags, `status --json`.
 - `propose`, `proposals list`, `proposals show`, `assemble`,
   `run --candidate`, `publish --candidate`, `publish --dry-run`,
   `explain --candidate`.
