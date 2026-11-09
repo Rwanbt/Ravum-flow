@@ -3,6 +3,10 @@
 **Date:** 2026-11-09 (Europe/Paris) · **Branch:** `feat/flow-verified-foundation` · **PR:** #51 (draft, base `dev`)
 **Verdict:** **`FOUNDATION_PARTIAL`** — a useful core, tested on Windows, with every unqualified capability refused safely. This is **not** production-ready and **not** a proof of general safety.
 
+> **Correction applied afterwards (2026-11-09).** The verification core described in this report contained three blocking defects that this report did not catch: a selective run was recorded as a complete `PASSED` proof, a receipt stayed valid after the verification policy changed, and an unreadable journal was reported as a successful reconciliation. They were reproduced with failing tests on `832f499` and closed on `fix/flow-foundation-proof-gates` (PR #52). See [FLOW-FOUNDATION-P0-HARDENING-REPORT.md](FLOW-FOUNDATION-P0-HARDENING-REPORT.md).
+>
+> The evidence below is left exactly as it was recorded. It describes the state **before** the correction and must not be read as a statement about the corrected gate.
+
 ---
 
 ## 1. Baseline, modules and commits

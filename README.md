@@ -23,15 +23,15 @@ git add -A
 | `init` | implemented | creates config/journal/receipts; refuses to overwrite without `--force` |
 | `doctor` | implemented | read-only report; lists what is **not** guaranteed |
 | `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents |
-| `run` | implemented | exports the exact index tree to a throwaway directory (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID |
-| `publish` | implemented (ref-only) | requires a `PASSED` receipt for that exact tree, appends a durable intent, re-reads the ref, then `git update-ref` CAS; outcomes `PUBLISHED` / `REFUSED`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
-| `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref |
+| `run` | implemented | exports the exact index tree to a directory Flow owns (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID **and** to the effective policy digest. `--obligation ID` is diagnostic only: the run is `PARTIAL` and is never publishable |
+| `publish` | implemented (ref-only) | requires a **complete** `PASSED` receipt for that exact tree whose policy digest still matches the current config; verifies the receipt's integrity and every required obligation, appends a durable intent, re-reads the ref, then `git update-ref` CAS. Destination must be a full `refs/heads/...` ref; a tree the ref already carries is `ALREADY_PUBLISHED`. Outcomes `PUBLISHED` / `REFUSED` with a machine `code`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
+| `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref. An unreadable journal is `CORRUPT_JOURNAL` or `UNKNOWN_OUTCOME` with `manual_required: true` and a non-zero exit — never a successful empty reconciliation |
 | `explain` | implemented | receipt + journal entries for a tree |
 | `disable` / `enable` | implemented | mutating commands refuse while disabled |
 
-**Guarantees:** receipts bind an exact Git tree OID; a required obligation that cannot run yields `UNSUPPORTED`, never `PASSED`; publication is ref-CAS with a fsynced intent before and an outcome after; dirty/untracked user files are never modified.
+**Guarantees:** receipts bind an exact Git tree OID *and* one effective policy digest (policy version, execution boundary, every obligation's id/program/args/required/timeout, and the obligation environment allowlist); a receipt altered on disk is refused; a required obligation that cannot run yields `UNSUPPORTED`, never `PASSED`; a receipt produced under a weaker or different policy is `STALE_POLICY`; publication is ref-CAS with a fsynced intent before and an outcome after; dirty/untracked user files are never modified.
 
-**Non-guarantees (by design in this MVP):** no OS sandbox (obligations run with your rights and a scrubbed environment), no execution of Git hooks, no completeness proof of the build context, no working-tree checkout after publishing, single local writer only. Untrusted code execution is `UNSUPPORTED`.
+**Non-guarantees (by design in this MVP):** no OS sandbox (obligations run with your rights and a scrubbed environment), no execution of Git hooks, no completeness proof of the build context, no working-tree checkout after publishing, single local writer only. The receipt `integrity` digest detects accidental corruption and casual edits; it is not a signature and does not stop a writer who can rewrite the config and the receipt together. The local advisory lock serialises Flow processes but does not fence an external `git` writer. Untrusted code execution is `UNSUPPORTED`.
 
 **Tested platforms:** Windows 11 + Rust 1.95 (local, see the verification report). Linux is exercised by CI only; a claim that is not in the report is not a claim.
 
