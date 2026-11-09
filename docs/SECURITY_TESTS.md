@@ -36,3 +36,27 @@ All tests use **disposable synthetic repositories** and **fictitious canaries** 
 
 ## Evidence standard
 Record fixture SHA, OS, execution sandbox, command and limits, redacted setup/probe logs, expected vs observed, and failure status `REPRODUCED | DISPROVED | NOT_REPRODUCED | BLOCKED | NOT_RUN`. A passing unit test is not a security proof. High-risk findings about Ravum go to a separate handoff for the Ravum session; Flow does not patch Ravum unilaterally.
+
+## MVP 0.1 (2026-11-09) — new negative tests
+
+| Boundary | Test | Assertion |
+|---|---|---|
+| Lock: live owner is never displaced | `a_live_old_lock_is_never_stolen` | ancient timestamp + live pid ⇒ `LOCKED`, lock preserved, ref unmoved |
+| Lock: unattributable file is refused | `an_unparseable_lock_is_refused_and_preserved` | empty/foreign record ⇒ `LOCK_UNKNOWN` + `manual_required`, file preserved |
+| Lock: dead owner recovery | `a_dead_owners_lock_is_recovered` | provably dead pid ⇒ lock recovered, publication proceeds |
+| Lock: at-most-once under contention | `eight_concurrent_publishes_publish_at_most_once` | exactly one `PUBLISHED`, one intent/outcome, one added commit |
+| Git: bounded output | `obligation_stdout_is_bounded_through_the_cli`, `read_capped_at_*` | 10 MiB obligation stdout truncated + marked; 65 MiB Git stdout ⇒ `GIT_OUTPUT_TOO_LARGE` |
+| Git: hijacked environment | `hijacked_git_environment_does_not_redirect_the_cli` | `GIT_DIR`/`GIT_WORK_TREE`/`GIT_INDEX_FILE`/`GIT_CONFIG_*` cannot redirect the CLI |
+| Hooks are dispatched by plumbing | `nonblocking_hooks_are_dispatched_by_run_and_publish`, `blocking_post_checkout_...`, `blocking_reference_transaction_...` | measured, not assumed: a blocking hook aborts `run`/`publish` and the ref does not move |
+| Missing toolchain | `missing_toolchain_is_unsupported_and_never_publishable` | `UNSUPPORTED`, never `PASSED` |
+| Ref: symbolic ref | `p1_a_symbolic_ref_is_never_a_publication_target` | `REF_IS_SYMREF`, target branch unmoved |
+| Proposal: idempotency and immutability | `admission_is_idempotent_and_immutable` | same key+bytes ⇒ same id; same key+different bytes ⇒ `IDEMPOTENCY_CONFLICT` |
+| Proposal: forbidden paths | `proposals_outside_the_trusted_surface_are_refused` | `.flow/`, `.git/`, unknown base refused, nothing written |
+| Assembly: ambiguity | `m2_three_agents_collision_...`, `assembly_reports_order_...` | collision diagnosed with the proposals named, no ref/worktree change |
+| Publication: stale base | `m3_stale_base_...` | `BASE_MISMATCH`, no forced update, explicit rebase then success |
+| Publication: no receipt | `publishing_a_candidate_requires_a_verified_receipt` | `NO_RECEIPT`, ref unmoved |
+| Dry run | `publish_dry_run_plans_without_mutating_anything` | refs, journal and files unchanged |
+| User files preserved | `m6_user_files_and_index_are_preserved_through_the_whole_cycle` | index listing and every file hash unchanged through the whole cycle |
+
+**Still `NOT_RUN`:** adversarial campaign consolidation (`docs/reviews/MVP-QA-ADVERSARIAL-REPORT.md`),
+R0 corpus on Linux, OS sandbox, hook execution as a verification source, context completeness.

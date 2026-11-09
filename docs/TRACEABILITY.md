@@ -30,3 +30,16 @@ Two independent series share the numbers 000–011. A bare `ADR-000` is ambiguou
 
 ## Required mapping before R1
 Every issue RF-001..026 must record dependencies, an owner, new phase R0..R7, acceptance test and gate; reclassification does not erase its historic wording. Check it in [backlog](BACKLOG.md).
+## MVP 0.1 — requirement → test → evidence
+
+| Requirement (mandate §1.1) | Implementation | Test / evidence |
+|---|---|---|
+| 1. `init`/`doctor` state limits honestly | `cmd_init`, `cmd_doctor` | `doctor_is_read_only_and_reports_guarantees`; doctor reports lock, adoption, non-guarantees |
+| 2. Agent proposal attributed, pinned base, no write to the user's worktree/index | `proposal::admit` (temporary `GIT_INDEX_FILE`) | `proposal` admission tests, M6 snapshot |
+| 3. Durable, idempotent, immutable proposal | `.flow/proposals/<id>.{json,patch}` | `admission_is_idempotent_and_immutable` |
+| 4. Collision-free exact candidate tree, no checkout | `proposal::assemble` | M1, M2, `assembly_reports_order_and_stays_deterministic` |
+| 5. Obligations run on that exact tree, receipt binds identity/context/tree/scope | `cmd_run` (existing engine) + `candidate_id` | M1 receipt assertions; P0-A/P0-B gates |
+| 6. Publish only the verified tree, CAS + journal, restart/reconcile | `cmd_publish` + `cmd_reconcile` | M5 crash tests, `m1` tree equality |
+| 7. External advance ⇒ STALE/REFUSED, user files intact | `cmd_publish` CAS + `BASE_MISMATCH` | M3, M6 |
+| 8. `status`/`explain` observable in JSON | `cmd_status` (`flow-status/1`), `cmd_explain` | CLI tests parse the JSON; `explain --candidate` documented as `NOT_RUN` scenario |
+| 9. No LLM, no network, no Ravum dependency | zero-dependency crate, offline toolchains | `Cargo.toml` (no deps), polyglot demo offline, no `Ravum` access during the wave |
