@@ -1,0 +1,55 @@
+name: flow-ci
+
+on:
+  push:
+    branches: [feat/flow-verified-foundation]
+  pull_request:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: cargo test (unit + integration)
+        run: cargo test --locked --all-targets
+
+      - name: build release
+        run: cargo build --locked --release
+
+      - name: harness self-tests (R0-a)
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s experiments/r0a/tests -v
+
+      - name: fail if a required test is missing
+        shell: bash
+        run: |
+          count=$(cargo test --locked --all-targets -- --list 2>/dev/null | grep -c ': test$' || true)
+          echo "discovered $count tests"
+          if [ "$count" -lt 25 ]; then
+            echo "expected at least 25 tests, found $count" >&2
+            exit 1
+          fi

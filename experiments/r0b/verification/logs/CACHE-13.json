@@ -1,0 +1,17 @@
+{
+  "artifact_changed_after_undeclared_change": true,
+  "artifact_sha_flags_changed": "a2266165924b1ff50b1deef82cd77b67d0adc700a664c92ee883369ed1a50d80",
+  "artifact_sha_v1": "6a83140514a6a2e6025fb89a3b48485a621bd1d7acea028cce673a3f1c65bf7d",
+  "artifact_sha_v2": "d231d9bf808181e4079715eeb867d151061dc534b74dfc2f7fbc3ea526b6fd06",
+  "context_changed_after_declared_change": true,
+  "context_id_flags_changed": "7b8a48760d2e6b990810d460a3a27cc91e7e17bebfb7911ecc1ab5630b9df0d2",
+  "context_id_v1": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+  "context_id_v2": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+  "context_unchanged_after_undeclared_change": true,
+  "fixture": "f7-context",
+  "status_after_flags": [
+    " M inputs/flags.txt"
+  ],
+  "status_before_flags": [],
+  "tree_before": "7acceddfc4495fe8a070b3178826360e74d8fc72"
+}

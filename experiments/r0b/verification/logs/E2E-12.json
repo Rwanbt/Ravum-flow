@@ -1,0 +1,12 @@
+{
+  "breaking_rc": 1,
+  "breaking_tree": "5a93574f47458ec915c9a8f4d459f6df749772fb",
+  "cmd_and_exit0_ran_tests": true,
+  "cmd_and_exit0_rc": 0,
+  "consumer_sha256": "91aded9b620de86c195763a6f58eff35c7af1560f4b8b79df8ad2c5686a82533",
+  "fixture": "f4-e2e",
+  "green_rc": 0,
+  "green_tree": "6d28eec6a0d5a7eb813540dba3adcc76bb51a90d",
+  "naive_gate_rc": 0,
+  "strict_gate_rc": 1
+}

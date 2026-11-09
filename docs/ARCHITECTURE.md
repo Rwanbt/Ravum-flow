@@ -70,5 +70,14 @@ Historic Ravum `git_writer.rs` at `5408d9b3…` (**`CODE_READ` only, not execute
 - An idempotent recovery journal distinguishes pre/post-ref-CAS, missing outcome, and dirty working tree; no `reset --hard` or silent human data loss.
 - Binary bytes, modes, symlinks, case, renames, LFS, submodules, ignored build inputs are explicitly in scope or refused.
 
+## What is actually implemented (MVP, `feat/flow-verified-foundation`)
+`crates/flow` is a single dependency-free Rust binary implementing only the middle of the chain above:
+
+- `run` computes the **index tree** with `git write-tree`, materialises that exact tree in a throwaway directory (Git worktree metadata removed before obligations run), executes only the obligations declared in `.flow/config.json` with a scrubbed environment, and writes a `VerificationReceipt` bound to the tree OID + a declared-input `BuildContextId` + `PolicyVersion` + execution boundary.
+- `publish` refuses anything but a `PASSED` receipt for exactly that tree, appends a fsynced intent, re-reads the ref, then performs `git update-ref <ref> <new> <old>`; the outcome is appended afterwards and `reconcile` resolves a crash window by observation (`PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`).
+- `doctor` reports what is **not** guaranteed (no sandbox, no hooks, no context completeness, no worktree checkout).
+
+Not implemented, and therefore not promised: VFS/CRDT, scheduler, merge semantics, remote sync, hooks execution, working-tree reconciliation, multi-writer fencing. See the verification report for measured limits.
+
 ## Decision needed before architecture freeze
 H1–H6 in [decision register](DECISION_REGISTER.md). Favor **candidate O3** for evaluation, not as accepted fact, unless O0/O1 wins empirical cost/correctness.

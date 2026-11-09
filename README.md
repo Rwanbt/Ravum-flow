@@ -1,10 +1,41 @@
 # Ravum Flow
-> **Status: planning / research only — no engine implemented.**  
-> Current baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs are **PROPOSED**, never automatically accepted.
+> **Status: minimal MVP on `feat/flow-verified-foundation` — not production ready.**  
+> This branch ships a small local CLI (`flow`) that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
+> Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
 **Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.
 
 It is **not** the [Ravum programming language](https://github.com/Rwanbt/Ravum), a compiler, a VCS replacement, a forge, a cloud prerequisite or an unconditional proof system. Ravum can later consume Flow via an optional adapter; Flow must work without Ravum.
+
+## Minimal CLI — implemented and tested
+
+```bash
+cargo build --release
+./target/release/flow init          # create .flow/ (config, journal, receipts)
+./target/release/flow doctor        # read-only: git, hooks, toolchains, guarantee limits
+git add -A
+./target/release/flow run           # verify the INDEX tree in a disposable copy
+./target/release/flow publish       # ref CAS + durable intent/outcome journal
+```
+
+| Command | State | Guarantee actually delivered |
+|---|---|---|
+| `init` | implemented | creates config/journal/receipts; refuses to overwrite without `--force` |
+| `doctor` | implemented | read-only report; lists what is **not** guaranteed |
+| `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents |
+| `run` | implemented | exports the exact index tree to a throwaway directory (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID |
+| `publish` | implemented (ref-only) | requires a `PASSED` receipt for that exact tree, appends a durable intent, re-reads the ref, then `git update-ref` CAS; outcomes `PUBLISHED` / `REFUSED` / `UNKNOWN_OUTCOME` via `reconcile` |
+| `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref |
+| `explain` | implemented | receipt + journal entries for a tree |
+| `disable` / `enable` | implemented | mutating commands refuse while disabled |
+
+**Guarantees:** receipts bind an exact Git tree OID; a required obligation that cannot run yields `UNSUPPORTED`, never `PASSED`; publication is ref-CAS with a fsynced intent before and an outcome after; dirty/untracked user files are never modified.
+
+**Non-guarantees (by design in this MVP):** no OS sandbox (obligations run with your rights and a scrubbed environment), no execution of Git hooks, no completeness proof of the build context, no working-tree checkout after publishing, single local writer only. Untrusted code execution is `UNSUPPORTED`.
+
+**Tested platforms:** Windows 11 + Rust 1.95 (local, see the verification report). Linux is exercised by CI only; a claim that is not in the report is not a claim.
+
+See [the verified-foundation report](docs/reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md) for evidence, measured limitations and residual risks.
 
 ## Work starts with evidence, not assumptions
 

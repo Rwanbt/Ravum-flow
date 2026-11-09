@@ -9,3 +9,20 @@
 .env
 .env.*
 !.env.example
+
+# R0 harness generated trees (rebuild with experiments/r0a/run_r0a.py)
+/experiments/r0a/work/
+
+__pycache__/
+*.pyc
+
+
+# R0-b scratch repositories and S9 generated trees (rebuildable, never committed)
+/experiments/r0b/*/scratch/
+/experiments/s9/work/
+/experiments/r0b/*/fixtures/**/.git/
+
+
+# R0-b git fixtures are rebuilt by experiments/r0b/git/run_tests.py
+/experiments/r0b/git/fixtures/
+

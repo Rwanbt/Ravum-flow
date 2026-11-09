@@ -1,0 +1,872 @@
+{
+  "schema": "flow-s9-pilot/1",
+  "kind": "EXPLORATORY_PILOT",
+  "confirmatory": false,
+  "started_at": "2026-11-09T17:23:37Z",
+  "fixture": {
+    "path": "experiments/s9/work/base",
+    "sha": "ab1e6c5121efa9eb1d0192940bfabf5b0afdae78",
+    "agents": 3,
+    "think_ms": 0
+  },
+  "os": "win32",
+  "tools": {
+    "git": "git version 2.51.1.windows.1",
+    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "jj": "NOT_AVAILABLE",
+    "gitbutler": "NOT_AVAILABLE",
+    "scion": "NOT_AVAILABLE"
+  },
+  "arms": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "calibration_runs": 2,
+  "records": [
+    {
+      "arm": "D",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4779,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0466
+      },
+      "t_verified_s": 0.5245,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4282,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.048
+      },
+      "t_verified_s": 0.4762,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "E",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.217,
+        "t_work": 0.3778,
+        "t_verify": 0.2961,
+        "t_integrate": 0.2522,
+        "t_final_verify": 0.0531,
+        "t_cleanup": 0.1119
+      },
+      "t_verified_s": 1.1961,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "A",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.7138,
+        "t_work": 0.3227,
+        "t_verify": 0.167,
+        "t_integrate": 0.7487,
+        "t_final_verify": 0.0487
+      },
+      "t_verified_s": 2.0009,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "B",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.2255,
+        "t_work": 0.3837,
+        "t_verify": 0.1454,
+        "t_integrate": 0.2278,
+        "t_final_verify": 0.0528,
+        "t_cleanup": 0.1277
+      },
+      "t_verified_s": 1.0352,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "A",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.5794,
+        "t_work": 0.2621,
+        "t_verify": 0.1943,
+        "t_integrate": 0.6626,
+        "t_final_verify": 0.0504
+      },
+      "t_verified_s": 1.7488,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4198,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0463
+      },
+      "t_verified_s": 0.4661,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "D",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.3962,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.082
+      },
+      "t_verified_s": 0.4781,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "B",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.2434,
+        "t_work": 0.4088,
+        "t_verify": 0.1864,
+        "t_integrate": 0.3045,
+        "t_final_verify": 0.0574,
+        "t_cleanup": 0.1147
+      },
+      "t_verified_s": 1.2004,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "E",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.2537,
+        "t_work": 0.4795,
+        "t_verify": 0.2888,
+        "t_integrate": 0.2542,
+        "t_final_verify": 0.0641,
+        "t_cleanup": 0.1297
+      },
+      "t_verified_s": 1.3403,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4363,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0542
+      },
+      "t_verified_s": 0.4906,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4203,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0486
+      },
+      "t_verified_s": 0.4689,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.2221,
+        "t_work": 0.3954,
+        "t_verify": 0.2425,
+        "t_integrate": 0.2206,
+        "t_final_verify": 0.0472,
+        "t_cleanup": 0.099
+      },
+      "t_verified_s": 1.1277,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.6695,
+        "t_work": 0.307,
+        "t_verify": 0.1788,
+        "t_integrate": 0.8059,
+        "t_final_verify": 0.0639
+      },
+      "t_verified_s": 2.0252,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.2785,
+        "t_work": 0.3649,
+        "t_verify": 0.1462,
+        "t_integrate": 0.2222,
+        "t_final_verify": 0.0483,
+        "t_cleanup": 0.0982
+      },
+      "t_verified_s": 1.0601,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.412,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0464
+      },
+      "t_verified_s": 0.4584,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.218,
+        "t_work": 0.4465,
+        "t_verify": 0.3159,
+        "t_integrate": 0.2741,
+        "t_final_verify": 0.0626,
+        "t_cleanup": 0.0977
+      },
+      "t_verified_s": 1.3171,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.6825,
+        "t_work": 0.2978,
+        "t_verify": 0.1833,
+        "t_integrate": 0.8886,
+        "t_final_verify": 0.0559
+      },
+      "t_verified_s": 2.1081,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.5488,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0581
+      },
+      "t_verified_s": 0.6069,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.2457,
+        "t_work": 0.4218,
+        "t_verify": 0.1466,
+        "t_integrate": 0.2203,
+        "t_final_verify": 0.047,
+        "t_cleanup": 0.0991
+      },
+      "t_verified_s": 1.0813,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.6534,
+        "t_work": 0.2838,
+        "t_verify": 0.1708,
+        "t_integrate": 0.6797,
+        "t_final_verify": 0.0476
+      },
+      "t_verified_s": 1.8353,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.224,
+        "t_work": 0.395,
+        "t_verify": 0.2469,
+        "t_integrate": 0.2238,
+        "t_final_verify": 0.0532,
+        "t_cleanup": 0.0967
+      },
+      "t_verified_s": 1.143,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4288,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0508
+      },
+      "t_verified_s": 0.4796,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4087,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0481
+      },
+      "t_verified_s": 0.4568,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.2502,
+        "t_work": 0.3901,
+        "t_verify": 0.1492,
+        "t_integrate": 0.2349,
+        "t_final_verify": 0.0515,
+        "t_cleanup": 0.1572
+      },
+      "t_verified_s": 1.076,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.8048,
+        "t_work": 0.3545,
+        "t_verify": 0.1744,
+        "t_integrate": 0.7797,
+        "t_final_verify": 0.0481
+      },
+      "t_verified_s": 2.1615,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.3958,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0472
+      },
+      "t_verified_s": 0.443,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.2648,
+        "t_work": 0.3534,
+        "t_verify": 0.2561,
+        "t_integrate": 0.2944,
+        "t_final_verify": 0.0607,
+        "t_cleanup": 0.1314
+      },
+      "t_verified_s": 1.2294,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4363,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0469
+      },
+      "t_verified_s": 0.4833,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.2195,
+        "t_work": 0.3863,
+        "t_verify": 0.1517,
+        "t_integrate": 0.2537,
+        "t_final_verify": 0.0522,
+        "t_cleanup": 0.1077
+      },
+      "t_verified_s": 1.0634,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.2502,
+        "t_work": 0.3572,
+        "t_verify": 0.2511,
+        "t_integrate": 0.2489,
+        "t_final_verify": 0.0501,
+        "t_cleanup": 0.0977
+      },
+      "t_verified_s": 1.1575,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        false,
+        false,
+        false
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.6963,
+        "t_work": 0.2671,
+        "t_verify": 0.1804,
+        "t_integrate": 0.6983,
+        "t_final_verify": 0.052
+      },
+      "t_verified_s": 1.894,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.4246,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0477
+      },
+      "t_verified_s": 0.4723,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 0.3954,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.0491
+      },
+      "t_verified_s": 0.4445,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.2248,
+        "t_work": 0.3975,
+        "t_verify": 0.159,
+        "t_integrate": 0.2531,
+        "t_final_verify": 0.0475,
+        "t_cleanup": 0.1005
+      },
+      "t_verified_s": 1.0819,
+      "ok": false,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        101,
+        101,
+        101
+      ],
+      "final_rc": 101,
+      "calibration": false
+    }
+  ],
+  "summary": {
+    "per_arm": {
+      "A": {
+        "n": 0
+      },
+      "B": {
+        "n": 0
+      },
+      "C": {
+        "n": 0
+      },
+      "D": {
+        "n": 0
+      },
+      "E": {
+        "n": 0
+      }
+    },
+    "pairs": {
+      "A-B": {
+        "n": 0
+      },
+      "A-C": {
+        "n": 0
+      },
+      "A-D": {
+        "n": 0
+      },
+      "A-E": {
+        "n": 0
+      },
+      "B-C": {
+        "n": 0
+      },
+      "B-D": {
+        "n": 0
+      },
+      "B-E": {
+        "n": 0
+      },
+      "C-D": {
+        "n": 0
+      },
+      "C-E": {
+        "n": 0
+      },
+      "D-E": {
+        "n": 0
+      }
+    }
+  },
+  "limitations": [
+    "agent thinking time is a constant (default 0 ms): LLM latency is out of scope",
+    "single machine, 16 GB, warm cargo cache inside the campaign",
+    "arms are run sequentially; CPU/RAM contention between concurrent agents is not measured",
+    "no arm F/G: no existing tool installed and no Flow prototype exists",
+    "n is exploratory; no p95, no confirmatory claim, no ranking"
+  ]
+}

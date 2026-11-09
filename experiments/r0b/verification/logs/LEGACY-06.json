@@ -1,0 +1,15 @@
+{
+  "apply_check_rc": 0,
+  "apply_rc": 0,
+  "base": "0828fb2e95f8a2f42a4f51aca742ada7daf85164",
+  "fixture": "legacy06",
+  "patch": "logs/artifacts/legacy06-textual-break.patch",
+  "semantic_break": "542a63de2c72445b92e57b4eb4ec645f28b82ee1",
+  "status_after": [
+    " M api.py"
+  ],
+  "status_before": [],
+  "syntax_check_rc": 0,
+  "tests_rc": 1,
+  "textual_gate_would_promote": true
+}

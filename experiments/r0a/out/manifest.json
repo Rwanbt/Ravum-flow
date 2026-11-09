@@ -1,0 +1,287 @@
+{
+  "build_samples": [
+    {
+      "error": null,
+      "name": "f0-core",
+      "ok": true,
+      "seconds": 0.6535
+    },
+    {
+      "error": null,
+      "name": "f1-concurrency",
+      "ok": true,
+      "seconds": 1.1322
+    },
+    {
+      "error": null,
+      "name": "f2-hooks",
+      "ok": true,
+      "seconds": 1.2287
+    },
+    {
+      "error": null,
+      "name": "f3-filetypes",
+      "ok": true,
+      "seconds": 1.8784
+    },
+    {
+      "error": null,
+      "name": "f4-e2e",
+      "ok": true,
+      "seconds": 1.0729
+    },
+    {
+      "error": null,
+      "name": "f5-crash",
+      "ok": true,
+      "seconds": 0.482
+    },
+    {
+      "error": null,
+      "name": "f6-canary",
+      "ok": true,
+      "seconds": 0.4855
+    },
+    {
+      "error": null,
+      "name": "f7-context",
+      "ok": true,
+      "seconds": 0.7878
+    }
+  ],
+  "environment": {
+    "canary_label": "FLOW_FAKE_SECRET_CANARY",
+    "cargo": "error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.",
+    "cpu_count": 16,
+    "git": "git version 2.51.1.windows.1",
+    "node": "v26.13.0",
+    "os": "win32",
+    "platform": "Windows_NT",
+    "python": "3.13.7",
+    "repo_root": ".",
+    "rustc": "error: rustup could not choose a version of rustc to run, because one wasn't specified explicitly, and no default is configured."
+  },
+  "errors": [],
+  "fixtures": [
+    {
+      "commit": "b286ddfbdae91184bcf1bad37f71b51323d8072e",
+      "description": "mono-language repo, 2 commits, dirty+untracked+ignored",
+      "name": "f0-core",
+      "notes": [
+        "cargo manifest present; `cargo test` is available offline but not run by R0-a"
+      ],
+      "path": "experiments/r0a/work/fixtures/f0-core",
+      "status": [
+        " M README.md",
+        "?? untracked.txt"
+      ],
+      "sub_cases": {
+        "first_commit": "7287182495edebf48efee82c9a96a1d3bfbcfc23",
+        "second_commit": "b286ddfbdae91184bcf1bad37f71b51323d8072e"
+      },
+      "tree": "06bc53df9c198ba34ca1e21be0194c71d358e09c",
+      "tree_digest": "ec4bb735cb0b192c8be64f2c79e5f1f4f4ab83e7fbbaca4be0d21a317ca14dd8",
+      "worktree_digest": "c8aaa512186d3fc88867b6f17f51025446e8c7e7d5ad41735a270b5c2f7b45cf"
+    },
+    {
+      "commit": "ac4dee085c1022d343adaf69c8418a0986364916",
+      "description": "disjoint and same-hunk agent branches",
+      "name": "f1-concurrency",
+      "notes": [
+        "merge a+b is expected to be clean; a+c is expected to conflict (same hunk)"
+      ],
+      "path": "experiments/r0a/work/fixtures/f1-concurrency",
+      "status": [],
+      "sub_cases": {
+        "agent_a": "93cfbf91f55bc8a7b467386f75d10c4dadaab9f8",
+        "agent_b": "a3c5a15c5a93a1b9f13707641ef1cb653d4ad4ed",
+        "agent_c": "efd04a8b95d03cd3293efa62bcb1f1115717d26a",
+        "base": "ac4dee085c1022d343adaf69c8418a0986364916",
+        "disjoint_merge_clean": true
+      },
+      "tree": "cc51a52f11daa9796e7224c366c810250e1f2bd4",
+      "tree_digest": "58c0d5743b8e3ff1a4399f92b22a89da4569ee6fb97e2538cfd39152bb02d250",
+      "worktree_digest": "44f1dd5828d05c97be019e0b16f33e22ff88e8f6ff14d23979278b78d23d5e82"
+    },
+    {
+      "commit": "",
+      "description": "hook variants: order logging, refusal, index mutation",
+      "name": "f2-hooks",
+      "notes": [
+        "hooks are installed in .git/hooks only; no hook is committed and none runs on Ravum"
+      ],
+      "path": "experiments/r0a/work/fixtures/f2-hooks",
+      "status": [],
+      "sub_cases": {
+        "mutate": {
+          "hook_order_log": "git-dir/hook-order.log",
+          "path": "f2-hooks/mutate",
+          "seed": "e9361ca5426fddf11d4b188a60cec3e04e0dd3b3"
+        },
+        "order": {
+          "hook_order_log": "git-dir/hook-order.log",
+          "path": "f2-hooks/order",
+          "seed": "1266d3e4f250fc604aff555d300e723cec8160b8"
+        },
+        "refuse": {
+          "hook_order_log": "git-dir/hook-order.log",
+          "path": "f2-hooks/refuse",
+          "seed": "1266d3e4f250fc604aff555d300e723cec8160b8"
+        }
+      },
+      "tree": "",
+      "tree_digest": "",
+      "worktree_digest": "67cd6892cc1aa564f334361a9f192c8db16d7c6831bc2572a1ce74ab5b577174"
+    },
+    {
+      "commit": "b2c2dd438e2b124c4d9c72c61a642c034e94dcf6",
+      "description": "binary, exec bit, symlink entry, rename, delete, CRLF, case collision",
+      "name": "f3-filetypes",
+      "notes": [
+        "exec bit forced with `git update-index --chmod=+x`; Windows cannot store it in the FS",
+        "symlink is a real 120000 tree entry; the Windows worktree file is not a real symlink",
+        "case collision lives in the index/tree; a case-insensitive worktree cannot hold both"
+      ],
+      "path": "experiments/r0a/work/fixtures/f3-filetypes",
+      "status": [
+        " M script.sh"
+      ],
+      "sub_cases": {
+        "base": {
+          "first": "bb88d370eb6b0dbb120959030fb3d25c0763cdad",
+          "modes": {
+            ".gitattributes": "100644",
+            "a.txt": "100644",
+            "b.bin": "100644",
+            "crlf.txt": "100644",
+            "renamed.txt": "100644",
+            "script.sh": "100755"
+          },
+          "path": "f3-filetypes/base",
+          "second": "b2c2dd438e2b124c4d9c72c61a642c034e94dcf6"
+        },
+        "case": {
+          "checkout_rc": 0,
+          "checkout_stderr": "",
+          "commit": "0f5a4578e46a8c9382d44f97372089a2c684f58a",
+          "index_entries": [
+            "Case.txt",
+            "case.txt",
+            "seed.txt"
+          ],
+          "path": "f3-filetypes/case"
+        },
+        "link": {
+          "commit": "dd3651c11ef94d118173e9118bfd6ed34538810c",
+          "mode": "120000",
+          "path": "f3-filetypes/link",
+          "worktree_is_real_symlink": false
+        }
+      },
+      "tree": "b1d3aa0aa6ed9ff10b45e42ffb89f3f8174428fc",
+      "tree_digest": "8116e57fb20e74a72e80fb70ada5295203f71b09a08f776824d795a0ce807e57",
+      "worktree_digest": "556b1ad1c03c8aea6b14ed9e71bf7f651fdb6ab0f26082ee8591efadd101eefe"
+    },
+    {
+      "commit": "3d923f1dd0ea52dc497ab5eeff734320c8699833",
+      "description": "fake API + unchanged consumer; E2E deliberately red on the breaking branch",
+      "name": "f4-e2e",
+      "notes": [
+        "a required E2E that is red must block publication (E2E-12); rc != 0 is the evidence"
+      ],
+      "path": "experiments/r0a/work/fixtures/f4-e2e",
+      "status": [],
+      "sub_cases": {
+        "breaking": "97248fe3f2f840afa885e21ce17ae02160485ad5",
+        "e2e_breaking_rc": 1,
+        "e2e_green_rc": 0,
+        "green": "3d923f1dd0ea52dc497ab5eeff734320c8699833"
+      },
+      "tree": "ec1cfd3aa618a949e1ff829d752bc9bd393652b2",
+      "tree_digest": "dac59024c9c576408753cdd1d0b645f040c77ff37f1688b05d72fe7aff3f3e44",
+      "worktree_digest": "173333be711a2ec6b66ebbf3ed2279d442a1bd37d9286b1b0e852ff410212a10"
+    },
+    {
+      "commit": "d51fee4537018caf90addb9b88fb161f9c9c2b03",
+      "description": "driven crash at journal/ref boundaries (process exit, no cleanup)",
+      "name": "f5-crash",
+      "notes": [
+        "crash uses os._exit(70): no finally block, no flush, closest portable analogue to SIGKILL"
+      ],
+      "path": "experiments/r0a/work/fixtures/f5-crash",
+      "status": [],
+      "sub_cases": {
+        "base": "d51fee4537018caf90addb9b88fb161f9c9c2b03",
+        "crash_points": [
+          "before-intent",
+          "after-intent",
+          "after-ref",
+          "before-outcome"
+        ]
+      },
+      "tree": "88e36769050b9026bfc7e2fd18644760f1f56f3b",
+      "tree_digest": "2d7039ddad36545fbc97e367e8a5d7e70c696436400c0baf342d43d12f55fe3a",
+      "worktree_digest": "1e60d154442a4863cd5a2d446aef6cc96b9c89e863ef41be82e3e9a6028283f0"
+    },
+    {
+      "commit": "d21569b1b1d831be6e9b145fbadd4af4d393a34e",
+      "description": "fictitious canary in a fake ~/.ssh plus a localhost network attempt",
+      "name": "f6-canary",
+      "notes": [
+        "canary is fictitious; the network attempt targets 127.0.0.1:9 only, never the internet"
+      ],
+      "path": "experiments/r0a/work/fixtures/f6-canary",
+      "status": [],
+      "sub_cases": {
+        "commit": "d21569b1b1d831be6e9b145fbadd4af4d393a34e",
+        "fake_home": "fake-home"
+      },
+      "tree": "5a086806d78079d8ac9fb22c78e596df87d6c1a5",
+      "tree_digest": "d53062cf4cc90c66d88a28789f0df09c452189a8e1fe80c799d18bc45aba164b",
+      "worktree_digest": "5017f2b81e5c4bc52ca021cd633b5c0c74e93f93feac5eeaea7719532c32ddac"
+    },
+    {
+      "commit": "1ff42ef484eef4b5400c62c957e67d0a0208f85b",
+      "description": "declared vs undeclared build inputs and an ignored cache",
+      "name": "f7-context",
+      "notes": [
+        "the artifact consumes an ignored cache that is NOT in the declared context: same context id, different artifact",
+        "CACHE-13: a cache key must change when a declared input changes; an ignored file is undeclared by construction"
+      ],
+      "path": "experiments/r0a/work/fixtures/f7-context",
+      "status": [
+        " M inputs/flags.txt"
+      ],
+      "sub_cases": {
+        "artifact_sha_after_cache": "3f88cf9466d9a6eab76d0945be2afbbf2ddf9c44d183e6f704d7290b50a24271",
+        "artifact_sha_initial": "288432b00dfd7383711d68f0dc64edf1399d95cf939451d994403888f21ae441",
+        "base": "1ff42ef484eef4b5400c62c957e67d0a0208f85b",
+        "cache_sha_after_write": "168abb79ad7d1cd6cede82c4f13cfb29fcc1949c3680d900f0bb382700667d73",
+        "cache_sha_initial": "absent",
+        "context_id_after_cache": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+        "context_id_base": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+        "context_id_changed_env": "ba905f68842205b81ca78cd59ffb33cad9048bb7ac14bbc301831c0e2a4d60ef",
+        "context_id_changed_flags": "7b8a48760d2e6b990810d460a3a27cc91e7e17bebfb7911ecc1ab5630b9df0d2"
+      },
+      "tree": "76f3f14e2a21f6a9dca8c089d299bad7b51fdee4",
+      "tree_digest": "5fbf519fac0eb7127dcf889c15c4f4d87d17102184f915389ebb92485326f90c",
+      "worktree_digest": "28445d50d37e223e76f07ef2675da411b1b0ee8413ed1b5b4ad76af98a16bc6e"
+    }
+  ],
+  "generated_at": "2026-11-09T17:23:31Z",
+  "repo": {
+    "head": "feat/flow-verified-foundation"
+  },
+  "safety": {
+    "inventory": "experiments/r0a/work/created-paths.json",
+    "work_root": "experiments/r0a/work"
+  },
+  "schema": "flow-r0a-manifest/1",
+  "totals": {
+    "build_s": 7.721,
+    "bytes": 5960,
+    "files": 38,
+    "fixtures": 8,
+    "worktree_digest": "6f4e187f5d8e0657a0b10430f7e481594e47cf09e0c926fd47bb86d99d3da70b"
+  }
+}

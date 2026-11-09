@@ -1,0 +1,23 @@
+{
+  "artifact_sha256": {
+    "cache_appears": "54caefcc0edc21ee221c154e67c7d7af3a4c7dffed5169adc7b4cb295a1cff87",
+    "hidden_env": "e03941ba0cd1ff13d87ca1a2a82e56b8fd04380c3e65aa2295df5f1dcdd7f565",
+    "no_cache_no_hidden": "5bd72e3a4377e170fcf68f535fc6b3da78c0d6e2e5fb547956c61e0a14d9d2b6"
+  },
+  "artifacts_distinct": true,
+  "completeness_checker": "PASS (cannot observe undeclared reads)",
+  "context_ids": {
+    "cache_appears": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+    "hidden_env": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041",
+    "no_cache_no_hidden": "729ce6e5c199b287e976a8688dbbd1afb80ed9e3613e8df821ee56e735668041"
+  },
+  "context_same_across_all_three": true,
+  "declared_keys": [
+    "env.FLOW_TOOLCHAIN",
+    "env.LC_ALL",
+    "inputs/flags.txt",
+    "inputs/lock.txt"
+  ],
+  "fixture": "f7-context-completeness",
+  "tree": "7acceddfc4495fe8a070b3178826360e74d8fc72"
+}

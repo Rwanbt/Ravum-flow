@@ -1,0 +1,33 @@
+{
+  "fixture": "f5-crash",
+  "intact_bytes": 271,
+  "intact_robust": {
+    "rc": 0,
+    "stdout": "{\"status\": \"COMPLETE\", \"records\": 2, \"ref\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\"}"
+  },
+  "intent_only_robust": {
+    "rc": 0,
+    "stdout": "{\"status\": \"RECONCILED_PUBLISHED_FROM_REF\", \"records\": 1, \"ref\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\"}"
+  },
+  "journal_records": 2,
+  "publisher_rc": 0,
+  "ref": "12c39f33b2cd44592e6fc2916c15792059d6ba93",
+  "truncated_bytes": 259,
+  "truncated_naive_skip": {
+    "rc": 0,
+    "stdout": "{\"bad_lines\": 1, \"last\": {\"event\": \"intent\", \"new\": \"12c39f33b2cd44592e6fc2916c15792059d6ba93\", \"old\": \"5c6fdc31e3e095e1c15ff9d5ee5c4ece54a59ac4\", \"tree\": \"75bfee933fa5995f8d4b46df01db4f3963b34112\"}, \"last_event\": \"intent\", \"records\": 1, \"would_republish\": true}"
+  },
+  "truncated_naive_strict": {
+    "rc": 1,
+    "stderr_tail": [
+      "  File \"<PATH>\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\json\\decoder.py\", line 361, in raw_decode",
+      "    obj, end = self.scan_once(s, idx)",
+      "               ~~~~~~~~~~~~~~^^^^^^^^",
+      "json.decoder.JSONDecodeError: Unterminated string starting at: line 1 column 83 (char 82)"
+    ]
+  },
+  "truncated_robust": {
+    "rc": 2,
+    "stdout": "{\"status\": \"REFUSED_CORRUPT_JOURNAL\", \"reason\": \"last_line_not_terminated\", \"detail\": {\"bytes\": 259}}"
+  }
+}

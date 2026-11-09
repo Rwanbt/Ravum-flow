@@ -1,0 +1,327 @@
+{
+  "schema": "r0b-security-results/1",
+  "generated_at_utc": "2026-11-09T17:03:28+00:00",
+  "duration_s": 19.0,
+  "host": {
+    "os": "win32",
+    "os_name": "nt",
+    "python": "3.13.7",
+    "git": "git version 2.51.1.windows.1",
+    "privilege": "standard user, no elevation, no admin",
+    "internet": "not used; only loopback 127.0.0.1:9"
+  },
+  "records": [
+    {
+      "id": "ENV-04a",
+      "verdict": "REPRODUCED",
+      "fixture": "env_child.py (fixture), no repository",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "<PYTHON_DIR>\\python.exe <REPO>\\experiments\\r0b\\security\\scratch\\fixtures\\env_child.py",
+        "<PYTHON_DIR>\\python.exe <REPO>\\experiments\\r0b\\security\\scratch\\fixtures\\env_child.py"
+      ],
+      "observation": "Un enfant lancé avec l'environnement brut du parent voit la variable canari (valeur confirmée par empreinte SHA-256, jamais imprimée) ; un enfant lancé avec une allowlist explicite ne la voit pas.",
+      "scope": "Mécanisme OS (héritage d'environnement à la création de processus) mesuré par deux lancements du même script. Aucun code Flow n'existe : ce n'est pas une mesure du produit, seulement de la primitive d'exécution que Flow devra contraindre.",
+      "evidence": {
+        "naive": {
+          "canary_var_present": true,
+          "sha256_prefix_matches": true,
+          "env_var_count": 72,
+          "sensitive_names_present": [
+            "APPDATA",
+            "LOCALAPPDATA",
+            "TEMP",
+            "USERPROFILE"
+          ]
+        },
+        "allowlist": {
+          "canary_var_present": false,
+          "env_var_count": 11,
+          "names_present": [
+            "TEMP"
+          ]
+        },
+        "inheritance_reproduced": true,
+        "allowlist_mitigation_measured": true
+      }
+    },
+    {
+      "id": "ENV-04b",
+      "verdict": "REPRODUCED",
+      "fixture": "probe.py + fake-home/.ssh/id_fixture (copie locale de f6-canary)",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "<PYTHON_DIR>\\python.exe <REPO>\\experiments\\r0b\\security\\scratch\\fixtures\\probe.py"
+      ],
+      "observation": "Sous les droits de l'utilisateur, le processus enfant lit intégralement la clé fictive (empreinte SHA-256 identique à la source) sans aucune barrière ; le contrôle négatif (HOME inexistant) échoue comme attendu, donc le résultat n'est pas un faux positif du probe.",
+      "scope": "Droits utilisateur Windows normaux, aucun sandbox ni ACL particulière. Ce n'est PAS une sandbox : l'absence d'isolation FS est une limite mesurée, pas un bug. Non qualifié : autre compte utilisateur, intégrité AppContainer, ACL restreinte.",
+      "evidence": {
+        "read_secret": true,
+        "sha256_matches_source": true,
+        "secret_sha256": "4e1df2a31d7721f784111ffa53412e71afe3f4c2d27a6662cddacefe78eb51a7",
+        "read_error": null,
+        "negative_control_read_secret": false,
+        "negative_control_error": "FileNotFoundError",
+        "isolation_observed": "none"
+      }
+    },
+    {
+      "id": "ENV-04c",
+      "verdict": "REPRODUCED",
+      "fixture": "python child printing the fictitious canary on stdout+stderr",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "<PYTHON_DIR>\\python.exe -c import sys; print('OUT:'+'[REDACTED]'); print('ERR:'+'[REDACTED]', file=sys.stderr)"
+      ],
+      "observation": "Un log naïf (copie brute de stdout+stderr) persiste le canari (2 occurrences mesurées dans un fichier transitoire immédiatement supprimé) ; la rédaction avant persistance ramène le fichier conservé à 0 occurrence, avec contrôle fail-closed sur les marqueurs résiduels.",
+      "scope": "Démontre le mécanisme de rédaction, pas la sûreté des logs d'un futur produit. La rédaction est une liste de marqueurs : un secret de forme inconnue passerait. Le fichier transitoire n'a jamais été conservé (supprimé et absence vérifiée).",
+      "evidence": {
+        "naive_occurrences_in_memory": 2,
+        "naive_occurrences_persisted_transiently": 2,
+        "transient_file_deleted": true,
+        "stored_log": "ENV-04c-redacted.log",
+        "stored_log_occurrences": 0,
+        "redactions_applied": 2,
+        "redaction_is_denylist": true
+      }
+    },
+    {
+      "id": "SANDBOX-05",
+      "verdict": "REPRODUCED",
+      "fixture": "probe.py loopback 127.0.0.1:9 (no service) + connect_ex matrix (blocking / 0.5 s)",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "<PYTHON_DIR>\\python.exe <REPO>\\experiments\\r0b\\security\\scratch\\fixtures\\probe.py",
+        "<PYTHON_DIR>\\python.exe -c <connect_ex 127.0.0.1:9 x6>"
+      ],
+      "observation": "Six tentatives loopback mesurées : en mode bloquant, WSAECONNREFUSED (10061) après ~2 s ; avec un délai, WSAEWOULDBLOCK (10035) à l'expiration. Aucun code de refus d'accès ou de réseau injoignable (WSAEACCES/WSAENETUNREACH) : aucune couche de politique n'a bloqué la tentative. Le délai avant refus suggère un filtrage local silencieux du SYN (pare-feu d'hôte), ce qui n'est pas une isolation.",
+      "scope": "Loopback uniquement (127.0.0.1:9), aucun serveur local, aucun accès Internet. NOT_QUALIFIED : egress externe, DNS, proxy, pare-feu d'hôte (non instrumenté), capacité réseau AppContainer/Windows Firewall, réseau d'un conteneur. Une connexion loopback réussie ne serait pas non plus une preuve d'egress.",
+      "evidence": {
+        "probe_network_result": false,
+        "probe_network_error": "TimeoutError",
+        "attempts": [
+          {
+            "rc": 10061,
+            "ms": 2023,
+            "mode": "blocking"
+          },
+          {
+            "rc": 10061,
+            "ms": 2018,
+            "mode": "blocking"
+          },
+          {
+            "rc": 10061,
+            "ms": 2036,
+            "mode": "blocking"
+          },
+          {
+            "rc": 10035,
+            "ms": 509,
+            "mode": "timeout_0.5"
+          },
+          {
+            "rc": 10035,
+            "ms": 502,
+            "mode": "timeout_0.5"
+          },
+          {
+            "rc": 10035,
+            "ms": 503,
+            "mode": "timeout_0.5"
+          }
+        ],
+        "distinct_codes": [
+          10035,
+          10061
+        ],
+        "distinct_code_names": [
+          "WSAEWOULDBLOCK",
+          "WSAECONNREFUSED"
+        ],
+        "policy_denial_observed": false,
+        "not_qualified": [
+          "external egress",
+          "DNS",
+          "proxy",
+          "host firewall",
+          "AppContainer network capability",
+          "container network"
+        ]
+      }
+    },
+    {
+      "id": "PATH-08",
+      "verdict": "REPRODUCED",
+      "fixture": "workspace synthétique scratch/path-08 (ws/, outside/, gitres/, jonction cmd mklink /J)",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "cmd /c mklink /J <REPO>\\experiments\\r0b\\security\\scratch\\path-08\\ws\\vendor <REPO>\\experiments\\r0b\\security\\scratch\\path-08\\outside",
+        "cmd /c rmdir <REPO>\\experiments\\r0b\\security\\scratch\\path-08\\ws\\vendor",
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\path-08\\gitres add -- CON"
+      ],
+      "observation": "Quatre variantes mesurées : (a) une validation naïve par préfixe de chaîne accepte une traversée '..' qui écrit hors du workspace simulé, alors que la canonisation realpath la rejette ; (b) une jonction Windows interne au workspace redirige une écriture hors périmètre (fichier retrouvé dans la cible) alors que la validation naïve l'accepte et que realpath la rejette ; (c) 'trail.' et 'space ' sont acceptés puis silencieusement renommés en 'trail'/'space' (collision de deux chemins logiques sur un fichier) ; (d) deux chemins ne différant que par la casse désignent un seul fichier, la seconde écriture écrasant la première. Cas additionnel (c2) : les noms 'CON' et 'aux.txt' sont créés sur disque et listés par git status, mais git add échoue ('unable to stat'/'unable to index') — divergence FS/Git mesurée.",
+      "scope": "Workspace simulé (scratch/path-08/ws) : l'échappement reste à l'intérieur de experiments/r0b/security/. Aucune écriture hors du périmètre autorisé. Le cas (b) dépend de la possibilité de créer une jonction sans admin (mesurée ici). NOT_REVIEWED : chemins non-UTF-8, partages réseau, volumes montés, et politique d'un futur code Flow (inexistant). Le devenir des fichiers 'CON' vis-à-vis des outils Win32 (device namespace) n'est pas qualifié au-delà de git add.",
+      "evidence": {
+        "a_traversal": {
+          "candidate": "<REPO>\\experiments\\r0b\\security\\scratch\\path-08\\ws\\..\\evil.txt",
+          "naive_accepts": true,
+          "canonical_accepts": false,
+          "write_outside_ws": true
+        },
+        "b_junction": {
+          "junction_rc": 0,
+          "naive_accepts": true,
+          "canonical_accepts": false,
+          "realpath": "<REPO>\\experiments\\r0b\\security\\scratch\\path-08\\outside\\pwn.txt",
+          "write_outside_ws": true,
+          "junction_removed": true,
+          "outside_file_survives": true
+        },
+        "c_reserved": {
+          "cases": {
+            "CON": {
+              "naive_accepts": true,
+              "canonical_accepts": true,
+              "realpath_name": "CON",
+              "create": "ok",
+              "created_names": [
+                "CON"
+              ],
+              "maps_to_disk_name": "CON",
+              "name_differs_from_request": false
+            },
+            "aux.txt": {
+              "naive_accepts": true,
+              "canonical_accepts": true,
+              "realpath_name": "aux.txt",
+              "create": "ok",
+              "created_names": [
+                "aux.txt"
+              ],
+              "maps_to_disk_name": "aux.txt",
+              "name_differs_from_request": false
+            },
+            "trail.": {
+              "naive_accepts": true,
+              "canonical_accepts": true,
+              "realpath_name": "trail.",
+              "create": "ok",
+              "created_names": [
+                "trail"
+              ],
+              "maps_to_disk_name": "trail",
+              "name_differs_from_request": true
+            },
+            "space ": {
+              "naive_accepts": true,
+              "canonical_accepts": true,
+              "realpath_name": "space ",
+              "create": "ok",
+              "created_names": [
+                "space"
+              ],
+              "maps_to_disk_name": "space",
+              "name_differs_from_request": true
+            }
+          },
+          "dot_collision": true
+        },
+        "c2_git_divergence": {
+          "created_on_disk": [
+            "CON",
+            "aux.txt"
+          ],
+          "git_status_lines": [
+            "?? CON",
+            "?? aux.txt"
+          ],
+          "git_add": {
+            "CON": {
+              "rc": 128,
+              "stderr_head": "fatal: unable to stat 'CON': No such file or directory"
+            },
+            "aux.txt": {
+              "rc": 128,
+              "stderr_head": "error: open(\"aux.txt\"): No such file or directory"
+            }
+          }
+        },
+        "d_case_collision": {
+          "naive_distinct_paths": 2,
+          "fs_entries_matching": 1,
+          "same_file": true,
+          "content_after_second_write": "lower"
+        },
+        "all_subcases_reproduced": true,
+        "fs_git_divergence_reproduced": true
+      }
+    },
+    {
+      "id": "RESOURCE-14",
+      "verdict": "REPRODUCED",
+      "fixture": "spawn_grandchild.py : enfant direct + petit-enfant python time.sleep(60)",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "<PYTHON_DIR>\\python.exe <REPO>\\experiments\\r0b\\security\\scratch\\fixtures\\spawn_grandchild.py <REPO>\\experiments\\r0b\\security\\scratch\\resource-14\\pids-direct.json",
+        "taskkill /PID <parent> /T /F"
+      ],
+      "observation": "Tueur l'enfant direct par TerminateProcess : le petit-enfant reste vivant. Un kill d'arbre (taskkill /T /F) sur un second couple tue bien les deux. Le timeout d'un runner qui ne tue que l'enfant direct laisse donc des processus orphelins.",
+      "scope": "Windows : taskkill /T est une mitigation mesurée, pas une garantie (course possible sur la création de descendants, pas de Job Object). Aucun Job Object / cgroup, aucune limite mémoire/CPU mesurée. Linux (groupe de processus, pidfd, cgroup) NOT_REVIEWED dans cette session.",
+      "evidence": {
+        "phase1_direct_child_kill": {
+          "grandchild_alive": true,
+          "parent_returncode": 1
+        },
+        "phase2_tree_kill": {
+          "taskkill_rc": 0,
+          "grandchild_dead": true
+        },
+        "descendant_survives_direct_kill": true,
+        "tree_kill_mitigation_measured": true,
+        "cleanup_all_survivors_dead": true
+      }
+    },
+    {
+      "id": "UNMANAGED-17",
+      "verdict": "REPRODUCED",
+      "fixture": "dépôt git synthétique scratch/unmanaged-17/repo + verrou fichier OS (msvcrt)",
+      "os": "win32 / nt (Windows, unprivileged user)",
+      "commands": [
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\unmanaged-17\\repo init -q -b main",
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\unmanaged-17\\repo config user.name Flow R0-b Fixture",
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\unmanaged-17\\repo config user.email fixture@example.invalid",
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\unmanaged-17\\repo config commit.gpgsign false",
+        "git -C <REPO>\\experiments\\r0b\\security\\scratch\\unmanaged-17\\repo commit --allow-empty -m <externe>"
+      ],
+      "observation": "Pendant qu'un « writer » détient un verrou fichier exclusif, un git commit externe réussit (rc=0) : le verrou n'est pas consulté par Git, donc il ne prévient pas l'écriture concurrente. Le writer détecte ensuite le changement de ref par relecture (head_before != head_after) : détection possible, prévention non.",
+      "scope": "Modèle simplifié à un verrou fichier + relecture, pas le protocole Flow. Le git externe utilisé ici est un commit local ; push distant, index concurrent et répertoires de travail non sujets ne sont pas qualifiés.",
+      "evidence": {
+        "writer_held_lock": true,
+        "external_commit_returncode": 0,
+        "external_commit_stderr": "",
+        "head_before": "e6fd74e2fe7c246b8a715115c099895b1a038c60",
+        "head_after": "b74224f9ea462f1302f431aa559eb29bc4203399",
+        "heads_differ": true,
+        "detection_by_reread": true,
+        "prevention_by_lock": false
+      }
+    }
+  ],
+  "summary": {
+    "by_verdict": {
+      "REPRODUCED": 7
+    },
+    "canary_scan": {
+      "files_scanned": 14,
+      "excluded": [
+        "scratch/ (fixture canary: fake-home/.ssh/id_fixture)"
+      ],
+      "canary_occurrences_in_persisted_artifacts": 0,
+      "hits": [],
+      "fixture_canary_occurrences": 1,
+      "passed": true
+    },
+    "blocked_or_not_run": []
+  }
+}
