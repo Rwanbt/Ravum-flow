@@ -445,6 +445,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
         ("overall", Json::str(if checks.iter().any(|c| c.get("status").and_then(Json::as_str) == Some("FAILED")) { "FAILED" } else { "OK" })),
+        ("exit_contract", Json::str("0 when overall=OK, 1 when overall=FAILED (a diagnostic that found a broken guarantee is not a success)")),
         ("checks", Json::Arr(checks)),
         (
             "guarantees",
@@ -519,12 +520,24 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
         if let Some(last) = files.last() {
             if let Ok(text) = fs::read_to_string(last) {
                 if let Ok(value) = json::parse(&text) {
+                    // A receipt whose content does not match its integrity digest
+                    // is not evidence. It is shown for inspection, never as PASSED.
+                    let trust = match state::verify_receipt_integrity(&value) {
+                        Ok(()) => "INTEGRITY_OK",
+                        Err(_) => "RECEIPT_INTEGRITY_INVALID",
+                    };
+                    let displayed_status = if trust == "INTEGRITY_OK" {
+                        value.get("status").cloned().unwrap_or(Json::Null)
+                    } else {
+                        Json::str("RECEIPT_INTEGRITY_INVALID")
+                    };
                     latest = Json::obj(vec![
                         (
                             "tree_oid",
                             value.get("tree_oid").cloned().unwrap_or(Json::Null),
                         ),
-                        ("status", value.get("status").cloned().unwrap_or(Json::Null)),
+                        ("status", displayed_status),
+                        ("trust", Json::str(trust)),
                         (
                             "scope",
                             value
@@ -549,9 +562,50 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
     // An unreadable journal must not be reported as "nothing pending".
     let pending = pending_intents(root)?.len();
 
+    // Which policy this working copy believes it is running, and who approved it.
+    let policy = match (&config, state::load_adoption(root)) {
+        (Some(config), Ok(adoption)) => {
+            let digest = policy_digest(&effective_policy(config, &config.obligations));
+            Json::obj(vec![
+                (
+                    "path",
+                    Json::str(state::config_path(root).to_string_lossy().to_string()),
+                ),
+                ("policy_version", Json::str(config.policy_version.clone())),
+                ("digest", Json::str(digest.clone())),
+                ("obligations", Json::Num(config.obligations.len() as f64)),
+                (
+                    "adopted",
+                    Json::Bool(
+                        adoption
+                            .as_ref()
+                            .map(|a| a.policy_digest == digest)
+                            .unwrap_or(false),
+                    ),
+                ),
+                (
+                    "adopted_at",
+                    adoption
+                        .as_ref()
+                        .map(|a| Json::str(a.approved_at.clone()))
+                        .unwrap_or(Json::Null),
+                ),
+                (
+                    "adoption_source",
+                    adoption
+                        .as_ref()
+                        .map(|a| Json::str(a.source.clone()))
+                        .unwrap_or(Json::Null),
+                ),
+            ])
+        }
+        (Some(_), Err(e)) => Json::obj(vec![("error", Json::str(e))]),
+        (None, _) => Json::Null,
+    };
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
         ("schema", Json::str("flow-status/1")),
+        ("policy", policy),
         ("branch", Json::str(branch)),
         ("head", Json::str(head)),
         ("tree", Json::str(tree)),
@@ -757,25 +811,28 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
     verify_checkout_content(git, scratch, tree, &expected)
 }
 
-/// Detect a checkout that rewrote the bytes.
+/// Prove that the checkout holds the bytes the tree stores.
 ///
-/// `git worktree add` applies the repository's content filters: with
-/// `core.autocrlf`, `core.eol` or a `.gitattributes` rule, a file holding LF in
-/// the tree is written with CRLF. Type checks cannot see that, so an obligation
-/// asserting on the bytes would see content the tree does not hold while the
-/// receipt claims the tree was verified — a false `PASSED` with no tampering.
+/// `git worktree add` applies the repository's content filters
+/// (`core.autocrlf`, `core.eol`, `.gitattributes`, driver filters). A filter can
+/// rewrite content **without changing its length**, so a size comparison is not
+/// a proof. The exact bytes of every regular file are compared with the blobs the
+/// tree names, read through one bounded `git cat-file --batch`.
 ///
-/// The check compares the on-disk size with the blob size recorded by
-/// `git ls-tree -l`. Every end-of-line conversion changes the size, so this
-/// catches the realistic false-green cheaply. **Limit, stated:** a custom filter
-/// that rewrites content without changing its length is not detected here; that
-/// is recorded as a residual risk rather than papered over.
+/// The comparison is skipped when no filter can apply, and refused (not skipped)
+/// above the entry/byte budget. What this cannot detect is a filter whose output
+/// is byte-identical to the blob: then there is nothing to detect.
 fn verify_checkout_content(
     git: &Git,
     scratch: &Path,
     tree: &str,
     expected: &[(String, String, String, u64)],
 ) -> Result<(), String> {
+    /// Retained bytes for the whole comparison, before refusing.
+    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
+    /// Beyond this entry count the comparison is refused, not skipped.
+    const CONTENT_ENTRIES: usize = 20_000;
+
     let mut conversion_possible = git
         .run(&["config", "--get", "core.autocrlf"])
         .map(|o| matches!(o.stdout.trim(), "true" | "input" | "1"))
@@ -793,23 +850,78 @@ fn verify_checkout_content(
     if !conversion_possible {
         return Ok(());
     }
-    for (mode, oid, path, size) in expected {
-        if mode != "100644" && mode != "100755" {
-            continue;
-        }
-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
-        let meta = fs::symlink_metadata(&full)
-            .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
-        if meta.len() != *size {
+
+    let regular: Vec<&(String, String, String, u64)> = expected
+        .iter()
+        .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
+        .collect();
+    if regular.is_empty() {
+        return Ok(());
+    }
+    if regular.len() > CONTENT_ENTRIES {
+        return Err(format!(
+            "tree {tree} has {} regular files and its checkout may convert content: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",
+            regular.len()
+        ));
+    }
+    let mut request = String::new();
+    for (_, oid, _, _) in &regular {
+        request.push_str(oid);
+        request.push('\n');
+    }
+    let out = git.run_bounded(&["cat-file", "--batch"], Some(request.as_bytes()), None)?;
+    if out.status != 0 {
+        return Err(format!(
+            "cannot read the tree content for {tree}: {}",
+            out.stderr.trim()
+        ));
+    }
+    let bytes: &[u8] = &out.stdout_bytes;
+    let mut position = 0usize;
+    let mut total = 0usize;
+    for (_, oid, path, _) in &regular {
+        let header_end = match bytes[position..].iter().position(|b| *b == b'\n') {
+            Some(offset) => position + offset,
+            None => return Err(format!("truncated cat-file batch before {path:?}")),
+        };
+        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();
+        let mut fields = header.split(' ');
+        let _echo = fields.next();
+        let kind = fields.next().unwrap_or("");
+        if kind != "blob" {
             return Err(format!(
-                "tree {tree} entry {path:?} was checked out with {} bytes but the tree stores {} (blob {}): a content filter (core.autocrlf, core.eol or .gitattributes) rewrote it, so the obligations would not see the verified tree",
-                meta.len(),
-                size,
+                "tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})"
+            ));
+        }
+        let size: usize = fields
+            .next()
+            .and_then(|v| v.parse().ok())
+            .ok_or_else(|| format!("unparsable cat-file header {header:?}"))?;
+        let start = header_end + 1;
+        let end = start + size;
+        if end > bytes.len() {
+            return Err(format!("truncated cat-file batch in {path:?}"));
+        }
+        total += size;
+        if total > CONTENT_BUDGET {
+            return Err(format!(
+                "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget and its checkout may convert content: refusing to certify it"
+            ));
+        }
+        let blob = &bytes[start..end];
+        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+        let disk =
+            fs::read(&full).map_err(|e| format!("cannot read {path:?} after checkout: {e}"))?;
+        if disk != blob {
+            return Err(format!(
+                "tree {tree} entry {path:?} was checked out with different bytes ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, .gitattributes or a driver) rewrote it, so the obligations would not see the verified tree",
+                disk.len(),
+                blob.len(),
                 short(oid)
             ));
         }
+        position = end + 1;
     }
-    let _ = tree;
     Ok(())
 }
 fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> Result<(), String> {
@@ -1513,6 +1625,9 @@ pub fn cmd_publish(
         &commit[..12.min(commit.len())],
         state::unique_suffix()
     );
+    if crash_point("before-intent") {
+        std::process::exit(89);
+    }
     state::append_journal(
         root,
         &Json::obj(vec![
@@ -1525,7 +1640,7 @@ pub fn cmd_publish(
             ("at", Json::str(state::iso8601_now())),
         ]),
     )?;
-    if std::env::var("FLOW_TEST_CRASH").as_deref() == Ok("after-intent") {
+    if crash_point("after-intent") {
         std::process::exit(89);
     }
     let recheck = git.show_ref(&reference)?;
@@ -1562,7 +1677,7 @@ pub fn cmd_publish(
             format!("git update-ref refused: {}", res.stderr.trim()),
         ));
     }
-    if std::env::var("FLOW_TEST_CRASH").as_deref() == Ok("after-ref") {
+    if crash_point("after-ref") {
         std::process::exit(89);
     }
     // Post-CAS observation: the ref must now carry exactly the prepared commit.
@@ -1673,6 +1788,19 @@ fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {
         }
         crate::lock::LockError::Io(why) => refused_code("LOCK_IO", why),
     }
+}
+
+/// Crash-injection point, **debug builds only**.
+///
+/// The test suite needs to interrupt a publication between its durable steps.
+/// A released binary must not honour an environment variable that can skip the
+/// outcome record, so the variable is ignored outside `debug_assertions` — and a
+/// CI step proves it on the release binary.
+fn crash_point(name: &str) -> bool {
+    if !cfg!(debug_assertions) {
+        return false;
+    }
+    std::env::var("FLOW_TEST_CRASH").as_deref() == Ok(name)
 }
 
 fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
@@ -1931,6 +2059,44 @@ pub fn cmd_explain(
                 .collect(),
         ),
     };
+    // A receipt is evidence only if its content still matches its digest and the
+    // logs it names are present. Inspection must say so explicitly: displaying a
+    // tampered receipt as `PASSED` is the false green Flow refuses at publication.
+    let (receipt_json, receipt_trust, receipt_display, evidence_complete, missing_logs) =
+        match &receipt {
+            None => (
+                Json::Null,
+                "NO_RECEIPT",
+                Json::Null,
+                false,
+                Vec::<String>::new(),
+            ),
+            Some(r) => {
+                let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
+                let missing: Vec<String> = r
+                    .logs
+                    .iter()
+                    .filter(|rel| !root.join(rel.as_str()).is_file())
+                    .cloned()
+                    .collect();
+                let display = if integrity_ok {
+                    Json::str(r.status.clone())
+                } else {
+                    Json::str("RECEIPT_INTEGRITY_INVALID")
+                };
+                (
+                    r.json.clone(),
+                    if integrity_ok {
+                        "INTEGRITY_OK"
+                    } else {
+                        "RECEIPT_INTEGRITY_INVALID"
+                    },
+                    display,
+                    integrity_ok && missing.is_empty(),
+                    missing,
+                )
+            }
+        };
     Ok(Json::obj(vec![
         ("status", Json::str("EXPLAIN")),
         ("tree", Json::str(tree)),
@@ -1949,7 +2115,14 @@ pub fn cmd_explain(
             },
         ),
         ("proposals", proposals),
-        ("receipt", receipt.map(|r| r.json).unwrap_or(Json::Null)),
+        ("receipt", receipt_json),
+        ("receipt_trust", Json::str(receipt_trust)),
+        ("receipt_status_display", receipt_display),
+        ("evidence_complete", Json::Bool(evidence_complete)),
+        (
+            "missing_logs",
+            Json::Arr(missing_logs.into_iter().map(Json::str).collect()),
+        ),
         ("journal", Json::Arr(related)),
     ]))
 }

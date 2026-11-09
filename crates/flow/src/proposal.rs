@@ -90,6 +90,11 @@ impl Proposal {
     }
 
     pub fn load(root: &Path, id: &str) -> Result<Option<Proposal>, String> {
+        if !paths::is_record_id(id) {
+            return Err(format!(
+                "INVALID_RECORD_ID: {id:?} is not a 32-character hex proposal id"
+            ));
+        }
         let path = Self::metadata_path(root, id);
         if !path.exists() {
             return Ok(None);
@@ -204,6 +209,11 @@ impl Candidate {
     }
 
     pub fn load(root: &Path, id: &str) -> Result<Option<Candidate>, String> {
+        if !paths::is_record_id(id) {
+            return Err(format!(
+                "INVALID_RECORD_ID: {id:?} is not a 32-character hex candidate id"
+            ));
+        }
         let path = Self::path(root, id);
         if !path.exists() {
             return Ok(None);

@@ -21,6 +21,9 @@ use std::time::{Duration, Instant};
 pub struct Output {
     pub status: i32,
     pub stdout: String,
+    /// Raw stdout bytes. `stdout` is a lossy view for humans; content comparison
+    /// must never go through it, because a blob is not guaranteed to be UTF-8.
+    pub stdout_bytes: Vec<u8>,
     pub stderr: String,
 }
 
@@ -149,6 +152,7 @@ impl Git {
         Ok(Output {
             status: exit.unwrap_or(-1),
             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),
+            stdout_bytes: stdout.bytes,
             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),
         })
     }

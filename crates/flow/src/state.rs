@@ -327,6 +327,20 @@ fn guard_below_flow(path: &Path) -> Result<(), String> {
             Err(_) => break,
         }
     }
+    // A hard link is indistinguishable from a regular file on Windows without
+    // Win32, so the check exists where the metadata exposes it. It closes the
+    // "journal appended through a link to an outside file" shape on Unix.
+    #[cfg(unix)]
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        use std::os::unix::fs::MetadataExt;
+        if meta.is_file() && meta.nlink() > 1 {
+            return Err(format!(
+                "refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace",
+                path.display(),
+                meta.nlink()
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -461,6 +475,12 @@ impl Receipt {
     /// Selected (partial) executions are written to a different file, so a
     /// partial run can never be mistaken for — or overwrite — a complete proof.
     pub fn load(root: &Path, tree_oid: &str) -> Result<Option<Receipt>, String> {
+        // The tree id becomes a file name. It must be an object id, never a path.
+        if !crate::paths::is_object_id(tree_oid) {
+            return Err(format!(
+                "INVALID_TREE_ID: {tree_oid:?} is not a 40- or 64-character hex object id, so it cannot name a receipt"
+            ));
+        }
         let path = receipt_path(root, tree_oid);
         if !path.exists() {
             return Ok(None);

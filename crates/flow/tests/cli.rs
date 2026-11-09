@@ -1235,3 +1235,213 @@ fn unknown_and_valueless_options_are_usage_errors() {
         "no usage error may move a ref"
     );
 }
+
+// ------------------------------------------------- production-candidate gates
+/// `explain --tree` takes an object id, not a path: a traversal attempt must be
+/// refused before any file is read.
+#[test]
+fn explain_refuses_a_path_instead_of_a_tree_id() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    for bad in [
+        "../../../etc/passwd",
+        "/etc/passwd",
+        "deadbeef",
+        "..",
+        "receipts/x",
+    ] {
+        let (code, out) = flow(&repo.path, &["explain", "--tree", bad]);
+        assert_eq!(code, 1, "explain --tree {bad:?} must be refused: {out}");
+        let text = out.to_string();
+        assert!(
+            text.contains("INVALID_TREE_ID") || text.contains("not a 40- or 64-character hex"),
+            "the refusal must name the reason: {out}"
+        );
+    }
+    let (code, out) = flow(&repo.path, &["proposals", "show", "../../../etc/passwd"]);
+    assert_eq!(code, 1, "proposals show with a path must be refused: {out}");
+    let (code, out) = flow(&repo.path, &["run", "--candidate", "../../x"]);
+    assert_eq!(
+        code, 1,
+        "run --candidate with a path must be refused: {out}"
+    );
+}
+
+/// Inspection must never present a receipt whose content no longer matches its
+/// digest as a valid `PASSED` proof.
+#[test]
+fn status_and_explain_qualify_a_tampered_receipt() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let tree = run
+        .get("tree_oid")
+        .and_then(Json::as_str)
+        .unwrap()
+        .to_string();
+    let path = repo
+        .path
+        .join(".flow")
+        .join("receipts")
+        .join(format!("{tree}.json"));
+    let mut value = read_json_file(&path);
+    if let Json::Obj(pairs) = &mut value {
+        for (k, v) in pairs.iter_mut() {
+            if k == "status" {
+                *v = Json::str("PASSED");
+            }
+        }
+        pairs.push(("note".into(), Json::str("edited after the run")));
+    }
+    write_json_file(&path, &value);
+
+    let (code, status) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{status}");
+    let latest = status.get("latest_receipt").cloned().unwrap_or(Json::Null);
+    assert_eq!(
+        latest.get("trust").and_then(Json::as_str),
+        Some("RECEIPT_INTEGRITY_INVALID"),
+        "status must qualify the receipt: {status}"
+    );
+    assert_eq!(
+        latest.get("status").and_then(Json::as_str),
+        Some("RECEIPT_INTEGRITY_INVALID"),
+        "a tampered receipt must not be displayed as PASSED: {status}"
+    );
+
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("receipt_trust").and_then(Json::as_str),
+        Some("RECEIPT_INTEGRITY_INVALID")
+    );
+    assert_eq!(
+        explain.get("receipt_status_display").and_then(Json::as_str),
+        Some("RECEIPT_INTEGRITY_INVALID")
+    );
+    assert_eq!(
+        explain.get("evidence_complete").and_then(Json::as_bool),
+        Some(false)
+    );
+}
+
+/// A diagnostic that found a broken guarantee exits non-zero, as documented.
+#[test]
+fn doctor_exits_nonzero_when_a_guarantee_is_broken() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    fs::write(journal_file(&repo.path), "{\"truncated\": ").unwrap();
+    let (code, out) = flow(&repo.path, &["doctor"]);
+    assert_eq!(code, 1, "doctor must fail on a torn journal: {out}");
+    assert_eq!(status_of(&out), "REPORT");
+    assert_eq!(out.get("overall").and_then(Json::as_str), Some("FAILED"));
+}
+
+/// `status` says which policy is in force and who approved it.
+#[test]
+fn status_reports_policy_provenance() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    let policy = out.get("policy").cloned().unwrap_or(Json::Null);
+    assert!(
+        policy
+            .get("path")
+            .and_then(Json::as_str)
+            .map(|p| p.ends_with("config.json"))
+            .unwrap_or(false),
+        "status must show the policy path: {out}"
+    );
+    assert!(policy
+        .get("digest")
+        .and_then(Json::as_str)
+        .map(|d| d.len() >= 12)
+        .unwrap_or(false));
+    assert_eq!(policy.get("adopted").and_then(Json::as_bool), Some(true));
+    assert!(policy.get("adopted_at").and_then(Json::as_str).is_some());
+}
+
+/// Deleted obligation logs are missing evidence, not a silent pass.
+#[test]
+fn explain_reports_missing_logs_as_incomplete_evidence() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let tree = run
+        .get("tree_oid")
+        .and_then(Json::as_str)
+        .unwrap()
+        .to_string();
+    let log_dir = repo.path.join(".flow").join("logs").join(&tree);
+    for entry in fs::read_dir(&log_dir).unwrap().flatten() {
+        fs::remove_file(entry.path()).unwrap();
+    }
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("evidence_complete").and_then(Json::as_bool),
+        Some(false)
+    );
+    assert!(
+        explain
+            .get("missing_logs")
+            .and_then(Json::as_arr)
+            .map(|a| !a.is_empty())
+            .unwrap_or(false),
+        "the missing logs must be listed: {explain}"
+    );
+    // Publication still works: the receipt is intact, the logs are evidence that
+    // is displayed as incomplete. This is a documentation decision, not a gate.
+    let (code, published) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code, 0,
+        "publish does not depend on log retention: {published}"
+    );
+}
+
+/// A hard link cannot be distinguished from a regular file on Windows without
+/// Win32, so this closes the shape where the OS exposes it.
+#[cfg(unix)]
+#[test]
+fn a_hardlinked_journal_is_not_written_through() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+    let outside = std::env::temp_dir().join(format!("flow-hardlink-{}", std::process::id()));
+    fs::write(&outside, "outside\n").unwrap();
+    let journal = journal_file(&repo.path);
+    let _ = fs::remove_file(&journal);
+    fs::hard_link(&outside, &journal).unwrap();
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "a hardlinked journal must be refused: {out}");
+    assert_eq!(fs::read_to_string(&outside).unwrap(), "outside\n");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+    let _ = fs::remove_file(&outside);
+}
+
+/// The window before the durable intent: nothing was written, so there is
+/// nothing to reconcile and no ref moved.
+#[test]
+fn crash_before_intent_leaves_no_pending_intent() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+    let before = fs::read_to_string(journal_file(&repo.path)).unwrap();
+    let (crash, _) = flow_with_env(
+        &repo.path,
+        &["publish"],
+        &[("FLOW_TEST_CRASH", "before-intent")],
+    );
+    assert_eq!(crash, 89, "the simulated crash must not look like success");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+    assert_eq!(
+        fs::read_to_string(journal_file(&repo.path)).unwrap(),
+        before,
+        "no intent may be appended before the injection point"
+    );
+    let (code, out) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(status_of(&out), "RECONCILED");
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(false)
+    );
+}

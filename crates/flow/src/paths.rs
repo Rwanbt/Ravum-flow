@@ -16,6 +16,19 @@ const RESERVED: &[&str] = &[
 ];
 
 /// Validate a repository-relative path as written in a receipt or config.
+/// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.
+///
+/// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a
+/// raw `../` or an absolute path must never reach the filesystem.
+pub fn is_object_id(value: &str) -> bool {
+    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// True for a Flow record id (proposal / candidate): 32 lowercase hex characters.
+pub fn is_record_id(value: &str) -> bool {
+    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())
+}
+
 pub fn validate_relative(path: &str) -> Result<(), String> {
     if path.is_empty() {
         return Err("empty path".into());

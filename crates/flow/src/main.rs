@@ -180,7 +180,15 @@ fn dispatch(args: &[String]) -> u8 {
             };
             match result {
                 Ok(value) => {
-                    let code = exit_code_for(&value);
+                    let mut code = exit_code_for(&value);
+                    // A diagnostic that found a broken guarantee is not a success.
+                    // The documented contract is `0 when overall=OK, 1 when
+                    // overall=FAILED`, and it is tested.
+                    if command == "doctor"
+                        && value.get("overall").and_then(Json::as_str) == Some("FAILED")
+                    {
+                        code = 1;
+                    }
                     emit(value);
                     code
                 }
