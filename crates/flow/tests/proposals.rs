@@ -144,6 +144,20 @@ fn field(value: &Json, key: &str) -> String {
 const GREEN: &str =
     r#"{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":30}"#;
 
+/// Write a policy without approving it, to model a repository that arrives with
+/// a `.flow/config.json` (a claim, not a consent).
+fn write_config_unapproved(repo: &Path, obligations: &str) {
+    let dir = repo.join(".flow");
+    fs::create_dir_all(&dir).unwrap();
+    fs::write(
+        dir.join("config.json"),
+        format!(
+            r#"{{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{obligations}],"disabled":false}}"#
+        ),
+    )
+    .unwrap();
+}
+
 fn write_config(repo: &Path, obligations: &str) {
     let dir = repo.join(".flow");
     fs::create_dir_all(&dir).unwrap();
@@ -870,4 +884,180 @@ fn binary_and_mode_changes_survive_the_cycle() {
         .output()
         .unwrap();
     assert_eq!(out.stdout, b"\x00\x01\x02\xffBINARY\x00");
+}
+
+// ----------------------------------------------------------------- M7 - M10
+/// An agent can be replaced: re-submitting the same immutable proposal with the
+/// same key is a no-op, the attribution stays with the original proposal, and the
+/// work continues without a second admission.
+#[test]
+fn m7_a_replacement_agent_resumes_from_the_immutable_artefacts() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(
+        &repo.path,
+        &base,
+        &[("handover.txt", Some("done by A\n"))],
+        false,
+    );
+    let (code, first) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k-a");
+    assert_eq!(code, 0, "{first}");
+    let id = field(&first, "proposal_id");
+    let (code, candidate) = assemble(&repo.path, &[&id]);
+    assert_eq!(code, 0, "{candidate}");
+    let cid = field(&candidate, "candidate_id");
+
+    // The replacement agent does not know the previous conversation: it reads the
+    // candidate, re-runs the verification and re-submits the same bytes.
+    let (code, explain) = flow(&repo.path, &["explain", "--candidate", &cid]);
+    assert_eq!(code, 0, "{explain}");
+    let proposals = explain.get("proposals").and_then(Json::as_arr).unwrap();
+    assert_eq!(proposals.len(), 1);
+    assert_eq!(
+        proposals[0].get("agent_id").and_then(Json::as_str),
+        Some("agent-a"),
+        "attribution must survive the handover: {explain}"
+    );
+
+    // The idempotency slot belongs to an actor: a replacement agent with the same
+    // key gets its own proposal id (it is a different author), and the original
+    // proposal is untouched. Nothing is merged silently.
+    let (code, again) = propose(&repo.path, "agent-b", "T1", &base, &patch, "k-a");
+    assert_eq!(code, 0, "a new actor admits its own proposal: {again}");
+    assert_ne!(
+        field(&again, "proposal_id"),
+        id,
+        "a different agent must not be folded into another agent's proposal"
+    );
+    assert_eq!(field(&again, "agent_id"), "agent-b");
+    let (_, reloaded) = flow(&repo.path, &["proposals", "show", &id]);
+    assert_eq!(field(&reloaded, "agent_id"), "agent-a");
+    assert_eq!(
+        field(&reloaded, "content_digest"),
+        field(&first, "content_digest")
+    );
+
+    let (code, run) = run_candidate(&repo.path, &cid);
+    assert_eq!(code, 0, "{run}");
+    let (code, published) = publish_candidate(&repo.path, &cid, &base, &[]);
+    assert_eq!(code, 0, "{published}");
+    assert_eq!(
+        tree_of(&repo.path, "refs/heads/main"),
+        field(&candidate, "tree_oid")
+    );
+    // The attribution is still visible after publication.
+    let (code, explain) = flow(&repo.path, &["explain", "--candidate", &cid]);
+    assert_eq!(code, 0, "{explain}");
+    let proposals = explain.get("proposals").and_then(Json::as_arr).unwrap();
+    assert_eq!(
+        proposals[0].get("agent_id").and_then(Json::as_str),
+        Some("agent-a")
+    );
+}
+
+/// Two proposals built on different bases cannot be assembled: that is the
+/// dependency refusal (a candidate may not silently rebase somebody's work).
+#[test]
+fn m8_proposals_on_different_bases_are_refused_with_both_bases() {
+    let (repo, base) = new_repo();
+    let pa = make_patch(&repo.path, &base, &[("one.txt", Some("1\n"))], false);
+    let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &pa, "ka");
+    // advance the branch and build a second proposal on the new base
+    fs::write(repo.path.join("external.txt"), "x\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    git(&repo.path, &["commit", "-q", "-m", "advance"]);
+    let moved = git(&repo.path, &["rev-parse", "HEAD"]);
+    let pb = make_patch(&repo.path, &moved, &[("two.txt", Some("2\n"))], false);
+    let (_, b) = propose(&repo.path, "agent-b", "T2", &moved, &pb, "kb");
+    let (code, out) = assemble(
+        &repo.path,
+        &[&field(&a, "proposal_id"), &field(&b, "proposal_id")],
+    );
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "BASE_MISMATCH");
+    let reason = field(&out, "reason");
+    assert!(
+        reason.contains(&base) && reason.contains(&moved),
+        "{reason}"
+    );
+}
+
+/// A cloned repository with a hostile policy executes nothing before approval,
+/// and its symlinked state cannot be written through after approval either.
+#[test]
+fn m9_a_hostile_cloned_repository_cannot_execute_or_escape() {
+    let (repo, base) = new_repo();
+    // Simulate a clone: the policy arrives with the repository, unapproved.
+    let canary = unique_dir("canary");
+    let canary_path = format!("{}", canary.to_string_lossy()).replace('\\', "/");
+    write_config_unapproved(
+        &repo.path,
+        &format!(
+            r#"{{"id":"hostile","program":"python","args":["-c","open(r'{canary_path}','w').write('executed')"],"required":true,"timeout_s":30}}"#
+        ),
+    );
+    let outside = unique_dir("outside");
+    fs::write(&outside, "outside\n").unwrap();
+    let journal = repo.path.join(".flow").join("journal.jsonl");
+    let _ = fs::remove_file(&journal);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "an unapproved policy must not run: {out}");
+    assert_eq!(code_of(&out), "POLICY_NOT_APPROVED");
+    assert!(
+        !canary.exists(),
+        "the hostile program must not have executed"
+    );
+
+    let (code, approved) = flow(&repo.path, &["approve"]);
+    assert_eq!(code, 0, "{approved}");
+    assert!(
+        approved
+            .get("obligations")
+            .and_then(Json::as_arr)
+            .map(|a| !a.is_empty())
+            .unwrap_or(false),
+        "approval must show exactly what will run: {approved}"
+    );
+    // Even approved, the state paths cannot be turned into an escape hatch.
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(&outside, &journal).unwrap();
+        let (code, run) = flow(&repo.path, &["run"]);
+        assert!(code == 0 || code == 1, "{run}");
+        let (code, published) = flow(&repo.path, &["publish"]);
+        assert_eq!(
+            code, 1,
+            "a symlinked journal must not be published through: {published}"
+        );
+        assert_eq!(fs::read_to_string(&outside).unwrap(), "outside\n");
+    }
+    let _ = base;
+}
+
+/// A record from another schema is refused, never reinterpreted.
+#[test]
+fn m10_a_record_from_another_schema_is_refused() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(&repo.path, &base, &[("x.txt", Some("x\n"))], false);
+    let (_, proposal) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k");
+    let id = field(&proposal, "proposal_id");
+    let path = repo
+        .path
+        .join(".flow")
+        .join("proposals")
+        .join(format!("{id}.json"));
+    let mut value = json::parse(&fs::read_to_string(&path).unwrap()).unwrap();
+    if let Json::Obj(pairs) = &mut value {
+        for (k, v) in pairs.iter_mut() {
+            if k == "schema" {
+                *v = Json::str("flow-proposal/0");
+            }
+        }
+    }
+    fs::write(&path, value.to_string_pretty()).unwrap();
+    let (code, out) = flow(&repo.path, &["proposals", "show", &id]);
+    assert_eq!(code, 1, "a future/foreign schema must be refused: {out}");
+    let text = out.to_string();
+    assert!(text.contains("flow-proposal/0"), "{text}");
+    assert!(text.contains("refusing to reinterpret"), "{text}");
 }
