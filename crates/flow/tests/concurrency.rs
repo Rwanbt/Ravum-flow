@@ -151,6 +151,9 @@ fn write_config(repo: &Path, obligations: &str) {
         ),
     )
     .unwrap();
+    // An unapproved policy is never executed, so the fixture approves it first.
+    let (code, out) = flow(repo, &["approve"]);
+    assert_eq!(code, 0, "policy must be adoptable: {out}");
 }
 
 /// Flow's own state must never enter the verified tree. `flow init` grows the
