@@ -1,0 +1,20 @@
+name: Research or verification
+description: Primary-source research, competing architectures or negative tests
+title: "[RESEARCH] "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Falsifiable question
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources / SHA / licenses / options O0-O3
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence needed and stop conditions

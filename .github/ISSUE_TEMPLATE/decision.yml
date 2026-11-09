@@ -1,0 +1,20 @@
+name: Human decision request
+description: Capture options, risks and sign-off for an ADR/RFC
+title: "[DECISION] "
+body:
+  - type: textarea
+    id: options
+    attributes:
+      label: Alternatives including O0 and consequences
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Proof, SHA, risks, budgets, rights
+    validations:
+      required: true
+  - type: textarea
+    id: approval
+    attributes:
+      label: Exact human approval requested (not granted by this issue)

@@ -1,0 +1,23 @@
+name: User story
+description: A user capability with acceptance and negative tests
+title: "[US] "
+body:
+  - type: markdown
+    attributes:
+      value: "A story is not authorization to implement."
+  - type: textarea
+    id: story
+    attributes:
+      label: As a / I want / so that
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Positive and negative acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: ADR, human GO, dependencies, verifiable evidence
