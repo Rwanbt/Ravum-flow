@@ -174,6 +174,10 @@ fn write_config(repo: &Path, obligations: &str) {
         ),
     )
     .unwrap();
+    // The adoption gate: a policy is not executed until this working copy
+    // approved its digest. Tests adopt it the way an operator would.
+    let (code, out) = flow(repo, &["approve"]);
+    assert_eq!(code, 0, "policy must be adoptable: {out}");
 }
 
 fn exclude_flow(repo: &Path) {
