@@ -1,17 +1,18 @@
 # Documentation index
-- [Project charter](PROJECT_CHARTER.md)
-- [Architecture options and state model](ARCHITECTURE.md)
-- [Human decision register](DECISION_REGISTER.md)
-- [Roadmap and authorization gates](ROADMAP.md)
-- [User stories](USER_STORIES.md)
-- [Historical RF tasks and phase mappings](BACKLOG.md)
-- [S9 protocol](BENCHMARK_S9.md)
-- [Security/negative test matrix](SECURITY_TESTS.md)
-- [Ravum integration, ownership and rights](RAVUM_BOUNDARY.md)
-- [Traceability](TRACEABILITY.md)
-- [Flow ADRs — all PROPOSED](adr/README.md)
-- [Historical Flow RFCs — all PROPOSED](rfc/README.md)
-- [DeepSeek GOAL](DEEPSEEK_GOAL.md)
-- [V6 complete master, original Ravum ADRs and Claude report](reviews/RAVUM-FLOW-V6-POST-CLAUDE-REFERENCE.md)
 
-All documents describe a proposed system and must be verified against the live repositories/primary sources at use time.
+- [V6 master reference, 42 Ravum ADRs and Claude report](reviews/RAVUM-FLOW-V6-POST-CLAUDE-REFERENCE.md)
+- [Project charter](PROJECT_CHARTER.md)
+- [Architecture](ARCHITECTURE.md)
+- [Human decision register](DECISION_REGISTER.md)
+- [Roadmap / gates](ROADMAP.md)
+- [User stories](USER_STORIES.md)
+- [Backlog RF-001..026](BACKLOG.md)
+- [Benchmark S9](BENCHMARK_S9.md)
+- [Security negative-test matrix](SECURITY_TESTS.md)
+- [Ravum / Flow boundary](RAVUM_BOUNDARY.md)
+- [Traceability](TRACEABILITY.md)
+- [New Flow ADRs](adr/README.md)
+- [Historic Flow RFC proposals](rfc/README.md)
+- [DeepSeek GOAL](DEEPSEEK_GOAL.md)
+
+**All technical choices remain proposals until a human sign-off.**
