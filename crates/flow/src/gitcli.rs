@@ -12,7 +12,7 @@
 //!   delay the call by at most [`READER_GRACE`], never indefinitely.
 
 use std::ffi::OsString;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
@@ -38,15 +38,118 @@ impl Git {
     }
 
     pub fn run(&self, args: &[&str]) -> Result<Output, String> {
-        let out = self
-            .base()
-            .args(args)
-            .output()
+        self.run_bounded(args, None, None)
+    }
+
+    /// Run one Git plumbing command with bounded memory, bounded wall clock and
+    /// an optional explicit index.
+    ///
+    /// * `stdin` is written to the child and the pipe is then closed; it is
+    ///   written from a detached thread so a child that produces output before
+    ///   reading its input cannot deadlock the call.
+    /// * `index` sets `GIT_INDEX_FILE` **for this invocation only**. The ambient
+    ///   environment is still scrubbed, so an inherited `GIT_INDEX_FILE` is
+    ///   ignored; the path must be absolute, and the caller is responsible for
+    ///   having created it (this is how proposal assembly avoids the user's
+    ///   index).
+    /// * At most [`MAX_GIT_STREAM_BYTES`] is retained per stream. Past that the
+    ///   call **fails** with `GIT_OUTPUT_TOO_LARGE` instead of truncating: a
+    ///   clipped Git answer is not an answer, and it must never be parsed as one.
+    /// * The wall clock is bounded by [`GIT_TIMEOUT_S`]; the child's tree is
+    ///   killed and the call fails with `GIT_TIMEOUT`.
+    pub fn run_bounded(
+        &self,
+        args: &[&str],
+        stdin: Option<&[u8]>,
+        index: Option<&Path>,
+    ) -> Result<Output, String> {
+        let mut cmd = self.base();
+        cmd.args(args)
+            .stdin(if stdin.is_some() {
+                Stdio::piped()
+            } else {
+                Stdio::null()
+            })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        if let Some(path) = index {
+            if !path.is_absolute() {
+                return Err(format!(
+                    "GIT_INDEX_REFUSED: index override {} is not an absolute path",
+                    path.display()
+                ));
+            }
+            cmd.env("GIT_INDEX_FILE", path);
+        }
+        let started = Instant::now();
+        let mut child = cmd
+            .spawn()
             .map_err(|e| format!("cannot run git {args:?}: {e}"))?;
+        let stdout_pipe = child.stdout.take().expect("piped stdout");
+        let stderr_pipe = child.stderr.take().expect("piped stderr");
+        let out_rx = spawn_reader_with_cap(stdout_pipe, MAX_GIT_STREAM_BYTES);
+        let err_rx = spawn_reader_with_cap(stderr_pipe, MAX_GIT_STREAM_BYTES);
+        if let Some(bytes) = stdin {
+            if let Some(mut pipe) = child.stdin.take() {
+                let owned = bytes.to_vec();
+                // Detached on purpose: the child may exit before reading all of
+                // its input, and a broken pipe is not an error worth reporting.
+                let _ = std::thread::Builder::new()
+                    .name("flow-git-stdin".into())
+                    .spawn(move || {
+                        let _ = pipe.write_all(&owned);
+                    });
+            }
+        }
+
+        let deadline = started + Duration::from_secs(GIT_TIMEOUT_S);
+        let mut timed_out = false;
+        let mut exit = None;
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    exit = status.code();
+                    break;
+                }
+                Ok(None) => {
+                    if Instant::now() >= deadline {
+                        timed_out = true;
+                        kill_tree(child.id());
+                        let _ = child.kill();
+                        reap_bounded(&mut child);
+                        break;
+                    }
+                    std::thread::sleep(POLL_INTERVAL);
+                }
+                Err(e) => {
+                    let _ = child.kill();
+                    reap_bounded(&mut child);
+                    return Err(format!("git {args:?} could not be waited for: {e}"));
+                }
+            }
+        }
+        let reader_deadline = Instant::now() + READER_GRACE;
+        let stdout = receive(&out_rx, reader_deadline);
+        let stderr = receive(&err_rx, reader_deadline);
+        if timed_out {
+            return Err(format!(
+                "GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete"
+            ));
+        }
+        if stdout.truncated {
+            return Err(format!(
+                "GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stdout; refusing to parse a truncated answer"
+            ));
+        }
+        if stderr.truncated {
+            return Err(format!(
+                "GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stderr; refusing to parse a truncated answer"
+            ));
+        }
         Ok(Output {
-            status: out.status.code().unwrap_or(-1),
-            stdout: String::from_utf8_lossy(&out.stdout).to_string(),
-            stderr: String::from_utf8_lossy(&out.stderr).to_string(),
+            status: exit.unwrap_or(-1),
+            stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),
+            stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),
         })
     }
 
@@ -109,14 +212,12 @@ impl Git {
 /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come
 /// from somewhere else.
 pub fn toplevel(cwd: &Path) -> Result<PathBuf, String> {
-    let out = git_command(cwd)
-        .args(["rev-parse", "--show-toplevel"])
-        .output()
-        .map_err(|e| format!("cannot run git: {e}"))?;
-    if !out.status.success() {
+    let git = Git::new(cwd);
+    let out = git.run_bounded(&["rev-parse", "--show-toplevel"], None, None)?;
+    if out.status != 0 {
         return Err("not inside a Git work tree".into());
     }
-    let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    let path = out.stdout.trim().to_string();
     PathBuf::from(path)
         .canonicalize()
         .map_err(|e| format!("cannot canonicalise repository root: {e}"))
@@ -287,18 +388,33 @@ struct Captured {
     truncated: bool,
 }
 
+/// Retained Git output per stream before the call fails.
+///
+/// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on
+/// a big tree) can be large. It is still a bound: past it the answer is refused,
+/// never clipped.
+pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;
+
+/// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged
+/// child from hanging the CLI forever, not to police slow repositories.
+pub const GIT_TIMEOUT_S: u64 = 300;
+
 /// Read `pipe` to EOF while retaining at most [`MAX_STREAM_BYTES`].
 ///
 /// The surplus is still read and discarded: stopping the read would fill the
 /// pipe and deadlock a child that is writing (for example during a timeout).
-fn read_capped<R: Read>(mut pipe: R) -> Captured {
+fn read_capped<R: Read>(pipe: R) -> Captured {
+    read_capped_at(pipe, MAX_STREAM_BYTES)
+}
+
+fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
     let mut captured = Captured::default();
     let mut chunk = [0u8; 8192];
     loop {
         match pipe.read(&mut chunk) {
             Ok(0) => break,
             Ok(n) => {
-                let room = MAX_STREAM_BYTES.saturating_sub(captured.bytes.len());
+                let room = cap.saturating_sub(captured.bytes.len());
                 if room == 0 {
                     captured.truncated = true;
                     continue;
@@ -320,11 +436,18 @@ fn read_capped<R: Read>(mut pipe: R) -> Captured {
 /// result if it ever reaches EOF and otherwise stays parked on the pipe (see
 /// the non-guarantees on [`run_obligation`]).
 fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {
+    spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)
+}
+
+fn spawn_reader_with_cap<R: Read + Send + 'static>(
+    pipe: R,
+    cap: usize,
+) -> mpsc::Receiver<Captured> {
     let (tx, rx) = mpsc::channel();
     let _ = std::thread::Builder::new()
         .name("flow-obligation-reader".into())
         .spawn(move || {
-            let _ = tx.send(read_capped(pipe));
+            let _ = tx.send(read_capped_at(pipe, cap));
         });
     rx
 }
