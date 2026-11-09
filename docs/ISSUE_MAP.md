@@ -1,6 +1,6 @@
-# GitHub issue map — verified 2026-11-09
+# GitHub issue map — 47 open issues, verified 2026-11-09
 
-The 26 historical IDs RF-001..RF-026 and the six H decisions were created in GitHub. Numbers are **not** substitutes for stable RF IDs. All remain open; an open issue is not permission to implement.
+The 26 historical IDs RF-001..RF-026, six H decisions and 15 user stories US-001..US-015 were created in GitHub. Numbers are **not** substitutes for stable RF IDs. All remain open; an open issue is not permission to implement.
 
 ## Human decisions
 
@@ -45,3 +45,23 @@ The 26 historical IDs RF-001..RF-026 and the six H decisions were created in Git
 | RF-026 | [#32](https://github.com/Rwanbt/Ravum-flow/issues/32) | R1–R7 conditionnel | OPEN / implementation gated |
 
 See [backlog](BACKLOG.md), [user stories](USER_STORIES.md), [decision register](DECISION_REGISTER.md), [DeepSeek GOAL](DEEPSEEK_GOAL.md). Proposed phase mappings are reviewed and can be amended without changing historic task ID or wording.
+
+## User stories (15)
+
+| Stable ID | Issue | Status |
+|---|---|---|
+| US-001 | [#34](https://github.com/Rwanbt/Ravum-flow/issues/34) | Product/user-story proposal; requires future GO to implement |
+| US-002 | [#35](https://github.com/Rwanbt/Ravum-flow/issues/35) | Product/user-story proposal; requires future GO to implement |
+| US-003 | [#36](https://github.com/Rwanbt/Ravum-flow/issues/36) | Product/user-story proposal; requires future GO to implement |
+| US-004 | [#37](https://github.com/Rwanbt/Ravum-flow/issues/37) | Product/user-story proposal; requires future GO to implement |
+| US-005 | [#38](https://github.com/Rwanbt/Ravum-flow/issues/38) | Product/user-story proposal; requires future GO to implement |
+| US-006 | [#39](https://github.com/Rwanbt/Ravum-flow/issues/39) | Product/user-story proposal; requires future GO to implement |
+| US-007 | [#40](https://github.com/Rwanbt/Ravum-flow/issues/40) | Product/user-story proposal; requires future GO to implement |
+| US-008 | [#41](https://github.com/Rwanbt/Ravum-flow/issues/41) | Product/user-story proposal; requires future GO to implement |
+| US-009 | [#42](https://github.com/Rwanbt/Ravum-flow/issues/42) | Product/user-story proposal; requires future GO to implement |
+| US-010 | [#43](https://github.com/Rwanbt/Ravum-flow/issues/43) | Product/user-story proposal; requires future GO to implement |
+| US-011 | [#44](https://github.com/Rwanbt/Ravum-flow/issues/44) | Product/user-story proposal; requires future GO to implement |
+| US-012 | [#45](https://github.com/Rwanbt/Ravum-flow/issues/45) | Product/user-story proposal; requires future GO to implement |
+| US-013 | [#46](https://github.com/Rwanbt/Ravum-flow/issues/46) | Product/user-story proposal; requires future GO to implement |
+| US-014 | [#47](https://github.com/Rwanbt/Ravum-flow/issues/47) | Product/user-story proposal; requires future GO to implement |
+| US-015 | [#48](https://github.com/Rwanbt/Ravum-flow/issues/48) | Product/user-story proposal; requires future GO to implement |
