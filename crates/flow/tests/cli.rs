@@ -439,3 +439,460 @@ fn program_exists(name: &str) -> bool {
     std::env::split_paths(&path)
         .any(|dir| dir.join(name).is_file() || dir.join(format!("{name}.exe")).is_file())
 }
+
+// =================================================================== P0 gates
+//
+// The tests below reproduce the three blocking defects recorded in
+// docs/reviews/FLOW-FOUNDATION-P0-HARDENING-REPORT.md. They are written against
+// the observable CLI contract only (JSON fields + exit codes), so the *same*
+// test body runs unchanged on the defective baseline and on the corrected
+// build: baseline FAIL is the reproduction, fixed PASS is the proof.
+//
+//   P0-A  a partial execution was recorded as a complete PASSED proof
+//   P0-B  a receipt stayed valid after the verification policy changed
+//   P0-C  an unreadable journal was reported as a successful reconciliation
+//
+// A test here is a *gate*: if it fails, publication must not be considered safe.
+
+const GREEN: &str =
+    r#"{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":30}"#;
+const RED: &str = r#"{"id":"red","program":"git","args":["rev-parse","--verify","refs/heads/definitely-absent"],"required":true,"timeout_s":30}"#;
+
+/// Flow's own state (`config`, `journal`, `receipts`) must never enter the
+/// verified tree: otherwise every policy change moves the tree OID and the
+/// staleness scenarios cannot even be expressed. `flow init` grows the same
+/// exclusion in `.flow/.gitignore`; the tests set it on the fixture directly so
+/// that the baseline (which lacks that fix) is exercised identically.
+fn exclude_flow(repo: &Path) {
+    let info = repo.join(".git").join("info");
+    fs::create_dir_all(&info).unwrap();
+    let path = info.join("exclude");
+    let mut text = fs::read_to_string(&path).unwrap_or_default();
+    if !text.contains(".flow/") {
+        text.push_str(".flow/\n");
+    }
+    fs::write(path, text).unwrap();
+}
+
+fn receipt_file(repo: &Path, tree: &str) -> PathBuf {
+    repo.join(".flow")
+        .join("receipts")
+        .join(format!("{tree}.json"))
+}
+
+fn read_json_file(path: &Path) -> Json {
+    json::parse(&fs::read_to_string(path).unwrap()).unwrap()
+}
+
+fn write_json_file(path: &Path, value: &Json) {
+    fs::write(path, value.to_string_pretty() + "\n").unwrap();
+}
+
+/// Replace the top-level `status` value, preserving every other field — the
+/// cheapest realistic forgery of a receipt by someone with write access.
+fn with_status(value: &Json, status: &str) -> Json {
+    let mut out = value.clone();
+    if let Json::Obj(pairs) = &mut out {
+        if let Some(slot) = pairs.iter_mut().find(|(k, _)| k == "status") {
+            slot.1 = Json::str(status);
+        }
+    }
+    out
+}
+
+fn journal_file(repo: &Path) -> PathBuf {
+    repo.join(".flow").join("journal.jsonl")
+}
+
+/// Create a repository whose index tree is already committed and stable, with
+/// `.flow/` excluded, ready for a run/publish scenario.
+fn prepared_repo(obligations: &str) -> (Repo, String, String) {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, obligations);
+    git(&repo.path, &["add", "-A"]);
+    let tree = git(&repo.path, &["write-tree"]);
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    (repo, tree, head)
+}
+
+// ------------------------------------------------------------------ P0-A
+#[test]
+fn p0a_selective_run_never_yields_a_publishable_receipt() {
+    let (repo, tree, head_before) = prepared_repo(&format!("{GREEN},{RED}"));
+
+    let (code, out) = flow(&repo.path, &["run", "--obligation", "green"]);
+    assert_eq!(
+        code, 1,
+        "a run that executed only part of the required policy must not exit 0: {out}"
+    );
+    assert_ne!(
+        status_of(&out),
+        "PASSED",
+        "a selective run must never claim the whole policy passed: {out}"
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a partial execution must not occupy the complete-receipt slot {tree}.json"
+    );
+
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code2, 1,
+        "publish must refuse after a selective run: {out2}"
+    );
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "nothing may be published when a required obligation was never executed"
+    );
+}
+
+#[test]
+fn p0a_duplicate_or_unknown_obligation_ids_are_refused() {
+    let (repo, _, _) = prepared_repo(&format!("{GREEN},{RED}"));
+
+    let (code, out) = flow(
+        &repo.path,
+        &["run", "--obligation", "green", "--obligation", "green"],
+    );
+    assert_eq!(code, 1, "a duplicated id is ambiguous and must be refused: {out}");
+    assert_eq!(status_of(&out), "REFUSED");
+
+    let (code2, out2) = flow(&repo.path, &["run", "--obligation", "nope"]);
+    assert_eq!(code2, 1);
+    assert_eq!(status_of(&out2), "REFUSED");
+}
+
+#[test]
+fn p0a_full_run_with_one_failing_required_obligation_is_never_publishable() {
+    let (repo, _, head_before) = prepared_repo(&format!("{GREEN},{RED}"));
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1);
+    assert_eq!(status_of(&out), "FAILED");
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(code2, 1);
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0a_an_optional_failing_obligation_does_not_mask_a_green_required_set() {
+    let optional_red = RED.replace("\"required\":true", "\"required\":false");
+    let (repo, _, _) = prepared_repo(&format!("{GREEN},{optional_red}"));
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 0,
+        "a failing optional obligation is traced but does not block: {out}"
+    );
+    assert_eq!(status_of(&out), "PASSED");
+    let listed = out
+        .get("obligations")
+        .and_then(Json::as_arr)
+        .expect("obligations");
+    assert!(
+        listed
+            .iter()
+            .any(|o| o.get("id").and_then(Json::as_str) == Some("red")
+                && o.get("required").and_then(Json::as_bool) == Some(false)),
+        "the optional obligation must be visible with required=false: {out}"
+    );
+}
+
+// ------------------------------------------------------------------ P0-B
+#[test]
+fn p0b_adding_a_required_obligation_makes_the_receipt_stale() {
+    let (repo, tree, head_before) = prepared_repo(GREEN);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "the single green obligation must pass: {out}");
+    assert!(receipt_file(&repo.path, &tree).exists());
+
+    // The policy now demands one more required obligation for the SAME tree.
+    write_config(&repo.path, &format!("{GREEN},{RED}"));
+
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code2, 1,
+        "a receipt produced under a weaker policy is not publishable: {out2}"
+    );
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "a stale receipt must never move the ref"
+    );
+}
+
+#[test]
+fn p0b_changing_a_timeout_makes_the_receipt_stale() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    // Same command, same tree, different deadline: the verification policy the
+    // receipt proves is not the policy that now applies.
+    write_config(
+        &repo.path,
+        r#"{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":1}"#,
+    );
+
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(code2, 1, "timeout is part of the policy identity: {out2}");
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0b_changing_the_policy_version_makes_the_receipt_stale() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let dir = repo.path.join(".flow");
+    let path = dir.join("config.json");
+    let mut config = read_json_file(&path);
+    if let Json::Obj(pairs) = &mut config {
+        if let Some(slot) = pairs.iter_mut().find(|(k, _)| k == "policy_version") {
+            slot.1 = Json::str("FLOW-POLICY-2");
+        }
+    }
+    write_json_file(&path, &config);
+
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(code2, 1, "policy_version is part of the identity: {out2}");
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0b_a_tampered_receipt_is_not_publishable() {
+    let (repo, tree, head_before) = prepared_repo(RED);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "the required obligation fails: {out}");
+    assert_eq!(status_of(&out), "FAILED");
+
+    let path = receipt_file(&repo.path, &tree);
+    assert!(path.exists(), "a failed run still records its receipt");
+    let receipt = read_json_file(&path);
+    write_json_file(&path, &with_status(&receipt, "PASSED"));
+
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code2, 1,
+        "editing a receipt on disk must not turn FAILED into publishable: {out2}"
+    );
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0b_explicit_ref_must_name_a_branch() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let (code2, out2) = flow(&repo.path, &["publish", "--ref", "HEAD"]);
+    assert_eq!(code2, 1, "an ambiguous ref must be refused: {out2}");
+    assert_eq!(status_of(&out2), "REFUSED");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+
+    let (code3, out3) = flow(&repo.path, &["publish", "--ref", "refs/tags/not-a-branch"]);
+    assert_eq!(code3, 1);
+    assert_eq!(status_of(&out3), "REFUSED");
+}
+
+// ------------------------------------------------------------------ P0-C
+#[test]
+fn p0c_corrupt_journal_is_not_reported_as_reconciled() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let (crash, _) = flow_with_env(
+        &repo.path,
+        &["publish"],
+        &[("FLOW_TEST_CRASH", "after-intent")],
+    );
+    assert_eq!(crash, 89, "the simulated crash must not look like success");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+
+    let path = journal_file(&repo.path);
+    let mut corrupted = fs::read(&path).unwrap();
+    corrupted.extend_from_slice(b"{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"tr");
+    fs::write(&path, &corrupted).unwrap();
+    let on_disk = fs::read(&path).unwrap();
+
+    let (code2, out2) = flow(&repo.path, &["reconcile"]);
+    assert_ne!(
+        code2, 0,
+        "an unreadable journal cannot be reconciled successfully: {out2}"
+    );
+    let status = status_of(&out2);
+    assert!(
+        matches!(
+            status.as_str(),
+            "CORRUPT_JOURNAL" | "UNKNOWN_OUTCOME" | "MANUAL_REQUIRED"
+        ),
+        "expected a corruption state, got {status}: {out2}"
+    );
+    assert_eq!(
+        out2.get("manual_required").and_then(Json::as_bool),
+        Some(true),
+        "the operator must be told a human decision is required: {out2}"
+    );
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        on_disk,
+        "the raw journal must be preserved for inspection"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "reconcile must never move a ref"
+    );
+}
+
+#[test]
+fn p0c_duplicate_intent_id_requires_a_human() {
+    let (repo, tree, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+    let other = git(&repo.path, &["commit-tree", &tree, "-p", &head_before, "-m", "x"]);
+    let record = format!(
+        "{{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"dup-1\",\"ref\":\"refs/heads/main\",\"old\":\"{head_before}\",\"new\":\"{other}\",\"tree\":\"{tree}\",\"at\":\"2026-11-09T00:00:00Z\"}}\n"
+    );
+    fs::write(journal_file(&repo.path), format!("{record}{record}")).unwrap();
+
+    let (code2, out2) = flow(&repo.path, &["reconcile"]);
+    assert_ne!(code2, 0, "two intents sharing one id are ambiguous: {out2}");
+    assert_eq!(status_of(&out2), "NEEDS_RECONCILIATION");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0c_ref_moved_elsewhere_needs_reconciliation() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let (crash, _) = flow_with_env(
+        &repo.path,
+        &["publish"],
+        &[("FLOW_TEST_CRASH", "after-intent")],
+    );
+    assert_eq!(crash, 89);
+
+    // Someone else moves the ref to a third commit: the intent is neither
+    // observably applied nor observably absent.
+    git(&repo.path, &["commit", "-q", "--allow-empty", "-m", "concurrent writer"]);
+    let moved = git(&repo.path, &["rev-parse", "HEAD"]);
+    assert_ne!(moved, head_before);
+
+    let (code2, out2) = flow(&repo.path, &["reconcile"]);
+    assert_ne!(code2, 0, "an ambiguous outcome is not a success: {out2}");
+    assert_eq!(status_of(&out2), "NEEDS_RECONCILIATION");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        moved,
+        "reconcile must not fight the concurrent writer"
+    );
+}
+
+#[test]
+fn p0c_reconcile_is_idempotent() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+    let (crash, _) = flow_with_env(
+        &repo.path,
+        &["publish"],
+        &[("FLOW_TEST_CRASH", "after-intent")],
+    );
+    assert_eq!(crash, 89);
+
+    let (code1, out1) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code1, 0, "{out1}");
+    let resolved = out1
+        .get("resolved")
+        .and_then(Json::as_arr)
+        .unwrap_or(&[]);
+    assert_eq!(resolved.len(), 1);
+
+    let (code2, out2) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code2, 0, "a second reconcile has nothing left to do: {out2}");
+    assert_eq!(
+        out2.get("resolved").and_then(Json::as_arr).map(<[Json]>::len),
+        Some(0)
+    );
+    // The journal must still be readable and contain exactly one outcome for
+    // the intent: re-running must not append a second, contradictory outcome.
+    let text = fs::read_to_string(journal_file(&repo.path)).unwrap();
+    let outcomes = text
+        .lines()
+        .filter(|l| l.contains("\"event\":\"outcome\""))
+        .count();
+    assert_eq!(outcomes, 1, "idempotent reconcile, got:\n{text}");
+}
+
+#[test]
+fn p0c_status_refuses_to_guess_on_a_corrupt_journal() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+    fs::write(journal_file(&repo.path), "{not json at all\n").unwrap();
+
+    let (code2, out2) = flow(&repo.path, &["status"]);
+    assert_ne!(
+        code2, 0,
+        "a status report that silently ignores an unreadable journal is a lie: {out2}"
+    );
+}
+
+// ------------------------------------------------- concurrent publication
+#[test]
+fn two_concurrent_publishes_publish_at_most_once() {
+    let (repo, tree, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let children: Vec<std::process::Child> = (0..2)
+        .map(|_| {
+            Command::new(env!("CARGO_BIN_EXE_flow"))
+                .current_dir(&repo.path)
+                .arg("publish")
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .spawn()
+                .expect("flow publish spawns")
+        })
+        .collect();
+    let mut published = 0;
+    for child in children {
+        let out = child.wait_with_output().unwrap();
+        let text = String::from_utf8_lossy(&out.stdout).to_string();
+        if text.contains("\"PUBLISHED\"") {
+            published += 1;
+        }
+    }
+    assert_eq!(published, 1, "exactly one cooperative writer may win");
+
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    assert_ne!(head, head_before);
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD^{tree}"]),
+        tree,
+        "the published commit must carry exactly the verified tree"
+    );
+
+    // The journal must still be parseable: interleaved appends are corruption.
+    let (code3, out3) = flow(&repo.path, &["explain"]);
+    assert_eq!(code3, 0, "journal must remain readable after a race: {out3}");
+    let (_, out4) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(
+        out4.get("resolved").and_then(Json::as_arr).map(<[Json]>::len),
+        Some(0),
+        "no intent may be left pending after a successful publication"
+    );
+}
