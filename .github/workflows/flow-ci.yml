@@ -72,8 +72,8 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 132 ]; then
-            echo "::error::expected at least 132 executed passing tests, got $passed"
+          if [ "$passed" -lt 142 ]; then
+            echo "::error::expected at least 142 executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -93,6 +93,16 @@ jobs:
             a_symlinked_journal_is_never_written_through \
             a_converted_checkout_is_refused_not_certified \
             unknown_and_valueless_options_are_usage_errors \
+            explain_refuses_a_path_instead_of_a_tree_id \
+            status_and_explain_qualify_a_tampered_receipt \
+            doctor_exits_nonzero_when_a_guarantee_is_broken \
+            status_reports_policy_provenance \
+            explain_reports_missing_logs_as_incomplete_evidence \
+            crash_before_intent_leaves_no_pending_intent \
+            m7_a_replacement_agent_resumes_from_the_immutable_artefacts \
+            m8_proposals_on_different_bases_are_refused_with_both_bases \
+            m9_a_hostile_cloned_repository_cannot_execute_or_escape \
+            m10_a_record_from_another_schema_is_refused \
             p0c_corrupt_journal_is_not_reported_as_reconciled \
             p0c_duplicate_intent_id_requires_a_human \
             p0c_ref_moved_elsewhere_needs_reconciliation \
@@ -131,6 +141,48 @@ jobs:
 
       - name: build release
         run: cargo build --locked --release
+
+      # A released binary must not honour the test crash hook. This is the only
+      # place the behaviour is observable, because `cargo test` uses the debug one.
+      - name: the release binary ignores the test crash hook
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="${GITHUB_WORKSPACE}/target/release/flow"
+          if [ ! -x "$BIN" ] && [ -x "${BIN}.exe" ]; then BIN="${BIN}.exe"; fi
+          if [ ! -x "$BIN" ]; then echo "::error::release binary not found"; exit 1; fi
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          cd "$tmp"
+          git init -q -b main .
+          git config user.name "Flow CI"
+          git config user.email "flow@example.invalid"
+          git config commit.gpgsign false
+          printf 'x\n' > a.txt
+          git add -A
+          git commit -qm seed
+          mkdir -p .flow
+          printf '%s' '{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":30}],"disabled":false}' > .flow/config.json
+          "$BIN" init --adopt-policy > /dev/null
+          # The verified tree must differ from the ref's tree, otherwise the
+          # publication is ALREADY_PUBLISHED and proves nothing about the hook.
+          printf 'y\n' > b.txt
+          git add -A
+          "$BIN" run > /dev/null
+          set +e
+          FLOW_TEST_CRASH=after-intent "$BIN" publish > out.json 2>&1
+          code=$?
+          set -e
+          cat out.json
+          if [ "$code" -eq 89 ]; then
+            echo "::error::the release binary honoured FLOW_TEST_CRASH (exit 89)"
+            exit 1
+          fi
+          if [ "$code" -ne 0 ]; then
+            echo "::error::the release publish failed unexpectedly (exit $code)"
+            exit 1
+          fi
+          grep -q '"PUBLISHED"' out.json
 
       - name: harness self-tests (R0-a)
         if: runner.os == 'Linux'

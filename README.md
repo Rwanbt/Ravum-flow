@@ -1,5 +1,5 @@
 # Ravum Flow
-> **Status: MVP 0.1 on `feat/flow-mvp-0.1` (draft PR #53) — not production ready, not merged.**  
+> **Status: production candidate `0.2.0-rc.1` on `feat/flow-production-candidate` (draft PR) — local-trusted, not merged, not released.**  
 > This branch ships a small local CLI (`flow`) that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
@@ -87,7 +87,7 @@ verifies, publishes, applies the fixture's documented red edit, and shows that
 **Tested platforms:** 129 tests executed on Windows 11 (Rust 1.95); Ubuntu and
 Windows in CI. A claim that is not in the report is not a claim.
 
-See [the MVP 0.1 verification report](docs/reviews/FLOW-MVP-0.1-VERIFICATION-REPORT.md),
+See the [production gate report](docs/reviews/FLOW-PRODUCTION-GATE-REPORT.md), the [MVP 0.1 verification report](docs/reviews/FLOW-MVP-0.1-VERIFICATION-REPORT.md),
 the [user guide](docs/MVP-USER-GUIDE.md), the [CLI/JSON contract](docs/CLI-JSON.md)
 and the [foundation report](docs/reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md).
 
