@@ -663,14 +663,14 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
 
     // The listing comes from the source repository: the checkout deliberately
     // has no `.git`, so it cannot answer for itself.
-    let listing = git.run(&["ls-tree", "-r", "-z", tree])?;
+    let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
     if listing.status != 0 {
         return Err(format!(
             "cannot list tree {tree}: {}",
             listing.stderr.trim()
         ));
     }
-    let mut expected: Vec<(String, String)> = Vec::new();
+    let mut expected: Vec<(String, String, String, u64)> = Vec::new();
     for entry in listing.stdout.split('\0') {
         if entry.trim().is_empty() {
             continue;
@@ -678,11 +678,19 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
         let (meta, path) = entry
             .split_once('\t')
             .ok_or_else(|| format!("unparsable ls-tree entry {entry:?}"))?;
-        let mode = meta.split_whitespace().next().unwrap_or("").to_string();
+        let mut fields = meta.split_whitespace();
+        let mode = fields.next().unwrap_or("").to_string();
+        let _kind = fields.next().unwrap_or("");
+        let oid = fields.next().unwrap_or("").to_string();
+        // `ls-tree -l` prints the object size, right-aligned, before the tab.
+        let size = fields
+            .next()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(0);
         if path.is_empty() {
             continue;
         }
-        expected.push((mode, path.replace('\\', "/")));
+        expected.push((mode, oid, path.replace('\\', "/"), size));
     }
     if expected.len() > MAX_ENTRIES {
         return Err(format!(
@@ -694,7 +702,7 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
     // Two paths differing only by case cannot both exist on a case-insensitive
     // filesystem: the checkout silently keeps one of them.
     let mut folded: BTreeMap<String, usize> = BTreeMap::new();
-    for (_, path) in &expected {
+    for (_, _, path, _) in &expected {
         *folded.entry(path.to_lowercase()).or_insert(0) += 1;
     }
     if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) {
@@ -709,7 +717,7 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
     let present: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
     let mut missing: Vec<&str> = expected
         .iter()
-        .map(|(_, path)| path.as_str())
+        .map(|(_, _, path, _)| path.as_str())
         .filter(|path| !present.contains(path))
         .collect();
     if !missing.is_empty() {
@@ -723,7 +731,7 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
     }
 
     // And each entry must have the type the tree declares.
-    for (mode, path) in &expected {
+    for (mode, _, path, _) in &expected {
         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
         let meta = fs::symlink_metadata(&full)
             .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
@@ -746,9 +754,64 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             _ => {}
         }
     }
-    Ok(())
+    verify_checkout_content(git, scratch, tree, &expected)
 }
 
+/// Detect a checkout that rewrote the bytes.
+///
+/// `git worktree add` applies the repository's content filters: with
+/// `core.autocrlf`, `core.eol` or a `.gitattributes` rule, a file holding LF in
+/// the tree is written with CRLF. Type checks cannot see that, so an obligation
+/// asserting on the bytes would see content the tree does not hold while the
+/// receipt claims the tree was verified — a false `PASSED` with no tampering.
+///
+/// The check compares the on-disk size with the blob size recorded by
+/// `git ls-tree -l`. Every end-of-line conversion changes the size, so this
+/// catches the realistic false-green cheaply. **Limit, stated:** a custom filter
+/// that rewrites content without changing its length is not detected here; that
+/// is recorded as a residual risk rather than papered over.
+fn verify_checkout_content(
+    git: &Git,
+    scratch: &Path,
+    tree: &str,
+    expected: &[(String, String, String, u64)],
+) -> Result<(), String> {
+    let mut conversion_possible = git
+        .run(&["config", "--get", "core.autocrlf"])
+        .map(|o| matches!(o.stdout.trim(), "true" | "input" | "1"))
+        .unwrap_or(false)
+        || !git
+            .capture(&["config", "--get", "core.eol"])
+            .map(|v| v.trim().to_string())
+            .unwrap_or_default()
+            .is_empty();
+    if !conversion_possible {
+        conversion_possible = expected
+            .iter()
+            .any(|(_, _, path, _)| path == ".gitattributes" || path.ends_with("/.gitattributes"));
+    }
+    if !conversion_possible {
+        return Ok(());
+    }
+    for (mode, oid, path, size) in expected {
+        if mode != "100644" && mode != "100755" {
+            continue;
+        }
+        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+        let meta = fs::symlink_metadata(&full)
+            .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+        if meta.len() != *size {
+            return Err(format!(
+                "tree {tree} entry {path:?} was checked out with {} bytes but the tree stores {} (blob {}): a content filter (core.autocrlf, core.eol or .gitattributes) rewrote it, so the obligations would not see the verified tree",
+                meta.len(),
+                size,
+                short(oid)
+            ));
+        }
+    }
+    let _ = tree;
+    Ok(())
+}
 fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> Result<(), String> {
     let entries = fs::read_dir(dir).map_err(|e| format!("cannot read {}: {e}", dir.display()))?;
     for entry in entries.flatten() {

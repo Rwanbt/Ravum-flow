@@ -265,8 +265,11 @@ pub static ENV_ALLOWLIST: &[&str] = &[
     "CARGO_HOME",
     "COMSPEC",
     "HOME",
+    "INCLUDE",
     "LANG",
     "LC_ALL",
+    "LIB",
+    "LIBPATH",
     "LOCALAPPDATA",
     "NUMBER_OF_PROCESSORS",
     "PATH",
@@ -281,8 +284,22 @@ pub static ENV_ALLOWLIST: &[&str] = &[
     "TMP",
     "TMPDIR",
     "TZ",
+    "UCRTVersion",
     "USERPROFILE",
+    // MSVC toolchain configuration. Without these a native link cannot find its
+    // libraries (`LNK1181: cannot open input file`) when the host exports the
+    // environment instead of relying on registry discovery — the normal case in
+    // CI and in a Visual Studio developer prompt. They are paths to a toolchain,
+    // not credentials, and they are part of the hashed effective policy, so
+    // adding them invalidates older receipts instead of silently changing what
+    // `PASSED` meant.
+    "VCINSTALLDIR",
+    "VCToolsInstallDir",
+    "VSCMD_ARG_TGT_ARCH",
+    "VSINSTALLDIR",
     "WINDIR",
+    "WindowsSDKVersion",
+    "WindowsSdkDir",
     "windir",
 ];
 

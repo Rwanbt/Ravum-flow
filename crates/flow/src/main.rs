@@ -107,6 +107,10 @@ fn dispatch(args: &[String]) -> u8 {
                         return 1;
                     }
                 };
+            if let Err(reason) = validate_flags(command, rest) {
+                emit_error(&reason);
+                return 2;
+            }
             let result = match command {
                 "init" => commands::cmd_init(
                     &root,
@@ -187,6 +191,65 @@ fn dispatch(args: &[String]) -> u8 {
             }
         }
     }
+}
+
+/// Flags that take a value, per command. An unknown flag, or a value flag
+/// without a value, is a usage error: silently ignoring `--dry-run` on a program
+/// that does not know it would publish when the operator asked for a plan.
+fn value_flags(command: &str) -> &'static [&'static str] {
+    match command {
+        "run" => &["--obligation", "--obligations", "--timeout", "--candidate"],
+        "publish" => &["--ref", "--expected-old", "--message", "--candidate"],
+        "propose" => &["--agent", "--task", "--base", "--patch", "--key"],
+        "assemble" => &["--proposal"],
+        "explain" => &["--tree", "--candidate"],
+        _ => &[],
+    }
+}
+
+const BOOL_FLAGS: &[&str] = &["--json", "--dry-run", "--force", "--adopt-policy", "--help"];
+
+/// Reject an unknown flag, a value flag without a value, or a stray positional
+/// argument, before any mutation.
+fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+    let takes_value = value_flags(command);
+    let mut index = 0;
+    while index < args.len() {
+        let arg = &args[index];
+        if arg == "--" {
+            index += 1;
+            continue;
+        }
+        if let Some(body) = arg.strip_prefix("--") {
+            let name = format!("--{}", body.split('=').next().unwrap_or(""));
+            let inline = body.contains('=');
+            if takes_value.contains(&name.as_str()) {
+                if !inline {
+                    match args.get(index + 1) {
+                        None => return Err(format!("`{name}` needs a value (flow {command} ...)")),
+                        Some(value) if value.starts_with("--") => {
+                            return Err(format!(
+                                "`{name}` needs a value, found the flag {value:?} instead"
+                            ))
+                        }
+                        Some(_) => {}
+                    }
+                    index += 2;
+                    continue;
+                }
+            } else if !BOOL_FLAGS.contains(&name.as_str()) {
+                return Err(format!(
+                    "unknown option {name:?} for `flow {command}` (see `flow help`)"
+                ));
+            }
+        } else if command != "proposals" {
+            return Err(format!(
+                "unexpected argument {arg:?} for `flow {command}` (see `flow help`)"
+            ));
+        }
+        index += 1;
+    }
+    Ok(())
 }
 
 fn flag_value(args: &[String], name: &str) -> Option<String> {

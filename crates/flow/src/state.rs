@@ -276,6 +276,60 @@ pub fn save_config(root: &Path, config: &Config) -> Result<(), String> {
     write_atomic(&path, &(config.to_json().to_string_pretty() + "\n"))
 }
 
+/// Refuse to write through a symlink or a Windows reparse point (junction).
+///
+/// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:
+/// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes
+/// Flow append outside the workspace. Every write below `.flow/` therefore checks
+/// that each existing component is a real directory and that the target is not a
+/// link. This is a check-then-write, so it is not a defence against a *concurrent*
+/// local attacker — that boundary is documented, and the local user is trusted.
+fn guard_below_flow(path: &Path) -> Result<(), String> {
+    let mut anchor: Option<&Path> = None;
+    for ancestor in path.ancestors() {
+        if ancestor.file_name().map(|n| n == ".flow").unwrap_or(false) {
+            anchor = ancestor.parent();
+            break;
+        }
+    }
+    let Some(root) = anchor else {
+        return Ok(());
+    };
+    let relative = path
+        .strip_prefix(root)
+        .map_err(|_| format!("{} is not below {}", path.display(), root.display()))?;
+    let mut current = root.to_path_buf();
+    for component in relative.components() {
+        current.push(component);
+        match fs::symlink_metadata(&current) {
+            Ok(meta) => {
+                let kind = meta.file_type();
+                let reparse = {
+                    #[cfg(windows)]
+                    {
+                        use std::os::windows::fs::MetadataExt;
+                        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        false
+                    }
+                };
+                if kind.is_symlink() || reparse {
+                    return Err(format!(
+                        "refusing to write {}: {} is a symbolic link or reparse point, so the write would escape the workspace",
+                        path.display(),
+                        current.display()
+                    ));
+                }
+            }
+            Err(_) => break,
+        }
+    }
+    Ok(())
+}
+
 pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {
     write_atomic_bytes(path, data.as_bytes())
 }
@@ -283,6 +337,7 @@ pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {
 /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be
 /// text and must never be round-tripped through `String`.
 pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
+    guard_below_flow(path)?;
     // The temporary name carries the process id: two Flow processes writing
     // different files never fight over one shared scratch name.
     let tmp = path.with_extension(format!("tmp-flow-{}", std::process::id()));
@@ -310,6 +365,7 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
     }
+    guard_below_flow(&path)?;
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)

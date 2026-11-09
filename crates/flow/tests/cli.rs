@@ -148,6 +148,17 @@ fn sha256_of(path: &Path) -> String {
     sha256::sha256_hex(&fs::read(path).unwrap())
 }
 
+/// Create a file symlink, returning the platform error unchanged.
+fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
+    #[cfg(windows)]
+    {
+        std::os::windows::fs::symlink_file(target, link)
+    }
+    #[cfg(not(windows))]
+    {
+        std::os::unix::fs::symlink(target, link)
+    }
+}
 // ------------------------------------------------------------------- tests
 #[test]
 fn init_creates_state_and_refuses_second_call() {
@@ -1131,5 +1142,96 @@ fn p0c_one_outcome_cannot_close_two_intents() {
         out3.get("pending_intents").and_then(Json::as_num),
         Some(0.0),
         "status must not report zero pending intents over an unresolved twin: {out3}"
+    );
+}
+
+// ------------------------------------------------- adversarial regressions
+/// A cloned repository can ship `.flow/journal.jsonl` as a symlink. Appending
+/// through it would write outside the workspace: the journal write must refuse.
+#[test]
+fn a_symlinked_journal_is_never_written_through() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+
+    let outside = std::env::temp_dir().join(format!(
+        "flow-outside-journal-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::write(&outside, "outside content\n").unwrap();
+    let journal = repo.path.join(".flow").join("journal.jsonl");
+    let _ = fs::remove_file(&journal);
+    if crate::symlink_file(&outside, &journal).is_err() {
+        println!("SKIP a_symlinked_journal_is_never_written_through: this host cannot create a symlink without extra privilege");
+        let _ = fs::remove_file(&outside);
+        return;
+    }
+
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code, 1,
+        "a journal symlink must not be written through: {out}"
+    );
+    assert_eq!(
+        fs::read_to_string(&outside).unwrap(),
+        "outside content\n",
+        "the outside file must be byte-identical"
+    );
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+    let _ = fs::remove_file(&outside);
+}
+
+/// `core.autocrlf` / `core.eol` / `.gitattributes` make the checkout rewrite
+/// bytes. An obligation asserting on those bytes would see content the tree does
+/// not hold, so the checkout is refused instead of certified.
+#[test]
+fn a_converted_checkout_is_refused_not_certified() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    fs::write(repo.path.join(".gitattributes"), "*.txt text eol=crlf\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 1,
+        "a checkout that may convert content must be refused: {out}"
+    );
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("UNSUPPORTED_CHECKOUT"),
+        "{out}"
+    );
+}
+
+/// Unknown options and value flags without a value are usage errors: silently
+/// ignoring `--dry-run` would publish when the operator asked for a plan.
+#[test]
+fn unknown_and_valueless_options_are_usage_errors() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, _) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0);
+
+    let (code, out) = flow(&repo.path, &["publish", "--nonsense"]);
+    assert_eq!(code, 2, "an unknown option must not be ignored: {out}");
+    assert_eq!(status_of(&out), "ERROR");
+
+    let (code, out) = flow(&repo.path, &["publish", "--ref"]);
+    assert_eq!(
+        code, 2,
+        "a value flag without a value must be refused: {out}"
+    );
+
+    let (code, out) = flow(&repo.path, &["run", "--obligation"]);
+    assert_eq!(
+        code, 2,
+        "a value flag without a value must be refused: {out}"
+    );
+
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "no usage error may move a ref"
     );
 }
