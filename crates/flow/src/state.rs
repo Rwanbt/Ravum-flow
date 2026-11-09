@@ -204,7 +204,9 @@ pub fn save_config(root: &Path, config: &Config) -> Result<(), String> {
 }
 
 pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {
-    let tmp = path.with_extension("tmp-flow");
+    // The temporary name carries the process id: two Flow processes writing
+    // different files never fight over one shared scratch name.
+    let tmp = path.with_extension(format!("tmp-flow-{}", std::process::id()));
     {
         let mut file =
             File::create(&tmp).map_err(|e| format!("cannot create {}: {e}", tmp.display()))?;

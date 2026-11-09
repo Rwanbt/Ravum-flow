@@ -838,7 +838,7 @@ pub fn cmd_publish(
         return Ok(refused_code(
             "STALE_POLICY",
             format!(
-                "the receipt proves policy {} but the current policy is {}: the configuration changed since the run",
+                "the receipt proves policy {} but the current policy is {}: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
                 short(&receipt.policy_digest),
                 short(&expected_digest)
             ),

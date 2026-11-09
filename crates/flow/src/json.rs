@@ -226,6 +226,11 @@ impl<'a> Parser<'a> {
             self.pos += 1;
             self.ws();
             let value = self.value()?;
+            // Duplicate names are ambiguous: two readers can disagree about
+            // which value wins. Flow refuses them instead of picking one.
+            if pairs.iter().any(|(k, _)| k == &key) {
+                return Err(format!("duplicate object key {key:?} at {}", self.pos));
+            }
             pairs.push((key, value));
             self.ws();
             match self.peek() {
@@ -359,5 +364,14 @@ mod tests {
     fn rejects_trailing_data() {
         assert!(parse("{\"a\":1} garbage").is_err());
         assert!(parse("{\"a\":").is_err());
+    }
+
+    #[test]
+    fn rejects_duplicate_keys() {
+        // Two readers could disagree about which value wins; a policy is far too
+        // important for that ambiguity.
+        assert!(parse(r#"{"required":true,"required":false}"#).is_err());
+        assert!(parse(r#"{"a":{"b":1,"b":2}}"#).is_err());
+        assert!(parse(r#"{"a":1,"b":2}"#).is_ok());
     }
 }

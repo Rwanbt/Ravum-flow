@@ -921,3 +921,42 @@ fn two_concurrent_publishes_publish_at_most_once() {
         "no intent may be left pending after a successful publication"
     );
 }
+
+#[test]
+fn p0b_a_timeout_override_is_never_publishable() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, out) = flow(&repo.path, &["run", "--timeout", "1"]);
+    assert_eq!(
+        code, 0,
+        "the obligation still passes under a tighter deadline: {out}"
+    );
+    // The receipt proves the deadline that was applied (1 s), not the one the
+    // configuration declares (30 s): publishing it would overstate the policy.
+    let (code2, out2) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code2, 1,
+        "an ad-hoc deadline does not prove the configured policy: {out2}"
+    );
+    assert_eq!(
+        out2.get("code").and_then(Json::as_str),
+        Some("STALE_POLICY")
+    );
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+#[test]
+fn p0b_an_ambiguous_config_is_refused_not_guessed() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    // `required` twice: two readers could disagree about the winning value, so
+    // the policy is not a policy at all.
+    fs::write(
+        repo.path.join(".flow").join("config.json"),
+        r#"{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{"id":"green","program":"git","args":["--version"],"required":true,"required":false,"timeout_s":30}],"disabled":false}"#,
+    )
+    .unwrap();
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_ne!(code, 0, "duplicate keys make the policy ambiguous: {out}");
+    assert_eq!(status_of(&out), "ERROR");
+}
