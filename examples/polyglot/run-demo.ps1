@@ -117,6 +117,11 @@ function Invoke-Flow {
     param([string[]]$Arguments, [int[]]$Expect = @(0))
     $result = Invoke-FlowRaw -Arguments $Arguments
     if ($Expect -notcontains $result.Exit) {
+        # A failing run must show the obligation output itself, otherwise the CI
+        # log only carries the receipt and the real compiler error stays hidden.
+        if ($result.Json -and $result.Json.tree_oid -and $script:CurrentWork) {
+            Show-ObligationLogs -Work $script:CurrentWork -Receipt $result.Json
+        }
         Fail "flow $($Arguments -join ' ') exited $($result.Exit); expected $($Expect -join ', ').`n$($result.Text)"
     }
     return $result
@@ -144,6 +149,7 @@ function Edit-Text([string]$Path, [string]$Old, [string]$New, [string]$What) {
 }
 
 function Invoke-OneFixture([string]$Name) {
+    $script:CurrentWork = $null
     $spec = $specs[$Name]
     $source = Join-Path $scriptDir $Name
     if (-not (Test-Path -LiteralPath (Join-Path $source '.flow/config.json'))) {
