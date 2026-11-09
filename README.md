@@ -23,7 +23,7 @@ One physical workspace does **not** give arbitrary processes distinct isolated v
 - [Decision register](docs/DECISION_REGISTER.md) · [Proposed Flow ADRs](docs/adr/README.md)
 - [Historic Flow RFCs](docs/rfc/README.md) · [Roadmap/gates](docs/ROADMAP.md)
 - [User stories](docs/USER_STORIES.md)
-- [Live GitHub issues: H1–H6 and RF-001..026](docs/ISSUE_MAP.md) · [main/dev branch workflow](docs/BRANCH_WORKFLOW.md) · [26 historic RF tasks](docs/BACKLOG.md)
+- [Live GitHub issues: H1–H6, RF-001..026 and US-001..015](docs/ISSUE_MAP.md) · [main/dev branch workflow](docs/BRANCH_WORKFLOW.md) · [26 historic RF tasks](docs/BACKLOG.md)
 - [S9 experiment design](docs/BENCHMARK_S9.md) · [Security test matrix](docs/SECURITY_TESTS.md)
 - [Ravum / Flow boundary](docs/RAVUM_BOUNDARY.md) · [Traceability](docs/TRACEABILITY.md)
 - **[DeepSeek multi-agent GOAL — first review/decision phase](docs/DEEPSEEK_GOAL.md)**
