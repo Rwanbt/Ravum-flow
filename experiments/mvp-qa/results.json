@@ -1,0 +1,5454 @@
+{
+  "meta": {
+    "harness": {
+      "version": "1.0",
+      "python": "3.13.7",
+      "platform": "Windows-11-10.0.26100-SP0",
+      "git": "git version 2.51.1.windows.1",
+      "started_at": "2026-11-09T20:42:04Z",
+      "duration_s": 91.6,
+      "run_root": "<removed>"
+    },
+    "flow": {
+      "path": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe",
+      "sha256": "a973efd815490e8a10a7c0ca3a76b8add25c8ab780958d80a4f550aef73409c0",
+      "version": {
+        "status": "VERSION",
+        "tool": "flow 0.1.0",
+        "policy_version": "FLOW-POLICY-1",
+        "git": "git version 2.51.1.windows.1",
+        "schema": "flow-receipt/2"
+      }
+    },
+    "git": {
+      "repo": "D:\\App\\Ravum-flow-wt\\qa",
+      "base_sha": "d884e29c825cad40678c56702361f4e403a769f7",
+      "branch": "work/mvp-qa"
+    }
+  },
+  "summary": {
+    "total": 102,
+    "REPRODUCED": 17,
+    "REFUTED": 76,
+    "NOT_RUN": 9,
+    "ERROR": 0,
+    "by_axis": {
+      "identity": {
+        "total": 20,
+        "REPRODUCED": 0,
+        "REFUTED": 20,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "scope": {
+        "total": 11,
+        "REPRODUCED": 0,
+        "REFUTED": 11,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "git": {
+        "total": 12,
+        "REPRODUCED": 2,
+        "REFUTED": 10,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "durable": {
+        "total": 11,
+        "REPRODUCED": 0,
+        "REFUTED": 10,
+        "NOT_RUN": 1,
+        "ERROR": 0
+      },
+      "files": {
+        "total": 15,
+        "REPRODUCED": 7,
+        "REFUTED": 7,
+        "NOT_RUN": 1,
+        "ERROR": 0
+      },
+      "process": {
+        "total": 13,
+        "REPRODUCED": 2,
+        "REFUTED": 11,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "proof": {
+        "total": 6,
+        "REPRODUCED": 5,
+        "REFUTED": 1,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "compat": {
+        "total": 7,
+        "REPRODUCED": 1,
+        "REFUTED": 6,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      },
+      "future": {
+        "total": 7,
+        "REPRODUCED": 0,
+        "REFUTED": 0,
+        "NOT_RUN": 7,
+        "ERROR": 0
+      }
+    },
+    "reproduced_by_severity": {
+      "P2": 7,
+      "P1": 4,
+      "P0": 4,
+      "P3": 2
+    }
+  },
+  "scenarios": [
+    {
+      "id": "IDN-01",
+      "axis": "identity",
+      "title": "Index-tree change after a green run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses; the receipt does not name the new index tree",
+      "observed": "exit 1 status=REFUSED code=NO_RECEIPT ref_moved=False",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "NO_RECEIPT",
+          "reason": "no complete receipt for tree bf15856d1d7e0169a0c586ef2b8f1849388526c4: run `flow run` on this exact index tree first (a selective run never produces one)",
+          "peak_ws_mb": 4.7
+        },
+        "new_tree": "bf15856d1d7e0169a0c586ef2b8f1849388526c4",
+        "old_tree": "aaca6f6b8a7a9c0aa154e87614ed60b93bf38750"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "NO_RECEIPT",
+            "reason": "no complete receipt for tree bf15856d1d7e0169a0c586ef2b8f1849388526c4: run `flow run` on this exact index tree first (a selective run never produces one)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 809
+    },
+    {
+      "id": "IDN-02",
+      "axis": "identity",
+      "title": "Worktree-only change after a green run",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "publish is defined on the INDEX tree: a dirty worktree does not change the verified tree",
+      "observed": "PUBLISHED; worktree bytes untouched",
+      "notes": "The product defines `run` as verifying the index tree (usage + status hint), so this is not a stale receipt. Recorded because the mandate calls a 'tree change' a reason to invalidate; the verified object is the index tree, not the worktree.",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 5.0
+        },
+        "worktree_unchanged": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 888
+    },
+    {
+      "id": "IDN-03",
+      "axis": "identity",
+      "title": "Required obligation added after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: a required obligation was added after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 5693a2ea05bd: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 5693a2ea05bd: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 798
+    },
+    {
+      "id": "IDN-04",
+      "axis": "identity",
+      "title": "Required obligation args changed after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: a required obligation's args changed after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 59126c74faf0: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.8
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 59126c74faf0: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 787
+    },
+    {
+      "id": "IDN-05",
+      "axis": "identity",
+      "title": "Required obligation removed after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: a required obligation was removed after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 5ad7fc8c1ea1: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 5ad7fc8c1ea1: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 800
+    },
+    {
+      "id": "IDN-06",
+      "axis": "identity",
+      "title": "timeout_s changed after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: timeout_s changed 30 -> 1 after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 3d4d27b36e74: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 3d4d27b36e74: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 782
+    },
+    {
+      "id": "IDN-07",
+      "axis": "identity",
+      "title": "policy_version changed after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: policy_version changed after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 958977bb965f: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 958977bb965f: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 882
+    },
+    {
+      "id": "IDN-08",
+      "axis": "identity",
+      "title": "execution_boundary changed after the run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: execution_boundary changed after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is c3a8b99bfc1f: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is c3a8b99bfc1f: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 827
+    },
+    {
+      "id": "IDN-09",
+      "axis": "identity",
+      "title": "`--timeout` override used at run time",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses a run made under a `--timeout` override",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 19b06146f388 but the current policy is 5ad7fc8c1ea1: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --timeout 1",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 19b06146f388 but the current policy is 5ad7fc8c1ea1: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 788
+    },
+    {
+      "id": "IDN-10",
+      "axis": "identity",
+      "title": "Receipt edited by hand (no re-seal)",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses an edited receipt with RECEIPT_INTEGRITY",
+      "observed": "exit 1 code=RECEIPT_INTEGRITY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "RECEIPT_INTEGRITY",
+          "reason": "receipt content does not match its integrity digest (recorded 040377cf0350b9b694e55ae6955f4e80f4a8046f06b917a2e485056e1f5f4ff3, computed a47cfa6caff2f15ce34b6d36c73537c8a9b8b1a2bb614b98ede1abdac9326b3f)",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "RECEIPT_INTEGRITY",
+            "reason": "receipt content does not match its integrity digest (recorded 040377cf0350b9b694e55ae6955f4e80f4a8046f06b917a2e485056e1f5f4ff3, computed a47cfa6caff2f15ce34b6d36c73537c8a9b8b1a2bb614b98ede1abdac9326b3f)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 743
+    },
+    {
+      "id": "IDN-11",
+      "axis": "identity",
+      "title": "Cosmetic config edit after the run",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "cosmetic config edits do not invalidate the proof (digest is over the effective policy)",
+      "observed": "PUBLISHED",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 860
+    },
+    {
+      "id": "IDN-12",
+      "axis": "identity",
+      "title": "Partial run after the tree changed",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a selective run never occupies the complete receipt slot, so publish finds no receipt",
+      "observed": "exit 1 code=NO_RECEIPT complete_receipt=False partial=['3316702f576753acec1a3e105499fd65c31eeabc.partial.42d52af2a2a9.json']",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "NO_RECEIPT",
+          "reason": "no complete receipt for tree 3316702f576753acec1a3e105499fd65c31eeabc: run `flow run` on this exact index tree first (a selective run never produces one)",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation green",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "PARTIAL",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "NO_RECEIPT",
+            "reason": "no complete receipt for tree 3316702f576753acec1a3e105499fd65c31eeabc: run `flow run` on this exact index tree first (a selective run never produces one)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 720
+    },
+    {
+      "id": "IDN-13",
+      "axis": "identity",
+      "title": "Partial run after a complete proof of the same tree",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "an earlier complete proof of the same tree remains valid after a diagnostic partial run",
+      "observed": "publish exit 0 status=PUBLISHED",
+      "notes": "The partial receipt is written to a separate slot; it neither replaces nor revokes the earlier complete proof of the same tree and policy. Recorded as an observation, not a bypass: the published receipt is the complete one.",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        },
+        "partial": {
+          "exit": 1,
+          "status": "PARTIAL",
+          "peak_ws_mb": 5.0
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation green",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "PARTIAL",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 1275
+    },
+    {
+      "id": "IDN-14",
+      "axis": "identity",
+      "title": "Duplicated `--obligation` id",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a duplicated --obligation id is refused",
+      "observed": "exit 1 code=DUPLICATE_OBLIGATION_ID",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "DUPLICATE_OBLIGATION_ID",
+          "reason": "obligation \"green\" is requested more than once: a selection is a set",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation green --obligation green",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "DUPLICATE_OBLIGATION_ID",
+            "reason": "obligation \"green\" is requested more than once: a selection is a set",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 311
+    },
+    {
+      "id": "IDN-15",
+      "axis": "identity",
+      "title": "Unknown `--obligation` id",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "an unknown --obligation id is refused",
+      "observed": "exit 1 code=UNKNOWN_OBLIGATION_ID",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNKNOWN_OBLIGATION_ID",
+          "reason": "obligation \"does-not-exist\" is not declared in .flow/config.json",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation does-not-exist",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_OBLIGATION_ID",
+            "reason": "obligation \"does-not-exist\" is not declared in .flow/config.json",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 299
+    },
+    {
+      "id": "IDN-16",
+      "axis": "identity",
+      "title": "Receipt schema edited",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "an outdated receipt schema is refused before integrity is trusted",
+      "observed": "exit 1 code=RECEIPT_SCHEMA_STALE",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "RECEIPT_SCHEMA_STALE",
+          "reason": "receipt schema \"flow-receipt/1\" is not flow-receipt/2: re-run `flow run`",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "RECEIPT_SCHEMA_STALE",
+            "reason": "receipt schema \"flow-receipt/1\" is not flow-receipt/2: re-run `flow run`",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 718
+    },
+    {
+      "id": "IDN-17",
+      "axis": "identity",
+      "title": "Receipt copied to another tree's filename",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a receipt copied under another tree's filename is refused",
+      "observed": "exit 1 code=TREE_MISMATCH",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "TREE_MISMATCH",
+          "reason": "receipt integrity error: file for f4a19c6e7925ab2f42313a551214fd55d523b09a names tree \"aaca6f6b8a7a9c0aa154e87614ed60b93bf38750\"",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "TREE_MISMATCH",
+            "reason": "receipt integrity error: file for f4a19c6e7925ab2f42313a551214fd55d523b09a names tree \"aaca6f6b8a7a9c0aa154e87614ed60b93bf38750\"",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 915
+    },
+    {
+      "id": "IDN-18",
+      "axis": "identity",
+      "title": "Receipt integrity digest removed",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a receipt without an integrity digest is refused",
+      "observed": "exit 1 code=RECEIPT_INTEGRITY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "RECEIPT_INTEGRITY",
+          "reason": "receipt carries no integrity digest",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "RECEIPT_INTEGRITY",
+            "reason": "receipt carries no integrity digest",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 806
+    },
+    {
+      "id": "IDN-19",
+      "axis": "identity",
+      "title": "Obligation order changed after the run",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: obligation order changed after the run",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is d23ae17cbdbd: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.8
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is d23ae17cbdbd: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 883
+    },
+    {
+      "id": "IDN-20",
+      "axis": "identity",
+      "title": "Obligation `required` flag flipped true -> false",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "publish refuses: an obligation's `required` flag flipped true -> false",
+      "observed": "exit 1 code=STALE_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_POLICY",
+          "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 969692c0a6a0: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+          "peak_ws_mb": 4.7
+        },
+        "ref_moved": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_POLICY",
+            "reason": "the receipt proves policy 3da0c8f5d793 but the current policy is 969692c0a6a0: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 844
+    },
+    {
+      "id": "SCP-01",
+      "axis": "scope",
+      "title": "Empty policy: run",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "an empty policy yields UNKNOWN, never PASSED",
+      "observed": "exit 1 status=UNKNOWN",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "UNKNOWN",
+          "reason": "no obligation declared: verification scope is undefined, nothing is publishable",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "UNKNOWN",
+            "reason": "no obligation declared: verification scope is undefined, nothing is publishable",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 347
+    },
+    {
+      "id": "SCP-02",
+      "axis": "scope",
+      "title": "Empty policy: publish",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "an empty policy is not publishable",
+      "observed": "exit 1 code=INVALID_POLICY",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "INVALID_POLICY",
+          "reason": "the policy declares no required obligation: nothing would be proven, so no receipt is publishable",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "INVALID_POLICY",
+            "reason": "the policy declares no required obligation: nothing would be proven, so no receipt is publishable",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 308
+    },
+    {
+      "id": "SCP-03",
+      "axis": "scope",
+      "title": "Policy with no required obligation",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a policy with no required obligation is refused",
+      "observed": "exit 1 code=INVALID_POLICY",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "INVALID_POLICY",
+          "reason": "the policy declares no required obligation: nothing would be proven, so no receipt is publishable",
+          "peak_ws_mb": 1.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "INVALID_POLICY",
+            "reason": "the policy declares no required obligation: nothing would be proven, so no receipt is publishable",
+            "peak_ws_mb": 1.9
+          }
+        }
+      ],
+      "duration_ms": 308
+    },
+    {
+      "id": "SCP-04",
+      "axis": "scope",
+      "title": "Red required obligation",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a red required obligation is FAILED and never publishable",
+      "observed": "run=FAILED publish=REQUIRED_NOT_PASSED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "FAILED",
+          "peak_ws_mb": 5.0
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REQUIRED_NOT_PASSED",
+          "reason": "required obligation \"red\" has status \"FAILED\"",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"red\" has status \"FAILED\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 815
+    },
+    {
+      "id": "SCP-05",
+      "axis": "scope",
+      "title": "Obligation raises a Python exception",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a Python exception makes the run FAILED and unpublishable",
+      "observed": "run=FAILED publish=REFUSED/REQUIRED_NOT_PASSED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "FAILED",
+          "peak_ws_mb": 5.0
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REQUIRED_NOT_PASSED",
+          "reason": "required obligation \"boom\" has status \"FAILED\"",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"boom\" has status \"FAILED\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 844
+    },
+    {
+      "id": "SCP-06",
+      "axis": "scope",
+      "title": "Required E2E obligation is red",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a red required E2E obligation is never green, never publishable",
+      "observed": "run=FAILED publish=REFUSED/REQUIRED_NOT_PASSED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "FAILED",
+          "peak_ws_mb": 5.2
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REQUIRED_NOT_PASSED",
+          "reason": "required obligation \"e2e\" has status \"FAILED\"",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.2
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"e2e\" has status \"FAILED\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 822
+    },
+    {
+      "id": "SCP-07",
+      "axis": "scope",
+      "title": "Partial run that skips a required obligation",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a partial run that skips a required obligation is PARTIAL and publishable never",
+      "observed": "run=PARTIAL publish=NO_RECEIPT",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "PARTIAL",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "NO_RECEIPT",
+          "reason": "no complete receipt for tree aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: run `flow run` on this exact index tree first (a selective run never produces one)",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation green",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "PARTIAL",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "NO_RECEIPT",
+            "reason": "no complete receipt for tree aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: run `flow run` on this exact index tree first (a selective run never produces one)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 734
+    },
+    {
+      "id": "SCP-08",
+      "axis": "scope",
+      "title": "Optional red obligation does not mask green",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "an optional red obligation does not mask a green required set",
+      "observed": "PASSED + PUBLISHED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 1007
+    },
+    {
+      "id": "SCP-09",
+      "axis": "scope",
+      "title": "Required obligation whose program is missing",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a required obligation that cannot start is UNSUPPORTED and unpublishable",
+      "observed": "run=UNSUPPORTED publish=REQUIRED_NOT_PASSED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "UNSUPPORTED",
+          "peak_ws_mb": 5.0
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REQUIRED_NOT_PASSED",
+          "reason": "required obligation \"missing\" has status \"UNSUPPORTED\"",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "UNSUPPORTED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"missing\" has status \"UNSUPPORTED\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 682
+    },
+    {
+      "id": "SCP-10",
+      "axis": "scope",
+      "title": "Required obligation times out",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a timed-out required obligation is TIMEOUT and unpublishable",
+      "observed": "run=TIMEOUT publish=REQUIRED_NOT_PASSED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "TIMEOUT",
+          "peak_ws_mb": 5.0
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REQUIRED_NOT_PASSED",
+          "reason": "required obligation \"slow\" has status \"TIMEOUT\"",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "TIMEOUT",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"slow\" has status \"TIMEOUT\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 1759
+    },
+    {
+      "id": "SCP-11",
+      "axis": "scope",
+      "title": "Disabled repository",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "disabled repositories refuse run and publish",
+      "observed": "run=DISABLED publish=DISABLED",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "DISABLED",
+          "reason": "Flow is disabled in this repository (`flow enable` to re-enable)",
+          "peak_ws_mb": 4.3
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "DISABLED",
+          "reason": "Flow is disabled in this repository",
+          "peak_ws_mb": 1.9
+        },
+        "enable": {
+          "exit": 0,
+          "status": "ENABLED",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe disable",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "DISABLED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "DISABLED",
+            "reason": "Flow is disabled in this repository (`flow enable` to re-enable)",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "DISABLED",
+            "reason": "Flow is disabled in this repository",
+            "peak_ws_mb": 1.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe enable",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "ENABLED",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 447
+    },
+    {
+      "id": "GIT-01",
+      "axis": "git",
+      "title": "Stale --expected-old",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a stale --expected-old is refused with STALE_REF",
+      "observed": "exit 1 code=STALE_REF",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_REF",
+          "reason": "stale expected old OID: ref is Some(\"a9f2530530617f0afe9cb77e6e36719b0d5f353d\"), expected 0000000000000000000000000000000000000000",
+          "peak_ws_mb": 4.8
+        },
+        "ref": "a9f2530530617f0afe9cb77e6e36719b0d5f353d"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --expected-old 0000000000000000000000000000000000000000",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_REF",
+            "reason": "stale expected old OID: ref is Some(\"a9f2530530617f0afe9cb77e6e36719b0d5f353d\"), expected 0000000000000000000000000000000000000000",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 857
+    },
+    {
+      "id": "GIT-02",
+      "axis": "git",
+      "title": "External git update-ref between run and publish",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "an external `git update-ref` between run and publish is not overwritten: STALE_REF, ref kept, no journal intent",
+      "observed": "exit 1 code=STALE_REF ref_is_external=True",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_REF",
+          "reason": "stale expected old OID: ref is Some(\"8dc9fd5c00940724c18cfe2a24ccc2a2f469d6d9\"), expected 1a75341377317fc4c4188537f0e8b6901e919b0b",
+          "peak_ws_mb": 4.8
+        },
+        "external": "8dc9fd5c00940724c18cfe2a24ccc2a2f469d6d9",
+        "journal_unchanged": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --expected-old 1a75341377317fc4c4188537f0e8b6901e919b0b",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_REF",
+            "reason": "stale expected old OID: ref is Some(\"8dc9fd5c00940724c18cfe2a24ccc2a2f469d6d9\"), expected 1a75341377317fc4c4188537f0e8b6901e919b0b",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 885
+    },
+    {
+      "id": "GIT-03",
+      "axis": "git",
+      "title": "`--ref HEAD`",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "`--ref HEAD` is refused",
+      "observed": "exit 1 code=REF_NOT_ALLOWED",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REF_NOT_ALLOWED",
+          "reason": "--ref \"HEAD\" must be a full branch ref under refs/heads/",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref HEAD",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REF_NOT_ALLOWED",
+            "reason": "--ref \"HEAD\" must be a full branch ref under refs/heads/",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 656
+    },
+    {
+      "id": "GIT-04",
+      "axis": "git",
+      "title": "`--ref refs/tags/x`",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "`--ref refs/tags/x` is refused",
+      "observed": "exit 1 code=REF_NOT_ALLOWED",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "REF_NOT_ALLOWED",
+          "reason": "--ref \"refs/tags/v1\" must be a full branch ref under refs/heads/",
+          "peak_ws_mb": 2.0
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/tags/v1",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REF_NOT_ALLOWED",
+            "reason": "--ref \"refs/tags/v1\" must be a full branch ref under refs/heads/",
+            "peak_ws_mb": 2.0
+          }
+        }
+      ],
+      "duration_ms": 716
+    },
+    {
+      "id": "GIT-05",
+      "axis": "git",
+      "title": "Invalid ref names (`git check-ref-format`)",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "every invalid/non-branch ref name is refused before any mutation (codes vary: REF_NOT_ALLOWED before resolution, UNKNOWN_REF after rev-parse)",
+      "observed": "6 names refused, refs unchanged",
+      "notes": "",
+      "evidence": {
+        "attempts": [
+          {
+            "ref": "refs/heads/a..b",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF"
+          },
+          {
+            "ref": "refs/heads/",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF"
+          },
+          {
+            "ref": "refs/heads/x^{}",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF"
+          },
+          {
+            "ref": "refs/heads/.hidden",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF"
+          },
+          {
+            "ref": "refs/heads/a/.b",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF"
+          },
+          {
+            "ref": "refs/heads/a b",
+            "check_ref_format_ok": false,
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REF_NOT_ALLOWED"
+          }
+        ],
+        "refs_unchanged": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/a..b",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/a..b",
+            "peak_ws_mb": 5.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/",
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/x^{}",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/x^{}",
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/.hidden",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/.hidden",
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/a/.b",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/a/.b",
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/a b",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REF_NOT_ALLOWED",
+            "reason": "--ref \"refs/heads/a b\" is not a usable ref name",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 1578
+    },
+    {
+      "id": "GIT-06",
+      "axis": "git",
+      "title": "Missing destination ref",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a missing destination ref is UNKNOWN_REF",
+      "observed": "exit 1 code=UNKNOWN_REF",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNKNOWN_REF",
+          "reason": "cannot resolve refs/heads/does-not-exist",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/does-not-exist",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNKNOWN_REF",
+            "reason": "cannot resolve refs/heads/does-not-exist",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 715
+    },
+    {
+      "id": "GIT-07",
+      "axis": "git",
+      "title": "Non-OID --expected-old",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a non-OID --expected-old cannot reach `git update-ref`: STALE_REF",
+      "observed": "exit 1 code=STALE_REF",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "STALE_REF",
+          "reason": "stale expected old OID: ref is Some(\"5cc066acea891991ff9b6bcfd5ce700cba91618a\"), expected not-an-object-id",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --expected-old not-an-object-id",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "STALE_REF",
+            "reason": "stale expected old OID: ref is Some(\"5cc066acea891991ff9b6bcfd5ce700cba91618a\"), expected not-an-object-id",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 749
+    },
+    {
+      "id": "GIT-08",
+      "axis": "git",
+      "title": "Detached HEAD",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a detached HEAD is refused unless `--ref` names the branch; an explicit branch still publishes",
+      "observed": "no_ref=ERROR/'detached HEAD: pass --ref explicitly' explicit=PUBLISHED",
+      "notes": "",
+      "evidence": {
+        "no_ref": {
+          "exit": 1,
+          "status": "ERROR",
+          "error": "detached HEAD: pass --ref explicitly",
+          "peak_ws_mb": 4.6
+        },
+        "explicit": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "ERROR",
+            "error": "detached HEAD: pass --ref explicitly",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/main",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 970
+    },
+    {
+      "id": "GIT-09",
+      "axis": "git",
+      "title": "Symbolic ref under refs/heads/ (branch target)",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "a symbolic ref is refused, or the tool states that the target moved",
+      "observed": "PUBLISHED under the name refs/heads/sym while the real target refs/heads/target moved to a39d1698a62d (tree aaca6f6b8a7a = verified tree); symref unchanged",
+      "notes": "Documented residual in the hardening report §8. The commit still carries the verified tree, but the operator read `ref: refs/heads/sym` and a different ref moved.",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.8
+        },
+        "target": "a39d1698a62dbd634a12c0856857f52863d0bc90",
+        "symref_still": "refs/heads/target"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/sym",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 1044
+    },
+    {
+      "id": "GIT-10",
+      "axis": "git",
+      "title": "Symbolic ref dereferencing to a tag",
+      "severity": "P1",
+      "verdict": "REPRODUCED",
+      "expected": "publish must move a branch only: a symref must not make it move a tag",
+      "observed": "PUBLISHED reported ref=refs/heads/sym; refs/tags/v1 moved d81ed3f7e9d2 -> 19f40a69f5f7",
+      "notes": "The usage text says publish is branch-only and `--ref refs/tags/...` is refused, but a symbolic ref named under refs/heads/ dereferences to the tag and git update-ref moves it. Signed/release tags are not protected.",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 5.3
+        },
+        "tag_before": "d81ed3f7e9d271f836f7b78dbc650b45512b9b2a",
+        "tag_after": "19f40a69f5f76721fbf40c798b55c74f83d7e280"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref refs/heads/sym",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.3
+          }
+        }
+      ],
+      "duration_ms": 1089
+    },
+    {
+      "id": "GIT-11",
+      "axis": "git",
+      "title": "Blocking reference-transaction hook at publish",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a blocking reference-transaction hook aborts publish with a typed refusal, ref untouched, intent closed as refused",
+      "observed": "exit 1 code=UPDATE_REF_REFUSED ref_unchanged=True journal_outcome=REFUSED",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UPDATE_REF_REFUSED",
+          "reason": "git update-ref refused: fatal: ref updates aborted by hook",
+          "peak_ws_mb": 5.0
+        },
+        "journal": [
+          {
+            "schema": "flow-journal/1",
+            "event": "intent",
+            "id": "2026-11-09T20:42:38Z-dfb69e9b0c51-1794256958838467100",
+            "ref": "refs/heads/main",
+            "old": "78cfb5dff1c8fe7c040439b6f550884fe6c6eace",
+            "new": "dfb69e9b0c51a5f7d3fa5cea7c7bff1332fe1f03",
+            "tree": "aaca6f6b8a7a9c0aa154e87614ed60b93bf38750",
+            "at": "2026-11-09T20:42:38Z"
+          },
+          {
+            "schema": "flow-journal/1",
+            "event": "outcome",
+            "id": "2026-11-09T20:42:38Z-dfb69e9b0c51-1794256958838467100",
+            "status": "REFUSED",
+            "stderr": "fatal: ref updates aborted by hook",
+            "at": "2026-11-09T20:42:38Z"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UPDATE_REF_REFUSED",
+            "reason": "git update-ref refused: fatal: ref updates aborted by hook",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 1045
+    },
+    {
+      "id": "GIT-12",
+      "axis": "git",
+      "title": "Tree already carried by the ref",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "publishing a tree the ref already carries is refused, no empty commit",
+      "observed": "exit 1 code=ALREADY_PUBLISHED",
+      "notes": "",
+      "evidence": {
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "ALREADY_PUBLISHED",
+          "reason": "refs/heads/main already points at a commit whose tree is 5da9bb037560f218b886f3b5bd3bf89d312259aa: nothing to publish",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED",
+            "reason": "refs/heads/main already points at a commit whose tree is 5da9bb037560f218b886f3b5bd3bf89d312259aa: nothing to publish",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 846
+    },
+    {
+      "id": "DUR-01",
+      "axis": "durable",
+      "title": "Truncated journal line",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a truncated journal is CORRUPT_JOURNAL (exit 1), preserved, and status refuses to guess",
+      "observed": "reconcile=CORRUPT_JOURNAL/JOURNAL_CORRUPT status_exit=1 journal_preserved=True",
+      "notes": "",
+      "evidence": {
+        "reconcile": {
+          "exit": 1,
+          "status": "CORRUPT_JOURNAL",
+          "code": "JOURNAL_CORRUPT",
+          "error": "journal corrupt: torn or invalid line 1: unterminated string",
+          "peak_ws_mb": 4.5
+        },
+        "status": {
+          "exit": 1,
+          "status": "ERROR",
+          "error": "journal corrupt: torn or invalid line 1: unterminated string",
+          "peak_ws_mb": 4.5
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "CORRUPT_JOURNAL",
+            "code": "JOURNAL_CORRUPT",
+            "error": "journal corrupt: torn or invalid line 1: unterminated string",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "ERROR",
+            "error": "journal corrupt: torn or invalid line 1: unterminated string",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 1157
+    },
+    {
+      "id": "DUR-02",
+      "axis": "durable",
+      "title": "Duplicated intent id, one outcome",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a duplicated intent id cannot be closed by one outcome: NEEDS_RECONCILIATION (exit 1), journal and ref untouched",
+      "observed": "exit 1 status=NEEDS_RECONCILIATION journal_unchanged=True",
+      "notes": "",
+      "evidence": {
+        "reconcile": {
+          "exit": 1,
+          "status": "NEEDS_RECONCILIATION",
+          "peak_ws_mb": 4.5
+        },
+        "journal": [
+          {
+            "schema": "flow-journal/1",
+            "event": "intent",
+            "id": "2026-11-09T20:42:41Z-8c0413843b68-1794256961866004700",
+            "ref": "refs/heads/main",
+            "old": "45ad7b2cf8b9889eb918f5a13b8595f04a2d7da0",
+            "new": "8c0413843b686fb0661167d26d746a95522f51ae",
+            "tree": "aaca6f6b8a7a9c0aa154e87614ed60b93bf38750",
+            "at": "2026-11-09T20:42:41Z"
+          },
+          {
+            "schema": "flow-journal/1",
+            "event": "intent",
+            "id": "2026-11-09T20:42:41Z-8c0413843b68-1794256961866004700",
+            "ref": "refs/heads/main",
+            "old": "45ad7b2cf8b9889eb918f5a13b8595f04a2d7da0",
+            "new": "8c0413843b686fb0661167d26d746a95522f51ae",
+            "tree": "aaca6f6b8a7a9c0aa154e87614ed60b93bf38750",
+            "at": "2026-11-09T20:42:41Z"
+          },
+          {
+            "schema": "flow-journal/1",
+            "event": "outcome",
+            "id": "2026-11-09T20:42:41Z-8c0413843b68-1794256961866004700",
+            "status": "PUBLISHED",
+            "commit": "8c0413843b686fb0661167d26d746a95522f51ae",
+            "at": "2026-01-01T00:00:00Z"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "NEEDS_RECONCILIATION",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 1089
+    },
+    {
+      "id": "DUR-03",
+      "axis": "durable",
+      "title": "One outcome cannot close two intents (ref moved)",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "one outcome cannot close two intents even when the ref matches: NEEDS_RECONCILIATION (exit 1)",
+      "observed": "exit 1 status=NEEDS_RECONCILIATION",
+      "notes": "",
+      "evidence": {
+        "reconcile": {
+          "exit": 1,
+          "status": "NEEDS_RECONCILIATION",
+          "peak_ws_mb": 4.6
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "NEEDS_RECONCILIATION",
+            "peak_ws_mb": 4.6
+          }
+        }
+      ],
+      "duration_ms": 1196
+    },
+    {
+      "id": "DUR-04",
+      "axis": "durable",
+      "title": "Crash after intent",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "crash after intent: no ref move, reconcile records NOT_PUBLISHED once, the next publish publishes exactly once",
+      "observed": "crash_exit=89 reconcile=RECONCILED outcomes=2 publish=PUBLISHED",
+      "notes": "",
+      "evidence": {
+        "crash": {
+          "exit": 89,
+          "peak_ws_mb": 4.9
+        },
+        "reconcile": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.7
+        },
+        "reconcile2": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.3
+        },
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.7
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 1369
+    },
+    {
+      "id": "DUR-05",
+      "axis": "durable",
+      "title": "Crash after CAS (after-ref)",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "crash after CAS: reconcile observes PUBLISHED, a second publish is ALREADY_PUBLISHED and no commit is added",
+      "observed": "crash_exit=89 reconcile=RECONCILED second=ALREADY_PUBLISHED commits=2",
+      "notes": "",
+      "evidence": {
+        "crash": {
+          "exit": 89,
+          "peak_ws_mb": 4.9
+        },
+        "reconcile": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.7
+        },
+        "second_publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "ALREADY_PUBLISHED",
+          "reason": "refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish",
+          "peak_ws_mb": 4.8
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.7
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED",
+            "reason": "refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 1516
+    },
+    {
+      "id": "DUR-06",
+      "axis": "durable",
+      "title": "Reconcile idempotence",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "reconcile is idempotent: a second run appends nothing",
+      "observed": "RECONCILED twice, journal lines 2 == 2",
+      "notes": "",
+      "evidence": {
+        "first": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.7
+        },
+        "second": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.5
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.7
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 1071
+    },
+    {
+      "id": "DUR-07",
+      "axis": "durable",
+      "title": "Ref moved to a third commit after a crash",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "an observation matching neither old nor new is NEEDS_RECONCILIATION (exit 1), no outcome invented",
+      "observed": "exit 1 status=NEEDS_RECONCILIATION journal_unchanged=True",
+      "notes": "",
+      "evidence": {
+        "reconcile": {
+          "exit": 1,
+          "status": "NEEDS_RECONCILIATION",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "NEEDS_RECONCILIATION",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 1152
+    },
+    {
+      "id": "DUR-08",
+      "axis": "durable",
+      "title": "Journal deleted after a crash",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a deleted journal is indistinguishable from a fresh repository: reconcile reports RECONCILED with nothing pending",
+      "observed": "reconcile=RECONCILED pending_intents=0",
+      "notes": "Observation, P2: the durable record is the only witness; deleting it (or losing it) removes the pending intent from recovery. No ref was moved in this scenario, so no double publication results; after a crash-after-ref the second publish is ALREADY_PUBLISHED. Recorded as an honest limitation, not a gate breach.",
+      "evidence": {
+        "reconcile": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.5
+        },
+        "status": {
+          "exit": 0,
+          "status": "REPORT",
+          "peak_ws_mb": 4.5
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.8
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 1085
+    },
+    {
+      "id": "DUR-09",
+      "axis": "durable",
+      "title": "Crash before intent",
+      "severity": "P2",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "no injection point exists for a crash before the intent append: FLOW_TEST_CRASH supports only after-intent and after-ref, and killing the process between commit-tree and append-journal is not deterministic from outside",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 0
+    },
+    {
+      "id": "DUR-10",
+      "axis": "durable",
+      "title": "Valid-JSON non-object journal line",
+      "severity": "P3",
+      "verdict": "REFUTED",
+      "expected": "a valid-JSON but non-object journal line is silently ignored: reconcile says RECONCILED",
+      "observed": "reconcile=RECONCILED status_exit=0",
+      "notes": "Observation, P3: `read_journal` refuses lines that fail to parse (torn writes), but a syntactically valid non-object line (or an object without fields) is accepted and counted as nothing. No invariant is broken with the records Flow itself writes; recorded for completeness.",
+      "evidence": {
+        "reconcile": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.5
+        },
+        "status": {
+          "exit": 0,
+          "status": "REPORT",
+          "peak_ws_mb": 4.5
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 782
+    },
+    {
+      "id": "DUR-11",
+      "axis": "durable",
+      "title": "Crafted two intents with two outcomes",
+      "severity": "P3",
+      "verdict": "REFUTED",
+      "expected": "a hand-crafted journal with two intents and two outcomes is accepted as reconciled",
+      "observed": "reconcile=RECONCILED",
+      "notes": "Observation, P3: the counting rule is intentionally mechanical; a writer who can already rewrite the journal can synthesize a balanced history. Not reachable through Flow's own append path (ids carry a nanosecond suffix).",
+      "evidence": {
+        "reconcile": {
+          "exit": 0,
+          "status": "RECONCILED",
+          "peak_ws_mb": 4.5
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 972
+    },
+    {
+      "id": "FIL-01",
+      "axis": "files",
+      "title": "Dirty/untracked/read-only/index files preserved",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "`run` modifies no user file, index, status or ref; `publish` modifies no user file or index",
+      "observed": "run=0 publish=1 changed=[]",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "ALREADY_PUBLISHED",
+          "reason": "refs/heads/main already points at a commit whose tree is 5f8419de5a3838610c6afa3376195985d3d1b680: nothing to publish",
+          "peak_ws_mb": 4.8
+        },
+        "files_changed_by_run": [],
+        "files_changed_by_publish": [],
+        "run_status_unchanged": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED",
+            "reason": "refs/heads/main already points at a commit whose tree is 5f8419de5a3838610c6afa3376195985d3d1b680: nothing to publish",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 1325
+    },
+    {
+      "id": "FIL-02",
+      "axis": "files",
+      "title": "Verification reads the index, not the dirty worktree",
+      "severity": "P1",
+      "verdict": "REFUTED",
+      "expected": "the obligation sees the INDEX content while the dirty worktree is untouched",
+      "observed": "PASSED on index content; worktree bytes unchanged",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "files_changed": []
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 928
+    },
+    {
+      "id": "FIL-03",
+      "axis": "files",
+      "title": "Flow state stays out of the verified tree",
+      "severity": "P1",
+      "verdict": "REFUTED",
+      "expected": "Flow state is gitignored and never enters the verified tree",
+      "observed": "receipt tree == HEAD tree 5da9bb037560; no .flow entry",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 754
+    },
+    {
+      "id": "FIL-04",
+      "axis": "files",
+      "title": "Symlink tree entry checked out as a regular file",
+      "severity": "P1",
+      "verdict": "REFUTED",
+      "expected": "a symlink tree entry checked out as a regular file is refused, not certified",
+      "observed": "exit 1 code=UNSUPPORTED_CHECKOUT",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "tree 30f3d65f86b11d76d7cb93a839f4d17706c0bad6 entry \"link.txt\" is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNSUPPORTED_CHECKOUT",
+            "reason": "tree 30f3d65f86b11d76d7cb93a839f4d17706c0bad6 entry \"link.txt\" is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 792
+    },
+    {
+      "id": "FIL-05",
+      "axis": "files",
+      "title": "Case-colliding tree",
+      "severity": "P1",
+      "verdict": "REFUTED",
+      "expected": "a case-colliding tree is refused (the host cannot represent it faithfully)",
+      "observed": "exit 1 code=UNSUPPORTED_CHECKOUT",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "tree ad97138d76f287a23061b3d643a80dd3cee27021 holds 2 paths that differ only by case (for example \"case.txt\"): this host cannot represent them faithfully, so the obligations would not see the verified tree",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNSUPPORTED_CHECKOUT",
+            "reason": "tree ad97138d76f287a23061b3d643a80dd3cee27021 holds 2 paths that differ only by case (for example \"case.txt\"): this host cannot represent them faithfully, so the obligations would not see the verified tree",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 570
+    },
+    {
+      "id": "FIL-06",
+      "axis": "files",
+      "title": "Windows-reserved and `..` tree paths",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "Git itself refuses to place a Windows-reserved name or a `..` path in the index (update-index: Invalid path; read-tree refuses the raw tree), so no verified index tree can contain one. Fixture impossible on this host; paths are still validated in `.flow` state paths and obligation ids (see FIL-obligation-id). Attempts: {\"CON\": {\"exit\": 128, \"stderr\": \"error: Invalid path 'CON'\\nfatal: git update-index: --cacheinfo cannot add CON\", \"raw_tree\": {\"oid\": \"17d545bba2f7\", \"read_tree_exit\": 128, \"read_tree_stderr\": \"error: invalid path 'CON'\"}}, \"AUX.txt\": {\"exit\": 128, \"stderr\": \"error: Invalid path 'AUX.txt'\\nfatal: git update-index: --cacheinfo cannot add AUX.txt\", \"raw_tree\": {\"oid\": \"934c3f62e9ee\", \"read_tree_exit\": 128, \"read_tree_stderr\": \"error: invalid path 'AUX.txt'\"}}, \"x.\": {\"exit\": 128, \"stderr\": \"error: Invalid path 'x.'\\nfatal: git update-index: --cacheinfo cannot add x.\", \"raw_tree\": {\"oid\": \"88136e",
+      "notes": "",
+      "evidence": {},
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        }
+      ],
+      "duration_ms": 549
+    },
+    {
+      "id": "FIL-07",
+      "axis": "files",
+      "title": "Obligation id traversal",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "an obligation id with `..` is refused at policy validation",
+      "observed": "run=INVALID_POLICY publish=INVALID_POLICY",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "INVALID_POLICY",
+          "reason": "unsafe obligation id \"../escape\": path traversal component \"..\" is not allowed",
+          "peak_ws_mb": 4.3
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "INVALID_POLICY",
+          "reason": "unsafe obligation id \"../escape\": path traversal component \"..\" is not allowed",
+          "peak_ws_mb": 4.3
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "INVALID_POLICY",
+            "reason": "unsafe obligation id \"../escape\": path traversal component \"..\" is not allowed",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "INVALID_POLICY",
+            "reason": "unsafe obligation id \"../escape\": path traversal component \"..\" is not allowed",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 304
+    },
+    {
+      "id": "FIL-08",
+      "axis": "files",
+      "title": "EOL conversion: obligation does not see tree bytes",
+      "severity": "P1",
+      "verdict": "REPRODUCED",
+      "expected": "the obligation must see the bytes of the verified tree (the Git blob), or the run must be refused as unfaithful",
+      "observed": "PASSED: the obligation asserted CRLF and succeeded, while the tree blob for payload.txt is LF (11 bytes: 'line1\\nline2'); the receipt names the tree whose blob was never tested. The checkout conversion is driven by a committed .gitattributes (`*.txt text eol=crlf`).",
+      "notes": "P1: this is the content-fidelity counterpart of the P0-1 type-fidelity fix. `verify_checkout_fidelity` checks presence and file type, not that the bytes on disk equal the blob. `doctor` warns that eol/filter rules can change bytes (only when .gitattributes is present), so the limitation is partly disclosed, but the headline claim 'the receipt names the exact Git tree that was checked' is not literally true for converted files.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "blob": "line1\nline2",
+        "gitattributes": "*.txt text eol=crlf\n"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 697
+    },
+    {
+      "id": "FIL-09",
+      "axis": "files",
+      "title": "Journal symlink -> write outside the workspace",
+      "severity": "P0",
+      "verdict": "REPRODUCED",
+      "expected": "Flow must not follow a symlinked `.flow/journal.jsonl` to write outside its workspace",
+      "observed": "PUBLISHED appended 514 bytes of journal records to 'outside-victim.txt' OUTSIDE the repository (14 -> 528 bytes, sha256 1fc87ad022bb -> 7241e0afe7df)",
+      "notes": "P0: `.flow` state paths are used without checking that they are regular files inside the workspace. An absolute symlink planted in `.flow` (or shipped by a cloned repository on a symlink-capable host, see FIL-clone-*) turns `flow publish` into an arbitrary-file append. The report's own boundary is violated: a user file outside the repository changed.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 5.0
+        },
+        "outside_before": "1fc87ad022bbad91",
+        "outside_after": "7241e0afe7df9ba4",
+        "appended_bytes": 514
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 905
+    },
+    {
+      "id": "FIL-10",
+      "axis": "files",
+      "title": "Receipts symlink -> write outside the workspace",
+      "severity": "P0",
+      "verdict": "REPRODUCED",
+      "expected": "Flow must not follow a symlinked `.flow/receipts` to write outside its workspace",
+      "observed": "run exited 0 and wrote receipt ['5da9bb037560f218b886f3b5bd3bf89d312259aa.json'] into 'outside-receipts' OUTSIDE the repository",
+      "notes": "P0: same unchecked-state-path class as the journal symlink. `save_receipt` creates the directory (following a link) and renames a temp file into it. A repository can ship `.flow/receipts` as a symlink (see FIL-clone-receipts), so this is reachable from a cloned candidate, not only from a local prank.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "outside_files": [
+          "5da9bb037560f218b886f3b5bd3bf89d312259aa.json"
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 637
+    },
+    {
+      "id": "FIL-11",
+      "axis": "files",
+      "title": "Logs junction -> write outside `.flow` (inside repo)",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "logs must stay under `.flow`, not be redirected into the user's source tree",
+      "observed": "run wrote ['green.stderr.log', 'green.stdout.log'] into the junction target `src/`; only the repository boundary is checked, not the `.flow` boundary",
+      "notes": "P2: canonical_within(root) is enforced for the log directory, so an outside-the-repository redirect is refused, but a junction to another directory *inside* the repository is accepted and user source files appear there. Requires a pre-existing link; low impact, recorded for completeness.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "written": [
+          "green.stderr.log",
+          "green.stdout.log"
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 756
+    },
+    {
+      "id": "FIL-12",
+      "axis": "files",
+      "title": "Cloned repo ships a receipts symlink",
+      "severity": "P0",
+      "verdict": "REPRODUCED",
+      "expected": "a cloned repository must not be able to redirect Flow's receipt write outside the checkout",
+      "observed": "clone materialised `.flow/receipts` as a symlink; `flow run` wrote ['baf41f8b26ef7f8cec53bdecdfde3c1b986a38fa.json'] into 'clone-receipts-out' outside the clone",
+      "notes": "P0: supply-chain variant of FIL-state-receipts. The link is committed in the candidate tree; the victim only runs the documented workflow (`flow run`). Reproduced on hosts where Git materialises symlinks (Linux, macOS, Windows with Developer Mode); the default Windows clone on this host materialises a plain file and the fidelity check refuses (FIL-clone-default).",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "outside_files": [
+          "baf41f8b26ef7f8cec53bdecdfde3c1b986a38fa.json"
+        ],
+        "clone_exit": 0
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 949
+    },
+    {
+      "id": "FIL-13",
+      "axis": "files",
+      "title": "Cloned repo ships a journal symlink",
+      "severity": "P0",
+      "verdict": "REPRODUCED",
+      "expected": "a cloned repository must not be able to redirect Flow's journal append outside the checkout",
+      "observed": "clone materialised `.flow/journal.jsonl` as a symlink; `flow publish` appended 514 bytes of journal to a file OUTSIDE the clone (16 -> 530 bytes)",
+      "notes": "P0: supply-chain variant of FIL-state-journal. A candidate tree that tracks `.flow/journal.jsonl` as a symlink makes the victim's ordinary `flow publish` append to an attacker-chosen file. Absolute symlink targets survive clone verbatim.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 5.0
+        },
+        "outside_before": "7c5d039f62544214",
+        "outside_after": "25d4a68e6f4bd5b2",
+        "clone_exit": 0
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 1062
+    },
+    {
+      "id": "FIL-14",
+      "axis": "files",
+      "title": "Cloned repo ships a journal symlink (default clone)",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "on a host where Git cannot materialise the symlink, the fidelity check refuses the tree instead of certifying it",
+      "observed": "clone wrote a regular file; run refused UNSUPPORTED_CHECKOUT",
+      "notes": "This is the protection that exists today: on this host `core.symlinks=false` by default, so a committed symlink becomes a plain file and `verify_checkout_fidelity` refuses. It does not help on symlink-capable hosts (Linux/macOS/Developer Mode), see FIL-clone-receipts.",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "tree 6e96adb4ab320adc1e4e808b3128260ac4d85e89 entry \".flow/journal.jsonl\" is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it",
+          "peak_ws_mb": 4.9
+        },
+        "clone_exit": 0
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNSUPPORTED_CHECKOUT",
+            "reason": "tree 6e96adb4ab320adc1e4e808b3128260ac4d85e89 entry \".flow/journal.jsonl\" is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 668
+    },
+    {
+      "id": "FIL-15",
+      "axis": "files",
+      "title": "Cloned repo ships `.flow/config.json`",
+      "severity": "P1",
+      "verdict": "REPRODUCED",
+      "expected": "`flow run` must not execute a program supplied by the repository without saying so",
+      "observed": "the cloned repo's `.flow/config.json` was used by `flow run` and its obligation executed (config-executed.txt written); run status=PASSED",
+      "notes": "P1: documented residual in the hardening report §8 ('a repository can ship .flow/config.json and have it used without flow init'), but the operational consequence - a cloned candidate executes arbitrary commands under the documented `flow run` workflow - is not surfaced at run time and contradicts the intent of verifying an untrusted candidate. `doctor` does not warn that the active policy came from the repository.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "marker_written": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 756
+    },
+    {
+      "id": "PRC-01",
+      "axis": "process",
+      "title": "10 MiB stdout + stderr",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "10 MiB per stream is drained and truncated with a marker; the run returns in bounded time and memory",
+      "observed": "PASSED in 492 ms; logs {'flood.stderr.log': 1048629, 'flood.stdout.log': 1048629}; truncated=True; peak_ws=7.9 MB",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 7.9
+        },
+        "log_sizes": {
+          "flood.stderr.log": 1048629,
+          "flood.stdout.log": 1048629
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 7.9
+          }
+        }
+      ],
+      "duration_ms": 770
+    },
+    {
+      "id": "PRC-02",
+      "axis": "process",
+      "title": "Obligation ignores termination",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "an obligation ignoring SIGTERM is killed with the tree and the run returns TIMEOUT in bounded time",
+      "observed": "TIMEOUT in 2353 ms",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "TIMEOUT",
+          "peak_ws_mb": 5.1
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "TIMEOUT",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 2632
+    },
+    {
+      "id": "PRC-03",
+      "axis": "process",
+      "title": "Detached grandchild holds the pipe",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a detached grandchild holding the inherited pipe cannot hang the CLI: the reader grace bounds the call",
+      "observed": "PASSED in 2339 ms with a detached grandchild holding stdout",
+      "notes": "The detached descendant survives (documented UNSUPPORTED); it exits on its own after 8 s. Only the bounded return is claimed here.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 2639
+    },
+    {
+      "id": "PRC-04",
+      "axis": "process",
+      "title": "Very short timeout",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a 1 s timeout is honoured; the 30 s obligation is killed and the run returns TIMEOUT",
+      "observed": "TIMEOUT in 1327 ms",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "TIMEOUT",
+          "peak_ws_mb": 5.1
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "TIMEOUT",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 1624
+    },
+    {
+      "id": "PRC-05",
+      "axis": "process",
+      "title": "GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE hijack",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a hijacked GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE does not redirect Flow: it verifies repository A and leaves B untouched",
+      "observed": "receipt tree == A index tree aaca6f6b8a7a; B untouched",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "b_tree": "4079c3533f621b42c71435d2b2b15f3d025b597a"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 1076
+    },
+    {
+      "id": "PRC-06",
+      "axis": "process",
+      "title": "GIT_CONFIG_GLOBAL/GIT_CONFIG_SYSTEM hijack",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a hostile GIT_CONFIG_GLOBAL/GIT_CONFIG_SYSTEM is scrubbed before every `git` child",
+      "observed": "PASSED with the real repository",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 613
+    },
+    {
+      "id": "PRC-07",
+      "axis": "process",
+      "title": "Missing toolchain in an obligation",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "a missing program is UNSUPPORTED, typed and bounded",
+      "observed": "UNSUPPORTED in 279 ms",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "UNSUPPORTED",
+          "peak_ws_mb": 5.2
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "UNSUPPORTED",
+            "peak_ws_mb": 5.2
+          }
+        }
+      ],
+      "duration_ms": 563
+    },
+    {
+      "id": "PRC-08",
+      "axis": "process",
+      "title": "post-checkout hook: what runs today",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "documented: Flow dispatches no hook of its own, but `git worktree add` runs a `post-checkout` hook; it executes with cwd = the scratch checkout and user files are untouched",
+      "observed": "post-checkout ran; cwd='/tmp/flow-scratch-18876-0'",
+      "notes": "Observed behaviour today, matching `doctor`'s non-guarantee wording. This is the HOOK-GITDIR-19 boundary: a hook can reach the shared git directory; Flow refuses only when the hook aborts Git, not when it writes.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "hook_cwd": "/tmp/flow-scratch-18876-0"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 878
+    },
+    {
+      "id": "PRC-09",
+      "axis": "process",
+      "title": "reference-transaction hook: what runs today",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "documented: the Git plumbing runs `reference-transaction` during `worktree add` and `update-ref`; a blocking hook aborts publish with a typed refusal and no ref move",
+      "observed": "phases during run: ['aborted', 'committed', 'prepared']; blocking publish -> UPDATE_REF_REFUSED, ref unchanged",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UPDATE_REF_REFUSED",
+          "reason": "git update-ref refused: fatal: ref updates aborted by hook",
+          "peak_ws_mb": 4.9
+        },
+        "phases": [
+          "aborted",
+          "committed",
+          "prepared"
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UPDATE_REF_REFUSED",
+            "reason": "git update-ref refused: fatal: ref updates aborted by hook",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 1504
+    },
+    {
+      "id": "PRC-10",
+      "axis": "process",
+      "title": "FLOW_TEST_CRASH in the shipped binary",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "a test-only crash switch is honoured unconditionally by the shipped binary and exits 89, outside the documented exit-code contract (0/1/2)",
+      "observed": "FLOW_TEST_CRASH=after-intent -> exit 89; after-ref -> exit 89; unrecognised value -> exit 1",
+      "notes": "P2: observed while testing durability. The hook is not compiled out and not gated by an opt-in flag; it can abort a publication between intent and CAS (or after CAS) in any environment where the variable is set. Impact is limited to denial/forced recovery, but it is a test backdoor in a production binary and exit 89 is outside the documented contract.",
+      "evidence": {
+        "after_intent": {
+          "exit": 89,
+          "peak_ws_mb": 4.9
+        },
+        "after_ref": {
+          "exit": 89,
+          "peak_ws_mb": 4.9
+        },
+        "unknown_mode": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "ALREADY_PUBLISHED",
+          "reason": "refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish",
+          "peak_ws_mb": 4.9
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED",
+            "reason": "refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 1441
+    },
+    {
+      "id": "PRC-11",
+      "axis": "process",
+      "title": "Unknown options / missing option values",
+      "severity": "P1",
+      "verdict": "REPRODUCED",
+      "expected": "unknown options and options missing their value must be usage errors (exit 2), never a live database- or ref-mutating action",
+      "observed": "`publish --dry-run` -> PUBLISHED (ref moved: True); `publish --ref` with no value -> PUBLISHED (ref moved: True); `run --obligation` with no value -> FAILED (both obligations executed: True)",
+      "notes": "P1: the argv parser ignores every token it does not know and treats a flag without its value as absent. An operator asking for a dry run publishes; a truncated `--ref` publishes to the current branch; a truncated `--obligation` runs the whole policy (a red required obligation makes it FAILED here, proving both ran). The documented usage-error exit code (2) is never used for these cases.",
+      "evidence": {
+        "dry_run": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        },
+        "ref_without_value": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        },
+        "obligation_without_value": {
+          "exit": 1,
+          "status": "FAILED",
+          "peak_ws_mb": 5.4
+        },
+        "ref_moved_by_dry_run": true,
+        "ref_moved_without_value": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --dry-run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish --ref",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --obligation",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.4
+          }
+        }
+      ],
+      "duration_ms": 2512
+    },
+    {
+      "id": "PRC-12",
+      "axis": "process",
+      "title": "Host secret canary and log redaction",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "the host canary is not inherited by the obligation and is redacted before persistence",
+      "observed": "obligation env=None; log and receipt preview contain [REDACTED]",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        },
+        "logs": [
+          "canary.stderr.log",
+          "canary.stdout.log"
+        ],
+        "preview": "env=None\r\n[REDACTED]\r\n"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 660
+    },
+    {
+      "id": "PRC-13",
+      "axis": "process",
+      "title": "Scratch cleanup",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "the owned scratch checkout is removed on drop: no residue",
+      "observed": "no new flow-scratch-* directory under PRC-13",
+      "notes": "",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.1
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        }
+      ],
+      "duration_ms": 616
+    },
+    {
+      "id": "PRF-01",
+      "axis": "proof",
+      "title": "Re-sealed forged receipt",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "a receipt must not be forgeable by a writer who can also edit and re-seal the file",
+      "observed": "PUBLISHED a commit for a tree whose required obligation was FAILED: status and obligation entries edited, integrity digest recomputed (0bc37d63ec15...)",
+      "notes": "P2: exactly the documented honest boundary ('no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one'). Reproduced empirically so the report's claim is measured, not assumed. Severity P2, not P0: the limitation is stated in `doctor` and in the hardening report; only a signature could close it. The casual edit (no re-seal) is refused with RECEIPT_INTEGRITY (IDN-11).",
+      "evidence": {
+        "run": {
+          "exit": 1,
+          "status": "FAILED",
+          "peak_ws_mb": 5.1
+        },
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        },
+        "forged_integrity": "0bc37d63ec159501"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        }
+      ],
+      "duration_ms": 996
+    },
+    {
+      "id": "PRF-02",
+      "axis": "proof",
+      "title": "Log files deleted after the run",
+      "severity": "P3",
+      "verdict": "REPRODUCED",
+      "expected": "publish claims evidence, but the evidence files it names can be deleted without any check",
+      "observed": "PUBLISHED with all 2 log files deleted; publish output reports receipt_logs=2",
+      "notes": "P3 observation: not a gate breach (the receipt's own content is intact and still binds tree+policy), but `receipt_logs` in the publish output reads as if the logs were present. The receipt lists paths; nothing verifies they exist.",
+      "evidence": {
+        "publish": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 5.0
+        },
+        "deleted_logs": [
+          "green.stderr.log",
+          "green.stdout.log"
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 1006
+    },
+    {
+      "id": "PRF-03",
+      "axis": "proof",
+      "title": "File changed after run, before publish",
+      "severity": "P1",
+      "verdict": "REFUTED",
+      "expected": "a worktree edit does not invalidate the index-tree proof (by design); a staged edit changes the tree and is NO_RECEIPT",
+      "observed": "worktree -> PUBLISHED, staged -> NO_RECEIPT",
+      "notes": "",
+      "evidence": {
+        "worktree_change": {
+          "exit": 0,
+          "status": "PUBLISHED",
+          "peak_ws_mb": 4.9
+        },
+        "staged_change": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "NO_RECEIPT",
+          "reason": "no complete receipt for tree 7418c8866fc3c4396ed33e3c755dd9d7a6c925ee: run `flow run` on this exact index tree first (a selective run never produces one)",
+          "peak_ws_mb": 4.7
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "NO_RECEIPT",
+            "reason": "no complete receipt for tree 7418c8866fc3c4396ed33e3c755dd9d7a6c925ee: run `flow run` on this exact index tree first (a selective run never produces one)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 1986
+    },
+    {
+      "id": "PRF-04",
+      "axis": "proof",
+      "title": "Tampered receipt displayed by status/explain",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "`status` and `explain` must not present a receipt whose integrity digest no longer matches",
+      "observed": "status reports latest_receipt.status=PASSED from a receipt that publish refuses with RECEIPT_INTEGRITY; explain echoes the same tampered receipt",
+      "notes": "P2: the publication gate holds (publish refuses), but the human-facing report shows a false green. An operator checking `flow status` sees PASSED for an edited receipt.",
+      "evidence": {
+        "status": {
+          "exit": 0,
+          "status": "REPORT",
+          "peak_ws_mb": 5.2
+        },
+        "explain": {
+          "exit": 0,
+          "status": "EXPLAIN",
+          "peak_ws_mb": 4.3
+        },
+        "publish": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "RECEIPT_INTEGRITY",
+          "reason": "receipt content does not match its integrity digest (recorded c7c1c05fecd7c4d8d1d09ab124e4287034281a169097fd6de046a1eaabbd6011, computed 760f41e1a97f36c9e0a0407a8713c674141e1a4ee2fddc1499bcb2195090ac9a)",
+          "peak_ws_mb": 4.7
+        },
+        "shown_status": "PASSED"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.2
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 5.2
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe explain --tree aaca6f6b8a7a9c0aa154e87614ed60b93bf38750",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "EXPLAIN",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "RECEIPT_INTEGRITY",
+            "reason": "receipt content does not match its integrity digest (recorded c7c1c05fecd7c4d8d1d09ab124e4287034281a169097fd6de046a1eaabbd6011, computed 760f41e1a97f36c9e0a0407a8713c674141e1a4ee2fddc1499bcb2195090ac9a)",
+            "peak_ws_mb": 4.7
+          }
+        }
+      ],
+      "duration_ms": 1185
+    },
+    {
+      "id": "PRF-05",
+      "axis": "proof",
+      "title": "Doctor honesty and exit code",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "`doctor` must fail the process (or at least not exit 0) when its own journal check is FAILED, and its disclosures must match the code",
+      "observed": "journal check FAILED, overall=FAILED, but exit=0; forge disclosed=True, eol/filter in static non_guarantees=False (only the conditional `gitattributes` check mentions it)",
+      "notes": "P2: `doctor` exits 0 because its status is REPORT (the documented code for 'a report was printed'), so a CI job checking only the exit code treats a corrupt journal as success. The forgery boundary is disclosed and matches PRF-forge-receipt; the checkout byte-conversion limit is disclosed only when `.gitattributes` is present, which is a weaker promise than the report implies.",
+      "evidence": {
+        "doctor": {
+          "exit": 0,
+          "status": "REPORT",
+          "peak_ws_mb": 4.6
+        },
+        "journal_check": {
+          "id": "journal",
+          "status": "FAILED",
+          "detail": "journal corrupt: torn or invalid line 1: unterminated string"
+        },
+        "forge_disclosed": true,
+        "eol_static_disclosure": false
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 89,
+          "result": {
+            "exit": 89,
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe doctor",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.6
+          }
+        }
+      ],
+      "duration_ms": 1129
+    },
+    {
+      "id": "PRF-06",
+      "axis": "proof",
+      "title": "`explain --tree` path traversal",
+      "severity": "P2",
+      "verdict": "REPRODUCED",
+      "expected": "`explain --tree` must validate the tree argument, not read an arbitrary JSON file by path traversal or absolute path",
+      "observed": "explain --tree 'C:\\\\Users\\\\barat\\\\AppData\\\\Local\\\\Temp\\\\flow-mvp-qa-qfgi0q8d\\\\PRF-06\\\\outside-secret' returned the outside file content {\"secret\": \"CANARY-FAKE-SECRET-001\"}; traversal '../../../outside-secret' returned {\"secret\": \"CANARY-FAKE-SECRET-001\"}",
+      "notes": "P2: `receipt_path` joins the unvalidated `--tree` value to `.flow/receipts/<value>.json`; an absolute path replaces the base. Read-only (no write), but it is the PATH-08 class the project claims to validate, and it can echo any readable JSON file.",
+      "evidence": {
+        "absolute": {
+          "exit": 0,
+          "status": "EXPLAIN",
+          "peak_ws_mb": 4.5
+        },
+        "traversal": {
+          "exit": 0,
+          "status": "EXPLAIN",
+          "peak_ws_mb": 4.3
+        },
+        "canary_found": true
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe explain --tree <tmp>\\outside-secret",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "EXPLAIN",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe explain --tree ../../../outside-secret",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "EXPLAIN",
+            "peak_ws_mb": 4.3
+          }
+        }
+      ],
+      "duration_ms": 749
+    },
+    {
+      "id": "CMP-01",
+      "axis": "compat",
+      "title": "JSON is the default and parseable",
+      "severity": "P3",
+      "verdict": "REPRODUCED",
+      "expected": "the usage text promises machine-readable JSON for every command",
+      "observed": "these invocations printed non-JSON text: ['no-args', 'help'] (exit codes [('no-args', 2), ('help', 0)])",
+      "notes": "P3: `help` (documented as a command) and a bare invocation print the usage text; everything else is JSON. Documentation overclaim, no gate impact.",
+      "evidence": {
+        "status": {
+          "exit": 0,
+          "json": true,
+          "status": "REPORT"
+        },
+        "version": {
+          "exit": 0,
+          "json": true,
+          "status": "VERSION"
+        },
+        "doctor": {
+          "exit": 0,
+          "json": true,
+          "status": "REPORT"
+        },
+        "explain": {
+          "exit": 0,
+          "json": true,
+          "status": "EXPLAIN"
+        },
+        "run": {
+          "exit": 0,
+          "json": true,
+          "status": "PASSED"
+        },
+        "publish": {
+          "exit": 0,
+          "json": true,
+          "status": "PUBLISHED"
+        },
+        "reconcile": {
+          "exit": 0,
+          "json": true,
+          "status": "RECONCILED"
+        },
+        "unknown-command": {
+          "exit": 2,
+          "json": true,
+          "status": "ERROR"
+        },
+        "no-args": {
+          "exit": 2,
+          "json": false,
+          "status": null
+        },
+        "help": {
+          "exit": 0,
+          "json": false,
+          "status": null
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe version",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "VERSION",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe doctor",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe explain",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "EXPLAIN",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe reconcile",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "RECONCILED",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe no-such-command",
+          "exit": 2,
+          "result": {
+            "exit": 2,
+            "status": "ERROR",
+            "error": "unknown command \"no-such-command\" (run `flow help`)",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe",
+          "exit": 2,
+          "result": {
+            "exit": 2,
+            "peak_ws_mb": 1.9
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe help",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "peak_ws_mb": 2.0
+          }
+        }
+      ],
+      "duration_ms": 1502
+    },
+    {
+      "id": "CMP-02",
+      "axis": "compat",
+      "title": "`--json` flag is a no-op",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "`--json` is accepted (as a no-op) and the output stays JSON: JSON is the default",
+      "observed": "status exit=0, run exit=0",
+      "notes": "The flag is not validated; it is silently ignored, which is the same parser gap as PRC-unknown-flags.",
+      "evidence": {
+        "status": {
+          "exit": 0,
+          "status": "REPORT",
+          "peak_ws_mb": 4.5
+        },
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.6
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status --json",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run --json",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 814
+    },
+    {
+      "id": "CMP-03",
+      "axis": "compat",
+      "title": "Exit-code contract stability",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "the documented exit-code contract (0 success, 1 refusal, 2 usage) holds for the exercised matrix",
+      "observed": "all 8 cases match",
+      "notes": "",
+      "evidence": {
+        "green run": {
+          "observed": 0,
+          "expected": 0
+        },
+        "status": {
+          "observed": 0,
+          "expected": 0
+        },
+        "no args": {
+          "observed": 2,
+          "expected": 2
+        },
+        "unknown command": {
+          "observed": 2,
+          "expected": 2
+        },
+        "help": {
+          "observed": 0,
+          "expected": 0
+        },
+        "red run": {
+          "observed": 1,
+          "expected": 1
+        },
+        "publish refusal": {
+          "observed": 1,
+          "expected": 1
+        },
+        "init twice": {
+          "observed": 1,
+          "expected": 1
+        }
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe",
+          "exit": 2,
+          "result": {
+            "exit": 2,
+            "peak_ws_mb": 2.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe nope",
+          "exit": 2,
+          "result": {
+            "exit": 2,
+            "status": "ERROR",
+            "error": "unknown command \"nope\" (run `flow help`)",
+            "peak_ws_mb": 4.3
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe help",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "peak_ws_mb": 2.0
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "reason": ".flow already exists (pass --force to rewrite config, journal is preserved)",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "FAILED",
+            "peak_ws_mb": 5.1
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe publish",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "REQUIRED_NOT_PASSED",
+            "reason": "required obligation \"red\" has status \"FAILED\"",
+            "peak_ws_mb": 4.8
+          }
+        }
+      ],
+      "duration_ms": 1694
+    },
+    {
+      "id": "CMP-04",
+      "axis": "compat",
+      "title": "Two concurrent publishes",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "two concurrent publishes publish at most once: one PUBLISHED, the other refused, one commit, no pending intent",
+      "observed": "results=[{'exit': 1, 'status': 'REFUSED', 'code': 'ALREADY_PUBLISHED', 'reason': 'refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish'}, {'exit': 0, 'status': 'PUBLISHED', 'code': None, 'reason': ''}] commits 1->2 pending=0",
+      "notes": "",
+      "evidence": {
+        "results": [
+          {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED",
+            "reason": "refs/heads/main already points at a commit whose tree is aaca6f6b8a7a9c0aa154e87614ed60b93bf38750: nothing to publish"
+          },
+          {
+            "exit": 0,
+            "status": "PUBLISHED",
+            "code": null,
+            "reason": ""
+          }
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        },
+        {
+          "argv": "<concurrent flow publish>",
+          "exit": 1,
+          "result": {
+            "status": "REFUSED",
+            "code": "ALREADY_PUBLISHED"
+          }
+        },
+        {
+          "argv": "<concurrent flow publish>",
+          "exit": 0,
+          "result": {
+            "status": "PUBLISHED",
+            "code": null
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe status",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "REPORT",
+            "peak_ws_mb": 4.5
+          }
+        }
+      ],
+      "duration_ms": 1264
+    },
+    {
+      "id": "CMP-05",
+      "axis": "compat",
+      "title": "Concurrent read-only processes",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "concurrent read-only CLI processes do not interfere",
+      "observed": "[{'exit': 0, 'status': 'REPORT'}, {'exit': 0, 'status': 'REPORT'}, {'exit': 0, 'status': 'VERSION'}]",
+      "notes": "",
+      "evidence": {
+        "results": [
+          {
+            "exit": 0,
+            "status": "REPORT"
+          },
+          {
+            "exit": 0,
+            "status": "REPORT"
+          },
+          {
+            "exit": 0,
+            "status": "VERSION"
+          }
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        }
+      ],
+      "duration_ms": 468
+    },
+    {
+      "id": "CMP-06",
+      "axis": "compat",
+      "title": "Two concurrent runs",
+      "severity": "P2",
+      "verdict": "REFUTED",
+      "expected": "two concurrent runs must not corrupt the receipt or report a false PASSED",
+      "observed": "passed=1 failed=1 receipts=['aaca6f6b8a7a9c0aa154e87614ed60b93bf38750.json'] errors=['git [\"write-tree\"] failed (128): fatal: Unable to create \\'C:']",
+      "notes": "Concurrent runs are not serialised (only publish/reconcile take the advisory lock). The losing process fails loudly with a typed ERROR such as a Git index.lock collision; a retry succeeds. No corruption and no false PASSED was observed; the single complete receipt is well formed.",
+      "evidence": {
+        "results": [
+          {
+            "exit": 0,
+            "status": "PASSED",
+            "error": ""
+          },
+          {
+            "exit": 1,
+            "status": "ERROR",
+            "error": "git [\"write-tree\"] failed (128): fatal: Unable to create 'C:/Users/barat/AppData/Local/Temp/flow-mvp-qa-qfgi0q8d/CMP-06/repo/.git/index.lock': File exists.\n\nAno"
+          }
+        ],
+        "receipts": [
+          "aaca6f6b8a7a9c0aa154e87614ed60b93bf38750.json"
+        ]
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "<concurrent flow run>",
+          "exit": 0,
+          "result": {
+            "status": "PASSED"
+          }
+        },
+        {
+          "argv": "<concurrent flow run>",
+          "exit": 1,
+          "result": {
+            "status": "ERROR"
+          }
+        }
+      ],
+      "duration_ms": 720
+    },
+    {
+      "id": "CMP-07",
+      "axis": "compat",
+      "title": "Unknown configuration keys",
+      "severity": "P3",
+      "verdict": "REFUTED",
+      "expected": "unknown configuration keys are ignored (no silent effect), so the policy digest is unchanged",
+      "observed": "`sandbox: true` and an obligation `env` map have no effect; obligation env=None",
+      "notes": "P3 observation: unknown keys are accepted without a warning. An operator who believes `sandbox: true` enables confinement gets no error and no confinement. `doctor` does say there is no OS isolation, but the config surface itself does not refuse unknown keys.",
+      "evidence": {
+        "run": {
+          "exit": 0,
+          "status": "PASSED",
+          "peak_ws_mb": 5.0
+        },
+        "log_excerpt": "cfg=None\n"
+      },
+      "commands": [
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.4
+          }
+        },
+        {
+          "argv": "D:\\App\\Ravum-flow-wt\\qa\\target\\debug\\flow.exe run",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "PASSED",
+            "peak_ws_mb": 5.0
+          }
+        }
+      ],
+      "duration_ms": 622
+    },
+    {
+      "id": "FUT-01",
+      "axis": "future",
+      "title": "propose -> proposals -> assemble -> run --candidate -> publish --candidate lifecycle",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: propose, proposals, assemble (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 102
+    },
+    {
+      "id": "FUT-02",
+      "axis": "future",
+      "title": "`run --candidate` verifies the assembled candidate, not the index",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: --candidate (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 4
+    },
+    {
+      "id": "FUT-03",
+      "axis": "future",
+      "title": "`publish --candidate` publishes the approved candidate only",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: --candidate (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 9
+    },
+    {
+      "id": "FUT-04",
+      "axis": "future",
+      "title": "`--dry-run` has no side effect",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: --dry-run (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 5
+    },
+    {
+      "id": "FUT-05",
+      "axis": "future",
+      "title": "`approve` records a human approval bound to a candidate",
+      "severity": "P1",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: approve (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 34
+    },
+    {
+      "id": "FUT-06",
+      "axis": "future",
+      "title": "`proposals` output is machine-readable and stable",
+      "severity": "P2",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: proposals (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 31
+    },
+    {
+      "id": "FUT-07",
+      "axis": "future",
+      "title": "`assemble` is deterministic (same inputs, same tree)",
+      "severity": "P2",
+      "verdict": "NOT_RUN",
+      "expected": "",
+      "observed": "command/option absent at branch d884e29: assemble (the new commands do not exist in this worktree; scenario is declared and will be enabled when the binary provides it)",
+      "notes": "",
+      "evidence": {},
+      "commands": [],
+      "duration_ms": 35
+    }
+  ]
+}
