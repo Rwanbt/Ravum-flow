@@ -19,6 +19,14 @@ pub const SCHEMA_CONFIG: &str = "flow-config/1";
 /// older schema is never silently reinterpreted: publication refuses it.
 pub const SCHEMA_RECEIPT: &str = "flow-receipt/2";
 pub const SCHEMA_JOURNAL: &str = "flow-journal/1";
+/// A proposal record: immutable, attributed, keyed by idempotency key.
+pub const SCHEMA_PROPOSAL: &str = "flow-proposal/1";
+/// A candidate record: an immutable exact tree assembled from proposals.
+pub const SCHEMA_CANDIDATE: &str = "flow-candidate/1";
+/// The local adoption record: which policy digest this working copy approved.
+pub const SCHEMA_ADOPTION: &str = "flow-adoption/1";
+/// A publication plan: the full preflight of a publish, with no mutation.
+pub const SCHEMA_PLAN: &str = "flow-plan/1";
 /// Identity of the way a context digest is computed. Part of the digest itself,
 /// so a future codec change invalidates older receipts instead of reusing them.
 pub const CONTEXT_CODEC: &str = "flow-context/2";
@@ -184,6 +192,71 @@ pub fn logs_dir(root: &Path) -> PathBuf {
     flow_dir(root).join("logs")
 }
 
+pub fn proposals_dir(root: &Path) -> PathBuf {
+    flow_dir(root).join("proposals")
+}
+
+pub fn candidates_dir(root: &Path) -> PathBuf {
+    flow_dir(root).join("candidates")
+}
+
+pub fn adoption_path(root: &Path) -> PathBuf {
+    flow_dir(root).join("adopted.json")
+}
+
+/// The local approval of a repository policy.
+///
+/// `.flow/config.json` can arrive with a clone. Nothing in this file is executed
+/// until this record names its policy digest: a committed config is a claim, not
+/// a consent.
+pub struct Adoption {
+    pub policy_digest: String,
+    pub policy_version: String,
+    pub approved_at: String,
+    pub source: String,
+}
+
+pub fn load_adoption(root: &Path) -> Result<Option<Adoption>, String> {
+    let path = adoption_path(root);
+    if !path.exists() {
+        return Ok(None);
+    }
+    let text =
+        fs::read_to_string(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    let value = json::parse(&text)?;
+    let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+    if schema != SCHEMA_ADOPTION {
+        return Err(format!(
+            "unsupported adoption schema {schema:?} in {}: refusing to guess what was approved",
+            path.display()
+        ));
+    }
+    let get = |key: &str| {
+        value
+            .get(key)
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string()
+    };
+    Ok(Some(Adoption {
+        policy_digest: get("policy_digest"),
+        policy_version: get("policy_version"),
+        approved_at: get("approved_at"),
+        source: get("source"),
+    }))
+}
+
+pub fn save_adoption(root: &Path, adoption: &Adoption) -> Result<(), String> {
+    let value = Json::obj(vec![
+        ("schema", Json::str(SCHEMA_ADOPTION)),
+        ("policy_digest", Json::str(adoption.policy_digest.clone())),
+        ("policy_version", Json::str(adoption.policy_version.clone())),
+        ("approved_at", Json::str(adoption.approved_at.clone())),
+        ("source", Json::str(adoption.source.clone())),
+    ]);
+    write_atomic(&adoption_path(root), &(value.to_string_pretty() + "\n"))
+}
+
 pub fn receipt_path(root: &Path, tree_oid: &str) -> PathBuf {
     receipts_dir(root).join(format!("{tree_oid}.json"))
 }
@@ -204,13 +277,19 @@ pub fn save_config(root: &Path, config: &Config) -> Result<(), String> {
 }
 
 pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {
+    write_atomic_bytes(path, data.as_bytes())
+}
+
+/// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be
+/// text and must never be round-tripped through `String`.
+pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
     // The temporary name carries the process id: two Flow processes writing
     // different files never fight over one shared scratch name.
     let tmp = path.with_extension(format!("tmp-flow-{}", std::process::id()));
     {
         let mut file =
             File::create(&tmp).map_err(|e| format!("cannot create {}: {e}", tmp.display()))?;
-        file.write_all(data.as_bytes())
+        file.write_all(data)
             .map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
         file.sync_all()
             .map_err(|e| format!("cannot fsync {}: {e}", tmp.display()))?;

@@ -116,7 +116,21 @@ fn status_of(value: &Json) -> String {
         .to_string()
 }
 
+/// Write a policy **and adopt it**, exactly as an operator would: `.flow/config.json`
+/// is a claim, and nothing in it runs until this working copy approved its digest
+/// (`flow approve`). Tests that deliberately skip the approval call use
+/// [`write_config_unapproved`] instead.
 fn write_config(repo: &Path, obligations: &str) {
+    write_config_unapproved(repo, obligations);
+    let (code, out) = flow(repo, &["approve"]);
+    assert_eq!(
+        code, 0,
+        "the policy must be approvable before it is used: {out}"
+    );
+    assert_eq!(status_of(&out), "APPROVED");
+}
+
+fn write_config_unapproved(repo: &Path, obligations: &str) {
     let dir = repo.join(".flow");
     fs::create_dir_all(&dir).unwrap();
     fs::write(
@@ -408,7 +422,7 @@ fn disable_blocks_run_and_publish() {
 fn unsafe_obligation_id_is_refused() {
     let repo = new_repo();
     flow(&repo.path, &["init"]);
-    write_config(
+    write_config_unapproved(
         &repo.path,
         r#"{"id":"../../escape","program":"git","args":["--version"],"required":true,"timeout_s":30}"#,
     );

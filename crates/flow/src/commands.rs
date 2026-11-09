@@ -50,19 +50,75 @@ fn current_ref(git: &Git) -> Result<String, String> {
 }
 
 // ------------------------------------------------------------------- init
-pub fn cmd_init(root: &Path, force: bool) -> Result<Json, String> {
+pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, String> {
     let git = Git::new(root);
     let _ = git.version();
     let dir = state::flow_dir(root);
-    if dir.exists() && !force {
+    // A `.flow/config.json` can arrive with a clone. It is a claim about what
+    // should run, not a consent to run it: adoption is a separate, explicit act.
+    let existing_config = state::config_path(root).exists();
+    if dir.exists() && !force && !(adopt_policy && existing_config) {
         return Ok(refused(
             ".flow already exists (pass --force to rewrite config, journal is preserved)",
         ));
     }
+    let config = if existing_config {
+        match state::load_config(root) {
+            Ok(config) => config,
+            Err(e) => {
+                return Ok(refused_code(
+                    "CONFIG_UNREADABLE",
+                    format!("a .flow/config.json is present but cannot be used: {e}"),
+                ))
+            }
+        }
+    } else {
+        Config::default()
+    };
+    if let Err(reason) = validate_obligations(&config.obligations) {
+        if !config.obligations.is_empty() {
+            return Ok(refused_code("INVALID_POLICY", reason));
+        }
+    }
+    let policy_digest = policy_digest(&effective_policy(&config, &config.obligations));
+    let adopted_already = state::load_adoption(root)?
+        .map(|a| a.policy_digest == policy_digest)
+        .unwrap_or(false);
+
+    if existing_config && !adopted_already && !adopt_policy {
+        // Show exactly what would be executed. Silence is not consent.
+        let commands: Vec<Json> = config
+            .obligations
+            .iter()
+            .map(|o| {
+                Json::str(format!(
+                    "{} {}{}",
+                    o.program,
+                    o.args.join(" "),
+                    if o.required {
+                        " (required)"
+                    } else {
+                        " (optional)"
+                    }
+                ))
+            })
+            .collect();
+        let mut value = refused_code(
+            "POLICY_ADOPTION_REQUIRED",
+            "this working copy already contains a .flow/config.json that was never approved here. Review it, then run `flow init --adopt-policy` or `flow approve`",
+        );
+        if let Json::Obj(pairs) = &mut value {
+            pairs.push(("policy_digest".into(), Json::str(short(&policy_digest))));
+            pairs.push(("obligations".into(), Json::Arr(commands)));
+        }
+        return Ok(value);
+    }
+
     fs::create_dir_all(state::receipts_dir(root))
         .map_err(|e| format!("cannot create receipts dir: {e}"))?;
     fs::create_dir_all(state::logs_dir(root))
         .map_err(|e| format!("cannot create logs dir: {e}"))?;
+    // Never truncate a journal, a receipt or a proposal: `init` is not a reset.
     if !state::journal_path(root).exists() {
         state::write_atomic(&state::journal_path(root), "")?;
     }
@@ -73,14 +129,100 @@ pub fn cmd_init(root: &Path, force: bool) -> Result<Json, String> {
     if !gitignore.exists() {
         state::write_atomic(&gitignore, "*\n")?;
     }
-    let config = Config::default();
-    state::save_config(root, &config)?;
+    if !existing_config {
+        state::save_config(root, &config)?;
+    }
+    let source = if adopt_policy {
+        "init --adopt-policy"
+    } else {
+        "init"
+    };
+    state::save_adoption(
+        root,
+        &state::Adoption {
+            policy_digest: policy_digest.clone(),
+            policy_version: config.policy_version.clone(),
+            approved_at: state::iso8601_now(),
+            source: source.into(),
+        },
+    )?;
     Ok(Json::obj(vec![
         ("status", Json::str("INITIALIZED")),
         ("flow_dir", Json::str(".flow")),
         ("policy_version", Json::str(state::POLICY_VERSION)),
+        ("adopted", Json::Bool(true)),
+        ("adoption_source", Json::str(source)),
+        ("policy_digest", Json::str(short(&policy_digest))),
+        (
+            "journal_preserved",
+            Json::Bool(state::journal_path(root).exists()),
+        ),
         ("note", Json::str("no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations; .flow/.gitignore keeps Flow state out of the verified tree")),
     ]))
+}
+
+/// Record local approval of the current `.flow/config.json` policy.
+pub fn cmd_approve(root: &Path) -> Result<Json, String> {
+    let config = state::load_config(root)?;
+    if let Err(reason) = validate_obligations(&config.obligations) {
+        return Ok(refused_code("INVALID_POLICY", reason));
+    }
+    let digest = policy_digest(&effective_policy(&config, &config.obligations));
+    state::save_adoption(
+        root,
+        &state::Adoption {
+            policy_digest: digest.clone(),
+            policy_version: config.policy_version.clone(),
+            approved_at: state::iso8601_now(),
+            source: "approve".into(),
+        },
+    )?;
+    Ok(Json::obj(vec![
+        ("status", Json::str("APPROVED")),
+        ("policy_digest", Json::str(digest)),
+        ("policy_version", Json::str(config.policy_version.clone())),
+        (
+            "obligations",
+            Json::Arr(
+                config
+                    .obligations
+                    .iter()
+                    .map(|o| {
+                        Json::str(format!(
+                            "{} {}{}",
+                            o.program,
+                            o.args.join(" "),
+                            if o.required { " (required)" } else { " (optional)" }
+                        ))
+                    })
+                    .collect(),
+            ),
+        ),
+        (
+            "note",
+            Json::str("this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`"),
+        ),
+    ]))
+}
+
+/// The adoption gate: a policy that this working copy never approved is not run.
+fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+    let digest = policy_digest(&effective_policy(config, &config.obligations));
+    match state::load_adoption(root)? {
+        None => Ok(Some(refused_code(
+            "POLICY_NOT_ADOPTED",
+            "this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy",
+        ))),
+        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code(
+            "POLICY_NOT_APPROVED",
+            format!(
+                ".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`",
+                short(&adoption.policy_digest),
+                short(&digest)
+            ),
+        ))),
+        Some(_) => Ok(None),
+    }
 }
 
 // ----------------------------------------------------------------- doctor
@@ -108,6 +250,64 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             "config present".to_string()
         } else {
             "run `flow init`".to_string()
+        },
+    );
+
+    // A policy is executed only after this working copy adopted it. `doctor`
+    // states which of the three situations the repository is in.
+    if initialized {
+        match (state::load_config(root), state::load_adoption(root)) {
+            (Ok(config), Ok(Some(adoption))) => {
+                let digest = policy_digest(&effective_policy(&config, &config.obligations));
+                if digest == adoption.policy_digest {
+                    push(
+                        "policy_adopted",
+                        "OK",
+                        format!(
+                            "{} obligation(s) approved by {} at {}",
+                            config.obligations.len(),
+                            adoption.source,
+                            adoption.approved_at
+                        ),
+                    );
+                } else {
+                    push(
+                        "policy_adopted",
+                        "WARN",
+                        "the policy changed since it was approved: `flow approve` after reviewing .flow/config.json".to_string(),
+                    );
+                }
+            }
+            (Ok(_), Ok(None)) => push(
+                "policy_adopted",
+                "WARN",
+                "no adoption record: nothing in .flow/config.json will run until `flow init --adopt-policy` or `flow approve`".to_string(),
+            ),
+            (Err(e), _) => push("policy_adopted", "FAILED", e),
+            (_, Err(e)) => push("policy_adopted", "FAILED", e),
+        }
+    }
+
+    let lock = crate::lock::inspect(root);
+    push(
+        "publication_lock",
+        match lock.attribution {
+            "absent" | "dead" => "OK",
+            "live" => "WARN",
+            _ => "FAILED",
+        },
+        if !lock.present {
+            "no lock file".to_string()
+        } else {
+            format!(
+                "present, owner attribution {}, purpose {:?}{}{}",
+                lock.attribution,
+                lock.purpose,
+                lock.pid.map(|p| format!(", pid {p}")).unwrap_or_default(),
+                lock.age_s
+                    .map(|a| format!(", {a}s old"))
+                    .unwrap_or_default()
+            )
         },
     );
 
@@ -575,6 +775,7 @@ pub fn cmd_run(
     root: &Path,
     only: Option<Vec<String>>,
     timeout_override: Option<u64>,
+    candidate: Option<String>,
 ) -> Result<Json, String> {
     let config = state::load_config(root)?;
     if config.disabled {
@@ -603,6 +804,22 @@ pub fn cmd_run(
     if let Err(reason) = validate_obligations(&effective) {
         return Ok(refused_code("INVALID_POLICY", reason));
     }
+    if let Some(refusal) = adoption_gate(root, &config)? {
+        return Ok(refusal);
+    }
+    // The tree to verify is either the immutable candidate tree or the index.
+    let candidate_record = match candidate.as_deref() {
+        None => None,
+        Some(id) => match crate::proposal::Candidate::load(root, id)? {
+            Some(record) => Some(record),
+            None => {
+                return Ok(refused_code(
+                    "UNKNOWN_CANDIDATE",
+                    format!("no candidate {id:?} in .flow/candidates/ (see `flow proposals list` after `flow assemble`)"),
+                ))
+            }
+        },
+    };
 
     let selection: Option<Vec<Obligation>> = match &only {
         None => None,
@@ -643,13 +860,34 @@ pub fn cmd_run(
     let selected: Vec<Obligation> = selection.unwrap_or_else(|| effective.clone());
 
     let git = Git::new(root);
-    let tree = git.write_tree()?;
+    let tree = match &candidate_record {
+        Some(record) => record.tree_oid.clone(),
+        None => git.write_tree()?,
+    };
+    // A candidate tree must still be in the object store: a pruned candidate is
+    // not verifiable, and verifying something else while naming it would be a
+    // false receipt.
+    if candidate_record.is_some() {
+        let present =
+            git.run_bounded(&["cat-file", "-e", &format!("{tree}^{{tree}}")], None, None)?;
+        if present.status != 0 {
+            return Ok(refused_code(
+                "CANDIDATE_TREE_MISSING",
+                format!("candidate tree {tree} is no longer in the object store: re-run `flow assemble`"),
+            ));
+        }
+    }
     let started_at = state::iso8601_now();
 
     // Materialise the exact tree in a directory Flow owns and knows it created:
     // the `.git` link is removed so an obligation cannot reach the shared gitdir.
     // `Scratch` cleans up in `Drop`, including on the error paths below.
-    let parent = git.head_oid()?;
+    // A candidate is verified on its own base, so the verification commit's
+    // parent is the base the candidate was assembled from — not today's HEAD.
+    let parent = match &candidate_record {
+        Some(record) => record.base_commit.clone(),
+        None => git.head_oid()?,
+    };
     let commit = git.commit_tree(&tree, &parent, &format!("flow verify {tree}"))?;
     let scratch = match crate::scratch::materialise(&git, &commit, root) {
         Ok(scratch) => scratch,
@@ -800,6 +1038,13 @@ pub fn cmd_run(
             Json::str(config.execution_boundary.clone()),
         ),
         ("status", Json::str(status)),
+        (
+            "candidate_id",
+            match &candidate_record {
+                Some(record) => Json::str(record.candidate_id.clone()),
+                None => Json::Null,
+            },
+        ),
         ("verification_scope", scope),
         ("started_at", Json::str(started_at)),
         ("finished_at", Json::str(state::iso8601_now())),
@@ -846,6 +1091,8 @@ pub fn cmd_publish(
     reference: Option<String>,
     expected_old: Option<String>,
     message: Option<String>,
+    candidate: Option<String>,
+    dry_run: bool,
 ) -> Result<Json, String> {
     let config = state::load_config(root)?;
     if config.disabled {
@@ -857,7 +1104,22 @@ pub fn cmd_publish(
     if let Err(reason) = validate_obligations(&config.obligations) {
         return Ok(refused_code("INVALID_POLICY", reason));
     }
+    if let Some(refusal) = adoption_gate(root, &config)? {
+        return Ok(refusal);
+    }
     let git = Git::new(root);
+    let candidate_record = match candidate.as_deref() {
+        None => None,
+        Some(id) => match crate::proposal::Candidate::load(root, id)? {
+            Some(record) => Some(record),
+            None => {
+                return Ok(refused_code(
+                    "UNKNOWN_CANDIDATE",
+                    format!("no candidate {id:?} in .flow/candidates/"),
+                ))
+            }
+        },
+    };
 
     // Publish to a branch only. `HEAD`, a tag or a remote ref is either
     // ambiguous or the wrong object to move for "this tree is verified".
@@ -885,8 +1147,22 @@ pub fn cmd_publish(
         Err(e) => return Ok(lock_refusal(root, e)),
     };
 
-    // Publish exactly the tree that `run` verified: the index tree.
-    let tree = git.write_tree()?;
+    // Publish exactly the tree that `run` verified: the candidate's tree when
+    // `--candidate` is given, the index tree otherwise.
+    let tree = match &candidate_record {
+        Some(record) => record.tree_oid.clone(),
+        None => git.write_tree()?,
+    };
+    if candidate_record.is_some() {
+        let present =
+            git.run_bounded(&["cat-file", "-e", &format!("{tree}^{{tree}}")], None, None)?;
+        if present.status != 0 {
+            return Ok(refused_code(
+                "CANDIDATE_TREE_MISSING",
+                format!("candidate tree {tree} is no longer in the object store: nothing coherent can be published"),
+            ));
+        }
+    }
     let receipt = match Receipt::load(root, &tree)? {
         Some(r) => r,
         None => {
@@ -1069,6 +1345,73 @@ pub fn cmd_publish(
         }
     }
 
+    // A candidate is a statement about "base + these proposals". Publishing it on
+    // top of a different commit would silently claim a merge Flow never made.
+    if let Some(record) = &candidate_record {
+        if record.base_commit != old {
+            return Ok(refused_code(
+                "BASE_MISMATCH",
+                format!(
+                    "candidate {} was assembled on base {} but this publication would land on {}: re-assemble on the new base and re-run, or pass the matching --expected-old",
+                    record.candidate_id, record.base_commit, old
+                ),
+            ));
+        }
+    }
+    if dry_run {
+        // Everything above is the same preflight a real publication performs.
+        // Nothing below this point has happened yet: no commit object, no ref
+        // movement, no journal line.
+        return Ok(Json::obj(vec![
+            ("status", Json::str("PLAN")),
+            ("schema", Json::str(state::SCHEMA_PLAN)),
+            ("dry_run", Json::Bool(true)),
+            ("ref", Json::str(reference)),
+            ("old", Json::str(old)),
+            ("tree", Json::str(tree.clone())),
+            (
+                "candidate_id",
+                match &candidate_record {
+                    Some(record) => Json::str(record.candidate_id.clone()),
+                    None => Json::Null,
+                },
+            ),
+            ("context_id", Json::str(receipt.context_id.clone())),
+            ("policy_digest", Json::str(receipt.policy_digest.clone())),
+            ("policy_version", Json::str(receipt.policy_version.clone())),
+            (
+                "execution_boundary",
+                Json::str(receipt.execution_boundary.clone()),
+            ),
+            (
+                "obligations",
+                Json::Arr(
+                    receipt
+                        .obligations
+                        .iter()
+                        .filter_map(|o| o.get("id").and_then(Json::as_str).map(Json::str))
+                        .collect(),
+                ),
+            ),
+            (
+                "changes",
+                match &candidate_record {
+                    Some(record) => {
+                        Json::Arr(record.changes.iter().map(|c| c.to_json()).collect())
+                    }
+                    None => Json::Arr(Vec::new()),
+                },
+            ),
+            (
+                "journal",
+                Json::str(state::journal_path(root).to_string_lossy().to_string()),
+            ),
+            (
+                "note",
+                Json::str("plan only: no commit was created, no ref was moved, no journal record was appended"),
+            ),
+        ]));
+    }
     let message = message.unwrap_or_else(|| format!("flow: publish verified tree {tree}"));
     let commit = git.commit_tree(&tree, &old, &message)?;
     // The commit we are about to publish must carry exactly the qualified tree.
@@ -1151,6 +1494,13 @@ pub fn cmd_publish(
     )?;
     Ok(Json::obj(vec![
         ("status", Json::str("PUBLISHED")),
+        (
+            "candidate_id",
+            match &candidate_record {
+                Some(record) => Json::str(record.candidate_id.clone()),
+                None => Json::Null,
+            },
+        ),
         ("ref", Json::str(reference)),
         ("old", Json::str(old)),
         ("commit", Json::str(commit)),
@@ -1427,21 +1777,75 @@ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
 }
 
 // ----------------------------------------------------------------- explain
-pub fn cmd_explain(root: &Path, tree: Option<String>) -> Result<Json, String> {
+pub fn cmd_explain(
+    root: &Path,
+    tree: Option<String>,
+    candidate: Option<String>,
+) -> Result<Json, String> {
     let git = Git::new(root);
-    let tree = match tree {
-        Some(t) => t,
-        None => git.head_tree()?,
+    let candidate_record = match candidate.as_deref() {
+        None => None,
+        Some(id) => match crate::proposal::Candidate::load(root, id)? {
+            Some(record) => Some(record),
+            None => {
+                return Ok(refused_code(
+                    "UNKNOWN_CANDIDATE",
+                    format!("no candidate {id:?} in .flow/candidates/"),
+                ))
+            }
+        },
+    };
+    let tree = match (&tree, &candidate_record) {
+        (Some(t), _) => t.clone(),
+        (None, Some(record)) => record.tree_oid.clone(),
+        (None, None) => git.head_tree()?,
     };
     let receipt = Receipt::load(root, &tree)?;
     let records = state::read_journal(root)?;
     let related: Vec<Json> = records
-        .into_iter()
+        .iter()
         .filter(|r| r.get("tree").and_then(Json::as_str) == Some(tree.as_str()))
+        .cloned()
         .collect();
+    // Proposals are attributed to a candidate, so explain can name who proposed
+    // what without the caller having to correlate ids by hand.
+    let proposals = match &candidate_record {
+        None => Json::Arr(Vec::new()),
+        Some(record) => Json::Arr(
+            record
+                .proposals
+                .iter()
+                .filter_map(|id| crate::proposal::Proposal::load(root, id).ok().flatten())
+                .map(|proposal| {
+                    Json::obj(vec![
+                        ("proposal_id", Json::str(proposal.proposal_id)),
+                        ("agent_id", Json::str(proposal.agent_id)),
+                        ("task_id", Json::str(proposal.task_id)),
+                        ("base_commit", Json::str(proposal.base_commit)),
+                        ("tree_oid", Json::str(proposal.tree_oid)),
+                    ])
+                })
+                .collect(),
+        ),
+    };
     Ok(Json::obj(vec![
         ("status", Json::str("EXPLAIN")),
         ("tree", Json::str(tree)),
+        (
+            "candidate_id",
+            match &candidate_record {
+                Some(record) => Json::str(record.candidate_id.clone()),
+                None => Json::Null,
+            },
+        ),
+        (
+            "candidate",
+            match &candidate_record {
+                Some(record) => record.json.clone(),
+                None => Json::Null,
+            },
+        ),
+        ("proposals", proposals),
         ("receipt", receipt.map(|r| r.json).unwrap_or(Json::Null)),
         ("journal", Json::Arr(related)),
     ]))
@@ -1459,4 +1863,59 @@ pub fn cmd_set_disabled(root: &Path, disabled: bool) -> Result<Json, String> {
         ),
         ("disabled", Json::Bool(disabled)),
     ]))
+}
+
+// --------------------------------------------------------------- proposals
+pub fn cmd_propose(
+    root: &Path,
+    agent: Option<String>,
+    task: Option<String>,
+    base: Option<String>,
+    patch: Option<String>,
+    key: Option<String>,
+) -> Result<Json, String> {
+    let git = Git::new(root);
+    let (Some(agent), Some(task), Some(base), Some(patch)) = (agent, task, base, patch) else {
+        return Ok(crate::proposal::refusal(
+            "USAGE",
+            "flow propose --agent <A> --task <T> --base <commit> --patch <file> [--key <key>]",
+        ));
+    };
+    crate::proposal::admit(
+        &git,
+        root,
+        &agent,
+        &task,
+        &base,
+        Path::new(&patch),
+        key.as_deref(),
+    )
+}
+
+pub fn cmd_proposals(root: &Path, show: Option<String>) -> Result<Json, String> {
+    match show {
+        Some(id) => match crate::proposal::Proposal::load(root, &id)? {
+            Some(proposal) => Ok(proposal.json),
+            None => Ok(crate::proposal::refusal(
+                "UNKNOWN_PROPOSAL",
+                format!("no admitted proposal {id:?} in .flow/proposals/"),
+            )),
+        },
+        None => {
+            let proposals = crate::proposal::Proposal::list(root)?;
+            Ok(Json::obj(vec![
+                ("status", Json::str("RECORD")),
+                ("schema", Json::str("flow-proposal-list/1")),
+                (
+                    "proposals",
+                    Json::Arr(proposals.iter().map(|p| p.json.clone()).collect()),
+                ),
+                ("count", Json::Num(proposals.len() as f64)),
+            ]))
+        }
+    }
+}
+
+pub fn cmd_assemble(root: &Path, proposals: &[String]) -> Result<Json, String> {
+    crate::proposal::assemble(root, proposals)
 }

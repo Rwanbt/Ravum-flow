@@ -399,14 +399,10 @@ pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;
 /// child from hanging the CLI forever, not to police slow repositories.
 pub const GIT_TIMEOUT_S: u64 = 300;
 
-/// Read `pipe` to EOF while retaining at most [`MAX_STREAM_BYTES`].
+/// Read `pipe` to EOF while retaining at most `cap` bytes.
 ///
 /// The surplus is still read and discarded: stopping the read would fill the
 /// pipe and deadlock a child that is writing (for example during a timeout).
-fn read_capped<R: Read>(pipe: R) -> Captured {
-    read_capped_at(pipe, MAX_STREAM_BYTES)
-}
-
 fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
     let mut captured = Captured::default();
     let mut chunk = [0u8; 8192];
@@ -739,9 +735,9 @@ mod tests {
     }
 
     #[test]
-    fn read_capped_retains_at_most_the_cap_and_flags_truncation() {
+    fn read_capped_at_retains_at_most_the_cap_and_flags_truncation() {
         let data = vec![b'x'; MAX_STREAM_BYTES + 4096];
-        let captured = read_capped(std::io::Cursor::new(data));
+        let captured = read_capped_at(std::io::Cursor::new(data), MAX_STREAM_BYTES);
         assert_eq!(captured.bytes.len(), MAX_STREAM_BYTES);
         assert!(captured.truncated);
         let text = finish(captured).0;
@@ -750,8 +746,8 @@ mod tests {
     }
 
     #[test]
-    fn read_capped_keeps_small_streams_intact() {
-        let captured = read_capped(std::io::Cursor::new(b"hello".to_vec()));
+    fn read_capped_at_keeps_small_streams_intact() {
+        let captured = read_capped_at(std::io::Cursor::new(b"hello".to_vec()), MAX_STREAM_BYTES);
         assert_eq!(captured.bytes, b"hello");
         assert!(!captured.truncated);
         assert_eq!(finish(captured), ("hello".to_string(), false));

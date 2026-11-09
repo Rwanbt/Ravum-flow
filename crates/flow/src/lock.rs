@@ -30,8 +30,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 pub const LOCK_SCHEMA: &str = "flow-lock/2";
-/// Reported as an observation only. Never a steal criterion.
-pub const LOCK_MAX_AGE_REPORTED_S: u64 = 120;
+
 const ACQUIRE_BUDGET: Duration = Duration::from_secs(3);
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
@@ -73,7 +72,6 @@ pub fn lock_path(root: &Path) -> PathBuf {
 #[derive(Debug, Clone)]
 pub struct LockInfo {
     pub present: bool,
-    pub schema: String,
     pub pid: Option<u32>,
     pub age_s: Option<u64>,
     pub purpose: String,
@@ -107,7 +105,6 @@ pub fn inspect(root: &Path) -> LockInfo {
     let Ok(text) = fs::read_to_string(&path) else {
         return LockInfo {
             present: false,
-            schema: String::new(),
             pid: None,
             age_s: None,
             purpose: String::new(),
@@ -123,7 +120,6 @@ pub fn inspect(root: &Path) -> LockInfo {
             };
             LockInfo {
                 present: true,
-                schema: LOCK_SCHEMA.to_string(),
                 pid: Some(owner.pid),
                 age_s: Some(crate::state::unix_now().saturating_sub(owner.at)),
                 purpose: owner.purpose,
@@ -132,7 +128,6 @@ pub fn inspect(root: &Path) -> LockInfo {
         }
         None => LockInfo {
             present: true,
-            schema: String::new(),
             pid: None,
             age_s: None,
             purpose: String::new(),
@@ -145,12 +140,6 @@ pub fn inspect(root: &Path) -> LockInfo {
 pub struct LockGuard {
     path: PathBuf,
     nonce: String,
-}
-
-impl LockGuard {
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
 }
 
 impl Drop for LockGuard {
