@@ -1,10 +1,13 @@
 name: flow-ci
 
+# Push runs on the long-lived feature branch and on the correction branch, so a
+# fix is verified before a PR is even opened. Pull requests target `dev` (the
+# main line) or `feat/flow-verified-foundation` (the correction base).
 on:
   push:
-    branches: [feat/flow-verified-foundation]
+    branches: [feat/flow-verified-foundation, fix/flow-foundation-proof-gates]
   pull_request:
-    branches: [dev]
+    branches: [dev, feat/flow-verified-foundation]
 
 permissions:
   contents: read
@@ -17,7 +20,7 @@ jobs:
   test:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -34,8 +37,59 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --locked --all-targets -- -D warnings
 
-      - name: cargo test (unit + integration)
-        run: cargo test --locked --all-targets
+      # Counting *discovered* tests lets a deleted test pass silently. This step
+      # counts the tests that actually ran, refuses any `ignored` test (a skip is
+      # not a pass), and then requires every blocking P0 gate to appear as
+      # `... ok` by name, so removing or renaming one fails the build.
+      - name: cargo test (unit + integration), executed and gated
+        shell: bash
+        run: |
+          set -o pipefail
+          set +e
+          cargo test --locked --all-targets 2>&1 | tee test-output.txt
+          test_status=$?
+          set -e
+          tr -d '\r' < test-output.txt > test-output.clean.txt
+          echo "--- suites ---"
+          grep -E '^(running|test result)' test-output.clean.txt || true
+          passed=$(grep -oE 'test result: ok\. [0-9]+ passed' test-output.clean.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          ignored=$(grep -oE '[0-9]+ ignored' test-output.clean.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          echo "executed_passed=$passed ignored=$ignored"
+          if [ "$test_status" -ne 0 ]; then
+            echo "::error::cargo test failed (exit $test_status)"
+            exit "$test_status"
+          fi
+          if [ "$ignored" -ne 0 ]; then
+            echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
+            exit 1
+          fi
+          if [ "$passed" -lt 43 ]; then
+            echo "::error::expected at least 43 executed passing tests, got $passed"
+            exit 1
+          fi
+          missing=0
+          for gate in \
+            p0a_selective_run_never_yields_a_publishable_receipt \
+            p0a_duplicate_or_unknown_obligation_ids_are_refused \
+            p0a_full_run_with_one_failing_required_obligation_is_never_publishable \
+            p0a_an_optional_failing_obligation_does_not_mask_a_green_required_set \
+            p0b_adding_a_required_obligation_makes_the_receipt_stale \
+            p0b_changing_a_timeout_makes_the_receipt_stale \
+            p0b_changing_the_policy_version_makes_the_receipt_stale \
+            p0b_a_tampered_receipt_is_not_publishable \
+            p0b_explicit_ref_must_name_a_branch \
+            p0c_corrupt_journal_is_not_reported_as_reconciled \
+            p0c_duplicate_intent_id_requires_a_human \
+            p0c_ref_moved_elsewhere_needs_reconciliation \
+            p0c_reconcile_is_idempotent \
+            p0c_status_refuses_to_guess_on_a_corrupt_journal \
+            two_concurrent_publishes_publish_at_most_once ; do
+            if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
+              echo "::error::required gate '$gate' did not run or did not pass"
+              missing=1
+            fi
+          done
+          exit $missing
 
       - name: build release
         run: cargo build --locked --release
@@ -44,12 +98,10 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 -m unittest discover -s experiments/r0a/tests -v
 
-      - name: fail if a required test is missing
-        shell: bash
-        run: |
-          count=$(cargo test --locked --all-targets -- --list 2>/dev/null | grep -c ': test$' || true)
-          echo "discovered $count tests"
-          if [ "$count" -lt 25 ]; then
-            echo "expected at least 25 tests, found $count" >&2
-            exit 1
-          fi
+      - name: keep the test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-test-output-${{ matrix.os }}
+          path: test-output.txt
+          if-no-files-found: warn
