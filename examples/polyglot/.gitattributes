@@ -1,0 +1,4 @@
+# Keep the demo driver executable and LF on every platform. The bash script is
+# the one that must not be checked out with CRLF on Windows (the shebang and
+# every `#!/usr/bin/env bash` interpreter would see a trailing carriage return).
+*.sh text eol=lf
