@@ -39,5 +39,6 @@ No ADR/RFC is ratified, no GO is granted by this dossier alone, and no code was 
 - `docs/deepseek-d0-d4-review@f113791` is **isolated**: never merged into `dev`, kept for provenance; PR #33 is untouched. The dossier is therefore *not* part of `dev` documentation yet.
 - Canonical form corrections (`X-05` state machine, `X-06` S9 letters, `X-07` test IDs, `X-11` ADR namespaces, S8 metric framing, `H5`/`H7`/`H8`) are applied on `feat/flow-verified-foundation`, branched from `f113791`.
 - `GO_R0_FIXTURES` was **granted on 2026-11-09** by the owner's operational GOAL, bounded to synthetic fixtures and this branch; it ratifies no ADR, no license and no S9 threshold.
+- The execution phase (R0-a/b/c, minimal CLI, CI, draft PR #51) is reported in the [verified-foundation report](reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md).
 
 **All technical choices remain proposals until a human sign-off.**
