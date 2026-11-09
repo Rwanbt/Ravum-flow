@@ -24,7 +24,7 @@ git add -A
 | `doctor` | implemented | read-only report; lists what is **not** guaranteed |
 | `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents |
 | `run` | implemented | exports the exact index tree to a throwaway directory (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID |
-| `publish` | implemented (ref-only) | requires a `PASSED` receipt for that exact tree, appends a durable intent, re-reads the ref, then `git update-ref` CAS; outcomes `PUBLISHED` / `REFUSED` / `UNKNOWN_OUTCOME` via `reconcile` |
+| `publish` | implemented (ref-only) | requires a `PASSED` receipt for that exact tree, appends a durable intent, re-reads the ref, then `git update-ref` CAS; outcomes `PUBLISHED` / `REFUSED`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
 | `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref |
 | `explain` | implemented | receipt + journal entries for a tree |
 | `disable` / `enable` | implemented | mutating commands refuse while disabled |

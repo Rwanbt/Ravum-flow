@@ -151,7 +151,7 @@ git add -A && ./target/release/flow run     # receipt bound to the index tree
 ./target/release/flow disable               # stop mutating commands
 ```
 
-Refusals are explicit and machine-readable: `UNKNOWN` (no obligation), `FAILED`, `TIMEOUT`, `UNSUPPORTED`, `REFUSED`, `UNKNOWN_OUTCOME`/`NEEDS_RECONCILIATION` via the journal. `publish` moves **refs only** — it never checks out, never overwrites a dirty file, and leaves the worktree visibly divergent. Recovery is `reconcile` (observe the ref, never move it) followed by a normal `git checkout`/merge performed by the human.
+Refusals are explicit and machine-readable: `UNKNOWN` (no obligation), `FAILED`, `TIMEOUT`, `UNSUPPORTED`, `REFUSED`, `RECONCILED_PUBLISHED` / `RECONCILED_NOT_PUBLISHED` / `NEEDS_RECONCILIATION` recorded in the journal. `publish` moves **refs only** — it never checks out, never overwrites a dirty file, and leaves the worktree visibly divergent. Recovery is `reconcile` (observe the ref, never move it) followed by a normal `git checkout`/merge performed by the human.
 
 ## 8. Governance
 
