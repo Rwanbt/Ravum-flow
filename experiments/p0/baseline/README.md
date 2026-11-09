@@ -11,10 +11,12 @@ Raw evidence that the three blocking defects exist **before** any correction.
 | Command | `cargo test --locked --test cli` |
 | Result | **11 failed, 20 passed** |
 
-`cli-tests-baseline.log` is the verbatim, unedited output of that command. It
-contains only synthetic fixture data (temporary repositories under
-`%TEMP%`, fake obligation ids, a fictional canary string) — no credential, no
-real path outside the disposable fixtures, no Ravum content.
+`cli-tests-baseline.log` is the verbatim, unedited output of that command, run
+with the **final** test file (the one shipped on the correction branch), so the
+reproduction does not depend on a draft version of the tests. It contains only
+synthetic fixture data (temporary repositories under `%TEMP%`, fake obligation
+ids) — no credential, no real path outside the disposable fixtures, no Ravum
+content.
 
 ## What each failure proves
 
@@ -40,9 +42,10 @@ already right.
 ## Reproduce
 
 ```sh
-git checkout 832f499
-# copy crates/flow/tests/cli.rs from fix/flow-foundation-proof-gates
-cargo test --locked --test cli
+# a throwaway worktree at the defective commit, with the final tests copied in
+git worktree add /tmp/flow-baseline 832f499
+cp crates/flow/tests/cli.rs /tmp/flow-baseline/crates/flow/tests/cli.rs
+cd /tmp/flow-baseline && cargo test --locked --test cli
 ```
 
 A red result here is the expected result: it is the reproduction, not a

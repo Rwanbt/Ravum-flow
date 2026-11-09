@@ -506,11 +506,20 @@ fn journal_file(repo: &Path) -> PathBuf {
 
 /// Create a repository whose index tree is already committed and stable, with
 /// `.flow/` excluded, ready for a run/publish scenario.
+///
+/// A real content change is staged so the index tree differs from `HEAD`'s: a
+/// verified tree that is already the ref's tree has nothing to publish, and
+/// `publish` says so (`ALREADY_PUBLISHED`).
 fn prepared_repo(obligations: &str) -> (Repo, String, String) {
     let repo = new_repo();
     flow(&repo.path, &["init"]);
     exclude_flow(&repo.path);
     write_config(&repo.path, obligations);
+    fs::write(
+        repo.path.join("verified.txt"),
+        "content under verification\n",
+    )
+    .unwrap();
     git(&repo.path, &["add", "-A"]);
     let tree = git(&repo.path, &["write-tree"]);
     let head = git(&repo.path, &["rev-parse", "HEAD"]);
@@ -558,7 +567,10 @@ fn p0a_duplicate_or_unknown_obligation_ids_are_refused() {
         &repo.path,
         &["run", "--obligation", "green", "--obligation", "green"],
     );
-    assert_eq!(code, 1, "a duplicated id is ambiguous and must be refused: {out}");
+    assert_eq!(
+        code, 1,
+        "a duplicated id is ambiguous and must be refused: {out}"
+    );
     assert_eq!(status_of(&out), "REFUSED");
 
     let (code2, out2) = flow(&repo.path, &["run", "--obligation", "nope"]);
@@ -759,7 +771,10 @@ fn p0c_duplicate_intent_id_requires_a_human() {
     let (repo, tree, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
-    let other = git(&repo.path, &["commit-tree", &tree, "-p", &head_before, "-m", "x"]);
+    let other = git(
+        &repo.path,
+        &["commit-tree", &tree, "-p", &head_before, "-m", "x"],
+    );
     let record = format!(
         "{{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"dup-1\",\"ref\":\"refs/heads/main\",\"old\":\"{head_before}\",\"new\":\"{other}\",\"tree\":\"{tree}\",\"at\":\"2026-11-09T00:00:00Z\"}}\n"
     );
@@ -786,7 +801,10 @@ fn p0c_ref_moved_elsewhere_needs_reconciliation() {
 
     // Someone else moves the ref to a third commit: the intent is neither
     // observably applied nor observably absent.
-    git(&repo.path, &["commit", "-q", "--allow-empty", "-m", "concurrent writer"]);
+    git(
+        &repo.path,
+        &["commit", "-q", "--allow-empty", "-m", "concurrent writer"],
+    );
     let moved = git(&repo.path, &["rev-parse", "HEAD"]);
     assert_ne!(moved, head_before);
 
@@ -814,16 +832,18 @@ fn p0c_reconcile_is_idempotent() {
 
     let (code1, out1) = flow(&repo.path, &["reconcile"]);
     assert_eq!(code1, 0, "{out1}");
-    let resolved = out1
-        .get("resolved")
-        .and_then(Json::as_arr)
-        .unwrap_or(&[]);
+    let resolved = out1.get("resolved").and_then(Json::as_arr).unwrap_or(&[]);
     assert_eq!(resolved.len(), 1);
 
     let (code2, out2) = flow(&repo.path, &["reconcile"]);
-    assert_eq!(code2, 0, "a second reconcile has nothing left to do: {out2}");
     assert_eq!(
-        out2.get("resolved").and_then(Json::as_arr).map(<[Json]>::len),
+        code2, 0,
+        "a second reconcile has nothing left to do: {out2}"
+    );
+    assert_eq!(
+        out2.get("resolved")
+            .and_then(Json::as_arr)
+            .map(<[Json]>::len),
         Some(0)
     );
     // The journal must still be readable and contain exactly one outcome for
@@ -888,10 +908,15 @@ fn two_concurrent_publishes_publish_at_most_once() {
 
     // The journal must still be parseable: interleaved appends are corruption.
     let (code3, out3) = flow(&repo.path, &["explain"]);
-    assert_eq!(code3, 0, "journal must remain readable after a race: {out3}");
+    assert_eq!(
+        code3, 0,
+        "journal must remain readable after a race: {out3}"
+    );
     let (_, out4) = flow(&repo.path, &["reconcile"]);
     assert_eq!(
-        out4.get("resolved").and_then(Json::as_arr).map(<[Json]>::len),
+        out4.get("resolved")
+            .and_then(Json::as_arr)
+            .map(<[Json]>::len),
         Some(0),
         "no intent may be left pending after a successful publication"
     );
