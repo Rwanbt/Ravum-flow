@@ -1,9 +1,21 @@
 //! Git plumbing through the `git` executable (no libgit2, no dependency) and a
 //! bounded obligation runner with an explicit environment allowlist.
+//!
+//! Three independent hardenings live here:
+//!
+//! * every `git` invocation is built from a scrubbed environment, so a hostile
+//!   host (or a test harness) cannot redirect plumbing at another repository,
+//!   object store, index or config through `GIT_*` variables;
+//! * obligations run with a bounded capture (at most [`MAX_STREAM_BYTES`] kept
+//!   per stream) and a bounded wall clock, and their reader threads are never
+//!   joined, so a descendant that survives the kill and keeps a pipe open can
+//!   delay the call by at most [`READER_GRACE`], never indefinitely.
 
+use std::ffi::OsString;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 pub struct Output {
@@ -22,15 +34,7 @@ impl Git {
     }
 
     fn base(&self) -> Command {
-        let mut cmd = Command::new("git");
-        cmd.arg("-C")
-            .arg(&self.root)
-            .env("GIT_TERMINAL_PROMPT", "0")
-            .env("GIT_PAGER", "cat")
-            .env("GIT_EDITOR", "true")
-            .env("GIT_CONFIG_NOSYSTEM", "1")
-            .env("LC_ALL", "C");
-        cmd
+        git_command(&self.root)
     }
 
     pub fn run(&self, args: &[&str]) -> Result<Output, String> {
@@ -100,12 +104,13 @@ impl Git {
 }
 
 /// Locate the repository root, refusing to run outside a Git work tree.
+///
+/// The command is built with the same scrubbed environment as every other Git
+/// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come
+/// from somewhere else.
 pub fn toplevel(cwd: &Path) -> Result<PathBuf, String> {
-    let out = Command::new("git")
-        .arg("-C")
-        .arg(cwd)
+    let out = git_command(cwd)
         .args(["rev-parse", "--show-toplevel"])
-        .env("GIT_TERMINAL_PROMPT", "0")
         .output()
         .map_err(|e| format!("cannot run git: {e}"))?;
     if !out.status.success() {
@@ -115,6 +120,119 @@ pub fn toplevel(cwd: &Path) -> Result<PathBuf, String> {
     PathBuf::from(path)
         .canonicalize()
         .map_err(|e| format!("cannot canonicalise repository root: {e}"))
+}
+
+/// Variables that redirect Git at another repository, index, object store,
+/// configuration or helper program. Every occurrence is removed from the child
+/// environment (case-insensitively, because Windows environment names are).
+///
+/// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` are dynamic and handled by prefix.
+const SCRUBBED_GIT_ENV: &[&str] = &[
+    "GIT_ALLOW_PROTOCOL",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_ASKPASS",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_CONFIG",
+    "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_GLOBAL",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_CONFIG_SYSTEM",
+    "GIT_DIR",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+    "GIT_EDITOR",
+    "GIT_EXTERNAL_DIFF",
+    "GIT_INDEX_FILE",
+    "GIT_NAMESPACE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_PAGER",
+    "GIT_PROTOCOL_FROM_USER",
+    "GIT_SEQUENCE_EDITOR",
+    "GIT_SSH",
+    "GIT_SSH_COMMAND",
+    "GIT_TERMINAL_PROMPT",
+    "GIT_WORK_TREE",
+    "SSH_ASKPASS",
+];
+
+/// Read-only environment allowlist for hashing and for obligation processes.
+///
+/// Sorted (byte order) and duplicate-free so a hash over it is stable across
+/// hosts; [`env_allowlist`] exposes exactly this slice.
+pub static ENV_ALLOWLIST: &[&str] = &[
+    "APPDATA",
+    "CARGO_HOME",
+    "COMSPEC",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "LOCALAPPDATA",
+    "NUMBER_OF_PROCESSORS",
+    "PATH",
+    "PATHEXT",
+    "PROCESSOR_ARCHITECTURE",
+    "RUSTUP_HOME",
+    "SHELL",
+    "SYSTEMROOT",
+    "SystemRoot",
+    "TEMP",
+    "TERM",
+    "TMP",
+    "TMPDIR",
+    "TZ",
+    "USERPROFILE",
+    "WINDIR",
+    "windir",
+];
+
+/// The stable, sorted environment allowlist (for hashing and reporting).
+pub fn env_allowlist() -> &'static [&'static str] {
+    ENV_ALLOWLIST
+}
+
+/// Build `git -C <root>` with the redirecting part of the host environment
+/// removed and the non-interactive defaults applied.
+fn git_command(root: &Path) -> Command {
+    let mut cmd = Command::new("git");
+    cmd.arg("-C").arg(root);
+    scrub_env(&mut cmd);
+    cmd
+}
+
+/// Remove every environment variable that could redirect Git, then set the
+/// non-interactive, deterministic defaults. Host variables are inspected with
+/// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are
+/// compared.
+fn scrub_env(cmd: &mut Command) {
+    for (name, _) in std::env::vars_os() {
+        let upper = name.to_string_lossy().to_ascii_uppercase();
+        let redirects = SCRUBBED_GIT_ENV.contains(&upper.as_str())
+            || upper.starts_with("GIT_CONFIG_KEY_")
+            || upper.starts_with("GIT_CONFIG_VALUE_");
+        if redirects {
+            cmd.env_remove(&name);
+        }
+    }
+    cmd.env("GIT_TERMINAL_PROMPT", "0")
+        .env("GIT_PAGER", "cat")
+        .env("GIT_EDITOR", "true")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("LC_ALL", "C");
+}
+
+fn allowed_env() -> Vec<(OsString, OsString)> {
+    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect();
+    let mut kept = Vec::new();
+    for wanted in env_allowlist() {
+        // Windows environment names are case-insensitive: scan for the first match.
+        if let Some((name, value)) = host
+            .iter()
+            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))
+        {
+            kept.push((name.clone(), value.clone()));
+        }
+    }
+    kept
 }
 
 // ------------------------------------------------------------ obligations
@@ -136,52 +254,121 @@ pub struct Outcome {
     pub duration_ms: u128,
     pub stdout: String,
     pub stderr: String,
+    /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stdout; the
+    /// surplus was drained and discarded (it is not buffered anywhere).
+    ///
+    /// `allow(dead_code)`: this is the public hook the caller uses to report
+    /// truncation; the binary target does not read it until `commands.rs` is
+    /// wired (the field is already exercised by the unit and isolation tests).
+    #[allow(dead_code)]
+    pub stdout_truncated: bool,
+    /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stderr.
+    #[allow(dead_code)]
+    pub stderr_truncated: bool,
 }
 
-const ENV_ALLOWLIST: &[&str] = &[
-    "PATH",
-    "PATHEXT",
-    "SystemRoot",
-    "SYSTEMROOT",
-    "windir",
-    "WINDIR",
-    "COMSPEC",
-    "TEMP",
-    "TMP",
-    "TMPDIR",
-    "HOME",
-    "USERPROFILE",
-    "APPDATA",
-    "LOCALAPPDATA",
-    "CARGO_HOME",
-    "RUSTUP_HOME",
-    "LANG",
-    "LC_ALL",
-    "TERM",
-    "NUMBER_OF_PROCESSORS",
-    "PROCESSOR_ARCHITECTURE",
-    "SHELL",
-    "TZ",
-];
+/// Bytes retained per stream. Anything beyond is drained to keep the child
+/// unblocked, then discarded.
+pub const MAX_STREAM_BYTES: usize = 1024 * 1024;
 
-/// The environment names an obligation may inherit. This list is part of the
-/// policy identity: widening it changes what a receipt proves, so it is hashed
-/// into the policy digest and invalidates older receipts.
-pub fn env_allowlist() -> &'static [&'static str] {
-    ENV_ALLOWLIST
+/// Appended to a truncated stream. Deliberately free of a copy of the cap so it
+/// cannot drift from [`MAX_STREAM_BYTES`].
+pub const TRUNCATION_MARKER: &str = "\n[flow: output truncated; remaining bytes discarded]\n";
+
+/// How long the reader threads may take to observe EOF after the child tree was
+/// killed. Streams that are still held open by a survivor are abandoned after
+/// this budget; their threads are detached, never joined.
+const READER_GRACE: Duration = Duration::from_secs(2);
+
+/// How long to wait for the killed child itself to be reaped.
+const REAP_GRACE: Duration = Duration::from_secs(2);
+
+const POLL_INTERVAL: Duration = Duration::from_millis(20);
+
+/// Capture returned by a reader thread: retained bytes plus whether the stream
+/// exceeded the cap.
+#[derive(Default)]
+struct Captured {
+    bytes: Vec<u8>,
+    truncated: bool,
 }
 
-fn allowed_env() -> Vec<(String, String)> {
-    let mut kept = Vec::new();
-    for name in ENV_ALLOWLIST {
-        // Windows environment names are case-insensitive: scan for the first match.
-        if let Some((k, v)) = std::env::vars().find(|(k, _)| k.eq_ignore_ascii_case(name)) {
-            kept.push((k, v));
+/// Read `pipe` to EOF while retaining at most [`MAX_STREAM_BYTES`].
+///
+/// The surplus is still read and discarded: stopping the read would fill the
+/// pipe and deadlock a child that is writing (for example during a timeout).
+fn read_capped<R: Read>(mut pipe: R) -> Captured {
+    let mut captured = Captured::default();
+    let mut chunk = [0u8; 8192];
+    loop {
+        match pipe.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(n) => {
+                let room = MAX_STREAM_BYTES.saturating_sub(captured.bytes.len());
+                if room == 0 {
+                    captured.truncated = true;
+                    continue;
+                }
+                let take = n.min(room);
+                captured.bytes.extend_from_slice(&chunk[..take]);
+                if take < n {
+                    captured.truncated = true;
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => break,
         }
     }
-    kept
+    captured
 }
 
+/// Start a detached reader thread. The thread is never joined: it sends its
+/// result if it ever reaches EOF and otherwise stays parked on the pipe (see
+/// the non-guarantees on [`run_obligation`]).
+fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {
+    let (tx, rx) = mpsc::channel();
+    let _ = std::thread::Builder::new()
+        .name("flow-obligation-reader".into())
+        .spawn(move || {
+            let _ = tx.send(read_capped(pipe));
+        });
+    rx
+}
+
+fn finish(captured: Captured) -> (String, bool) {
+    let mut text = String::from_utf8_lossy(&captured.bytes).to_string();
+    if captured.truncated {
+        text.push_str(TRUNCATION_MARKER);
+    }
+    (text, captured.truncated)
+}
+
+fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {
+    // A timed-out receive leaves the thread detached; the channel is dropped
+    // with this function, so a later send is simply ignored.
+    rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))
+        .unwrap_or_default()
+}
+
+/// Run one obligation with bounded output and bounded wall-clock containment.
+///
+/// Bounds:
+/// * at most [`MAX_STREAM_BYTES`] retained per stream (the rest is drained and
+///   discarded), flagged through [`Outcome::stdout_truncated`] /
+///   [`Outcome::stderr_truncated`];
+/// * one timeout in seconds, after which the child tree is killed;
+/// * after the kill, readers get at most [`READER_GRACE`] to observe EOF.
+///
+/// Non-guarantees (explicit, not sandboxing):
+/// * Windows kills the tree with `taskkill /T /F`; a descendant that has
+///   re-parented itself or otherwise left the tree survives.
+/// * Unix spawns the child as a process-group leader and signals the group with
+///   `SIGKILL`; a descendant that calls `setsid`/`setpgid` escapes the group
+///   and survives.
+/// * A surviving descendant that inherited stdout/stderr keeps its pipe open.
+///   The reader thread for that stream is detached after the grace period, so
+///   the call returns; the thread (and the pipe) lives until the survivor exits
+///   or the process exits.
 pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
     let started = Instant::now();
     let mut cmd = Command::new(&ob.program);
@@ -194,6 +381,12 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
     for (k, v) in allowed_env() {
         cmd.env(k, v);
     }
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        // Process-group leader: a negative PID then addresses the whole group.
+        cmd.process_group(0);
+    }
     let mut child: Child = match cmd.spawn() {
         Ok(child) => child,
         Err(e) => {
@@ -205,21 +398,16 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
                 duration_ms: started.elapsed().as_millis(),
                 stdout: String::new(),
                 stderr: format!("cannot start {:?}: {e}", ob.program),
+                stdout_truncated: false,
+                stderr_truncated: false,
             }
         }
     };
-    let mut stdout_pipe = child.stdout.take().expect("piped stdout");
-    let mut stderr_pipe = child.stderr.take().expect("piped stderr");
-    let out_thread = std::thread::spawn(move || {
-        let mut buf = Vec::new();
-        let _ = stdout_pipe.read_to_end(&mut buf);
-        buf
-    });
-    let err_thread = std::thread::spawn(move || {
-        let mut buf = Vec::new();
-        let _ = stderr_pipe.read_to_end(&mut buf);
-        buf
-    });
+    let stdout_pipe = child.stdout.take().expect("piped stdout");
+    let stderr_pipe = child.stderr.take().expect("piped stderr");
+    let out_rx = spawn_reader(stdout_pipe);
+    let err_rx = spawn_reader(stderr_pipe);
+
     let deadline = Duration::from_secs(ob.timeout_s.max(1));
     let mut timed_out = false;
     let exit = loop {
@@ -230,18 +418,23 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
                     timed_out = true;
                     kill_tree(child.id());
                     let _ = child.kill();
+                    reap_bounded(&mut child);
                     break None;
                 }
-                std::thread::sleep(Duration::from_millis(20));
+                std::thread::sleep(POLL_INTERVAL);
             }
             Err(_) => {
                 let _ = child.kill();
+                reap_bounded(&mut child);
                 break None;
             }
         }
     };
-    let stdout = String::from_utf8_lossy(&out_thread.join().unwrap_or_default()).to_string();
-    let stderr = String::from_utf8_lossy(&err_thread.join().unwrap_or_default()).to_string();
+
+    let reader_deadline = Instant::now() + READER_GRACE;
+    let stdout = finish(receive(&out_rx, reader_deadline));
+    let stderr = finish(receive(&err_rx, reader_deadline));
+
     let status = if timed_out {
         "TIMEOUT"
     } else if exit == Some(0) {
@@ -255,14 +448,34 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
         exit,
         timed_out,
         duration_ms: started.elapsed().as_millis(),
-        stdout,
-        stderr,
+        stdout: stdout.0,
+        stderr: stderr.0,
+        stdout_truncated: stdout.1,
+        stderr_truncated: stderr.1,
+    }
+}
+
+/// Wait, bounded, for a killed child to be reaped so no zombie accumulates.
+fn reap_bounded(child: &mut Child) {
+    let deadline = Instant::now() + REAP_GRACE;
+    while Instant::now() < deadline {
+        match child.try_wait() {
+            Ok(Some(_)) | Err(_) => return,
+            Ok(None) => std::thread::sleep(POLL_INTERVAL),
+        }
     }
 }
 
 /// Kill the child and, where the platform supports it, its descendants.
-/// Windows: `taskkill /T`. POSIX: direct kill only (no process group without a
-/// dependency) — the survivor limitation is documented, never hidden.
+///
+/// Windows: `taskkill /T /F` walks the process tree.
+///
+/// POSIX: the child was spawned as a process-group leader (see
+/// [`run_obligation`]), so the shell's `kill` builtin is asked to signal
+/// `-<pid>`; the plain PID is signalled as a fallback. A descendant that leaves
+/// the process group is not reached — the limitation is documented, never
+/// hidden. (No `unsafe` FFI: the POSIX shell builtin is used instead of
+/// `libc::kill`, keeping the crate dependency-free.)
 pub fn kill_tree(pid: u32) {
     #[cfg(windows)]
     {
@@ -274,7 +487,22 @@ pub fn kill_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
-        let _ = Command::new("kill").args(["-9", &pid.to_string()]).status();
+        // `-s KILL` avoids the `-9`/`-9 -pgid` option ambiguity; the operands
+        // are quoted positional arguments, never interpreted by the shell.
+        let group = format!("-{pid}");
+        let direct = pid.to_string();
+        let _ = Command::new("sh")
+            .args([
+                "-c",
+                "kill -s KILL \"$1\" 2>/dev/null || kill -s KILL \"$2\" 2>/dev/null",
+                "flow-kill-tree",
+                &group,
+                &direct,
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
 }
 
@@ -342,5 +570,73 @@ mod tests {
         };
         let out = run_obligation(&ob, Path::new("."));
         assert_eq!(out.status, "UNSUPPORTED");
+        assert!(!out.stdout_truncated);
+        assert!(!out.stderr_truncated);
+    }
+
+    #[test]
+    fn env_allowlist_is_sorted_and_unique() {
+        let list = env_allowlist();
+        assert!(
+            list.windows(2).all(|pair| pair[0] < pair[1]),
+            "the allowlist must be sorted and duplicate-free for stable hashing: {list:?}"
+        );
+        for required in ["PATH", "SystemRoot", "SYSTEMROOT", "HOME", "TEMP"] {
+            assert!(list.contains(&required), "{required} must stay allowlisted");
+        }
+        assert_eq!(env_allowlist(), ENV_ALLOWLIST);
+    }
+
+    #[test]
+    fn scrub_list_covers_every_documented_redirect() {
+        for name in [
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_INDEX_FILE",
+            "GIT_OBJECT_DIRECTORY",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+            "GIT_COMMON_DIR",
+            "GIT_NAMESPACE",
+            "GIT_CONFIG",
+            "GIT_CONFIG_GLOBAL",
+            "GIT_CONFIG_SYSTEM",
+            "GIT_CONFIG_COUNT",
+            "GIT_CEILING_DIRECTORIES",
+            "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+            "GIT_ASKPASS",
+            "SSH_ASKPASS",
+            "GIT_SSH",
+            "GIT_SSH_COMMAND",
+            "GIT_EXTERNAL_DIFF",
+            "GIT_PAGER",
+            "GIT_EDITOR",
+            "GIT_SEQUENCE_EDITOR",
+            "GIT_PROTOCOL_FROM_USER",
+            "GIT_ALLOW_PROTOCOL",
+        ] {
+            assert!(
+                SCRUBBED_GIT_ENV.contains(&name),
+                "{name} must be scrubbed from Git invocations"
+            );
+        }
+    }
+
+    #[test]
+    fn read_capped_retains_at_most_the_cap_and_flags_truncation() {
+        let data = vec![b'x'; MAX_STREAM_BYTES + 4096];
+        let captured = read_capped(std::io::Cursor::new(data));
+        assert_eq!(captured.bytes.len(), MAX_STREAM_BYTES);
+        assert!(captured.truncated);
+        let text = finish(captured).0;
+        assert!(text.len() <= MAX_STREAM_BYTES + TRUNCATION_MARKER.len());
+        assert!(text.contains("truncated"));
+    }
+
+    #[test]
+    fn read_capped_keeps_small_streams_intact() {
+        let captured = read_capped(std::io::Cursor::new(b"hello".to_vec()));
+        assert_eq!(captured.bytes, b"hello");
+        assert!(!captured.truncated);
+        assert_eq!(finish(captured), ("hello".to_string(), false));
     }
 }

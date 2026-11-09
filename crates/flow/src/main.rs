@@ -10,6 +10,7 @@ mod commands;
 mod gitcli;
 mod json;
 mod paths;
+mod scratch;
 mod sha256;
 mod state;
 

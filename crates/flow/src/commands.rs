@@ -520,41 +520,15 @@ pub fn cmd_run(
     let tree = git.write_tree()?;
     let started_at = state::iso8601_now();
 
-    // Materialise the exact tree in a disposable directory, with its .git
-    // link removed so an obligation cannot reach the shared Git directory.
+    // Materialise the exact tree in a directory Flow owns and knows it created:
+    // the `.git` link is removed so an obligation cannot reach the shared gitdir.
+    // `Scratch` cleans up in `Drop`, including on the error paths below.
     let parent = git.head_oid()?;
     let commit = git.commit_tree(&tree, &parent, &format!("flow verify {tree}"))?;
-    let scratch = std::env::temp_dir().join(format!("flow-verify-{}-{}", std::process::id(), tree));
-    if scratch.exists() {
-        let _ = fs::remove_dir_all(&scratch);
-    }
-    let add = git.run(&[
-        "worktree",
-        "add",
-        "--detach",
-        "--quiet",
-        scratch.to_string_lossy().as_ref(),
-        &commit,
-    ])?;
-    if add.status != 0 {
-        return Err(format!(
-            "cannot materialise tree {tree}: {}",
-            add.stderr.trim()
-        ));
-    }
-    let gitfile = scratch.join(".git");
-    if gitfile.is_file() {
-        let _ = fs::remove_file(&gitfile);
-    }
-    // The verification directory must never live inside the repository.
-    if crate::paths::lexically_inside(root, &scratch) {
-        let _ = fs::remove_dir_all(&scratch);
-        let _ = git.run(&["worktree", "prune"]);
-        return Ok(refused_code(
-            "SCRATCH_INSIDE_REPO",
-            "refusing to verify inside the repository working tree",
-        ));
-    }
+    let scratch = match crate::scratch::materialise(&git, &commit, root) {
+        Ok(scratch) => scratch,
+        Err(reason) => return Ok(refused_code("SCRATCH_REFUSED", reason)),
+    };
 
     let policy = effective_policy(&config, &effective);
     let policy_digest = policy_digest(&policy);
@@ -566,7 +540,7 @@ pub fn cmd_run(
     let mut timed_out = false;
     let mut unsupported = false;
     for ob in &selected {
-        let outcome = gitcli::run_obligation(ob, &scratch);
+        let outcome = gitcli::run_obligation(ob, scratch.path());
         let stdout_clean = gitcli::redact(&outcome.stdout);
         let stderr_clean = gitcli::redact(&outcome.stderr);
         let stdout_rel = format!(".flow/logs/{tree}/{}.stdout.log", outcome.id);
@@ -618,8 +592,9 @@ pub fn cmd_run(
         .map(str::to_string)
         .collect::<Vec<_>>();
 
-    let _ = fs::remove_dir_all(&scratch);
-    let _ = git.run(&["worktree", "prune"]);
+    // The scratch directory is removed by `Scratch::drop`, which runs on every
+    // path out of this function, including the `?` above.
+    drop(scratch);
 
     let declared_ids: Vec<String> = effective.iter().map(|o| o.id.clone()).collect();
     let required_ids: Vec<String> = effective

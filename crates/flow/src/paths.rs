@@ -5,7 +5,10 @@
 //! faithfully (reserved names, trailing dots, case collisions are reported by
 //! `doctor`, not silently normalised).
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
+
+#[cfg(test)]
+use std::path::Component;
 
 const RESERVED: &[&str] = &[
     "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
@@ -102,7 +105,10 @@ pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String
     }
 }
 
-/// Lexical check used before a path exists (cheap, no I/O).
+/// True when `candidate` is lexically inside `root`, used only by tests now:
+/// containment is enforced by `scratch::materialise`, which also resolves the
+/// canonical path (a lexical check alone does not see a junction).
+#[cfg(test)]
 pub fn lexically_inside(root: &Path, candidate: &Path) -> bool {
     let mut depth: i32 = 0;
     let rel = match candidate.strip_prefix(root) {
