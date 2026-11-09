@@ -16,7 +16,7 @@ Shorten **time to verified deliverable** without silently losing changes or hidi
 
 ## Governance and safety
 
-All Flow ADRs are **PROPOSED**, not ratified. The 42 historical Ravum ADRs also remain **PROPOSED**. No Ravum code is copied into this repo. No license has yet been selected: **all rights reserved until a rights/licensing decision is made.**
+All Flow ADRs are **PROPOSED**, not ratified. The 42 historical Ravum ADRs also remain **PROPOSED**. No Ravum code is copied into this repo. **License: [Mozilla Public License 2.0](LICENSE)** for original project material whose contributors have the relevant rights. This does not override licenses or notices attached to third-party content. The H2 ownership/provenance and clean-room review remains open; no Ravum source is licensed for copying into Flow by this decision.
 
 The launch must be staged: **D0–D4 documentary gates** first, then separately authorized `GO_R0_FIXTURES` on disposable synthetic repositories. No permission for R1–R7 is implied.
 
