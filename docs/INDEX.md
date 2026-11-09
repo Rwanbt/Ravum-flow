@@ -7,7 +7,7 @@
 - [Roadmap / gates](ROADMAP.md)
 - [User stories](USER_STORIES.md)
 - [Backlog RF-001..026](BACKLOG.md)
-- [GitHub issue map — 32 tracked issues](ISSUE_MAP.md)
+- [GitHub issue map — 47 tracked issues](ISSUE_MAP.md)
 - [main/dev branch workflow and administrative protections](BRANCH_WORKFLOW.md)
 - [Benchmark S9](BENCHMARK_S9.md)
 - [Security negative-test matrix](SECURITY_TESTS.md)
