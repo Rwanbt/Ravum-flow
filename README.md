@@ -1,23 +1,38 @@
 # Ravum Flow
+> **Status: planning / research only — no engine implemented.**  
+> Current baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs are **PROPOSED**, never automatically accepted.
 
-**Status: DESIGN / PLANNING — NOT IMPLEMENTED**
+**Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.
 
-Ravum Flow is a proposed **local-first, language-agnostic and Git-compatible** workflow for people and AI agents to collaborate on code with traceable changes, exact-tree verification, and no *mandatory persistent* Git worktree per agent.
+It is **not** the [Ravum programming language](https://github.com/Rwanbt/Ravum), a compiler, a VCS replacement, a forge, a cloud prerequisite or an unconditional proof system. Ravum can later consume Flow via an optional adapter; Flow must work without Ravum.
 
-- **Project:** [Ravum Flow](https://github.com/Rwanbt/Ravum-flow) (independent tool; not a programming language)
-- **Companion language project:** [Ravum](https://github.com/Rwanbt/Ravum) (separate repository and implementation lifecycle)
-- **Current decision:** `DOCUMENT-CONDITIONAL` after Claude review. Do **not** interpret this as authorization to develop or benchmark.
-- **Default branch:** `main` for approved planning baseline; `dev` for proposed ADRs, research, and future scoped work.
-- **V6 source:** Ravum Flow V6 consolidated review (2026-11-09), including 42 Ravum ADRs, 12 original Flow RFCs, threat model and benchmark gates.
+## Work starts with evidence, not assumptions
 
-## Product objective
+- **O0 — no new engine:** Git + private copies / ephemeral worktrees + existing CI tools.
+- **O1 — adopt existing tools:** study jj, GitButler, Scion Google, etc. against real requirements and licenses.
+- **O2 — thin Flow:** managed patches, frozen Git candidate tree, exact-tree verification receipts, controlled Git publication.
+- **O3 — hybrid:** O2 plus disposable isolated execution for ordinary tools, hooks and builds.
+- **O4 — VFS/CRDT/distributed:** deferred unless an independently justified need is proven.
 
-Shorten **time to verified deliverable** without silently losing changes or hiding required E2E failures. Compare the no-new-engine option (Git/copies/worktrees) with existing tools and a minimal Flow design before building a proprietary CAS/VFS.
+One physical workspace does **not** give arbitrary processes distinct isolated views. No untrusted test/build/hook should inherit private credentials. Failed or missing mandatory E2E checks must never become green.
 
-## Governance and safety
+## Where to start
 
-All Flow ADRs are **PROPOSED**, not ratified. The 42 historical Ravum ADRs also remain **PROPOSED**. No Ravum code is copied into this repo. No license has yet been selected: **all rights reserved until a rights/licensing decision is made.**
+- [Full, verbatim V6 archive (42 Ravum ADRs included)](docs/reviews/RAVUM-FLOW-V6-POST-CLAUDE-REFERENCE.md)
+- [Project charter](docs/PROJECT_CHARTER.md) · [Architecture](docs/ARCHITECTURE.md)
+- [Decision register](docs/DECISION_REGISTER.md) · [Proposed Flow ADRs](docs/adr/README.md)
+- [Historic Flow RFCs](docs/rfc/README.md) · [Roadmap/gates](docs/ROADMAP.md)
+- [User stories](docs/USER_STORIES.md) · [26 historic RF tasks](docs/BACKLOG.md)
+- [S9 experiment design](docs/BENCHMARK_S9.md) · [Security test matrix](docs/SECURITY_TESTS.md)
+- [Ravum / Flow boundary](docs/RAVUM_BOUNDARY.md) · [Traceability](docs/TRACEABILITY.md)
+- **[DeepSeek multi-agent GOAL — first review/decision phase](docs/DEEPSEEK_GOAL.md)**
 
-The launch must be staged: **D0–D4 documentary gates** first, then separately authorized `GO_R0_FIXTURES` on disposable synthetic repositories. No permission for R1–R7 is implied.
+## Repository workflow
 
-For architecture, decisions, user stories, milestones and DeepSeek handoff, see the `docs/` directory on `dev` once initial planning content is committed.
+`main` is the documentary baseline; `dev` hosts proposed planning changes and later narrowly authorized experiments. Prefer feature branch → PR into `dev`, and reviewed promotion into `main`. No code execution or implementation is authorized merely by this README. Branch protections must be configured separately by an authorized admin.
+
+## Human decisions still pending
+
+H1 select a provisional option; H2 code ownership/licensing vs clean-room; H3 Windows/Linux sandbox guarantee; H4 S9 thresholds and budget; H5 whether to allow disposable R0 fixtures; H6 whether to hand P0 findings to the separate Ravum session. See the decision register.
+
+**License:** no project LICENSE has been selected or published. Do not presume an open-source grant or copy Ravum source into Flow without rights review.
