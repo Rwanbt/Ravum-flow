@@ -5,7 +5,7 @@
 //! * an outcome is appended after the ref update attempt;
 //! * a torn journal line is refused (`InvalidData`), never silently skipped.
 
-use std::fs::{self, File, OpenOptions};
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
