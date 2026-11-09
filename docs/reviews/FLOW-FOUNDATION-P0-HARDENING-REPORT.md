@@ -1,7 +1,7 @@
 # Flow foundation — P0 hardening report
 
 **Date:** 2026-11-09 (Europe/Paris) · **Branch:** `fix/flow-foundation-proof-gates` · **PR:** #52 (draft, base `feat/flow-verified-foundation`)
-**Code SHA under test:** `fbaf82d` · **Baseline:** `832f499`
+**Code SHA under test:** `9b96011` · **Baseline:** `832f499`
 **Verdict:** **`READY_FOR_REVIEW`** — the three blocking defects are reproduced, closed and re-tested; every gate fails closed on the attempts made against it. `FOUNDATION_PARTIAL` remains the verdict for the foundation as a whole, and the non-guarantees in §9 are unchanged.
 
 This report is deliberately narrow. It is not a new architecture study, not an ADR ratification, not a release, and not a merge authorization. PR #51 stays a draft and is untouched.
@@ -130,7 +130,7 @@ A local advisory lock now serialises `publish` and `reconcile`. It is a lock fil
 
 ## 8. Verification matrix
 
-| Scenario | Baseline (`832f499`) | Corrected (`fbaf82d`) | OS | Command | Artefact |
+| Scenario | Baseline (`832f499`) | Corrected (`9b96011`) | OS | Command | Artefact |
 |---|---|---|---|---|---|
 | selective run must not publish | FAIL (published) | PASS | Windows | `cargo test --locked --test cli` | `experiments/p0/baseline/cli-tests-baseline.log` |
 | policy change after run | FAIL (published) | PASS | Windows | idem | idem |
@@ -153,6 +153,10 @@ A local advisory lock now serialises `publish` and `reconcile`. It is a lock fil
 R0-a/R0-b are **not** tests of this patch. They describe Git and OS risks measured on this host; the replay confirms the corpus still reproduces and that no verdict was rewritten.
 
 **Tests executed, not merely discovered (`REPRODUCED`):** 80 tests, 0 ignored — 21 unit, 34 CLI, 25 isolation.
+
+**CI on the final code SHA (`REPRODUCED`):** runs `42680405452` (push) and `42680418661` (pull request) at `9b96011`, both `success`: `ubuntu-latest` 18–20 s, `windows-latest` 1 m 50 s – 1 m 55 s. The job refuses any `ignored` test, requires at least 80 executed passes, and requires all 17 named gate tests to appear as `... ok`, so deleting or filtering one fails the build. The raw output is uploaded as `flow-test-output-{ubuntu,windows}-latest`.
+
+**Independent review.** The P1 isolation lot was reviewed separately; that review found two real defects in the merged test (a probe that spawned a second copy of the test binary and held its image open on Windows, and an assertion too loose to detect a join-based runner). Both are fixed in `f209408`. A targeted adversarial review of the P0 diff — forged receipts, policy replay, journal corruption, ref games — was run in a separate throwaway worktree; its outcome and any accepted finding are recorded in PR #52 rather than restated here as if self-certified.
 
 **Resource envelope on this host (16 GB), measured:** CLI suite 7.92 s wall, peak working set ≈ 464 MB (34 tests in parallel, each spawning `flow` and `git`); isolation suite 2.11 s, ≈ 32 MB; unit suite < 0.1 s. Peak memory per stream is bounded by construction at 1 MiB. The suite needs no `-j1`; nothing approaches the machine's limits.
 
