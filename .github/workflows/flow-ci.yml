@@ -6,6 +6,7 @@ name: flow-ci
 on:
   push:
     branches:
+      - feat/flow-production-candidate
       - feat/flow-mvp-0.1
       - fix/flow-foundation-proof-gates
       - feat/flow-verified-foundation
@@ -14,6 +15,7 @@ on:
       - dev
       - feat/flow-verified-foundation
       - fix/flow-foundation-proof-gates
+      - feat/flow-mvp-0.1
 
 permissions:
   contents: read
