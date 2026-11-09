@@ -729,6 +729,39 @@ fn p0b_explicit_ref_must_name_a_branch() {
     assert_eq!(status_of(&out3), "REFUSED");
 }
 
+/// A symbolic ref moves its target while the CLI would report the name the
+/// operator passed. Publishing must refuse instead of naming the wrong branch.
+#[test]
+fn p1_a_symbolic_ref_is_never_a_publication_target() {
+    let (repo, _, head_before) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    git(
+        &repo.path,
+        &["symbolic-ref", "refs/heads/alias", "refs/heads/main"],
+    );
+    let (code, out) = flow(
+        &repo.path,
+        &[
+            "publish",
+            "--ref",
+            "refs/heads/alias",
+            "--expected-old",
+            &head_before,
+        ],
+    );
+    assert_eq!(code, 1, "a symbolic ref must not be published: {out}");
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("REF_IS_SYMREF")
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "refs/heads/main"]),
+        head_before,
+        "the target branch must not move"
+    );
+}
+
 // ------------------------------------------------------------------ P0-C
 #[test]
 fn p0c_corrupt_journal_is_not_reported_as_reconciled() {

@@ -72,8 +72,8 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 128 ]; then
-            echo "::error::expected at least 128 executed passing tests, got $passed"
+          if [ "$passed" -lt 129 ]; then
+            echo "::error::expected at least 129 executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -89,6 +89,7 @@ jobs:
             p0b_a_timeout_override_is_never_publishable \
             p0b_an_ambiguous_config_is_refused_not_guessed \
             p0b_explicit_ref_must_name_a_branch \
+            p1_a_symbolic_ref_is_never_a_publication_target \
             p0c_corrupt_journal_is_not_reported_as_reconciled \
             p0c_duplicate_intent_id_requires_a_human \
             p0c_ref_moved_elsewhere_needs_reconciliation \

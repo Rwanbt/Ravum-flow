@@ -1141,6 +1141,25 @@ pub fn cmd_publish(
             format!("--ref {reference:?} is not a usable ref name"),
         ));
     }
+    if git.run(&["check-ref-format", &reference])?.status != 0 {
+        return Ok(refused_code(
+            "REF_NOT_ALLOWED",
+            format!("--ref {reference:?} is not a valid ref name (git check-ref-format)"),
+        ));
+    }
+    // A symbolic ref would move its target while this command reports the name
+    // the operator passed: they would believe the commit landed on `alias` when
+    // it landed on something else. Refuse rather than report a misleading name.
+    let symref = git.run(&["symbolic-ref", "-q", &reference])?;
+    if symref.status == 0 {
+        return Ok(refused_code(
+            "REF_IS_SYMREF",
+            format!(
+                "--ref {reference:?} is a symbolic ref to {:?}: publish to the real branch ref",
+                symref.stdout.trim()
+            ),
+        ));
+    }
 
     let _lock = match crate::lock::acquire_lock(root, "publish") {
         Ok(guard) => guard,
@@ -1481,6 +1500,26 @@ pub fn cmd_publish(
     }
     if std::env::var("FLOW_TEST_CRASH").as_deref() == Ok("after-ref") {
         std::process::exit(89);
+    }
+    // Post-CAS observation: the ref must now carry exactly the prepared commit.
+    // Anything else is an outcome Flow did not plan, so it is reported as needing
+    // reconciliation rather than as a success.
+    let observed = git.show_ref(&reference)?;
+    if observed.as_deref() != Some(commit.as_str()) {
+        state::append_journal(
+            root,
+            &Json::obj(vec![
+                ("event", Json::str("outcome")),
+                ("id", Json::str(id)),
+                ("status", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                ("observed", Json::str(observed.unwrap_or_default())),
+                ("at", Json::str(state::iso8601_now())),
+            ]),
+        )?;
+        return Ok(refused_code(
+            "NEEDS_RECONCILIATION",
+            format!("update-ref reported success but {reference} does not carry {commit}: inspect with `flow reconcile`"),
+        ));
     }
     state::append_journal(
         root,
