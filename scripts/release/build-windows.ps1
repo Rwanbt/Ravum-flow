@@ -78,13 +78,22 @@ Write-Host "== extracting two clean archives of $Sha into $buildRoot =="
 if (Test-Path $buildRoot) { Remove-Item -Recurse -Force $buildRoot }
 New-Item -ItemType Directory -Force $buildRoot | Out-Null
 
+# Use the Windows bsdtar explicitly: when this script is launched from Git Bash
+# (as CI does), a bare `tar` is MSYS tar, whose path conversion mangles a
+# `C:\...` destination ("C\:\\Users\\..."). System32\tar.exe is the native tool
+# and accepts a Windows path unchanged. The archive stream is the same
+# `git archive` tar used by flow-ci.yml.
+$tarExe = Join-Path $env:SystemRoot 'System32\tar.exe'
+if (-not (Test-Path $tarExe)) { throw "Windows tar.exe not found at $tarExe" }
+$archives = @{}
 foreach ($n in @('a', 'b')) {
     $dir = Join-Path $buildRoot $n
     New-Item -ItemType Directory -Force $dir | Out-Null
-    # The CI pipeline is `git archive HEAD | tar -x -C <dir>`; cmd.exe keeps the
-    # pipe binary-safe, which PowerShell's native-command pipe does not promise.
-    cmd /c "git -C `"$repo`" archive $Sha | tar -x -C `"$dir`""
-    if ($LASTEXITCODE -ne 0) { throw "git archive | tar -x failed for archive $n" }
+    $archive = Join-Path $buildRoot "archive-$n.tar"
+    Invoke-Native "git archive $n" 'git' @('-C', $repo, 'archive', '-o', $archive, $Sha)
+    & $tarExe -xf $archive -C $dir
+    if ($LASTEXITCODE -ne 0) { throw "tar -xf failed for archive ${n}" }
+    $archives[$n] = $archive
 }
 
 # ---------------------------------------------------------------- tests
@@ -153,8 +162,8 @@ if ($ha -ne $hb) {
 Write-Host "reproducible: both archives produced $ha"
 
 # ---------------------------------------------------------------- source identity
-$archiveFile = Join-Path $buildRoot "source-$Sha.tar"
-Invoke-Native 'git archive -o' 'git' @('-C', $repo, 'archive', '-o', $archiveFile, $Sha)
+$archiveFile = $archives['a']
+if (-not (Test-Path $archiveFile)) { throw "source archive missing: $archiveFile" }
 $sourceArchiveSha256 = Get-Sha256 $archiveFile
 $sourceArchiveBytes = (Get-Item $archiveFile).Length
 # SHA-256 of the exact `git ls-tree -r --full-tree` stdout (LF line endings).
@@ -287,7 +296,7 @@ $provenance = [ordered]@{
         tree_manifest_sha256   = $manifestSha256
         tree_manifest_entries  = $manifestLines
         tree_manifest_command  = "git -C $repo ls-tree -r --full-tree $Sha  (SHA-256 of the LF-terminated stdout)"
-        archive_command        = "git -C $repo archive $Sha | tar -x -C <clean-dir>  (the same pipeline as flow-ci.yml)"
+        archive_command        = "git -C $repo archive -o <archive.tar> $Sha ; tar.exe -xf <archive.tar> -C <clean-dir>  (same git archive stream as the flow-ci.yml pipeline; Windows bsdtar is used explicitly so a Git Bash MSYS tar cannot mangle the path)"
         host_git_core_autocrlf = $coreAutocrlf
         archive_extraction_note = "the extraction is the flow-ci.yml pipeline with this host's Git config (core.autocrlf=$coreAutocrlf); when true, text files are CRLF in the extracted tree. The commit, tree OID and tree-manifest are blob-based and unaffected."
         git_archive_note       = 'the archive hash is host-specific (the tar reflects core.autocrlf and the Git tar serialisation); the tree OID and tree-manifest are the portable source identity'
