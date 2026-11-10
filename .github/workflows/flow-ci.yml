@@ -344,6 +344,29 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 -m unittest discover -s experiments/r0a/tests -v
 
+      # The deliverable. The same scripts a human runs locally build the artefact
+      # from the exact commit of this run, record hashes/provenance/SBOM, and
+      # refuse to package a build they could not reproduce or a test log that
+      # reports a failure. No new dependency: git, cargo, tar, python3 (Linux) and
+      # PowerShell (Windows) are already used by the jobs above.
+      - name: package the release artefact (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: pwsh -NoProfile -File scripts/release/build-windows.ps1 -Sha "$GITHUB_SHA" -TestLog test-output.txt
+
+      - name: package the release artefact (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: RUN_TESTS=0 TEST_LOG=test-output.txt bash scripts/release/build-linux.sh "$GITHUB_SHA"
+
+      # Missing provenance must fail the job, not disappear behind a warning.
+      - name: keep the release artefact and its provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-release-${{ matrix.os }}
+          path: dist/
+          if-no-files-found: error
+
       - name: keep the test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
