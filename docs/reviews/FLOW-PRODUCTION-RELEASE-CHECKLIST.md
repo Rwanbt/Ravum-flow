@@ -55,29 +55,37 @@ repository being used, and nothing is installed system-wide.
 
 ## 5. Reproducible build
 
-**`REPRODUCIBLE`** on Windows `x86_64-pc-windows-msvc` with `rustc 1.95.0`. Recipe: two clean
-`git archive HEAD` checkouts in two different directories, built sequentially with
+**`REPRODUCIBLE` on one host and toolchain**, on Windows `x86_64-pc-windows-msvc` with `rustc 1.95.0`.
+Recipe: two clean `git archive HEAD` checkouts in two different directories, built sequentially with
 
 ```
 RUSTFLAGS="-C link-arg=/Brepro -C codegen-units=1 --remap-path-prefix=$PWD/= " \
   cargo build --locked --release --offline
 ```
 
-Both archives produced the identical `flow.exe`:
-`9c7a7c372e5b76941ee5a4fc5caa4525cb80afaeec299493ad1262689bae807e` (1 033 216 B).
+| Where | Archive a | Archive b | Verdict |
+|---|---|---|---|
+| this host | `9c7a7c372e5b76941ee5a4fc5caa4525cb80afaeec299493ad1262689bae807e` | identical | **reproducible** |
+| CI `test windows-latest`, run `42739319204` | `409d8f853a6cbc4d61dbe74c35692dcdfec94f1d79382c44a5289b1f344e4313` | identical | **reproducible** |
 
 What each flag removes was established by elimination, not assumed:
 
-| Flags | Result |
+| Flags (this host) | Result |
 |---|---|
-| none | `6a608e71…` vs `748869ca…` (same size) — **not** reproducible |
+| none | `6a608e71…` vs `748869ca…` (same size, different bytes) — **not** reproducible |
 | `--remap-path-prefix` only | `60c90251…` vs `2bbda724…` — still not |
 | `--remap-path-prefix -C codegen-units=1 -C link-arg=/Brepro` | **identical** |
 
-So the divergence was the PE/PDB identity and codegen ordering, not the source paths alone. CI repeats
-this check on every Windows run (`reproducible build (Windows, two clean archives)`). Linux is **not**
-claimed: the linker flags differ and the campaign was not run there. (The earlier attempt at `c624c23`,
-without these flags, gave `978fefb3…` vs `30e958d7…`, which is why the claim was withheld then.)
+So the divergence was the PE/PDB identity and codegen ordering, not the source paths alone.
+
+**Scope of the claim, precisely:** two builds of the same commit *in the same environment* are
+bit-identical. **Cross-host identity is not claimed** — this host produces `9c7a7c37…` and the GitHub
+runner produces `409d8f85…`, which is the expected difference between two toolchain installations, and
+no campaign was run to remove it. Linux is not claimed either: the linker flags differ.
+
+CI repeats the check on every Windows run (`reproducible build (Windows, two clean archives)`). (The
+earlier attempt at `c624c23`, without these flags, gave `978fefb3…` vs `30e958d7…`, which is why the
+claim was withheld then.)
 
 ## 6. Supply chain
 

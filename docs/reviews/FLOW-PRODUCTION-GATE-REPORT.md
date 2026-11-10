@@ -3,7 +3,7 @@
 **Date:** 2026-11-10 (Europe/Paris)
 **Base:** `ea181d4f112df4deef01016a041fcdfdac154264` (MVP 0.1, PR #53)
 **Branch:** `feat/flow-production-candidate` · **PR:** #54 (draft, base `feat/flow-mvp-0.1`)
-**Code and CI head under test:** `88ce1b0` (the last commit that touches `crates/flow` or `.github/`; the last `crates/flow` commit is `997f983`, and `88ce1b0` is the CI-only fix the quoted runs test)
+**Code and CI head under test:** `06eb7c3` (the last commit that touches `crates/flow` or `.github/`; the last `crates/flow` commit is `997f983`). The runs quoted in §11.2 are on `4da5b59`, one documentation-only commit later, so they test exactly that code and workflow
 `Cargo.toml` or `rust-toolchain.toml`); everything after it is documentation only
 **Verdict:** **`PRODUCTION_PARTIAL`** — reasons in §11.1. No merge, no release, no GO_PRODUCTION.
 
@@ -157,7 +157,7 @@ pretends otherwise.
 | Release crash hook | inert, proved locally and in CI |
 | `cargo audit` | 0 vulnerabilities (1430 advisories, 1 crate) |
 | Runtime dependencies | none |
-| Reproducible build | **`REPRODUCIBLE`** on Windows with rustc 1.95.0: two clean archives give `9c7a7c37…e807e`, proved by elimination (`--remap-path-prefix` alone is not enough; `-C codegen-units=1 -C link-arg=/Brepro` finishes the job). CI repeats the check on every Windows run. Linux not claimed |
+| Reproducible build | **`REPRODUCIBLE` on one host and toolchain** (Windows, rustc 1.95.0): two clean archives give `9c7a7c37…e807e` here and `409d8f85…4313` in CI run `42739319204`, each pair identical. `-C codegen-units=1 -C link-arg=/Brepro` on top of `--remap-path-prefix` is what does it (proved by elimination). **Cross-host identity is not claimed**; Linux not claimed |
 | Actions pinned to SHAs | **yes** — every `uses:` is a 40-hex commit with its release in a comment (`checkout v4.4.0`, `rust-toolchain@b725eda…`, `setup-node v4.4.0`, `setup-python v5.6.0`, `upload-artifact v4.6.2`, `msvc-dev-cmd v1.13.0`) |
 | Toolchain pinned | **yes** — `rust-toolchain.toml` (`1.95.0` + rustfmt/clippy), the CI action names `1.95.0`, the crate declares `rust-version = "1.95"` |
 | Branch protection | **absent** on `dev`/`main` (verified at G0); not changed by this branch; admin checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` |
@@ -301,24 +301,24 @@ documented trade: a wedge is loud, a stolen live lock is a silent double publica
 
 ## 11. Final numbers and the verdict
 
-**Code and CI head under test:** `88ce1b0` — the last commit that touches `crates/flow` or `.github/`
-(the last `crates/flow` commit is `997f983`; `88ce1b0` is a CI-only fix). Everything after it is
-documentation only, so the CI evidence below is the evidence for the shipped code. Measurements are
+**Code and CI head under test:** `06eb7c3` — the last commit that touches `crates/flow` or `.github/`
+(the last `crates/flow` commit is `997f983`). The runs quoted below are on `4da5b59`, one
+documentation-only commit later, so they test exactly that code and workflow. Measurements are
 quoted with the SHA they were taken on; no number here is copied from an earlier wave.
 
 | Evidence | Value |
 |---|---|
 | Tests executed | **163 on Windows** (35 unit, 22 bounds, 54 CLI, 9 concurrency, 25 isolation, 18 proposals), **162 on Linux** (the PATH/PATHEXT shim test is Windows-only by design) |
 | Failures / ignored | 0 / 0 on both OSes |
-| CI (push) | [`42737780234`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737780234) — 4/4 jobs success on `88ce1b0` |
-| CI (pull_request) | [`42737788431`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737788431) — 4/4 jobs success on `88ce1b0` |
+| CI (push) | [`42739319204`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42739319204) — 4/4 jobs success on `4da5b59` |
+| CI (pull_request) | [`42739324966`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42739324966) — 4/4 jobs success on `4da5b59` |
 | Adversarial replay | 119 declared, 116 executed, 109 refuted, 7 reproduced (0 P0, 3 P2, 4 P3), 3 NOT_RUN |
 | Second independent review | 18 findings: 1 P1, 8 P2, 9 P3 — P1 and all P2 closed with tests, 1 P3 partly closed by design |
 | Coverage (head `997f983`, 163 tests) | **83.19 % lines / 68.64 % branches** global; `paths.rs` 96.67/91.30 and `lock.rs` 84.16/68.42 |
 | Mutation (head `997f983`, `paths.rs` + `lock.rs`) | **75.0 % killed** — 57 caught / 19 missed / 0 timeout / 6 unviable of 82; 10 of the 19 are `#[cfg]`-excluded on this host, 3 are equivalent at the `Ok`/`Err` level, 6 need fault injection. Whole-crate run `NOT_RUN` |
 | Release candidate | `0.2.0-rc.1` rebuilt from `997f983`: **1 033 216 B**, SHA-256 `bbde18c5…264a`; install smoke PASS locally on the rebuilt binary and in CI on both OSes; `FLOW_TEST_CRASH=after-intent` → exit 0 `PUBLISHED` on it |
 | `cargo audit` | 0 vulnerabilities |
-| Reproducible build | **`REPRODUCIBLE`** on Windows (`9c7a7c37…e807e`, two clean archives), checked in CI on every Windows run; Linux not claimed |
+| Reproducible build | **`REPRODUCIBLE` per host and toolchain** — `9c7a7c37…` here, `409d8f85…` in CI, each pair of clean archives identical; checked on every Windows run. Cross-host identity and Linux not claimed |
 | Vault | **green** — `vault.py check` 0 issue after the repair commit `083adbc` |
 
 ### 11.1 Verdict
@@ -338,7 +338,7 @@ the trust boundary is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` be
 
 Closed since the previous verdict: the second independent review (was `NOT_RUN`), the SHA pinning, the
 Linux install smoke, the vault block, the stale measurement on `ea181d4`, and reproducibility (now
-`REPRODUCIBLE` on Windows, checked on every Windows CI run). None of the remaining
+`REPRODUCIBLE` per host and toolchain, checked on every Windows CI run). None of the remaining
 items is a P0 or P1 defect; all are evidence gaps. That is the difference between "the product works
 and is honest" and "the qualification dossier is complete", and only the latter justifies
 `GO_PRODUCTION`.
@@ -347,13 +347,19 @@ and is honest" and "the qualification dossier is complete", and only the latter 
 
 | Run | Head | Jobs | Result |
 |---|---|---|---|
-| [`42737780234`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737780234) (push) | `88ce1b0` | `test ubuntu-latest`, `test windows-latest`, `polyglot ubuntu-latest`, `polyglot windows-latest` | **4/4 success** |
-| [`42737788431`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737788431) (pull_request) | `88ce1b0` | idem | **4/4 success** |
+| [`42739319204`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42739319204) (push) | `4da5b59` | `test ubuntu-latest`, `test windows-latest`, `polyglot ubuntu-latest`, `polyglot windows-latest` | **4/4 success** |
+| [`42739324966`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42739324966) (pull_request) | `4da5b59` | idem | **4/4 success** |
+
+Step-level evidence from the Windows job of `42739319204`: `cargo fmt`, `cargo clippy`, the gated test
+step, `build release`, **`reproducible build (Windows, two clean archives)`** (both archives
+`409d8f85…4313`), `install smoke`, the crash-hook proof and the evidence upload are all `success`; the
+R0-a self-tests are `success` on the Ubuntu job and skipped on Windows by design.
 
 What those jobs prove, concretely: `cargo fmt --check`, `cargo clippy -D warnings`, **163 executed
 tests on Windows / 162 on Linux with 0 ignored** and 66 named gates, `cargo build --release`, the
-release binary ignoring `FLOW_TEST_CRASH`, the **install smoke on both OSes**, the R0-a self-tests
-(Linux) and the four polyglot fixtures.
+**reproducibility check** (identical bytes from two clean archives), the release binary ignoring
+`FLOW_TEST_CRASH`, the **install smoke on both OSes**, the R0-a self-tests (Linux) and the four
+polyglot fixtures.
 
 Two runs failed before that, and both are written down rather than deleted: `42736315902` and
 `42736324448` (on `d68406f`, the head before the fix) failed the Windows install smoke on its own
