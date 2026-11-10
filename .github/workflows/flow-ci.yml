@@ -85,8 +85,8 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution) do not run on
           # Linux, so the floor is per-platform rather than a single number that
           # would silently shrink.
-          minimum=172
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=173; fi
+          minimum=186
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=187; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -113,6 +113,9 @@ jobs:
             a_hook_that_rewrites_a_file_is_refused_not_certified \
             a_hook_that_deletes_a_file_is_refused_not_certified \
             a_faithful_checkout_is_still_certified \
+            an_unlisted_environment_variable_is_not_inherited_by_an_obligation \
+            a_secret_shaped_value_is_redacted_before_it_is_persisted \
+            a_run_killed_during_verification_leaves_no_proof_and_recovers \
             unknown_and_valueless_options_are_usage_errors \
             explain_refuses_a_path_instead_of_a_tree_id \
             status_and_explain_qualify_a_tampered_receipt \
