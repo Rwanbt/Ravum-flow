@@ -269,6 +269,10 @@ python experiments/quality/analyze_lcov.py experiments/quality/coverage/lcov-w4-
 pwsh -NoProfile -File experiments/quality/mutation-w4/run-mutations.ps1
 ```
 
+## 8.1 CI evidence
+
+Run `42869715668` (push, 4/4 jobs: `test windows-latest`, `test ubuntu-latest`, `polyglot windows-latest`, `polyglot ubuntu-latest`) and PR run `42869725314` are green on `0f5e072`, with the new floor (349/348) and the 11 new blocking gates enforced. The Linux count landed exactly on 348 as derived; the Windows count on 349.
+
 ## 9. Cross-links
 
 * Wave-3 record and its remaining gaps: [`FLOW-PRODUCTION-WAVE3.md`](FLOW-PRODUCTION-WAVE3.md) §5.3, §9.
