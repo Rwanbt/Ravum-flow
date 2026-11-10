@@ -3,11 +3,12 @@
 **Status:** release-candidate artefacts produced, measured and documented. They are **not** a release:
 nothing is signed, tagged or published, and `GO_PRODUCTION` remains a human decision.
 
-**Built from:** commit `de86b3e3895bd9e566b5e77af06a755ae0c981f1`
+**Built from:** commit `f5bb271ef7bfdb2d4adf429b31c4740d58c350ef`
 (`feat/flow-production-candidate`, version `0.2.0-rc.1`, tree
-`1ab82782c4c0c8d1ffd908714456e88713d88aca`). Every artefact came from a clean `git archive` of that
-commit, never from the shared working tree. Product code is identical to `7a034ff`; `de86b3e` only
-changes the Windows packaging script.
+`a870b34a894819e5f53da183b25171d812c5815e`). Every artefact came from a clean `git archive` of that
+commit, never from the shared working tree. The product source is `d6d7ea9` (the one-line fix that
+stops the fidelity walker from skipping a root `.git` entry) plus documentation; the previous
+packaging head was `de86b3e`, so its artefacts are superseded by the ones below.
 
 **What this closes:** the audit gap “no confirmed deliverable binary artefact” and the missing
 provenance/SBOM, for two targets, with commands that reproduce them and a CI run that now produces
@@ -24,21 +25,21 @@ Claim tags follow `AGENTS.md`: **MEASURED** (executed here, output recorded), **
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
-| `flow.exe` | 1 055 232 | `c5312c266ba6114e576efa41dbc599dbe2e3f2212ab9c29290f8545dedf1878a` |
+| `flow.exe` | 1 055 232 | `4fa86af5355ae7a2fa1b1bda617638c9df8051ca9ff587636c28eb3030966fb1` |
 | `LICENSE` | 17 100 | `9303ea1cfbf049945652668089d753fb1a7e1f2e52c680615c3d2cea7515c118` |
-| `SBOM.json` | 1 090 | `f61f461e63281d78067e0092121efa04e86b6ff678d4e8724724d54552491609` |
-| `SHA256SUMS.txt` | 149 | `e88f08152ec152a64829ec96defa2e74f1f051a6f69ce051ec2aa137e57fa066` |
-| `PROVENANCE.json` | 6 249 | `1398ffc68943464923852b29da986bd6aa64072724e17934d96fe8436d531c59` |
+| `SBOM.json` | 1 090 | `83a1a0ab477e3fd80798401cb472ee132bd7e3c3bad468afabb93953c65c8168` |
+| `SHA256SUMS.txt` | 149 | `1a3cbc47c82b1b6b804ca73cb855452d21395fbf091b8239e70326139fc5512b` |
+| `PROVENANCE.json` | 6 249 | `0127d572ef1d822f1bfa8a14eeefee82000df7463390d287595c3f29732ee633` |
 
 ### 1.2 Linux — `dist/flow-0.2.0-rc.1-x86_64-unknown-linux-gnu/`
 
 | File | Bytes | SHA-256 |
 |---|---:|---|
-| `flow` | 1 188 368 | `859071eacd5932a95c9dbfacfeac352aa66598d47020c9ae54733ba0674eee67` |
+| `flow` | 1 188 368 | `ab8637b5fe7e2f957e6787b9aba7e4c84db8270b5e8a2492c7189351ac04b46d` |
 | `LICENSE` | 16 727 | `66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172` |
-| `SBOM.json` | 1 052 | `f31a2e46b9ce9ff3b5e610ba0f847bb3180e80c1ed0add767d78e1c47efd7931` |
-| `SHA256SUMS.txt` | 145 | `ba9be6ca2855fccd91ea7d7dde19b31adac3563e0d4e058cd08f2213ed8591fb` |
-| `PROVENANCE.json` | 5 822 | `f4b81eaff3741b6f10bf2798408bc4552316af3cf3cf67a3fbddc2e462ec547b` |
+| `SBOM.json` | 1 052 | `58cb27dd9249069e231089ea4a97693a546147c1541b5dd2dd0c1cdb24fafb56` |
+| `SHA256SUMS.txt` | 145 | `4132e60f41812ea6067d37f05d265a65154244967bf449facc45c7dfb1cbe7ae` |
+| `PROVENANCE.json` | 5 822 | `4ddd80b0fb73ab2785b36a273faa05b87fc5d7da1600b59e123b0f9d21bbcda4` |
 
 `SHA256SUMS.txt` covers the binary and `LICENSE`; `PROVENANCE.json` covers those plus `SBOM.json`
 and `SHA256SUMS.txt`. A file cannot list its own hash.
@@ -47,11 +48,11 @@ and `SHA256SUMS.txt`. A file cannot list its own hash.
 
 | Field | Value |
 |---|---|
-| Commit | `de86b3e3895bd9e566b5e77af06a755ae0c981f1` |
-| Tree OID | `1ab82782c4c0c8d1ffd908714456e88713d88aca` |
-| Tree-manifest SHA-256 (506 entries) | `dd0ce22371ec15e8347fe30fc833a4a36d60075df1d8f70f72c715181ff5b066` |
-| `git archive` SHA-256, Windows host (git 2.51.1) | `e691b573080490497b9368fcec218cbb465c6fc3047c6333930c54a29b4949a8` (9 912 320 B) |
-| `git archive` SHA-256, WSL host (git 2.43.0) | `62d0b507c8d7ccc35507728b7b3e55da350ed4ba4cb6f7e76dacf0df780f47b6` (9 830 400 B) |
+| Commit | `f5bb271ef7bfdb2d4adf429b31c4740d58c350ef` |
+| Tree OID | `a870b34a894819e5f53da183b25171d812c5815e` |
+| Tree-manifest SHA-256 (571 entries) | `ebea6c9fd3316ed8d4db2023a771e5da8c5619a6edb73b418225cb962c3eb5ff` |
+| `git archive` SHA-256, Windows host (git 2.51.1) | `6f59e14ba0f2cc43f681677d42d0c708178b557fea54adc4a5222923e89a701f` (23 889 920 B) |
+| `git archive` SHA-256, WSL host (git 2.43.0) | `e0e1271c059cf380562ba43360405a1bd1488056df039155e8ab9e5fdcdd5f0d` (23 746 560 B) |
 
 **MEASURED:** the two `git archive` hashes differ because the tar serialisation differs between the
 Git installations; the *canonical* source identity (commit + tree OID + tree-manifest) is identical
@@ -76,13 +77,13 @@ size difference as a licence difference.
 
 ### 1.5 CI-produced artefacts (same commit, different hosts)
 
-CI run `42802527240` (push) and `42802536498` (PR) are **green**, including both packaging steps.
+CI run `42803928091` (push) and `42803936581` (PR) are **green**, including both packaging steps.
 The uploaded artefacts were downloaded and inspected:
 
 | Target | CI binary SHA-256 | Bytes | Local binary SHA-256 | Bytes |
 |---|---|---:|---|---:|
-| Windows | `cc790a2e8088a6b0ad9c3f692c1783ff64d2a68cfaafeb846c22054e81ad1eea` | 1 055 744 | `c5312c26…f1878a` | 1 055 232 |
-| Linux | `0276bf2d18eb5d26a4e9d9c15139fe374e87fc67261e10f75037fde58845435c` | 1 188 368 | `859071ea…ee67` | 1 188 368 |
+| Windows | `d8d5e45b4cf83470070c14bbd622a93f887e5142502543c18faf091c57bd0db2` | 1 055 744 | `4fa86af5…66fb1` | 1 055 232 |
+| Linux | `26d90b6a5f87df996201a6f89d6d5a53f5a92a5d24b8f8f44221e1fa9aa0a84a` | 1 188 368 | `ab8637b5…b46d` | 1 188 368 |
 
 The CI artefacts carry the same commit, tree OID and tree-manifest hash, the same archive hashes,
 and the same measured test counts (232 Windows / 233 Linux). The **binaries differ** because the
@@ -109,7 +110,7 @@ have the same size but different bytes — size is not identity.
 
 ### 2.1 Windows — **REPRODUCIBLE on this host**
 
-Two clean archives of `de86b3e` in two directories, built sequentially, each with
+Two clean archives of `f5bb271` in two directories, built sequentially, each with
 
 ```text
 CARGO_TARGET_DIR=<private dir>
@@ -119,8 +120,8 @@ cargo build --locked --release --offline
 
 | Build | SHA-256 |
 |---|---|
-| archive a | `c5312c266ba6114e576efa41dbc599dbe2e3f2212ab9c29290f8545dedf1878a` |
-| archive b | `c5312c266ba6114e576efa41dbc599dbe2e3f2212ab9c29290f8545dedf1878a` |
+| archive a | `4fa86af5355ae7a2fa1b1bda617638c9df8051ca9ff587636c28eb3030966fb1` |
+| archive b | `4fa86af5355ae7a2fa1b1bda617638c9df8051ca9ff587636c28eb3030966fb1` |
 | verdict | **identical** |
 
 The flag set is the one in `.github/workflows/flow-ci.yml`; the CI check itself also passed on this
@@ -138,8 +139,8 @@ cargo build --locked --release --offline
 
 | Build | SHA-256 |
 |---|---|
-| archive a | `859071eacd5932a95c9dbfacfeac352aa66598d47020c9ae54733ba0674eee67` |
-| archive b | `859071eacd5932a95c9dbfacfeac352aa66598d47020c9ae54733ba0674eee67` |
+| archive a | `ab8637b5fe7e2f957e6787b9aba7e4c84db8270b5e8a2492c7189351ac04b46d` |
+| archive b | `ab8637b5fe7e2f957e6787b9aba7e4c84db8270b5e8a2492c7189351ac04b46d` |
 | verdict | **identical** |
 
 `-C link-arg=/Brepro` is MSVC-only and has no GNU equivalent; Linux does not claim to be built with
@@ -158,7 +159,7 @@ the same linker flags as Windows.
 
 ## 3. Test evidence (on the packaged commit)
 
-Command: `cargo test --locked --all-targets --offline` in a clean archive of `de86b3e`.
+Command: `cargo test --locked --all-targets --offline` in a clean archive of `f5bb271`.
 
 | Suite | Windows | Linux |
 |---|---:|---:|
@@ -197,7 +198,8 @@ suite**: Windows 3 failures / 232 executed, Linux 4 failures / 233 executed.
 
 Cause: `bae7390` added the tests and docs but not the `crates/flow/src` implementation (it was
 reverted during the red-first proof). The packaging script **refused to package** the red tree — the
-guardrail worked. `7a034ff` landed the implementation; `de86b3e` is the final code SHA used here.
+guardrail worked. `7a034ff` landed the implementation; `d6d7ea9` closed the reviewer's residual P3
+(the walker no longer skips a root `.git` entry); `f5bb271` is the final code SHA used here.
 The event is recorded because silently rewriting the evidence would be dishonest.
 
 ---
@@ -246,7 +248,7 @@ Audited and empty after the run: install-directory additions, leftover scratch d
 outside candidates in row 14. 223 files were created under the disposable repository root on both
 platforms (Git objects + the Flow state above; not 223 Flow files).
 
-Raw matrices: `wt-release-target/smoke-win-de86b3e.json`, `wt-release-target/smoke-linux-de86b3e.json`.
+Raw matrices: `wt-release-target/smoke-win-f5bb271.json`, `wt-release-target/smoke-linux-f5bb271.json`.
 
 ---
 
@@ -257,7 +259,7 @@ Raw matrices: `wt-release-target/smoke-win-de86b3e.json`, `wt-release-target/smo
 ```powershell
 # build twice, run the full suite, compare, package, write SBOM + PROVENANCE
 pwsh -NoProfile -File scripts/release/build-windows.ps1 `
-  -Sha de86b3e3895bd9e566b5e77af06a755ae0c981f1 `
+  -Sha f5bb271ef7bfdb2d4adf429b31c4740d58c350ef `
   -WorkRoot D:\App\Ravum-flow\wt-release-target
 
 # a CI step that already ran the suite uses the existing log and skips a second run:
@@ -277,11 +279,18 @@ The script uses `System32\tar.exe` to extract `git archive -o` tar files: when i
 Git Bash (as CI does), a bare `tar` is MSYS tar, which mangles a `C:\...` destination. If the caller
 prefers a different extraction tool, the archive bytes and the source tree are unchanged.
 
+**Record correction (explicit, as requested):** the commit message of `de86b3e` says the Windows
+extraction was changed to `git archive --format=zip` + `Expand-Archive`. That is **not** what the
+committed script contains: `de86b3e` and `f5bb271` both invoke the native
+`C:\Windows\System32\tar.exe` on a `git archive -o` tar, and that is what CI measured and passed.
+The zip description is a message/code discrepancy, not a second implementation; anyone reproducing
+the artefact should use the tar path above.
+
 ### 5.2 Linux (WSL or CI, from the repository root)
 
 ```bash
 # tests + two clean builds + reproducibility check + package + SBOM/PROVENANCE
-bash scripts/release/build-linux.sh de86b3e3895bd9e566b5e77af06a755ae0c981f1
+bash scripts/release/build-linux.sh f5bb271ef7bfdb2d4adf429b31c4740d58c350ef
 
 # CI: use the already-produced gated log, no duplicate suite
 RUN_TESTS=0 TEST_LOG=test-output.txt bash scripts/release/build-linux.sh "$GITHUB_SHA"
@@ -326,7 +335,7 @@ committed invocation is:
         run: RUN_TESTS=0 TEST_LOG=test-output.txt bash scripts/release/build-linux.sh "$GITHUB_SHA"
 ```
 
-Both steps succeeded on `de86b3e` (runs `42802527240`, `42802536498`); the uploaded artefact hashes
+Both steps succeeded on `f5bb271` (runs `42803928091`, `42803936581`); the uploaded artefact hashes
 are in §1.5. The first attempt on `7a034ff` failed on Windows in the extraction, which is why the
 script now avoids MSYS tar.
 
@@ -373,15 +382,15 @@ python3 -m json.tool SBOM.json >/dev/null
 | Claim | Class | Evidence |
 |---|---|---|
 | Artefact bytes and SHA-256 values | MEASURED | `Get-FileHash` / `sha256sum -c`, §1 |
-| Windows two-build reproducibility | MEASURED | two clean archives, identical `c5312c26…` |
-| Linux two-build reproducibility | MEASURED | two clean builds, identical `859071ea…` |
+| Windows two-build reproducibility | MEASURED | two clean archives, identical `4fa86af5…` |
+| Linux two-build reproducibility | MEASURED | two clean builds, identical `ab8637b5…` |
 | Test totals 232/233, 0 failed, 0 ignored | MEASURED | `cargo test --locked --all-targets --offline` on clean archives |
 | The 55/54 and 16/18 suite differences | MEASURED + CODE_READ | test logs; platform-only tests |
 | Smoke matrix rows 1–14 | MEASURED | `scripts/release/smoke-*.{ps1,sh}` outputs |
 | Release binary ignores `FLOW_TEST_CRASH` | MEASURED + CODE_READ | crash-hook case; `crash_point()` is `cfg!(debug_assertions)` |
 | Scratch is created under the OS temp dir and removed | MEASURED + CODE_READ | audit; `scratch.rs` |
 | CLI exit/status contract | CODE_READ | `main.rs` `exit_code_for` |
-| CI packaging steps pass and upload `dist/` | MEASURED | runs `42802527240`, `42802536498` |
+| CI packaging steps pass and upload `dist/` | MEASURED | runs `42803928091`, `42803936581` |
 | CI and local binaries differ by host/toolchain | MEASURED | §1.5 hashes and host fields |
 | Cross-host reproducibility | NOT_RUN | not attempted |
 | Signing / attestation | NOT_RUN | no key exists |
@@ -399,5 +408,5 @@ python3 -m json.tool SBOM.json >/dev/null
   CI keeps its own install smoke).
 - Release checklist (unchanged): `docs/reviews/FLOW-PRODUCTION-RELEASE-CHECKLIST.md`.
 - Superseded artefact: `dist/superseded/flow-0.2.0-rc.1-x86_64-pc-windows-msvc-997f983/SUPERSEDED.md`.
-- CI artefacts for `de86b3e`: downloaded under
-  `wt-release-target/ci-artifacts-de86b3e/` for the §1.5 comparison.
+- CI artefacts for `f5bb271`: downloaded under
+  `wt-release-target/ci-artifacts-f5bb271/` for the §1.5 comparison.
