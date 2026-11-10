@@ -74,8 +74,13 @@ jobs:
             echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
             exit 1
           fi
-          if [ "$passed" -lt 151 ]; then
-            echo "::error::expected at least 151 executed passing tests, got $passed"
+          # The Windows-only tests (PATH/PATHEXT shim resolution) do not run on
+          # Linux, so the floor is per-platform rather than a single number that
+          # would silently shrink.
+          minimum=150
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=151; fi
+          if [ "$passed" -lt "$minimum" ]; then
+            echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
           fi
           missing=0
@@ -138,6 +143,9 @@ jobs:
             blocking_reference_transaction_aborts_publish_without_moving_the_ref \
             hijacked_git_environment_does_not_redirect_the_cli \
             missing_toolchain_is_unsupported_and_never_publishable ; do
+            if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
             if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
               echo "::error::required gate '$gate' did not run or did not pass"
               missing=1
