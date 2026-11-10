@@ -229,8 +229,9 @@ policy is approved. Per-candidate approval is a product decision, not a defect o
 reasons the verdict is `PRODUCTION_PARTIAL`.
 ## 11. Final numbers and the verdict
 
-**Code head under test:** `a7c0f17` (the last commit that touches `crates/flow` or `.github/`); tests
-and CI below are that head. Later commits in this branch are documentation only.
+**Code and CI head under test:** `c624c2312b45d57c7b3a460aff3235e6fccb61a1` (the last commit that
+touches `crates/flow` or `.github/`). Everything after it is documentation only, so the CI evidence
+below is the evidence for the shipped code.
 
 | Evidence | Value |
 |---|---|
