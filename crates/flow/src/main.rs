@@ -251,7 +251,24 @@ fn value_flags(command: &str) -> &'static [&'static str] {
     }
 }
 
-const BOOL_FLAGS: &[&str] = &["--json", "--dry-run", "--force", "--adopt-policy", "--help"];
+/// Boolean flags accepted by any command: output mode and help. Any other boolean
+/// is per command, below.
+const GLOBAL_BOOL_FLAGS: &[&str] = &["--json", "--help"];
+
+/// Boolean flags that a command actually implements.
+///
+/// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`
+/// would execute the obligations and write a receipt for an operator who asked for
+/// a plan. That is the same defect class as `publish --dry-run=true` (which the
+/// second review found and this file already refuses), so an unimplemented
+/// boolean is a usage error.
+fn bool_flags(command: &str) -> &'static [&'static str] {
+    match command {
+        "init" => &["--force", "--adopt-policy"],
+        "publish" => &["--dry-run"],
+        _ => &[],
+    }
+}
 
 /// Reject an unknown flag, a value flag without a value, or a stray positional
 /// argument, before any mutation.
@@ -283,7 +300,9 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
                     index += 2;
                     continue;
                 }
-            } else if BOOL_FLAGS.contains(&name.as_str()) {
+            } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())
+                || bool_flags(command).contains(&name.as_str())
+            {
                 // A boolean flag is a token, not a `key=value` pair. Accepting
                 // `--dry-run=true` here and then matching only the exact token in
                 // `has_flag` would run a real publication for an operator who
@@ -293,6 +312,10 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
                         "`{name}` takes no value (found {value:?}); write `{name}` on its own"
                     ));
                 }
+            } else if matches!(name.as_str(), "--dry-run" | "--force" | "--adopt-policy") {
+                return Err(format!(
+                    "`{name}` is not implemented by `flow {command}` (see `flow help`); an option that would be ignored is a usage error"
+                ));
             } else {
                 return Err(format!(
                     "unknown option {name:?} for `flow {command}` (see `flow help`)"

@@ -40,12 +40,20 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - A cloned repository could ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink and make Flow
   write outside the workspace; every write below `.flow/` now refuses links and reparse points
   (Unix hardlinks too).
-- A checkout that rewrites bytes (filters, CRLF, `core.eol`) is now compared byte-for-byte with the
-  tree blobs and refused (`UNSUPPORTED_CHECKOUT`) instead of producing a false `PASSED`. Since the
+- A checkout that rewrites bytes (filters, CRLF, `core.eol`) is now compared byte-for-byte with
+  the tree blobs and refused (`UNSUPPORTED_CHECKOUT`) instead of producing a false `PASSED`. Since the
   checkout-fidelity wave the comparison is **unconditional**: it no longer depends on a "a filter
   looks possible" guess, so a conversion driven by a **local** attribute source
-  (`.git/info/attributes`, `core.attributesFile`) is refused too, and the file set must match the
-  tree exactly (a `post-checkout` hook that adds, rewrites or deletes a file is refused).
+  (`.git/info/attributes`, `core.attributesFile`, a `smudge` driver) is refused too, and the file set
+  must match the tree exactly — no extra file, no extra directory, no added executable bit on Unix (a
+  `post-checkout` hook that adds, rewrites, chmods or deletes is refused). A path the platform cannot
+  represent (non-UTF-8) is refused with that reason instead of being misdiagnosed as a case collision.
+- A declared file changed **while the obligations ran** (a delayed `post-checkout` writer, or an
+  obligation rewriting its own input) is detected by a re-proof after the last obligation: the run is
+  refused (`CHECKOUT_MUTATED_DURING_RUN`), no receipt is written, and a clean receipt carries
+  `checkout_recheck: OK`. Detection, not isolation: a write reverted before the re-check is not seen.
+- A boolean flag that a command does not implement is a usage error (exit 2). `flow run --dry-run`
+  used to execute the obligations and write a receipt for an operator who asked for a plan.
 - `FLOW_TEST_CRASH` is compiled out of release builds (proved on the release binary in CI).
 - A symbolic ref is refused as a publication target (`REF_IS_SYMREF`), and the ref is read back after
   the CAS (`NEEDS_RECONCILIATION` if it is not the prepared commit).

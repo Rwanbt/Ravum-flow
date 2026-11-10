@@ -1254,6 +1254,49 @@ fn unknown_and_valueless_options_are_usage_errors() {
     );
 }
 
+/// A boolean flag a command does not implement is a usage error, never a silently
+/// ignored no-op: `flow run --dry-run` used to execute the declared obligations and
+/// write a receipt for an operator who asked for a plan — the same defect class as
+/// `publish --dry-run=true`, closed in the second independent review.
+#[test]
+fn a_boolean_flag_a_command_does_not_implement_is_a_usage_error() {
+    let (repo, tree, head_before) = prepared_repo(GREEN);
+
+    let (code, out) = flow(&repo.path, &["run", "--dry-run"]);
+    assert_eq!(
+        code, 2,
+        "`run --dry-run` must not execute obligations and certify: {out}"
+    );
+    assert_eq!(
+        status_of(&out),
+        "ERROR",
+        "an unimplemented option is a usage error, not a receipt: {out}"
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a usage error must not leave the complete receipt slot {tree}.json"
+    );
+
+    let (code, out) = flow(&repo.path, &["status", "--force"]);
+    assert_eq!(
+        code, 2,
+        "`status --force` must be refused, not ignored: {out}"
+    );
+    assert_eq!(status_of(&out), "ERROR", "{out}");
+
+    let (code, out) = flow(&repo.path, &["doctor", "--adopt-policy"]);
+    assert_eq!(
+        code, 2,
+        "`doctor --adopt-policy` must be refused, not ignored: {out}"
+    );
+
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "an unimplemented option may not move a ref"
+    );
+}
+
 // ------------------------------------------------- production-candidate gates
 /// `explain --tree` takes an object id, not a path: a traversal attempt must be
 /// refused before any file is read.
