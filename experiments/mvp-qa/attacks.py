@@ -4077,7 +4077,7 @@ def w3_hook_same_length_rewrite(c: Case):
     evidence = {"run": run.brief(), "tree": tree, "blob": blob,
                 "receipt": c.receipt_for_tree(tree).exists()}
     if (run.exit == 1 and run.code == "UNSUPPORTED_CHECKOUT"
-            and "different bytes" in (run.reason or "")
+            and (("changed during checkout" in (run.reason or "")) or ("different bytes" in (run.reason or "")))
             and not c.receipt_for_tree(tree).exists()):
         return X("a same-length rewrite by post-checkout is refused by the byte "
                  "comparison (no receipt), not certified",

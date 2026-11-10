@@ -484,7 +484,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             Json::Arr(vec![
                 Json::str("receipts bind an exact Git tree OID and one effective policy digest"),
                 Json::str("publication uses ref CAS with a durable intent/outcome journal"),
-                Json::str("the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)"),
+                Json::str("the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory (Flow's own scratch ownership marker excepted) — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)"),
                 Json::str("a required obligation that cannot run makes the result UNSUPPORTED, never PASSED"),
                 Json::str("a selective run is recorded as PARTIAL and is never publishable"),
             ]),
@@ -1134,11 +1134,13 @@ fn collect_entries(
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        // Only Flow's own markers are not part of the verified tree: the `.git`
-        // link (removed before this check) and the scratch ownership marker. Any
-        // other root entry — including one whose name merely starts with
-        // `.flow-scratch` — is a file the tree did not declare.
-        if dir == root && (name == ".git" || name == ".flow-scratch-owned") {
+        // Only Flow's own scratch ownership marker is not part of the verified
+        // tree. The `.git` link is removed by `materialise` before this check, so a
+        // `.git` entry here is a file the tree did not declare — a hook that
+        // recreates it after the unlink must be refused, not ignored. Any other
+        // root entry, including one whose name merely starts with `.flow-scratch`,
+        // is an extra file.
+        if dir == root && name == ".flow-scratch-owned" {
             continue;
         }
         let Ok(meta) = fs::symlink_metadata(&path) else {

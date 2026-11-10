@@ -211,6 +211,11 @@ implemented the two that were previously `NOT_RUN`:
   `FIL-06` (reserved names in a verified tree) are now executed and **refuted**; `PRF-09` (a
   NUL byte in an argument) is restated as untestable — the OS rejects the argv before Flow
   starts — and is not counted as a pass.
+- A harness defect was found and fixed during the re-check: `W3-03` asserted the old message
+  substring `different bytes`, so a correct typed refusal (`UNSUPPORTED_CHECKOUT`, reason
+  `changed during checkout`) was scored as a reproduced defect. The scenario now accepts the
+  new wording; with the corrected assertion the campaign is **6 REPRODUCED / 115 REFUTED / 1
+  NOT_RUN**, unchanged from wave 3.
 - The independent reviewer's 19-scenario attack on the P0 fix is in
   [`FLOW-P0-GIT-FIDELITY-REVIEW.md`](FLOW-P0-GIT-FIDELITY-REVIEW.md): 15 refuted, 4 defects
   (the P1 of §2.3 and three P3s), all fixed and re-checked in
@@ -240,8 +245,11 @@ The gate did its job; the mistake was human process, recorded here rather than d
 
 A second, smaller incident in the same wave: the first CI run of the new packaging step
 failed on windows-latest because the script piped `git archive` into MSYS `tar`, whose
-argument conversion mangled the Windows destination. The script now extracts a zip with
-PowerShell; `de86b3e` fixes it and the fix was verified locally with the exact CI invocation.
+argument conversion mangled the Windows destination. The fix (in `de86b3e`) invokes the
+**System32 `tar.exe`** (bsdtar) explicitly, which does not mangle the path; CI produces valid
+artefacts with it. To keep this record matching the code: the commit message of `de86b3e`
+describes a zip/`Expand-Archive` variant, which was one of the attempted fixes but is **not**
+what the committed script does. The behaviour is what matters and it is measured in CI.
 
 ## 8. CI cost and why no impact-based selection was added
 
