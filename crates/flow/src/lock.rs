@@ -465,6 +465,26 @@ mod tests {
     }
 
     #[test]
+    fn a_lock_error_renders_its_message() {
+        // A mutant that makes any of these render as "" would print an empty
+        // error on the CLI: the operator would get no reason and no file name.
+        let held = LockError::Held("held-by-pid-42".into());
+        let unknown = LockError::Unknown("unknown-lock-shape".into());
+        let io = LockError::Io("cannot-create-.flow".into());
+        for (error, expected) in [
+            (&held, "held-by-pid-42"),
+            (&unknown, "unknown-lock-shape"),
+            (&io, "cannot-create-.flow"),
+        ] {
+            assert_eq!(error.message(), expected);
+            assert_eq!(error.to_string(), expected, "Display must not lose it");
+        }
+        assert_eq!(String::from(held), "held-by-pid-42");
+        assert_eq!(String::from(unknown), "unknown-lock-shape");
+        assert_eq!(String::from(io), "cannot-create-.flow");
+    }
+
+    #[test]
     fn nonces_are_unique_and_file_safe() {
         let first = nonce();
         let second = nonce();

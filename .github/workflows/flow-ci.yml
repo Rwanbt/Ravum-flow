@@ -85,8 +85,8 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution) do not run on
           # Linux, so the floor is per-platform rather than a single number that
           # would silently shrink.
-          minimum=161
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=162; fi
+          minimum=162
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=163; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -144,6 +144,7 @@ jobs:
             eight_concurrent_publishes_publish_at_most_once \
             a_live_old_lock_is_never_stolen \
             lock::tests::nonces_are_unique_and_file_safe \
+            lock::tests::a_lock_error_renders_its_message \
             lock::tests::a_live_foreign_owner_is_waited_for_then_reported_held \
             lock::tests::a_guard_never_removes_a_successors_lock \
             paths::tests::canonical_within_returns_the_resolved_path \
