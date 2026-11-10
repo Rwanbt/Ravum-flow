@@ -9,6 +9,8 @@ the draft PR; `GO_PRODUCTION` is a separate human decision (§9).
 - Toolchain: `rustc 1.95.0` (stable), target `x86_64-pc-windows-msvc` (built here) and
   `x86_64-unknown-linux-gnu` (built by CI).
 - Build: `cargo build --locked --release --offline` (no dependencies at all: `[dependencies]` is empty).
+- Rebuilt from the delivered code head `997f983` after the second review, because the first artefact
+  predated its P1/P2 fixes.
 
 ## 2. Artefacts produced on this host
 
@@ -16,11 +18,17 @@ the draft PR; `GO_PRODUCTION` is a separate human decision (§9).
 
 | File | Size | SHA-256 |
 |---|---|---|
-| `flow.exe` | 1 013 248 B | `d6edbec03a29e3477be0ae3fffe9b9fda6ac5934699acf8cc40df464438d19bc` |
+| `flow.exe` | 1 033 216 B | `bbde18c555821d571803bad1a7b6448b05230115a148468af4c7eca50a18264a` |
 | `LICENSE` | 17 100 B | copied verbatim from the repository |
 | `SHA256SUMS.txt` | — | the line above |
 
 Verification: `Get-FileHash flow.exe -Algorithm SHA256` / `sha256sum -c SHA256SUMS.txt`.
+
+**Superseded artefact.** The first RC of this wave was `1 013 248 B`,
+`d6edbec03a29e3477be0ae3fffe9b9fda6ac5934699acf8cc40df464438d19bc`, built **before** the second
+review's fixes. It is kept in the record as history and must not be shipped: the P1
+(`--dry-run=true` published for real) is only fixed in the binary above.
+
 
 ## 3. Install / uninstall smoke (executed)
 
@@ -41,7 +49,7 @@ repository being used, and nothing is installed system-wide.
 | Check | Result |
 |---|---|
 | `FLOW_TEST_CRASH=after-intent flow publish` on the **release** binary | `PUBLISHED`, exit 0 — the debug-only hook is inert |
-| `flow version` | `0.2.0-rc.1`, `flow-receipt/2`, schema list |
+| `flow version` | `0.2.0-rc.1`, `flow-receipt/2`, and all nine schemas (`flow-config/1`, `flow-receipt/2`, `flow-journal/1`, `flow-proposal/1`, `flow-candidate/1`, `flow-adoption/1`, `flow-plan/1`, `flow-status/1`, `flow-proposal-list/1`) |
 | `flow doctor` in a fresh repo | `REPORT`, `overall: OK`, exit 0 |
 | `doctor` with a torn journal | `overall: FAILED`, exit 1 |
 

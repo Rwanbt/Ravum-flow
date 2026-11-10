@@ -151,7 +151,7 @@ pretends otherwise.
 | Item | State |
 |---|---|
 | CI on Windows + Ubuntu | green on the candidate head (§11) |
-| Release binary | `flow 0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc` (artefact `dist/`, git-ignored) |
+| Release binary | rebuilt from `997f983`: `flow 0.2.0-rc.1`, **1 033 216 B**, SHA-256 `bbde18c5…264a` (artefact `dist/`, git-ignored). The earlier `d6edbec0…` artefact predates the P1/P2 fixes and is recorded as superseded |
 | Install / uninstall smoke | executed locally, and now **in CI on both OSes** against the same release binary the artefact is built from |
 | Release crash hook | inert, proved locally and in CI |
 | `cargo audit` | 0 vulnerabilities (1430 advisories, 1 crate) |
@@ -315,7 +315,7 @@ quoted with the SHA they were taken on; no number here is copied from an earlier
 | Second independent review | 18 findings: 1 P1, 8 P2, 9 P3 — P1 and all P2 closed with tests, 1 P3 partly closed by design |
 | Coverage (head `997f983`, 163 tests) | **83.19 % lines / 68.64 % branches** global; `paths.rs` 96.67/91.30 and `lock.rs` 84.16/68.42 |
 | Mutation (head `997f983`, `paths.rs` + `lock.rs`) | **75.0 % killed** — 57 caught / 19 missed / 0 timeout / 6 unviable of 82; 10 of the 19 are `#[cfg]`-excluded on this host, 3 are equivalent at the `Ok`/`Err` level, 6 need fault injection. Whole-crate run `NOT_RUN` |
-| Release candidate | `0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc`, install smoke PASS locally and in CI on both OSes |
+| Release candidate | `0.2.0-rc.1` rebuilt from `997f983`: **1 033 216 B**, SHA-256 `bbde18c5…264a`; install smoke PASS locally on the rebuilt binary and in CI on both OSes; `FLOW_TEST_CRASH=after-intent` → exit 0 `PUBLISHED` on it |
 | `cargo audit` | 0 vulnerabilities |
 | Reproducible build | `REPRODUCIBILITY_NOT_PROVEN` |
 | Vault | **green** — `vault.py check` 0 issue after the repair commit `083adbc` |
