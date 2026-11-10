@@ -35,12 +35,13 @@ Windows-only PATH/PATHEXT test). Per binary: 35 unit · 22 bounds · 54 CLI · 9
 `.github/workflows/flow-ci.yml`, both push and pull_request runs on the candidate branch and on the
 promotion targets `dev` and `main`: Ubuntu and Windows, `cargo fmt --check`,
 `cargo clippy -D warnings`, the gated test step (≥162 executed on Linux, ≥163 on Windows, 0 ignored,
-66 named gates of which 65 are required per platform), `cargo build --release`, the release-binary
-crash-hook proof, the **install smoke on both OSes** (private directory, `version`, `init`, `run`,
+66 named gates of which 65 are required per platform), `cargo build --release`, the **reproducible-build check
+(Windows: two clean archives, identical bytes)**, the release-binary crash-hook proof, the **install
+smoke on both OSes** (private directory, `version`, `init`, `run`,
 `publish`, nothing left behind), R0-a self-tests (Linux) and the polyglot job (four fixtures, the
 TypeScript compiler installed by a pinned `npm install`). Every `uses:` is pinned to a commit SHA and
 the toolchain is pinned to `1.95.0` both by `rust-toolchain.toml` and by the action input.
-Run ids are recorded in §11 after the last push.
+Run ids are recorded in §11.2.
 
 ## 3. G2 — the known findings and what closed them
 

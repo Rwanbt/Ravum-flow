@@ -1,7 +1,7 @@
 # Ravum Flow
 > **Status: evidence package `0.2.0-rc.1` on `feat/flow-production-candidate` (draft PR), gate verdict `PRODUCTION_PARTIAL` — local-trusted, not merged, not released.**  
 > This branch ships a small local CLI (`flow`) that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
-> No known P0/P1 finding is open in the local-trusted scope; the gate report names the evidence gaps that keep the verdict below `PRODUCTION_CANDIDATE` (coverage/mutation below their thresholds, whole-crate mutation and libFuzzer not run, reproducibility not proven, macOS not tested).  
+> No known P0/P1 finding is open in the local-trusted scope; the gate report names the evidence gaps that keep the verdict below `PRODUCTION_CANDIDATE` (coverage and mutation below their thresholds, whole-crate mutation, a Linux mutation run and libFuzzer not run, macOS not tested).  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
 **Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.

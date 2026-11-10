@@ -849,9 +849,10 @@ reader has to guess where the boundary is. Everything else in this document is `
 - **`cargo-fuzz` / libFuzzer**: `NOT_RUN`. A seeded, hand-rolled fuzzer ran against the JSON parser and
   the option parser and found one real defect (F1, fixed); that is not libFuzzer coverage and is not
   described as such.
-- **Bit-for-bit reproducible build**: `REPRODUCIBILITY_NOT_PROVEN`. Two clean archive builds produced
-  different digests (release checklist §5); the cause is consistent with embedded build paths, and no
-  bit-for-bit claim is made.
+- **Bit-for-bit reproducible build**: proven on Windows only. Two clean archives built with
+  `-C link-arg=/Brepro -C codegen-units=1 --remap-path-prefix=<dir>=` produce identical bytes (release
+  checklist §5), and CI repeats the check on every Windows run. Linux is not claimed: the linker flags
+  differ and the campaign was not run there.
 - **Performance as a benchmark, and productivity**: descriptive timings only, on one host;
   `UNPROVEN`.
 - **Untrusted code execution**: `UNSUPPORTED` by design — there is no OS sandbox, and `doctor` says so
