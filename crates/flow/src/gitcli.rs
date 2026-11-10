@@ -509,7 +509,8 @@ fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {
 // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow
 // resolves it the way a shell would and only then spawns it. When nothing
 // matches, the caller keeps the declared name so the failure is reported as
-// UNSUPPORTED with the name the policy asked for.#[cfg(windows)]
+// UNSUPPORTED with the name the policy asked for.
+#[cfg(windows)]
 fn resolve_program(program: &str) -> Option<PathBuf> {
     let path = std::env::var_os("PATH")?;
     let extensions: Vec<String> = std::env::var("PATHEXT")
