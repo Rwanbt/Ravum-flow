@@ -176,7 +176,9 @@ cargo +nightly llvm-cov report --branch > experiments/quality/coverage/summary.t
 All 163 tests passed inside the instrumented run, **on the delivered head `997f983`**
 (`experiments/quality/coverage/summary-997f983.txt`). `--branch` is cargo-llvm-cov's unstable flag;
 it worked on nightly and produced real branch counters, so branch coverage is MEASURED, not
-estimated. `--ignore-filename-regex '[\\/]tests[\\/]'` keeps the number on the product code.
+estimated. `--ignore-filename-regex '[\\/]tests[\\/]'` keeps the number on the product code. Line-level
+data for this head is `experiments/quality/coverage/lcov-997f983.info`; the `lcov.info` and
+`coverage.json` beside it are the `ea181d4` measurement, kept as history.
 
 | File | Lines | Line cover | Branches | Branch cover | Regions | Functions |
 | --- | --- | --- | --- | --- | --- | --- |
