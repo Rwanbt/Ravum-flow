@@ -188,4 +188,111 @@ mod tests {
         assert!(!lexically_inside(root, Path::new("/repo/../etc")));
         assert!(!lexically_inside(root, Path::new("/other")));
     }
+
+    // The following tests exist to pin guarantees that a mutation run showed were
+    // not observed by the suite: `canonical_within`'s return value was discarded
+    // by its only caller, so an implementation returning an empty path passed.
+
+    fn temp_root(tag: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("flow-paths-{}-{tag}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[cfg(windows)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        let out = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("mklink /J failed"))
+        }
+    }
+
+    #[cfg(unix)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    #[test]
+    fn canonical_within_returns_the_resolved_path() {
+        let root = temp_root("cw-ok");
+        std::fs::create_dir_all(root.join("a").join("b")).unwrap();
+        let resolved = canonical_within(&root, &root.join("a/b/log.json")).unwrap();
+        assert_eq!(
+            resolved,
+            root.canonicalize()
+                .unwrap()
+                .join("a")
+                .join("b")
+                .join("log.json"),
+            "the existing ancestor is resolved and the missing suffix re-applied"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn canonical_within_refuses_a_link_that_leaves_the_root() {
+        let root = temp_root("cw-escape");
+        let base = temp_root("cw-escape-out");
+        let outside = base.join("out");
+        std::fs::create_dir_all(&outside).unwrap();
+        let link = root.join("link");
+        if make_dir_link(&outside, &link).is_err() {
+            println!("SKIP canonical_within_refuses_a_link_that_leaves_the_root: this host cannot create a directory link");
+            let _ = std::fs::remove_dir_all(&root);
+            let _ = std::fs::remove_dir_all(&base);
+            return;
+        }
+        let err = canonical_within(&root, &link.join("receipt.json"))
+            .expect_err("a link out of the root must be refused, even for a missing child");
+        assert!(err.contains("escapes"), "{err}");
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn length_limits_are_exact() {
+        // 255-byte components are representable, 256 are not.
+        assert!(validate_relative(&"a".repeat(255)).is_ok());
+        assert!(validate_relative(&"a".repeat(256)).is_err());
+
+        // A path of exactly 4096 bytes built from legal components, then 4097.
+        let mut path = "a".repeat(100);
+        for _ in 0..38 {
+            path.push('/');
+            path.push_str(&"a".repeat(100));
+        }
+        path.push('/');
+        path.push_str(&"a".repeat(157));
+        assert_eq!(path.len(), 4096);
+        assert!(validate_relative(&path).is_ok(), "4096 bytes is allowed");
+        path.push('a');
+        assert_eq!(path.len(), 4097);
+        assert!(validate_relative(&path).is_err(), "4097 bytes is refused");
+
+        assert!(
+            validate_relative("a\nb").is_err(),
+            "control characters are refused"
+        );
+    }
+
+    #[test]
+    fn identifiers_are_exactly_sized_hex() {
+        assert!(is_object_id(&"a".repeat(40)));
+        assert!(is_object_id(&"0123456789abcdef".repeat(4)));
+        assert!(!is_object_id(&"a".repeat(39)));
+        assert!(!is_object_id(&"a".repeat(41)));
+        assert!(!is_object_id(&"g".repeat(40)));
+
+        assert!(is_record_id(&"0123456789abcdef".repeat(2)));
+        assert!(!is_record_id(&"a".repeat(31)));
+        assert!(!is_record_id(&"a".repeat(33)));
+        assert!(!is_record_id(&"z".repeat(32)));
+    }
 }

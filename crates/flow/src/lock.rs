@@ -401,4 +401,135 @@ mod tests {
         );
         let _ = fs::remove_dir_all(&root);
     }
+
+    // The tests below pin the invariants a mutation run found unprotected: the
+    // nonce only has to be unique, but nothing observed it; the liveness probe was
+    // never exercised for a foreign or a dead PID; and the acquire budget was
+    // never measured because the live-owner test took the "it is me" branch.
+
+    /// A child process that stays alive until the test kills it, so its PID is a
+    /// provably live PID that is not this process.
+    fn spawn_idle_child() -> std::process::Child {
+        let mut command = {
+            #[cfg(windows)]
+            {
+                let mut c = std::process::Command::new("ping");
+                c.args(["-n", "600", "127.0.0.1"]);
+                c
+            }
+            #[cfg(unix)]
+            {
+                let mut c = std::process::Command::new("sleep");
+                c.arg("600");
+                c
+            }
+        };
+        command
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("the test needs a long-lived child process (ping/sleep)")
+    }
+
+    #[test]
+    fn nonces_are_unique_and_file_safe() {
+        let first = nonce();
+        let second = nonce();
+        assert_ne!(first, second, "two lock writers must never share a nonce");
+        for value in [&first, &second] {
+            assert!(!value.is_empty());
+            assert!(
+                value.chars().all(|c| c.is_ascii_hexdigit() || c == '-'),
+                "{value} must stay safe inside a temporary file name"
+            );
+            assert_eq!(
+                value.split('-').count(),
+                3,
+                "{value} must carry pid, timestamp and counter"
+            );
+        }
+    }
+
+    #[test]
+    fn liveness_is_answered_for_live_and_dead_pids() {
+        let mut child = spawn_idle_child();
+        let pid = child.id();
+        assert_eq!(pid_alive(pid), Some(true), "a running child is alive");
+        let _ = child.kill();
+        let _ = child.wait();
+        assert_eq!(
+            pid_alive(pid),
+            Some(false),
+            "a reaped child is provably dead, never unknown"
+        );
+    }
+
+    #[test]
+    fn a_live_foreign_owner_is_waited_for_then_reported_held() {
+        let root = temp_flow_dir("foreign-live");
+        let mut child = spawn_idle_child();
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {} 0 feedface publish\n", child.id()),
+        )
+        .unwrap();
+        let started = Instant::now();
+        let result = acquire_lock(&root, "publish");
+        let elapsed = started.elapsed();
+        let _ = child.kill();
+        let _ = child.wait();
+        match result {
+            Err(LockError::Held(m)) => assert!(m.contains("another flow process"), "{m}"),
+            other => panic!("a live foreign owner must not be displaced: {other:?}"),
+        }
+        assert!(
+            elapsed >= ACQUIRE_BUDGET * 9 / 10,
+            "a live owner must be waited for, not refused instantly: {elapsed:?}"
+        );
+        assert!(
+            lock_path(&root).is_file(),
+            "refusal must not delete a live owner's lock"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_guard_never_removes_a_successors_lock() {
+        let root = temp_flow_dir("successor");
+        let guard = acquire_lock(&root, "publish").unwrap();
+        // A successor replaced the record while the guard was still alive.
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {} 0 cafebabe publish\n", std::process::id()),
+        )
+        .unwrap();
+        drop(guard);
+        assert!(
+            lock_path(&root).is_file(),
+            "a slow predecessor must not delete its successor's lock"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_record_written_after_the_first_read_is_still_attributed() {
+        let root = temp_flow_dir("late-writer");
+        let path = lock_path(&root);
+        fs::write(&path, "").unwrap();
+        let late = path.clone();
+        let writer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(100));
+            fs::write(
+                &late,
+                format!("{LOCK_SCHEMA} {} 0 abcdef publish\n", std::process::id()),
+            )
+            .unwrap();
+        });
+        let owner =
+            wait_for_record(&path, String::new()).expect("a late record must still be attributed");
+        writer.join().unwrap();
+        assert_eq!(owner.pid, std::process::id());
+        assert_eq!(owner.nonce, "abcdef");
+        let _ = fs::remove_dir_all(&root);
+    }
 }
