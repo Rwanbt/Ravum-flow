@@ -224,6 +224,29 @@ fn assert_checkout_refused(repo: &Repo, tree: &str, expectation: &str) {
 
 // ------------------------------------------------- local attribute sources
 
+/// Marker argument of the smudge-filter probe (never exported: the filter command
+/// carries it as a positional argument, and an obligation cannot see it).
+const SMUDGE_PROBE: &str = "FLOW_FIDELITY_SMUDGE_PROBE";
+
+/// Child probe used as a Git `smudge` driver: it proves it ran by writing the
+/// marker, then rewrites the blob (upper-cased) so the checkout cannot equal the
+/// tree. Returns immediately in a normal `cargo test` run.
+#[test]
+fn smudge_probe_child() {
+    let args: Vec<String> = std::env::args().collect();
+    let Some(position) = args.iter().position(|arg| arg == SMUDGE_PROBE) else {
+        return;
+    };
+    let marker = std::path::PathBuf::from(args.get(position + 1).expect("marker path"));
+    fs::write(&marker, "ran\n").expect("probe marker");
+    let mut input = Vec::new();
+    std::io::Read::read_to_end(&mut std::io::stdin(), &mut input).expect("read stdin");
+    for byte in &mut input {
+        byte.make_ascii_uppercase();
+    }
+    std::io::Write::write_all(&mut std::io::stdout(), &input).expect("write stdout");
+}
+
 /// `.git/info/attributes` is a *local* file: it is not in the tree, so the old
 /// `conversion_possible` heuristic (in-tree `.gitattributes`, `core.autocrlf`,
 /// `core.eol`) did not see it, while `git worktree add` still applied it.
@@ -236,6 +259,34 @@ fn a_local_info_attributes_conversion_is_refused_not_certified() {
     )
     .unwrap();
     assert_checkout_refused(&repo, &tree, "eol conversion from .git/info/attributes");
+}
+
+/// A `smudge` driver named only by a **local** attribute file. The driver really
+/// runs (the probe writes a marker) and rewrites the content, which is exactly the
+/// case a size or presence check cannot see.
+#[test]
+fn a_local_smudge_filter_is_refused_not_certified() {
+    let (repo, tree) = prepared_repo("smudge");
+    let exe = std::env::current_exe().expect("test executable");
+    let exe = exe.to_string_lossy();
+    // `current_exe` can be a `\\?\` verbatim path on Windows; Git runs the filter
+    // through its own shell, which wants an ordinary path.
+    let exe = exe.strip_prefix(r"\\?\").unwrap_or(&exe).replace('\\', "/");
+    let marker = repo.path.join("smudge-ran");
+    let marker = marker.to_string_lossy().replace('\\', "/");
+    let command =
+        format!("\"{exe}\" --exact smudge_probe_child --nocapture {SMUDGE_PROBE} \"{marker}\"");
+    git(&repo.path, &["config", "filter.flowevil.smudge", &command]);
+    fs::write(
+        repo.path.join(".git").join("info").join("attributes"),
+        "a.txt filter=flowevil\n",
+    )
+    .unwrap();
+    assert_checkout_refused(&repo, &tree, "smudge filter from .git/info/attributes");
+    assert!(
+        repo.path.join("smudge-ran").exists(),
+        "the fixture is only meaningful if the smudge driver actually ran"
+    );
 }
 
 /// `core.attributesFile` is another local attribute source, and it is inherited
