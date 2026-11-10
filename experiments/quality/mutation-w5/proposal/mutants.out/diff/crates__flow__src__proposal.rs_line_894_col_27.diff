@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in assemble
+@@ -886,17 +886,17 @@
+             Err(e) => {
+                 return Err(format!(
+                     "proposal {} is recorded but its patch is unreadable: {e}",
+                     proposal.proposal_id
+                 ))
+             }
+         };
+         let applied = apply_patch(&git, index.path(), &patch)?;
+-        if applied.status != 0 {
++        if applied.status == /* ~ changed by cargo-mutants ~ */ 0 {
+             let kind = classify_apply_failure(&applied.stderr);
+             return Ok(refusal(
+                 "CONFLICT",
+                 format!(
+                     "{kind}: proposal {} ({} / {}) does not apply on top of the earlier proposals: {}",
+                     proposal.proposal_id,
+                     proposal.agent_id,
+                     proposal.task_id,

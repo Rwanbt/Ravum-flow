@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace == with != in validate_path
+@@ -414,17 +414,17 @@
+     let path = &change.path;
+     if let Err(reason) = paths::validate_relative(path) {
+         return Err(refusal(
+             "FORBIDDEN_PATH",
+             format!("change {path:?} is not a safe repository-relative path: {reason}"),
+         ));
+     }
+     let first = path.split('/').next().unwrap_or("");
+-    if first == ".git" || path == ".git" {
++    if first != /* ~ changed by cargo-mutants ~ */ ".git" || path == ".git" {
+         return Err(refusal(
+             "FORBIDDEN_PATH",
+             format!("change {path:?} writes into .git/: Flow never mutates Git metadata through a proposal"),
+         ));
+     }
+     if first == ".flow" || path == ".flow" {
+         return Err(refusal(
+             "FORBIDDEN_PATH",

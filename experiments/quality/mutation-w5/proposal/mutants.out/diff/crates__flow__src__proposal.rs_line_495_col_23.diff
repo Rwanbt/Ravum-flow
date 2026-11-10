@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in validate_tree
+@@ -487,17 +487,17 @@
+ }
+ 
+ /// Refuse a tree the host cannot represent or Flow cannot verify, whatever route
+ /// produced it.
+ fn validate_tree(git: &Git, tree: &str) -> Result<(), Json> {
+     let listing = git
+         .run_bounded(&["ls-tree", "-r", "-z", tree], None, None)
+         .map_err(|e| refusal("TREE_UNREADABLE", format!("cannot list tree {tree}: {e}")))?;
+-    if listing.status != 0 {
++    if listing.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(refusal(
+             "TREE_UNREADABLE",
+             format!("cannot list tree {tree}: {}", listing.stderr.trim()),
+         ));
+     }
+     let entries = parse_tree_listing(tree, &listing.stdout)?;
+     let mut folded: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+     for path in entries {

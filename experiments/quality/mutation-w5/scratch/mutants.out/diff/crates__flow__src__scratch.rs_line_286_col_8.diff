@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ delete ! in verify_created_dir
+@@ -278,17 +278,17 @@
+     let meta = fs::symlink_metadata(path)
+         .map_err(|e| format!("cannot inspect scratch directory {}: {e}", path.display()))?;
+     if meta.file_type().is_symlink() {
+         return Err(format!(
+             "refusing scratch directory {}: it is a symlink/reparse point",
+             path.display()
+         ));
+     }
+-    if !meta.is_dir() {
++    if  /* ~ changed by cargo-mutants ~ */meta.is_dir() {
+         return Err(format!(
+             "refusing scratch directory {}: it is not a directory",
+             path.display()
+         ));
+     }
+     let resolved = fs::canonicalize(path).map_err(|e| {
+         format!(
+             "cannot canonicalise scratch directory {}: {e}",

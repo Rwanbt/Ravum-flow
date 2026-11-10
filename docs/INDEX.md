@@ -55,5 +55,5 @@ Read in this order; each document states the SHA and OS its numbers were taken o
 - [Adversarial campaign](reviews/FLOW-PRODUCTION-ADVERSARIAL.md) and [its wave-3 replay](reviews/FLOW-PRODUCTION-ADVERSARIAL-WAVE3.md)
 - [Second independent review](reviews/FLOW-PRODUCTION-SECOND-REVIEW.md)
 - [Wave 3 — git fidelity, secrets, crash and artefacts](reviews/FLOW-PRODUCTION-WAVE3.md)
-- [Packaging and artefacts](reviews/FLOW-PACKAGING-WAVE3.md) · [Quality measurements](reviews/FLOW-QUALITY-WAVE3.md) · [Quality wave 4 — coverage gate met, mutation widened](reviews/FLOW-QUALITY-WAVE4.md)
+- [Packaging and artefacts](reviews/FLOW-PACKAGING-WAVE3.md) · [Quality measurements](reviews/FLOW-QUALITY-WAVE3.md) · [Quality wave 4 — coverage gate met, mutation widened](reviews/FLOW-QUALITY-WAVE4.md) · [Quality wave 5 — thresholds raised to 95/90 and enforced in CI](reviews/FLOW-QUALITY-WAVE5.md)
 - [Git-fidelity independent review](reviews/FLOW-P0-GIT-FIDELITY-REVIEW.md)

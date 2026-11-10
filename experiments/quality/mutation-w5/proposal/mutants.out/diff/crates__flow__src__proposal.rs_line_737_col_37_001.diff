@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace + with * in admit
+@@ -729,17 +729,17 @@
+             Json::str("immutable: re-submitting this key with different content is refused; the proposal tree was built in a temporary index and never touched the worktree"),
+         ),
+     ]);
+     fs::create_dir_all(state::proposals_dir(root))
+         .map_err(|e| format!("cannot create proposals dir: {e}"))?;
+     state::write_atomic_bytes(&Proposal::patch_path(root, &proposal_id), &patch)?;
+     state::write_atomic(
+         &Proposal::metadata_path(root, &proposal_id),
+-        &(record.to_string_pretty() + "\n"),
++        &(record.to_string_pretty() * /* ~ changed by cargo-mutants ~ */ "\n"),
+     )?;
+     Ok(record)
+ }
+ 
+ // --------------------------------------------------------------- assembly
+ 
+ /// Apply one stored patch to the temporary index.
+ fn apply_patch(git: &Git, index: &Path, patch: &[u8]) -> Result<crate::gitcli::Output, String> {

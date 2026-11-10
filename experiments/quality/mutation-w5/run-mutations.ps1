@@ -11,6 +11,20 @@
 # `--gitignore true` keeps build/coverage artefacts out of every copy (the
 # repository's `.gitignore` names them all). `--in-place` cannot be combined with
 # `--jobs`.
+#
+# CARGO_TARGET_DIR is removed on purpose. cargo-mutants copies the workspace per
+# mutant and expects a *private* target directory inside that copy; a shared
+# CARGO_TARGET_DIR makes two concurrent mutants link the same `flow-*.exe`, which
+# was observed as LNK1104 build failures and, worse, as a test suite that passed
+# against the wrong build. A contaminated run is not a result: the guard below
+# fails closed instead of reporting one.
+
+if (Test-Path Env:CARGO_TARGET_DIR) {
+    Remove-Item Env:CARGO_TARGET_DIR
+}
+$env:TEMP = if ($env:MUTANTS_TEMP) { $env:MUTANTS_TEMP } else { 'D:\mutants-w5-tmp' }
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force $env:TEMP | Out-Null
 
 $ErrorActionPreference = 'Continue'
 $out = 'experiments\quality\mutation-w5'

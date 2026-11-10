@@ -1,0 +1,49 @@
+--- crates/flow/src/scratch.rs
++++ replace detach_git_link -> Result<(), String> with Ok(())
+@@ -303,45 +303,17 @@
+         ));
+     }
+     Ok(())
+ }
+ 
+ /// Remove the worktree's `.git` link (a file) so ordinary repository discovery
+ /// from inside the scratch directory cannot reach the shared Git directory.
+ fn detach_git_link(dir: &Path) -> Result<(), String> {
+-    let link = dir.join(".git");
+-    let meta = match fs::symlink_metadata(&link) {
+-        Ok(meta) => meta,
+-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+-            return Err(format!(
+-                "refusing scratch directory {}: `git worktree add` did not create a .git link",
+-                dir.display()
+-            ))
+-        }
+-        Err(e) => return Err(format!("cannot inspect {}: {e}", link.display())),
+-    };
+-    if meta.file_type().is_symlink() {
+-        return Err(format!(
+-            "refusing {}: .git is a symlink/reparse point",
+-            link.display()
+-        ));
+-    }
+-    if !meta.is_file() {
+-        return Err(format!(
+-            "refusing {}: .git is not a regular file",
+-            link.display()
+-        ));
+-    }
+-    if fs::remove_file(&link).is_err() {
+-        // Windows refuses to unlink a read-only file; clear the bit, retry once.
+-        make_writable(&link);
+-        fs::remove_file(&link).map_err(|e| format!("cannot remove {}: {e}", link.display()))?;
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn abandon(path: &Path, repo_root: &Path) {
+     remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);
+     prune_worktrees(repo_root);
+ }
+ 
+ /// Best-effort, bounded prune of stale administrative worktree entries. Runs in

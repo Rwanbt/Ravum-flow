@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace Scratch::path -> &Path with Box::leak(Box::new(Default::default()))
+@@ -71,17 +71,17 @@
+     canonical: PathBuf,
+     /// Canonical repository root, used for the best-effort worktree prune.
+     repo_root: PathBuf,
+ }
+ 
+ impl Scratch {
+     /// The directory holding the materialised tree.
+     pub fn path(&self) -> &Path {
+-        &self.path
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn still_owned(&self) -> bool {
+         let Ok(meta) = fs::symlink_metadata(&self.path) else {
+             return false;
+         };
+         if meta.file_type().is_symlink() || !meta.is_dir() {
+             return false;

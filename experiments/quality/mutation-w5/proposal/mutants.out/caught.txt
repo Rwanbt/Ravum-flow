@@ -1,0 +1,102 @@
+crates/flow/src/proposal.rs:38:46: replace * with +
+crates/flow/src/proposal.rs:38:46: replace * with /
+crates/flow/src/proposal.rs:38:39: replace * with +
+crates/flow/src/proposal.rs:38:39: replace * with /
+crates/flow/src/proposal.rs:88:9: replace Proposal::metadata_path -> PathBuf with Default::default()
+crates/flow/src/proposal.rs:92:9: replace Proposal::patch_path -> PathBuf with Default::default()
+crates/flow/src/proposal.rs:96:9: replace Proposal::load -> Result<Option<Proposal>, String> with Ok(None)
+crates/flow/src/proposal.rs:96:12: delete ! in Proposal::load
+crates/flow/src/proposal.rs:112:19: replace != with == in Proposal::load
+crates/flow/src/proposal.rs:102:12: delete ! in Proposal::load
+crates/flow/src/proposal.rs:121:9: replace Proposal::list -> Result<Vec<Proposal>, String> with Ok(vec![])
+crates/flow/src/proposal.rs:211:9: replace Candidate::path -> PathBuf with Default::default()
+crates/flow/src/proposal.rs:215:9: replace Candidate::load -> Result<Option<Candidate>, String> with Ok(None)
+crates/flow/src/proposal.rs:215:12: delete ! in Candidate::load
+crates/flow/src/proposal.rs:221:12: delete ! in Candidate::load
+crates/flow/src/proposal.rs:229:19: replace != with == in Candidate::load
+crates/flow/src/proposal.rs:331:5: replace ident -> Result<String, Json> with Ok(String::new())
+crates/flow/src/proposal.rs:331:5: replace ident -> Result<String, Json> with Ok("xyzzy".into())
+crates/flow/src/proposal.rs:332:44: replace > with == in ident
+crates/flow/src/proposal.rs:332:27: replace || with && in ident
+crates/flow/src/proposal.rs:332:44: replace > with < in ident
+crates/flow/src/proposal.rs:339:9: replace || with && in ident
+crates/flow/src/proposal.rs:339:12: delete ! in ident
+crates/flow/src/proposal.rs:341:48: replace || with && in ident
+crates/flow/src/proposal.rs:353:5: replace parse_raw_diff -> Result<Vec<Change>, String> with Ok(vec![])
+crates/flow/src/proposal.rs:386:5: replace diff_changes -> Result<Vec<Change>, String> with Ok(vec![])
+crates/flow/src/proposal.rs:400:19: replace != with == in diff_changes
+crates/flow/src/proposal.rs:414:5: replace validate_path -> Result<(), Json> with Ok(())
+crates/flow/src/proposal.rs:422:24: replace || with && in validate_path
+crates/flow/src/proposal.rs:422:14: replace == with != in validate_path
+crates/flow/src/proposal.rs:422:32: replace == with != in validate_path
+crates/flow/src/proposal.rs:428:25: replace || with && in validate_path
+crates/flow/src/proposal.rs:428:14: replace == with != in validate_path
+crates/flow/src/proposal.rs:428:33: replace == with != in validate_path
+crates/flow/src/proposal.rs:436:36: replace || with && in validate_path
+crates/flow/src/proposal.rs:436:24: replace == with != in validate_path
+crates/flow/src/proposal.rs:436:55: replace == with != in validate_path
+crates/flow/src/proposal.rs:442:60: replace && with || in validate_path
+crates/flow/src/proposal.rs:442:36: replace && with || in validate_path
+crates/flow/src/proposal.rs:442:24: replace == with != in validate_path
+crates/flow/src/proposal.rs:442:53: replace != with == in validate_path
+crates/flow/src/proposal.rs:442:63: delete ! in validate_path
+crates/flow/src/proposal.rs:449:23: replace != with == in validate_path
+crates/flow/src/proposal.rs:458:29: replace > with == in validate_path
+crates/flow/src/proposal.rs:458:29: replace > with < in validate_path
+crates/flow/src/proposal.rs:482:5: replace symlink_target_escapes -> bool with true
+crates/flow/src/proposal.rs:482:5: replace symlink_target_escapes -> bool with false
+crates/flow/src/proposal.rs:484:9: replace || with && in symlink_target_escapes
+crates/flow/src/proposal.rs:483:9: replace || with && in symlink_target_escapes
+crates/flow/src/proposal.rs:484:31: replace && with || in symlink_target_escapes
+crates/flow/src/proposal.rs:484:26: replace >= with < in symlink_target_escapes
+crates/flow/src/proposal.rs:484:55: replace == with != in symlink_target_escapes
+crates/flow/src/proposal.rs:485:61: replace == with != in symlink_target_escapes
+crates/flow/src/proposal.rs:486:35: replace || with && in symlink_target_escapes
+crates/flow/src/proposal.rs:486:23: replace || with && in symlink_target_escapes
+crates/flow/src/proposal.rs:492:5: replace validate_tree -> Result<(), Json> with Ok(())
+crates/flow/src/proposal.rs:495:23: replace != with == in validate_tree
+crates/flow/src/proposal.rs:504:57: replace += with -= in validate_tree
+crates/flow/src/proposal.rs:504:57: replace += with *= in validate_tree
+crates/flow/src/proposal.rs:506:66: replace > with == in validate_tree
+crates/flow/src/proposal.rs:506:66: replace > with < in validate_tree
+crates/flow/src/proposal.rs:523:5: replace parse_tree_listing -> Result<Vec<String>, Json> with Ok(vec![])
+crates/flow/src/proposal.rs:523:5: replace parse_tree_listing -> Result<Vec<String>, Json> with Ok(vec![String::new()])
+crates/flow/src/proposal.rs:506:66: replace > with >= in validate_tree
+crates/flow/src/proposal.rs:523:5: replace parse_tree_listing -> Result<Vec<String>, Json> with Ok(vec!["xyzzy".into()])
+crates/flow/src/proposal.rs:535:17: replace == with != in parse_tree_listing
+crates/flow/src/proposal.rs:556:5: replace read_patch -> Result<Vec<u8>, Json> with Ok(vec![])
+crates/flow/src/proposal.rs:556:5: replace read_patch -> Result<Vec<u8>, Json> with Ok(vec![0])
+crates/flow/src/proposal.rs:556:5: replace read_patch -> Result<Vec<u8>, Json> with Ok(vec![1])
+crates/flow/src/proposal.rs:562:28: replace > with == in read_patch
+crates/flow/src/proposal.rs:597:8: delete ! in admit
+crates/flow/src/proposal.rs:607:29: replace != with == in admit
+crates/flow/src/proposal.rs:639:36: replace != with == in admit
+crates/flow/src/proposal.rs:660:22: replace != with == in admit
+crates/flow/src/proposal.rs:671:23: replace != with == in admit
+crates/flow/src/proposal.rs:681:23: replace != with == in admit
+crates/flow/src/proposal.rs:754:5: replace classify_apply_failure -> &'static str with ""
+crates/flow/src/proposal.rs:754:5: replace classify_apply_failure -> &'static str with "xyzzy"
+crates/flow/src/proposal.rs:755:40: replace || with && in classify_apply_failure
+crates/flow/src/proposal.rs:757:53: replace || with && in classify_apply_failure
+crates/flow/src/proposal.rs:773:5: replace path_conflicts -> Option<Json> with None
+crates/flow/src/proposal.rs:784:25: replace < with == in path_conflicts
+crates/flow/src/proposal.rs:784:25: replace < with <= in path_conflicts
+crates/flow/src/proposal.rs:791:70: replace == with != in path_conflicts
+crates/flow/src/proposal.rs:784:25: replace < with > in path_conflicts
+crates/flow/src/proposal.rs:792:34: replace != with == in path_conflicts
+crates/flow/src/proposal.rs:793:40: replace == with != in path_conflicts
+crates/flow/src/proposal.rs:794:40: replace == with != in path_conflicts
+crates/flow/src/proposal.rs:809:24: replace > with == in path_conflicts
+crates/flow/src/proposal.rs:809:24: replace > with < in path_conflicts
+crates/flow/src/proposal.rs:809:24: replace > with >= in path_conflicts
+crates/flow/src/proposal.rs:833:12: delete ! in assemble
+crates/flow/src/proposal.rs:856:35: replace != with == in assemble
+crates/flow/src/proposal.rs:859:8: delete ! in assemble
+crates/flow/src/proposal.rs:877:22: replace != with == in assemble
+crates/flow/src/proposal.rs:894:27: replace != with == in assemble
+crates/flow/src/proposal.rs:909:23: replace != with == in assemble
+crates/flow/src/proposal.rs:973:24: replace match guard c.tree_oid == tree_oid && c.proposals == proposal_ids with true in assemble
+crates/flow/src/proposal.rs:973:24: replace match guard c.tree_oid == tree_oid && c.proposals == proposal_ids with false in assemble
+crates/flow/src/proposal.rs:973:47: replace && with || in assemble
+crates/flow/src/proposal.rs:973:35: replace == with != in assemble
+crates/flow/src/proposal.rs:973:62: replace == with != in assemble

@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace || with && in symlink_target_escapes
+@@ -476,17 +476,17 @@
+ 
+ /// True when a proposed symlink's target would leave the tree or resolve
+ /// absolutely. The rules are deliberately syntactic: Flow cannot resolve a host
+ /// path at admission time, and a target that *could* escape later must be refused
+ /// now, where the agent can still correct it.
+ fn symlink_target_escapes(target: &str) -> bool {
+     let absolute = target.starts_with('/')
+         || target.starts_with('\\')
+-        || (target.len() >= 2 && target.as_bytes()[1] == b':');
++        && /* ~ changed by cargo-mutants ~ */ (target.len() >= 2 && target.as_bytes()[1] == b':');
+     let escapes = target.split(['/', '\\']).any(|part| part == "..");
+     target.is_empty() || absolute || escapes
+ }
+ 
+ /// Refuse a tree the host cannot represent or Flow cannot verify, whatever route
+ /// produced it.
+ fn validate_tree(git: &Git, tree: &str) -> Result<(), Json> {
+     let listing = git

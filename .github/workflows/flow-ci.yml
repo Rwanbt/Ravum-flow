@@ -83,15 +83,14 @@ jobs:
             exit 1
           fi
           # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
-          # junction-helper gate) do not run on Linux, and two Unix-only tests do
+          # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
-          # number that would silently shrink. 415 executed tests on 2026-11-10
-          # (wave 5). The Linux count is derived from the platform-gated tests on
-          # each side and could not be measured on this Windows host, so it is
-          # hedged by one: a genuine mass deletion still fails, a counting mistake
-          # does not produce a false red.
-          minimum=412
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=415; fi
+          # number that would silently shrink. 422 executed on Windows after the
+          # wave-5 boundary tests; the Linux count was 412 when Windows was 415
+          # (run 42886979136), so it is expected to be 419 here and is set to that
+          # expectation. A mismatch is a real signal, not a rounding error.
+          minimum=419
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=422; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -202,10 +201,14 @@ jobs:
             init_discloses_an_optional_obligation_as_optional \
             init_adopt_policy_on_an_empty_flow_directory_still_refuses \
             propose_refuses_a_patch_that_changes_nothing \
+            propose_accepts_a_patch_exactly_at_the_admission_bound \
+            propose_accepts_a_symlink_target_exactly_at_the_read_bound \
             assemble_refuses_a_candidate_record_whose_proposal_list_changed \
             commands::tests::cat_file_batch_never_panics_when_the_answer_ends_exactly_between_entries \
             commands::tests::tree_entries_above_the_fidelity_budget_are_refused_not_truncated \
             proposal::tests::two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits \
+            proposal::tests::identities_are_bounded_at_128_characters \
+            proposal::tests::a_temporary_index_is_removed_when_dropped \
             scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions \
             gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then

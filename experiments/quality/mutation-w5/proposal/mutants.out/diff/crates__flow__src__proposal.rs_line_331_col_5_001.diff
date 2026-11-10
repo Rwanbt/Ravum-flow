@@ -1,0 +1,38 @@
+--- crates/flow/src/proposal.rs
++++ replace ident -> Result<String, Json> with Ok("xyzzy".into())
+@@ -323,34 +323,17 @@
+     fn drop(&mut self) {
+         let _ = fs::remove_file(&self.path);
+     }
+ }
+ 
+ // ------------------------------------------------------------- validation
+ 
+ fn ident(value: &str, what: &str) -> Result<String, Json> {
+-    let trimmed = value.trim();
+-    if trimmed.is_empty() || trimmed.len() > 128 {
+-        return Err(refusal(
+-            "INVALID_IDENTITY",
+-            format!("{what} must be 1..=128 characters, got {value:?}"),
+-        ));
+-    }
+-    if trimmed.starts_with('.')
+-        || !trimmed
+-            .chars()
+-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+-    {
+-        return Err(refusal(
+-            "INVALID_IDENTITY",
+-            format!("{what} {value:?} must contain only ASCII letters, digits, '-', '_' or '.' and must not start with '.'"),
+-        ));
+-    }
+-    Ok(trimmed.to_string())
++    Ok("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Parse `git diff-tree -r -z --raw --no-renames` output.
+ fn parse_raw_diff(stdout: &str) -> Result<Vec<Change>, String> {
+     let mut changes = Vec::new();
+     let mut parts = stdout.split('\0');
+     while let Some(meta) = parts.next() {
+         if meta.trim().is_empty() {

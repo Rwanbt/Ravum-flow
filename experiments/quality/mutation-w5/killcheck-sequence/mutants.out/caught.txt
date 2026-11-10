@@ -1,0 +1,2 @@
+crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 0
+crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 1

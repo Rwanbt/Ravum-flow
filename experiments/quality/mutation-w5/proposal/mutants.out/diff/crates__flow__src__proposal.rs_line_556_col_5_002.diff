@@ -1,0 +1,42 @@
+--- crates/flow/src/proposal.rs
++++ replace read_patch -> Result<Vec<u8>, Json> with Ok(vec![1])
+@@ -548,38 +548,17 @@
+     }
+     Ok(paths)
+ }
+ 
+ // -------------------------------------------------------------- admission
+ 
+ /// Read the patch bytes, bounded.
+ fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {
+-    let meta = fs::metadata(path).map_err(|e| {
+-        refusal(
+-            "PATCH_UNREADABLE",
+-            format!("cannot stat patch {}: {e}", path.display()),
+-        )
+-    })?;
+-    if meta.len() as usize > MAX_PATCH_BYTES {
+-        return Err(refusal(
+-            "PATCH_TOO_LARGE",
+-            format!(
+-                "patch {} is {} bytes, above the {MAX_PATCH_BYTES}-byte admission bound",
+-                path.display(),
+-                meta.len()
+-            ),
+-        ));
+-    }
+-    fs::read(path).map_err(|e| {
+-        refusal(
+-            "PATCH_UNREADABLE",
+-            format!("cannot read patch {}: {e}", path.display()),
+-        )
+-    })
++    Ok(vec![1]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn admit(
+     git: &Git,
+     root: &Path,
+     agent: &str,
+     task: &str,
+     base: &str,

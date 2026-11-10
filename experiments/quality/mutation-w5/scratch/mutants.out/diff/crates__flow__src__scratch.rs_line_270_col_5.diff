@@ -1,0 +1,25 @@
+--- crates/flow/src/scratch.rs
++++ replace refusal_message -> String with String::new()
+@@ -262,21 +262,17 @@
+     Ok(resolved)
+ }
+ 
+ fn is_within(root: &Path, candidate: &Path) -> bool {
+     candidate.starts_with(root)
+ }
+ 
+ fn refusal_message(candidate: &Path, repo_root: &Path) -> String {
+-    format!(
+-        "refusing to create a scratch directory inside the repository: {} is inside {}",
+-        candidate.display(),
+-        repo_root.display()
+-    )
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn verify_created_dir(path: &Path, canonical: &Path) -> Result<(), String> {
+     let meta = fs::symlink_metadata(path)
+         .map_err(|e| format!("cannot inspect scratch directory {}: {e}", path.display()))?;
+     if meta.file_type().is_symlink() {
+         return Err(format!(
+             "refusing scratch directory {}: it is a symlink/reparse point",

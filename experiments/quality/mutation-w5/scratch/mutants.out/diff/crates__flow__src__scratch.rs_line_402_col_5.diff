@@ -1,0 +1,41 @@
+--- crates/flow/src/scratch.rs
++++ replace make_writable with ()
+@@ -394,37 +394,17 @@
+         } else {
+             make_writable(&path);
+             let _ = fs::remove_file(&path);
+         }
+     }
+ }
+ 
+ fn make_writable(path: &Path) {
+-    #[cfg(windows)]
+-    {
+-        let Ok(meta) = fs::symlink_metadata(path) else {
+-            return;
+-        };
+-        if meta.file_type().is_symlink() {
+-            return;
+-        }
+-        let mut permissions = meta.permissions();
+-        if permissions.readonly() {
+-            #[allow(clippy::permissions_set_readonly_false)]
+-            permissions.set_readonly(false);
+-            let _ = fs::set_permissions(path, permissions);
+-        }
+-    }
+-    #[cfg(not(windows))]
+-    {
+-        // Unix unlink only needs a writable parent directory; the checkout's
+-        // files are not modified chmod-wise.
+-        let _ = path;
+-    }
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn refuses_non_object_ids() {

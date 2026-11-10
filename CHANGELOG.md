@@ -91,6 +91,25 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `paths`, `lock`) with per-module denominators; the rest of the crate stays `NOT_RUN` and no
   whole-crate rate is claimed (`docs/reviews/FLOW-QUALITY-WAVE4.md`).
 
+### Tests and evidence (wave 5, 2026-11-10 — refactors and tests)
+- The tree/content parsers of `commands.rs` and `proposal.rs`, the symlink-target rule, the
+  cross-proposal conflict diagnosis and PATHEXT resolution are pure functions now, so a hostile Git
+  answer can be fed byte for byte instead of requiring a fake binary. No behaviour changed; the same
+  callers call the same code.
+- Two never-panic fixes found while testing those parsers: a `cat-file --batch` header whose size
+  overflows `usize` (`checked_add`), and a batch that ends exactly between two entries (the slice
+  used to advance past the end and panic instead of refusing). A panic is not a refusal: it skips
+  `Drop` cleanup.
+- Product-only coverage (unit-test code excluded) **raised from 93.04 % lines / 86.17 % branches to
+  95.74 % / 92.81 %** on Windows and **95.66 % / 92.61 %** on the Linux CI job, with 54 new test functions (422 executed on Windows, 419 on Linux, 0 ignored). The candidate thresholds are now
+  **95 % lines / 90 % branches**, enforced by a new `coverage` CI job; no test, gate or security
+  property was removed or weakened, and no waiver is used.
+- The executed-test floor and the named gates were raised with the tests (17 new gates), so a
+  deleted new test fails the build like a deleted old one.
+- Mutation was extended beyond the three wave-4 modules (see `docs/reviews/FLOW-QUALITY-WAVE5.md`
+  §5 for the per-module, scoped numbers); each rate is a lower bound for its module, never a
+  whole-crate score.
+
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
 signature, the local lock does not fence an external `git` writer, `publish` moves refs only,

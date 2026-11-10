@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ delete ! in admit
+@@ -589,17 +589,17 @@
+     let agent = match ident(agent, "agent id") {
+         Ok(v) => v,
+         Err(refusal) => return Ok(refusal),
+     };
+     let task = match ident(task, "task id") {
+         Ok(v) => v,
+         Err(refusal) => return Ok(refusal),
+     };
+-    if !is_object_id(base.trim()) {
++    if  /* ~ changed by cargo-mutants ~ */is_object_id(base.trim()) {
+         return Ok(refusal(
+             "BASE_INVALID",
+             format!("base {base:?} is not a 40- or 64-character hex commit id"),
+         ));
+     }
+     let base = base.trim().to_string();
+     // The base must be a commit that this repository actually holds: a tree OID
+     // or an unknown object would make `read-tree` ambiguous or fail late.

@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace match guard e.kind() == io::ErrorKind::AlreadyExists with true in materialise_in
+@@ -154,17 +154,17 @@
+         if is_within(&repo_root, &canonical) {
+             return Err(refusal_message(&canonical, &repo_root));
+         }
+         match fs::create_dir(&display) {
+             Ok(()) => {
+                 created = Some((display, canonical));
+                 break;
+             }
+-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
++            Err(e) if true /* ~ changed by cargo-mutants ~ */ => continue,
+             Err(e) => {
+                 return Err(format!(
+                     "cannot create scratch directory {}: {e}",
+                     display.display()
+                 ))
+             }
+         }
+     }

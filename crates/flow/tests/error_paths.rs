@@ -1472,3 +1472,56 @@ fn assemble_refuses_a_candidate_record_whose_proposal_list_changed() {
         "the tampered record must be left exactly as it was found"
     );
 }
+
+#[test]
+fn propose_accepts_a_symlink_target_exactly_at_the_read_bound() {
+    let repo = new_repo("symlink-at-bound");
+    let base = head(&repo.path);
+    // `git cat-file blob` returns the target plus the newline the patch line
+    // carries, so a 4095-character body is exactly the 4096-byte read bound: the
+    // check is `>`, not `>=`, and the contract says "1..=MAX".
+    let body = "a".repeat(4095);
+    let patch = write_patch("symlink-at-bound", &new_file_patch("120000", "link", &body));
+    let (code, out) = propose(&repo.path, "agent-a", "T1", &base, &patch, Some("k"));
+    assert_eq!(code, 0, "a target exactly at the bound is admitted: {out}");
+    assert_eq!(status_of(&out), "ADMITTED");
+    assert!(field(&out, "proposal_id").len() == 32, "{out}");
+
+    // One byte more is refused by the same check, with its own reason.
+    let body = "a".repeat(4096);
+    let patch = write_patch(
+        "symlink-over-bound",
+        &new_file_patch("120000", "link", &body),
+    );
+    let (code, out) = propose(&repo.path, "agent-b", "T2", &base, &patch, Some("k2"));
+    assert_eq!(code, 1, "{out}");
+    assert_refused(&out, "SYMLINK_UNREADABLE");
+    assert!(
+        field(&out, "reason").contains("above 4096 bytes"),
+        "{}",
+        field(&out, "reason")
+    );
+}
+
+#[test]
+fn propose_accepts_a_patch_exactly_at_the_admission_bound() {
+    let repo = new_repo("patch-at-bound");
+    let base = head(&repo.path);
+    // The documented bound is "above 32 MiB is refused", so exactly 32 MiB is
+    // read and refused later, as a patch — not as PATCH_TOO_LARGE. Sparse: the
+    // bound is on the declared size, not on 32 MiB of real disk.
+    let large = unique("large-at-bound").with_extension("patch");
+    let file = fs::File::create(&large).unwrap();
+    file.set_len(32 * 1024 * 1024).unwrap();
+    drop(file);
+
+    let (code, out) = propose(&repo.path, "agent-a", "T1", &base, &large, Some("k"));
+    assert_eq!(code, 1, "{out}");
+    assert_ne!(
+        code_of(&out),
+        "PATCH_TOO_LARGE",
+        "exactly at the bound must not be refused by the size check: {out}"
+    );
+    assert_refused(&out, "PATCH_REFUSED");
+    let _ = fs::remove_file(&large);
+}

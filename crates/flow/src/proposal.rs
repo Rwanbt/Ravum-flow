@@ -1210,6 +1210,42 @@ mod tests {
     }
 
     #[test]
+    fn identities_are_bounded_at_128_characters() {
+        // The bound is inclusive: an agent id of exactly 128 characters is valid,
+        // 129 is not. A `>=` there would silently shrink the documented contract.
+        assert!(
+            ident(&"a".repeat(128), "agent id").is_ok(),
+            "128 characters must be accepted"
+        );
+        let refusal = ident(&"a".repeat(129), "agent id").expect_err("129 is above the bound");
+        assert_eq!(code_of(&refusal), "INVALID_IDENTITY");
+        assert_eq!(
+            ident("a", "agent id").unwrap(),
+            "a",
+            "a one-character id is the lower bound"
+        );
+        assert_eq!(
+            ident("", "agent id")
+                .unwrap_err()
+                .get("code")
+                .and_then(Json::as_str),
+            Some("INVALID_IDENTITY")
+        );
+    }
+
+    #[test]
+    fn a_temporary_index_is_removed_when_dropped() {
+        // The index is a real file in the temp directory; `Drop` must not leak it.
+        // It is inert when leaked, which is exactly why nothing else would notice.
+        let index = TempIndex::new();
+        let path = index.path().to_path_buf();
+        fs::write(&path, "").expect("the temp index is writable");
+        assert!(path.exists());
+        drop(index);
+        assert!(!path.exists(), "a dropped temp index must be removed");
+    }
+
+    #[test]
     fn two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits() {
         let one = proposal("one", vec![change("M", "a.txt", "100644", "100644", "aa")]);
         let two = proposal("two", vec![change("M", "a.txt", "100644", "100644", "bb")]);
@@ -1242,6 +1278,28 @@ mod tests {
         let changed_mode = proposal("six", vec![change("M", "a.txt", "100644", "100755", "ee")]);
         assert_eq!(
             code_of(&path_conflicts(&[one, changed_mode]).expect("mode disagreement collides")),
+            "PATH_OPERATION_CONFLICT"
+        );
+
+        // Two deletes of the same path are a collision even though both report
+        // the same (old, new) modes: applying them in order would make the second
+        // patch fail with a generic conflict instead of naming the operation
+        // collision up front.
+        let delete_one = proposal("seven", vec![change("D", "a.txt", "100644", "000000", "")]);
+        let delete_two = proposal("eight", vec![change("D", "a.txt", "100644", "000000", "")]);
+        assert_eq!(
+            code_of(&path_conflicts(&[delete_one, delete_two]).expect("two deletes collide")),
+            "PATH_OPERATION_CONFLICT"
+        );
+
+        // A file that two proposals turn into a symlink: the mode pair is the
+        // same for both, so only the symlink branch of the guard catches it.
+        let symlink_one = proposal("nine", vec![change("M", "a.txt", "100644", "120000", "ff")]);
+        let symlink_two = proposal("ten", vec![change("M", "a.txt", "100644", "120000", "gg")]);
+        assert_eq!(
+            code_of(
+                &path_conflicts(&[symlink_one, symlink_two]).expect("two symlink changes collide")
+            ),
             "PATH_OPERATION_CONFLICT"
         );
     }

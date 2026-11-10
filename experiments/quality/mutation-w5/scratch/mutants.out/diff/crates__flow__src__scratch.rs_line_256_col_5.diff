@@ -1,0 +1,27 @@
+--- crates/flow/src/scratch.rs
++++ replace canonical_dir -> Result<PathBuf, String> with Ok(Default::default())
+@@ -248,23 +248,17 @@
+ /// name a tree. The value still may not begin with `-` (it is hex) and never
+ /// reaches a file name, so the wider length is a convenience, not a widening of
+ /// the identifier-to-path rule used for receipts.
+ fn is_hex_object_id(value: &str) -> bool {
+     (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+ }
+ 
+ fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {
+-    let resolved = path
+-        .canonicalize()
+-        .map_err(|e| format!("cannot canonicalise {what} {}: {e}", path.display()))?;
+-    if !resolved.is_dir() {
+-        return Err(format!("{what} {} is not a directory", resolved.display()));
+-    }
+-    Ok(resolved)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn is_within(root: &Path, candidate: &Path) -> bool {
+     candidate.starts_with(root)
+ }
+ 
+ fn refusal_message(candidate: &Path, repo_root: &Path) -> String {
+     format!(

@@ -1,0 +1,81 @@
+--- crates/flow/src/proposal.rs
++++ replace validate_path -> Result<(), Json> with Ok(())
+@@ -406,77 +406,17 @@
+     parse_raw_diff(&out.stdout)
+ }
+ 
+ /// Paths Flow must never accept from a proposal: they either escape the tree,
+ /// write Flow's own state, or cannot be represented faithfully on a supported
+ /// host. Refusing here keeps the failure at admission time, where the agent can
+ /// still correct its proposal.
+ fn validate_path(git: &Git, change: &Change) -> Result<(), Json> {
+-    let path = &change.path;
+-    if let Err(reason) = paths::validate_relative(path) {
+-        return Err(refusal(
+-            "FORBIDDEN_PATH",
+-            format!("change {path:?} is not a safe repository-relative path: {reason}"),
+-        ));
+-    }
+-    let first = path.split('/').next().unwrap_or("");
+-    if first == ".git" || path == ".git" {
+-        return Err(refusal(
+-            "FORBIDDEN_PATH",
+-            format!("change {path:?} writes into .git/: Flow never mutates Git metadata through a proposal"),
+-        ));
+-    }
+-    if first == ".flow" || path == ".flow" {
+-        return Err(refusal(
+-            "FORBIDDEN_PATH",
+-            format!(
+-                "change {path:?} writes into .flow/: Flow's own state is not a proposal target"
+-            ),
+-        ));
+-    }
+-    if change.new_mode == "160000" || change.old_mode == "160000" {
+-        return Err(refusal(
+-            "GITLINK_UNSUPPORTED",
+-            format!("change {path:?} is a submodule (gitlink): submodule content is not materialised, so it cannot be verified"),
+-        ));
+-    }
+-    if change.new_mode == "120000" && change.status != "D" && !change.new_oid.is_empty() {
+-        // A symlink whose target escapes the tree makes the checkout write
+-        // through it, so the materialised tree is no longer the verified tree.
+-        // Refuse at admission, where the agent can still correct its proposal.
+-        let out = git
+-            .run_bounded(&["cat-file", "blob", &change.new_oid], None, None)
+-            .map_err(|e| refusal("SYMLINK_UNREADABLE", e))?;
+-        if out.status != 0 {
+-            return Err(refusal(
+-                "SYMLINK_UNREADABLE",
+-                format!(
+-                    "cannot read the symlink target of {path:?}: {}",
+-                    out.stderr.trim()
+-                ),
+-            ));
+-        }
+-        if out.stdout.len() > MAX_SYMLINK_TARGET_BYTES {
+-            return Err(refusal(
+-                "SYMLINK_UNREADABLE",
+-                format!("the symlink target of {path:?} is above {MAX_SYMLINK_TARGET_BYTES} bytes"),
+-            ));
+-        }
+-        let target = out.stdout.trim_end_matches(['\n', '\r']);
+-        if symlink_target_escapes(target) {
+-            return Err(refusal(
+-                "SYMLINK_ESCAPE",
+-                format!(
+-                    "change {path:?} is a symlink to {target:?}: an absolute or parent-escaping target is refused"
+-                ),
+-            ));
+-        }
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// True when a proposed symlink's target would leave the tree or resolve
+ /// absolutely. The rules are deliberately syntactic: Flow cannot resolve a host
+ /// path at admission time, and a target that *could* escape later must be refused
+ /// now, where the agent can still correct it.
+ fn symlink_target_escapes(target: &str) -> bool {
+     let absolute = target.starts_with('/')

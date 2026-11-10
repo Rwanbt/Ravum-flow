@@ -1,0 +1,234 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 14.8071114,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 4.3833574,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--test",
+            "isolation"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/scratch.rs:343:5: replace abandon with ()",
+          "package": "flow",
+          "file": "crates/flow/src/scratch.rs",
+          "function": {
+            "function_name": "abandon",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 342,
+                "column": 1
+              },
+              "end": {
+                "line": 345,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 343,
+              "column": 5
+            },
+            "end": {
+              "line": 344,
+              "column": 32
+            }
+          },
+          "replacement": "()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__scratch.rs_line_343_col_5.log",
+      "diff_path": "diff/crates__flow__src__scratch.rs_line_343_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 14.6566715,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 5.6956093,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--test",
+            "isolation"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/scratch.rs:343:46: replace + with - in abandon",
+          "package": "flow",
+          "file": "crates/flow/src/scratch.rs",
+          "function": {
+            "function_name": "abandon",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 342,
+                "column": 1
+              },
+              "end": {
+                "line": 345,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 343,
+              "column": 46
+            },
+            "end": {
+              "line": 343,
+              "column": 47
+            }
+          },
+          "replacement": "-",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__scratch.rs_line_343_col_46.log",
+      "diff_path": "diff/crates__flow__src__scratch.rs_line_343_col_46.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 15.2374922,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 5.4879528,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--test",
+            "isolation"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/scratch.rs:343:46: replace + with * in abandon",
+          "package": "flow",
+          "file": "crates/flow/src/scratch.rs",
+          "function": {
+            "function_name": "abandon",
+            "return_type": "",
+            "span": {
+              "start": {
+                "line": 342,
+                "column": 1
+              },
+              "end": {
+                "line": 345,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 343,
+              "column": 46
+            },
+            "end": {
+              "line": 343,
+              "column": 47
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "Unviable",
+      "log_path": "log/crates__flow__src__scratch.rs_line_343_col_46_001.log",
+      "diff_path": "diff/crates__flow__src__scratch.rs_line_343_col_46_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.1449584,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 3,
+  "missed": 0,
+  "caught": 2,
+  "timeout": 0,
+  "unviable": 1,
+  "success": 0,
+  "start_time": "2026-11-10T20:17:05.9961572Z",
+  "end_time": "2026-11-10T20:17:47.2495922Z",
+  "cargo_mutants_version": "27.1.0"
+}

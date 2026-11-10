@@ -1,0 +1,4 @@
+crates/flow/src/proposal.rs:794:21: replace || with && in path_conflicts
+crates/flow/src/proposal.rs:793:40: replace == with != in path_conflicts
+crates/flow/src/proposal.rs:793:21: replace || with && in path_conflicts
+crates/flow/src/proposal.rs:794:40: replace == with != in path_conflicts

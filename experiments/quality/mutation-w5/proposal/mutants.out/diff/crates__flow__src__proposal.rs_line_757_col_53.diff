@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace || with && in classify_apply_failure
+@@ -749,17 +749,17 @@
+         Some(index),
+     )
+ }
+ 
+ fn classify_apply_failure(stderr: &str) -> &'static str {
+     let text = stderr.to_lowercase();
+     if text.contains("already exists") || text.contains("does not exist") {
+         "PATH_CONFLICT"
+-    } else if text.contains("does not match index") || text.contains("does not apply") {
++    } else if text.contains("does not match index") && /* ~ changed by cargo-mutants ~ */ text.contains("does not apply") {
+         "HUNK_CONFLICT"
+     } else {
+         "APPLY_REFUSED"
+     }
+ }
+ 
+ /// Diagnose incompatible operations on one path across the proposals of one
+ /// candidate, before any patch is applied.

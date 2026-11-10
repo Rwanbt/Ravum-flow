@@ -590,6 +590,41 @@ mod tests {
     }
 
     #[test]
+    fn a_redirect_that_carries_the_marker_is_never_traversed() {
+        // The marker alone does not prove ownership: a redirect to a directory
+        // that happens to carry one must still be refused, or cleanup would
+        // delete another tree through the link.
+        let root = unit_root("redirect-marker");
+        let outside = unit_root("redirect-marker-out");
+        fs::write(outside.join(OWNED_MARKER), "owned\n").unwrap();
+        fs::write(outside.join("keep.txt"), "keep").unwrap();
+        let link = root.join("tree");
+        if let Err(e) = make_dir_link(&outside, &link) {
+            eprintln!("SKIP a redirect that carries the marker: cannot create a link ({e})");
+            remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+            remove_tree_bounded(&outside, Instant::now() + CLEANUP_BUDGET);
+            return;
+        }
+        let scratch = Scratch {
+            path: link.clone(),
+            canonical: fs::canonicalize(&outside).unwrap(),
+            repo_root: root.clone(),
+        };
+        assert!(
+            !scratch.still_owned(),
+            "a redirect is not the directory that was created, even with a marker"
+        );
+        drop(scratch);
+        assert!(
+            outside.join("keep.txt").is_file(),
+            "content behind a redirect must survive cleanup"
+        );
+        let _ = fs::remove_dir(&link);
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+        remove_tree_bounded(&outside, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
     fn verify_created_dir_refuses_a_missing_path_and_a_file() {
         let root = unit_root("verify");
         let missing = root.join("missing");

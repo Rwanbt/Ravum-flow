@@ -1,0 +1,354 @@
+[
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace <impl Drop for TempIndex>::drop with ()\n@@ -316,17 +316,17 @@\n \n     fn path(&self) -> &Path {\n         &self.path\n     }\n }\n \n impl Drop for TempIndex {\n     fn drop(&mut self) {\n-        let _ = fs::remove_file(&self.path);\n+        () /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n // ------------------------------------------------------------- validation\n \n fn ident(value: &str, what: &str) -> Result<String, Json> {\n     let trimmed = value.trim();\n     if trimmed.is_empty() || trimmed.len() > 128 {\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "<impl Drop for TempIndex>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 325
+        },
+        "start": {
+          "column": 5,
+          "line": 323
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/proposal.rs:324:9: replace <impl Drop for TempIndex>::drop with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 324
+      },
+      "start": {
+        "column": 9,
+        "line": 324
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace || with && in ident\n@@ -324,17 +324,17 @@\n         let _ = fs::remove_file(&self.path);\n     }\n }\n \n // ------------------------------------------------------------- validation\n \n fn ident(value: &str, what: &str) -> Result<String, Json> {\n     let trimmed = value.trim();\n-    if trimmed.is_empty() || trimmed.len() > 128 {\n+    if trimmed.is_empty() && /* ~ changed by cargo-mutants ~ */ trimmed.len() > 128 {\n         return Err(refusal(\n             \"INVALID_IDENTITY\",\n             format!(\"{what} must be 1..=128 characters, got {value:?}\"),\n         ));\n     }\n     if trimmed.starts_with('.')\n         || !trimmed\n             .chars()\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "ident",
+      "return_type": "-> Result<String, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 330
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:332:27: replace || with && in ident",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 332
+      },
+      "start": {
+        "column": 27,
+        "line": 332
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with == in ident\n@@ -324,17 +324,17 @@\n         let _ = fs::remove_file(&self.path);\n     }\n }\n \n // ------------------------------------------------------------- validation\n \n fn ident(value: &str, what: &str) -> Result<String, Json> {\n     let trimmed = value.trim();\n-    if trimmed.is_empty() || trimmed.len() > 128 {\n+    if trimmed.is_empty() || trimmed.len() == /* ~ changed by cargo-mutants ~ */ 128 {\n         return Err(refusal(\n             \"INVALID_IDENTITY\",\n             format!(\"{what} must be 1..=128 characters, got {value:?}\"),\n         ));\n     }\n     if trimmed.starts_with('.')\n         || !trimmed\n             .chars()\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "ident",
+      "return_type": "-> Result<String, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 330
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:332:44: replace > with == in ident",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 332
+      },
+      "start": {
+        "column": 44,
+        "line": 332
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with < in ident\n@@ -324,17 +324,17 @@\n         let _ = fs::remove_file(&self.path);\n     }\n }\n \n // ------------------------------------------------------------- validation\n \n fn ident(value: &str, what: &str) -> Result<String, Json> {\n     let trimmed = value.trim();\n-    if trimmed.is_empty() || trimmed.len() > 128 {\n+    if trimmed.is_empty() || trimmed.len() < /* ~ changed by cargo-mutants ~ */ 128 {\n         return Err(refusal(\n             \"INVALID_IDENTITY\",\n             format!(\"{what} must be 1..=128 characters, got {value:?}\"),\n         ));\n     }\n     if trimmed.starts_with('.')\n         || !trimmed\n             .chars()\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "ident",
+      "return_type": "-> Result<String, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 330
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:332:44: replace > with < in ident",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 332
+      },
+      "start": {
+        "column": 44,
+        "line": 332
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with >= in ident\n@@ -324,17 +324,17 @@\n         let _ = fs::remove_file(&self.path);\n     }\n }\n \n // ------------------------------------------------------------- validation\n \n fn ident(value: &str, what: &str) -> Result<String, Json> {\n     let trimmed = value.trim();\n-    if trimmed.is_empty() || trimmed.len() > 128 {\n+    if trimmed.is_empty() || trimmed.len() >= /* ~ changed by cargo-mutants ~ */ 128 {\n         return Err(refusal(\n             \"INVALID_IDENTITY\",\n             format!(\"{what} must be 1..=128 characters, got {value:?}\"),\n         ));\n     }\n     if trimmed.starts_with('.')\n         || !trimmed\n             .chars()\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "ident",
+      "return_type": "-> Result<String, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 330
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:332:44: replace > with >= in ident",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 332
+      },
+      "start": {
+        "column": 44,
+        "line": 332
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with == in validate_path\n@@ -450,17 +450,17 @@\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\n                     \"cannot read the symlink target of {path:?}: {}\",\n                     out.stderr.trim()\n                 ),\n             ));\n         }\n-        if out.stdout.len() > MAX_SYMLINK_TARGET_BYTES {\n+        if out.stdout.len() == /* ~ changed by cargo-mutants ~ */ MAX_SYMLINK_TARGET_BYTES {\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\"the symlink target of {path:?} is above {MAX_SYMLINK_TARGET_BYTES} bytes\"),\n             ));\n         }\n         let target = out.stdout.trim_end_matches(['\\n', '\\r']);\n         if symlink_target_escapes(target) {\n             return Err(refusal(\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "validate_path",
+      "return_type": "-> Result<(), Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 475
+        },
+        "start": {
+          "column": 1,
+          "line": 409
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:458:29: replace > with == in validate_path",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 458
+      },
+      "start": {
+        "column": 29,
+        "line": 458
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with < in validate_path\n@@ -450,17 +450,17 @@\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\n                     \"cannot read the symlink target of {path:?}: {}\",\n                     out.stderr.trim()\n                 ),\n             ));\n         }\n-        if out.stdout.len() > MAX_SYMLINK_TARGET_BYTES {\n+        if out.stdout.len() < /* ~ changed by cargo-mutants ~ */ MAX_SYMLINK_TARGET_BYTES {\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\"the symlink target of {path:?} is above {MAX_SYMLINK_TARGET_BYTES} bytes\"),\n             ));\n         }\n         let target = out.stdout.trim_end_matches(['\\n', '\\r']);\n         if symlink_target_escapes(target) {\n             return Err(refusal(\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "validate_path",
+      "return_type": "-> Result<(), Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 475
+        },
+        "start": {
+          "column": 1,
+          "line": 409
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:458:29: replace > with < in validate_path",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 458
+      },
+      "start": {
+        "column": 29,
+        "line": 458
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with >= in validate_path\n@@ -450,17 +450,17 @@\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\n                     \"cannot read the symlink target of {path:?}: {}\",\n                     out.stderr.trim()\n                 ),\n             ));\n         }\n-        if out.stdout.len() > MAX_SYMLINK_TARGET_BYTES {\n+        if out.stdout.len() >= /* ~ changed by cargo-mutants ~ */ MAX_SYMLINK_TARGET_BYTES {\n             return Err(refusal(\n                 \"SYMLINK_UNREADABLE\",\n                 format!(\"the symlink target of {path:?} is above {MAX_SYMLINK_TARGET_BYTES} bytes\"),\n             ));\n         }\n         let target = out.stdout.trim_end_matches(['\\n', '\\r']);\n         if symlink_target_escapes(target) {\n             return Err(refusal(\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "validate_path",
+      "return_type": "-> Result<(), Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 475
+        },
+        "start": {
+          "column": 1,
+          "line": 409
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:458:29: replace > with >= in validate_path",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 458
+      },
+      "start": {
+        "column": 29,
+        "line": 458
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with == in read_patch\n@@ -554,17 +554,17 @@\n /// Read the patch bytes, bounded.\n fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {\n     let meta = fs::metadata(path).map_err(|e| {\n         refusal(\n             \"PATCH_UNREADABLE\",\n             format!(\"cannot stat patch {}: {e}\", path.display()),\n         )\n     })?;\n-    if meta.len() as usize > MAX_PATCH_BYTES {\n+    if meta.len() as usize == /* ~ changed by cargo-mutants ~ */ MAX_PATCH_BYTES {\n         return Err(refusal(\n             \"PATCH_TOO_LARGE\",\n             format!(\n                 \"patch {} is {} bytes, above the {MAX_PATCH_BYTES}-byte admission bound\",\n                 path.display(),\n                 meta.len()\n             ),\n         ));\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "read_patch",
+      "return_type": "-> Result<Vec<u8>, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 578
+        },
+        "start": {
+          "column": 1,
+          "line": 554
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:562:28: replace > with == in read_patch",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 562
+      },
+      "start": {
+        "column": 28,
+        "line": 562
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with < in read_patch\n@@ -554,17 +554,17 @@\n /// Read the patch bytes, bounded.\n fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {\n     let meta = fs::metadata(path).map_err(|e| {\n         refusal(\n             \"PATCH_UNREADABLE\",\n             format!(\"cannot stat patch {}: {e}\", path.display()),\n         )\n     })?;\n-    if meta.len() as usize > MAX_PATCH_BYTES {\n+    if meta.len() as usize < /* ~ changed by cargo-mutants ~ */ MAX_PATCH_BYTES {\n         return Err(refusal(\n             \"PATCH_TOO_LARGE\",\n             format!(\n                 \"patch {} is {} bytes, above the {MAX_PATCH_BYTES}-byte admission bound\",\n                 path.display(),\n                 meta.len()\n             ),\n         ));\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "read_patch",
+      "return_type": "-> Result<Vec<u8>, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 578
+        },
+        "start": {
+          "column": 1,
+          "line": 554
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:562:28: replace > with < in read_patch",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 562
+      },
+      "start": {
+        "column": 28,
+        "line": 562
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace > with >= in read_patch\n@@ -554,17 +554,17 @@\n /// Read the patch bytes, bounded.\n fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {\n     let meta = fs::metadata(path).map_err(|e| {\n         refusal(\n             \"PATCH_UNREADABLE\",\n             format!(\"cannot stat patch {}: {e}\", path.display()),\n         )\n     })?;\n-    if meta.len() as usize > MAX_PATCH_BYTES {\n+    if meta.len() as usize >= /* ~ changed by cargo-mutants ~ */ MAX_PATCH_BYTES {\n         return Err(refusal(\n             \"PATCH_TOO_LARGE\",\n             format!(\n                 \"patch {} is {} bytes, above the {MAX_PATCH_BYTES}-byte admission bound\",\n                 path.display(),\n                 meta.len()\n             ),\n         ));\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "read_patch",
+      "return_type": "-> Result<Vec<u8>, Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 578
+        },
+        "start": {
+          "column": 1,
+          "line": 554
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:562:28: replace > with >= in read_patch",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 562
+      },
+      "start": {
+        "column": 28,
+        "line": 562
+      }
+    }
+  }
+]

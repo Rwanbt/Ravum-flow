@@ -1,0 +1,48 @@
+--- crates/flow/src/scratch.rs
++++ replace verify_created_dir -> Result<(), String> with Ok(())
+@@ -270,44 +270,17 @@
+     format!(
+         "refusing to create a scratch directory inside the repository: {} is inside {}",
+         candidate.display(),
+         repo_root.display()
+     )
+ }
+ 
+ fn verify_created_dir(path: &Path, canonical: &Path) -> Result<(), String> {
+-    let meta = fs::symlink_metadata(path)
+-        .map_err(|e| format!("cannot inspect scratch directory {}: {e}", path.display()))?;
+-    if meta.file_type().is_symlink() {
+-        return Err(format!(
+-            "refusing scratch directory {}: it is a symlink/reparse point",
+-            path.display()
+-        ));
+-    }
+-    if !meta.is_dir() {
+-        return Err(format!(
+-            "refusing scratch directory {}: it is not a directory",
+-            path.display()
+-        ));
+-    }
+-    let resolved = fs::canonicalize(path).map_err(|e| {
+-        format!(
+-            "cannot canonicalise scratch directory {}: {e}",
+-            path.display()
+-        )
+-    })?;
+-    if resolved != canonical {
+-        return Err(format!(
+-            "refusing scratch directory {}: it resolves to {} (symlink/reparse redirection)",
+-            path.display(),
+-            resolved.display()
+-        ));
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Remove the worktree's `.git` link (a file) so ordinary repository discovery
+ /// from inside the scratch directory cannot reach the shared Git directory.
+ fn detach_git_link(dir: &Path) -> Result<(), String> {
+     let link = dir.join(".git");
+     let meta = match fs::symlink_metadata(&link) {
+         Ok(meta) => meta,

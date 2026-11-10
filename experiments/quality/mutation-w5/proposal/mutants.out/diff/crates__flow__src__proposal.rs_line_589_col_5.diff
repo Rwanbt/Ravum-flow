@@ -1,0 +1,171 @@
+--- crates/flow/src/proposal.rs
++++ replace admit -> Result<Json, String> with Ok(Default::default())
+@@ -581,167 +581,17 @@
+     git: &Git,
+     root: &Path,
+     agent: &str,
+     task: &str,
+     base: &str,
+     patch_file: &Path,
+     key: Option<&str>,
+ ) -> Result<Json, String> {
+-    let agent = match ident(agent, "agent id") {
+-        Ok(v) => v,
+-        Err(refusal) => return Ok(refusal),
+-    };
+-    let task = match ident(task, "task id") {
+-        Ok(v) => v,
+-        Err(refusal) => return Ok(refusal),
+-    };
+-    if !is_object_id(base.trim()) {
+-        return Ok(refusal(
+-            "BASE_INVALID",
+-            format!("base {base:?} is not a 40- or 64-character hex commit id"),
+-        ));
+-    }
+-    let base = base.trim().to_string();
+-    // The base must be a commit that this repository actually holds: a tree OID
+-    // or an unknown object would make `read-tree` ambiguous or fail late.
+-    let base_tree_out = git.run_bounded(&["rev-parse", &format!("{base}^{{tree}}")], None, None)?;
+-    if base_tree_out.status != 0 {
+-        return Ok(refusal(
+-            "BASE_INVALID",
+-            format!(
+-                "base {base} is not a commit reachable in this object store: {}",
+-                base_tree_out.stderr.trim()
+-            ),
+-        ));
+-    }
+-    let base_tree = base_tree_out.stdout.trim().to_string();
+-
+-    let patch = match read_patch(patch_file) {
+-        Ok(bytes) => bytes,
+-        Err(refusal) => return Ok(refusal),
+-    };
+-    let content_digest = sha256_hex(&patch);
+-    let key = match key {
+-        // Without an explicit key, the content is the key: re-submitting the same
+-        // bytes is idempotent, and any edit necessarily produces a new proposal.
+-        None => content_digest.clone(),
+-        Some(k) => match ident(k, "idempotency key") {
+-            Ok(v) => v,
+-            Err(refusal) => return Ok(refusal),
+-        },
+-    };
+-    let proposal_id = {
+-        let material =
+-            format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
+-        sha256_hex(material.as_bytes())[..32].to_string()
+-    };
+-
+-    if let Some(existing) = Proposal::load(root, &proposal_id)? {
+-        if existing.content_digest != content_digest {
+-            return Ok(refusal(
+-                "IDEMPOTENCY_CONFLICT",
+-                format!(
+-                    "proposal {proposal_id} already exists with content {} but this patch is {}: a correction is a new proposal, use a new --key",
+-                    &existing.content_digest[..12],
+-                    &content_digest[..12]
+-                ),
+-            ));
+-        }
+-        let mut out = existing.json.clone();
+-        if let Json::Obj(pairs) = &mut out {
+-            pairs.push(("idempotent".into(), Json::Bool(true)));
+-        }
+-        return Ok(out);
+-    }
+-
+-    // Apply to a temporary index only. `read-tree` seeds it from the base tree;
+-    // `apply --cached` never reads or writes the worktree.
+-    let index = TempIndex::new();
+-    let seeded = git.run_bounded(&["read-tree", &base_tree], None, Some(index.path()))?;
+-    if seeded.status != 0 {
+-        return Err(format!(
+-            "cannot seed a temporary index from {base_tree}: {}",
+-            seeded.stderr.trim()
+-        ));
+-    }
+-    let applied = git.run_bounded(
+-        &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+-        Some(&patch),
+-        Some(index.path()),
+-    )?;
+-    if applied.status != 0 {
+-        return Ok(refusal(
+-            "PATCH_REFUSED",
+-            format!(
+-                "the patch does not apply to base {base} in a temporary index: {}",
+-                applied.stderr.trim()
+-            ),
+-        ));
+-    }
+-    let written = git.run_bounded(&["write-tree"], None, Some(index.path()))?;
+-    if written.status != 0 {
+-        return Err(format!(
+-            "cannot write the proposal tree: {}",
+-            written.stderr.trim()
+-        ));
+-    }
+-    let tree_oid = written.stdout.trim().to_string();
+-    drop(index);
+-
+-    let changes = diff_changes(git, &base_tree, &tree_oid)?;
+-    if changes.is_empty() {
+-        return Ok(refusal(
+-            "EMPTY_PROPOSAL",
+-            "the patch changes nothing against its base: there is no proposal to record",
+-        ));
+-    }
+-    for change in &changes {
+-        if let Err(refusal) = validate_path(git, change) {
+-            return Ok(refusal);
+-        }
+-    }
+-    if let Err(refusal) = validate_tree(git, &tree_oid) {
+-        return Ok(refusal);
+-    }
+-
+-    let record = Json::obj(vec![
+-        ("schema", Json::str(SCHEMA_PROPOSAL)),
+-        ("status", Json::str("ADMITTED")),
+-        ("proposal_id", Json::str(proposal_id.clone())),
+-        ("agent_id", Json::str(agent.clone())),
+-        ("task_id", Json::str(task.clone())),
+-        ("idempotency_key", Json::str(key.clone())),
+-        ("base_commit", Json::str(base.clone())),
+-        ("base_tree", Json::str(base_tree.clone())),
+-        ("tree_oid", Json::str(tree_oid.clone())),
+-        ("content_digest", Json::str(content_digest.clone())),
+-        ("patch_bytes", Json::Num(patch.len() as f64)),
+-        ("created_at", Json::str(state::iso8601_now())),
+-        (
+-            "changes",
+-            Json::Arr(changes.iter().map(Change::to_json).collect()),
+-        ),
+-        (
+-            "patch_path",
+-            Json::str(Proposal::patch_path(root, &proposal_id).to_string_lossy().to_string()),
+-        ),
+-        (
+-            "note",
+-            Json::str("immutable: re-submitting this key with different content is refused; the proposal tree was built in a temporary index and never touched the worktree"),
+-        ),
+-    ]);
+-    fs::create_dir_all(state::proposals_dir(root))
+-        .map_err(|e| format!("cannot create proposals dir: {e}"))?;
+-    state::write_atomic_bytes(&Proposal::patch_path(root, &proposal_id), &patch)?;
+-    state::write_atomic(
+-        &Proposal::metadata_path(root, &proposal_id),
+-        &(record.to_string_pretty() + "\n"),
+-    )?;
+-    Ok(record)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // --------------------------------------------------------------- assembly
+ 
+ /// Apply one stored patch to the temporary index.
+ fn apply_patch(git: &Git, index: &Path, patch: &[u8]) -> Result<crate::gitcli::Output, String> {
+     git.run_bounded(
+         &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],

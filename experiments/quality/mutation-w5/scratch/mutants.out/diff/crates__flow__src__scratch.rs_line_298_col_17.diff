@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace != with == in verify_created_dir
+@@ -290,17 +290,17 @@
+         ));
+     }
+     let resolved = fs::canonicalize(path).map_err(|e| {
+         format!(
+             "cannot canonicalise scratch directory {}: {e}",
+             path.display()
+         )
+     })?;
+-    if resolved != canonical {
++    if resolved == /* ~ changed by cargo-mutants ~ */ canonical {
+         return Err(format!(
+             "refusing scratch directory {}: it resolves to {} (symlink/reparse redirection)",
+             path.display(),
+             resolved.display()
+         ));
+     }
+     Ok(())
+ }

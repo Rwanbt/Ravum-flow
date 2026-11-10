@@ -1,0 +1,28 @@
+--- crates/flow/src/proposal.rs
++++ replace classify_apply_failure -> &'static str with ""
+@@ -746,24 +746,17 @@
+     git.run_bounded(
+         &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+         Some(patch),
+         Some(index),
+     )
+ }
+ 
+ fn classify_apply_failure(stderr: &str) -> &'static str {
+-    let text = stderr.to_lowercase();
+-    if text.contains("already exists") || text.contains("does not exist") {
+-        "PATH_CONFLICT"
+-    } else if text.contains("does not match index") || text.contains("does not apply") {
+-        "HUNK_CONFLICT"
+-    } else {
+-        "APPLY_REFUSED"
+-    }
++    "" /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Diagnose incompatible operations on one path across the proposals of one
+ /// candidate, before any patch is applied.
+ ///
+ /// Rename/delete/mode/symlink collisions are diagnosed, never merged silently:
+ /// applying them in some order would produce a tree nobody agreed on, and a
+ /// symlink or a chmod changes what an obligation executes without changing the

@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace == with != in parse_tree_listing
+@@ -527,17 +527,17 @@
+         }
+         let Some((meta, path)) = entry.split_once('\t') else {
+             return Err(refusal(
+                 "TREE_UNREADABLE",
+                 format!("unparsable ls-tree entry {entry:?}"),
+             ));
+         };
+         let mode = meta.split_whitespace().next().unwrap_or("");
+-        if mode == "160000" {
++        if mode != /* ~ changed by cargo-mutants ~ */ "160000" {
+             return Err(refusal(
+                 "GITLINK_UNSUPPORTED",
+                 format!("tree {tree} contains a gitlink at {path:?}: submodule content is not materialised"),
+             ));
+         }
+         if let Err(reason) = paths::validate_relative(path) {
+             return Err(refusal(
+                 "FORBIDDEN_PATH",

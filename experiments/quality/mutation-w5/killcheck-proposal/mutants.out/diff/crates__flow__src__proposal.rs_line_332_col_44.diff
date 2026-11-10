@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace > with == in ident
+@@ -324,17 +324,17 @@
+         let _ = fs::remove_file(&self.path);
+     }
+ }
+ 
+ // ------------------------------------------------------------- validation
+ 
+ fn ident(value: &str, what: &str) -> Result<String, Json> {
+     let trimmed = value.trim();
+-    if trimmed.is_empty() || trimmed.len() > 128 {
++    if trimmed.is_empty() || trimmed.len() == /* ~ changed by cargo-mutants ~ */ 128 {
+         return Err(refusal(
+             "INVALID_IDENTITY",
+             format!("{what} must be 1..=128 characters, got {value:?}"),
+         ));
+     }
+     if trimmed.starts_with('.')
+         || !trimmed
+             .chars()

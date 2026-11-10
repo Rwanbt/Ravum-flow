@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace >= with < in remove_tree_bounded
+@@ -367,17 +367,17 @@
+ 
+ /// Iterative, bounded removal: no recursion (deep trees cannot overflow the
+ /// stack), no panic, no error when the path is already gone. Symlinks are
+ /// unlinked, never followed.
+ fn remove_tree_bounded(root: &Path, deadline: Instant) {
+     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];
+     let mut processed = 0usize;
+     while let Some((path, children_pushed)) = stack.pop() {
+-        if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {
++        if Instant::now() >= deadline || processed < /* ~ changed by cargo-mutants ~ */ MAX_CLEANUP_ENTRIES {
+             break;
+         }
+         if children_pushed {
+             make_writable(&path);
+             let _ = fs::remove_dir(&path);
+             continue;
+         }
+         processed += 1;

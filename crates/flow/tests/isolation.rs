@@ -676,3 +676,33 @@ fn git_ignores_hijacked_repository_environment() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+#[test]
+fn scratch_reports_a_commit_it_cannot_materialise() {
+    let repo = new_repo("scratch-bad-commit");
+    let git = Git::new(&repo.path);
+    let base = std::env::temp_dir().join(format!(
+        "flow-scratch-badbase-{}-{}",
+        std::process::id(),
+        next_id()
+    ));
+    fs::create_dir_all(&base).expect("scratch base");
+    // A well-formed object id that the repository does not hold: `git worktree
+    // add` fails, and the refusal must name that failure instead of continuing
+    // into a checkout that was never created.
+    let err = scratch::materialise_in(&base, &git, "abcd", &repo.path)
+        .expect_err("a commit that does not exist cannot be materialised");
+    assert!(err.contains("cannot materialise commit abcd"), "{err}");
+    // The directory was created before Git refused; the failure path must remove
+    // it. A leak here would accumulate one directory per refused run.
+    let leftovers: Vec<String> = fs::read_dir(&base)
+        .expect("the scratch base is readable")
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().to_string())
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "a refused materialisation must not leave its directory behind: {leftovers:?}"
+    );
+    let _ = remove_tree(&base);
+}

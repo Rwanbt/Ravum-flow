@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in admit
+@@ -673,17 +673,17 @@
+             "PATCH_REFUSED",
+             format!(
+                 "the patch does not apply to base {base} in a temporary index: {}",
+                 applied.stderr.trim()
+             ),
+         ));
+     }
+     let written = git.run_bounded(&["write-tree"], None, Some(index.path()))?;
+-    if written.status != 0 {
++    if written.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot write the proposal tree: {}",
+             written.stderr.trim()
+         ));
+     }
+     let tree_oid = written.stdout.trim().to_string();
+     drop(index);
+ 

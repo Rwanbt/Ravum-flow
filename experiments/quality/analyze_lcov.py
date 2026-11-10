@@ -199,19 +199,28 @@ def apply_waivers(rows, waivers):
     return applied, stale, excluded_lines, excluded_branches
 
 
-def print_table(rows):
+def print_table(rows, product_only):
     for row in rows:
         name = row["name"].split("src")[-1].lstrip("\\/")
         marker = "" if row["cutoff"] is None else f"  (test block from line {row['cutoff']} excluded)"
         uncovered = row_uncovered_branch_lines(row)
+        functions = ""
+        if not product_only:
+            # Only meaningful on the raw view: lcov `FN` records are per
+            # instantiation, so a generic function appears once per monomorphised
+            # copy and the product-only denominator would report a function count
+            # that no llvm-cov report agrees with.
+            functions = (
+                f"  functions {rate(row['fn_hit'], row['fn_total']):6.2f}%"
+                f" ({row['fn_hit']}/{row['fn_total']})"
+            )
         print(
             f"{name:<16}"
             f" lines {rate(row['line_hit'], row['line_total']):6.2f}%"
             f" ({row['line_hit']}/{row['line_total']})"
             f"  branches {rate(row['branch_hit'], row['branch_total']):6.2f}%"
             f" ({row['branch_hit']}/{row['branch_total']})"
-            f"  functions {rate(row['fn_hit'], row['fn_total']):6.2f}%"
-            f" ({row['fn_hit']}/{row['fn_total']})"
+            f"{functions}"
             f"  uncovered-branch-lines {len(uncovered)}"
             f"{marker}"
         )
@@ -263,6 +272,15 @@ def main():
     parser.add_argument("--waivers", default=None)
     args = parser.parse_args()
 
+    if args.fail_under_functions is not None and args.product_only:
+        print(
+            "::error::--fail-under-functions cannot be combined with --product-only:"
+            " lcov counts one function per instantiation, so the product-only view has"
+            " no function denominator that matches `cargo llvm-cov report`",
+            file=sys.stderr,
+        )
+        return 1
+
     files = parse_lcov(args.lcov)
     rows = product_rows(files, args.repo, args.product_only)
     gate = (
@@ -288,7 +306,7 @@ def main():
             )
         return 0
 
-    print_table(rows)
+    print_table(rows, args.product_only)
     line_hit = sum(r["line_hit"] for r in rows)
     line_total = sum(r["line_total"] for r in rows)
     branch_hit = sum(r["branch_hit"] for r in rows)
@@ -312,10 +330,15 @@ def main():
         fn_total -= 0
 
     label = "PRODUCT-ONLY TOTAL" if args.product_only else "TOTAL"
+    functions = ""
+    if not args.product_only:
+        functions = (
+            f"  functions {rate(fn_hit, fn_total):.2f}% ({fn_hit}/{fn_total})"
+        )
     print(
         f"\n{label} lines {rate(line_hit, line_total):.2f}% ({line_hit}/{line_total})"
         f"  branches {rate(branch_hit, branch_total):.2f}% ({branch_hit}/{branch_total})"
-        f"  functions {rate(fn_hit, fn_total):.2f}% ({fn_hit}/{fn_total})"
+        f"{functions}"
     )
     if args.waivers:
         print(

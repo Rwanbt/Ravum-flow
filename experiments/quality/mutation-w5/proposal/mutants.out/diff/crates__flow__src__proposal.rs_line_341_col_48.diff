@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace || with && in ident
+@@ -333,17 +333,17 @@
+         return Err(refusal(
+             "INVALID_IDENTITY",
+             format!("{what} must be 1..=128 characters, got {value:?}"),
+         ));
+     }
+     if trimmed.starts_with('.')
+         || !trimmed
+             .chars()
+-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
++            .all(|c| c.is_ascii_alphanumeric() && /* ~ changed by cargo-mutants ~ */ matches!(c, '-' | '_' | '.'))
+     {
+         return Err(refusal(
+             "INVALID_IDENTITY",
+             format!("{what} {value:?} must contain only ASCII letters, digits, '-', '_' or '.' and must not start with '.'"),
+         ));
+     }
+     Ok(trimmed.to_string())
+ }

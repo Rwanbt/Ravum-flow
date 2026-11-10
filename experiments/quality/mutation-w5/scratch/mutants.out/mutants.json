@@ -1,0 +1,1730 @@
+[
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace Scratch::path -> &Path with Box::leak(Box::new(Default::default()))\n@@ -71,17 +71,17 @@\n     canonical: PathBuf,\n     /// Canonical repository root, used for the best-effort worktree prune.\n     repo_root: PathBuf,\n }\n \n impl Scratch {\n     /// The directory holding the materialised tree.\n     pub fn path(&self) -> &Path {\n-        &self.path\n+        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */\n     }\n \n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::path",
+      "return_type": "-> &Path",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 80
+        },
+        "start": {
+          "column": 5,
+          "line": 77
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:79:9: replace Scratch::path -> &Path with Box::leak(Box::new(Default::default()))",
+    "package": "flow",
+    "replacement": "Box::leak(Box::new(Default::default()))",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 79
+      },
+      "start": {
+        "column": 9,
+        "line": 79
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace Scratch::still_owned -> bool with true\n@@ -75,29 +75,17 @@\n \n impl Scratch {\n     /// The directory holding the materialised tree.\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n-        let Ok(meta) = fs::symlink_metadata(&self.path) else {\n-            return false;\n-        };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n-            return false;\n-        }\n-        match fs::canonicalize(&self.path) {\n-            Ok(resolved) if resolved == self.canonical => {}\n-            _ => return false,\n-        }\n-        fs::symlink_metadata(self.path.join(OWNED_MARKER))\n-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n-            .unwrap_or(false)\n+        true /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n     /// value created; the administrative worktree entry is pruned with a\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:83:9: replace Scratch::still_owned -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 95
+      },
+      "start": {
+        "column": 9,
+        "line": 83
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace Scratch::still_owned -> bool with false\n@@ -75,29 +75,17 @@\n \n impl Scratch {\n     /// The directory holding the materialised tree.\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n-        let Ok(meta) = fs::symlink_metadata(&self.path) else {\n-            return false;\n-        };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n-            return false;\n-        }\n-        match fs::canonicalize(&self.path) {\n-            Ok(resolved) if resolved == self.canonical => {}\n-            _ => return false,\n-        }\n-        fs::symlink_metadata(self.path.join(OWNED_MARKER))\n-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n-            .unwrap_or(false)\n+        false /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n     /// value created; the administrative worktree entry is pruned with a\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:83:9: replace Scratch::still_owned -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 95
+      },
+      "start": {
+        "column": 9,
+        "line": 83
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace || with && in Scratch::still_owned\n@@ -78,17 +78,17 @@\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n+        if meta.file_type().is_symlink() && /* ~ changed by cargo-mutants ~ */ !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:86:42: replace || with && in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 86
+      },
+      "start": {
+        "column": 42,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in Scratch::still_owned\n@@ -78,17 +78,17 @@\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n+        if meta.file_type().is_symlink() ||  /* ~ changed by cargo-mutants ~ */meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:86:45: delete ! in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 86
+      },
+      "start": {
+        "column": 45,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard resolved == self.canonical with true in Scratch::still_owned\n@@ -82,17 +82,17 @@\n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n-            Ok(resolved) if resolved == self.canonical => {}\n+            Ok(resolved) if true /* ~ changed by cargo-mutants ~ */ => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n             .unwrap_or(false)\n     }\n }\n \n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:90:29: replace match guard resolved == self.canonical with true in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 90
+      },
+      "start": {
+        "column": 29,
+        "line": 90
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard resolved == self.canonical with false in Scratch::still_owned\n@@ -82,17 +82,17 @@\n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n-            Ok(resolved) if resolved == self.canonical => {}\n+            Ok(resolved) if false /* ~ changed by cargo-mutants ~ */ => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n             .unwrap_or(false)\n     }\n }\n \n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:90:29: replace match guard resolved == self.canonical with false in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 90
+      },
+      "start": {
+        "column": 29,
+        "line": 90
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace == with != in Scratch::still_owned\n@@ -82,17 +82,17 @@\n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n-            Ok(resolved) if resolved == self.canonical => {}\n+            Ok(resolved) if resolved != /* ~ changed by cargo-mutants ~ */ self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n             .unwrap_or(false)\n     }\n }\n \n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:90:38: replace == with != in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 90
+      },
+      "start": {
+        "column": 38,
+        "line": 90
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace && with || in Scratch::still_owned\n@@ -86,17 +86,17 @@\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n+            .map(|meta| meta.is_file() || /* ~ changed by cargo-mutants ~ */ !meta.file_type().is_symlink())\n             .unwrap_or(false)\n     }\n }\n \n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:94:40: replace && with || in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 94
+      },
+      "start": {
+        "column": 40,
+        "line": 94
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in Scratch::still_owned\n@@ -86,17 +86,17 @@\n         if meta.file_type().is_symlink() || !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n+            .map(|meta| meta.is_file() &&  /* ~ changed by cargo-mutants ~ */meta.file_type().is_symlink())\n             .unwrap_or(false)\n     }\n }\n \n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:94:43: delete ! in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 94
+      },
+      "start": {
+        "column": 43,
+        "line": 94
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace <impl Drop for Scratch>::drop with ()\n@@ -98,20 +98,17 @@\n \n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n     /// value created; the administrative worktree entry is pruned with a\n     /// bounded `git worktree prune`.\n     fn drop(&mut self) {\n-        if self.still_owned() {\n-            remove_tree_bounded(&self.path, Instant::now() + CLEANUP_BUDGET);\n-        }\n-        prune_worktrees(&self.repo_root);\n+        () /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Materialise `commit`'s tree in a NEW unique directory outside the repository.\n ///\n /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves\n /// inside `repo_root`. The returned [`Scratch`] owns the directory and removes\n /// it on drop; see the module documentation for the limits of what removing\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "<impl Drop for Scratch>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 110
+        },
+        "start": {
+          "column": 5,
+          "line": 100
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:106:9: replace <impl Drop for Scratch>::drop with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 109
+      },
+      "start": {
+        "column": 9,
+        "line": 106
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with - in <impl Drop for Scratch>::drop\n@@ -99,17 +99,17 @@\n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n     /// value created; the administrative worktree entry is pruned with a\n     /// bounded `git worktree prune`.\n     fn drop(&mut self) {\n         if self.still_owned() {\n-            remove_tree_bounded(&self.path, Instant::now() + CLEANUP_BUDGET);\n+            remove_tree_bounded(&self.path, Instant::now() - /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n         }\n         prune_worktrees(&self.repo_root);\n     }\n }\n \n /// Materialise `commit`'s tree in a NEW unique directory outside the repository.\n ///\n /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "<impl Drop for Scratch>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 110
+        },
+        "start": {
+          "column": 5,
+          "line": 100
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:107:60: replace + with - in <impl Drop for Scratch>::drop",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 107
+      },
+      "start": {
+        "column": 60,
+        "line": 107
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with * in <impl Drop for Scratch>::drop\n@@ -99,17 +99,17 @@\n impl Drop for Scratch {\n     /// Bounded, idempotent, non-panicking cleanup.\n     ///\n     /// The directory is removed only while it is provably still the one this\n     /// value created; the administrative worktree entry is pruned with a\n     /// bounded `git worktree prune`.\n     fn drop(&mut self) {\n         if self.still_owned() {\n-            remove_tree_bounded(&self.path, Instant::now() + CLEANUP_BUDGET);\n+            remove_tree_bounded(&self.path, Instant::now() * /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n         }\n         prune_worktrees(&self.repo_root);\n     }\n }\n \n /// Materialise `commit`'s tree in a NEW unique directory outside the repository.\n ///\n /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "<impl Drop for Scratch>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 110
+        },
+        "start": {
+          "column": 5,
+          "line": 100
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:107:60: replace + with * in <impl Drop for Scratch>::drop",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 107
+      },
+      "start": {
+        "column": 60,
+        "line": 107
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace materialise -> Result<Scratch, String> with Ok(Default::default())\n@@ -112,17 +112,17 @@\n \n /// Materialise `commit`'s tree in a NEW unique directory outside the repository.\n ///\n /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves\n /// inside `repo_root`. The returned [`Scratch`] owns the directory and removes\n /// it on drop; see the module documentation for the limits of what removing\n /// `.git` achieves.\n pub fn materialise(git: &Git, commit: &str, repo_root: &Path) -> Result<Scratch, String> {\n-    materialise_in(&std::env::temp_dir(), git, commit, repo_root)\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Implementation with an injectable base directory, so the boundary and\n /// collision paths are testable without changing the process environment.\n pub(crate) fn materialise_in(\n     base: &Path,\n     git: &Git,\n     commit: &str,\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 121
+        },
+        "start": {
+          "column": 1,
+          "line": 113
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:120:5: replace materialise -> Result<Scratch, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 120
+      },
+      "start": {
+        "column": 5,
+        "line": 120
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace materialise_in -> Result<Scratch, String> with Ok(Default::default())\n@@ -126,113 +126,17 @@\n     base: &Path,\n     git: &Git,\n     commit: &str,\n     repo_root: &Path,\n ) -> Result<Scratch, String> {\n     // An object id, not an option and not a path: `git worktree add` must never\n     // see a value beginning with `-`, and commands.rs only ever passes the\n     // hexadecimal OID returned by `commit-tree`.\n-    if !is_hex_object_id(commit) {\n-        return Err(format!(\n-            \"refusing to materialise {commit:?}: expected a hexadecimal object id\"\n-        ));\n-    }\n-\n-    let repo_root = canonical_dir(repo_root, \"repository root\")?;\n-    let base_display = base.to_path_buf();\n-    let base_canonical = canonical_dir(&base_display, \"scratch base\")?;\n-    if is_within(&repo_root, &base_canonical) {\n-        return Err(refusal_message(&base_canonical, &repo_root));\n-    }\n-\n-    // `create_dir` is the uniqueness primitive: it fails atomically if the name\n-    // already exists, and a pre-existing path is never adopted or removed.\n-    let mut created: Option<(PathBuf, PathBuf)> = None;\n-    for _ in 0..MAX_ATTEMPTS {\n-        let seq = next_sequence();\n-        let display = candidate_path(&base_display, seq);\n-        let canonical = candidate_path(&base_canonical, seq);\n-        if is_within(&repo_root, &canonical) {\n-            return Err(refusal_message(&canonical, &repo_root));\n-        }\n-        match fs::create_dir(&display) {\n-            Ok(()) => {\n-                created = Some((display, canonical));\n-                break;\n-            }\n-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,\n-            Err(e) => {\n-                return Err(format!(\n-                    \"cannot create scratch directory {}: {e}\",\n-                    display.display()\n-                ))\n-            }\n-        }\n-    }\n-    let Some((path, canonical)) = created else {\n-        return Err(format!(\n-            \"cannot create a unique scratch directory under {} after {MAX_ATTEMPTS} attempts\",\n-            base_canonical.display()\n-        ));\n-    };\n-\n-    // A path we just created must be a real directory at the identity we\n-    // recorded; anything else (redirect, race) is a refusal, not a cleanup.\n-    if let Err(reason) = verify_created_dir(&path, &canonical) {\n-        let _ = fs::remove_dir(&path);\n-        return Err(reason);\n-    }\n-\n-    let Some(path_str) = path.to_str() else {\n-        abandon(&path, &repo_root);\n-        return Err(format!(\n-            \"refusing scratch directory {}: path is not valid UTF-8\",\n-            path.display()\n-        ));\n-    };\n-\n-    match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n-        Ok(add) => {\n-            abandon(&path, &repo_root);\n-            return Err(format!(\n-                \"cannot materialise commit {commit} in {}: {}\",\n-                path.display(),\n-                add.stderr.trim()\n-            ));\n-        }\n-        Err(e) => {\n-            abandon(&path, &repo_root);\n-            return Err(e);\n-        }\n-    }\n-\n-    if let Err(reason) = detach_git_link(&path) {\n-        abandon(&path, &repo_root);\n-        return Err(reason);\n-    }\n-\n-    let marker = format!(\n-        \"{NAME_PREFIX}\\ncommit {commit}\\npid {}\\n\",\n-        std::process::id()\n-    );\n-    if let Err(e) = fs::write(path.join(OWNED_MARKER), marker) {\n-        abandon(&path, &repo_root);\n-        return Err(format!(\n-            \"cannot mark scratch directory {} as owned: {e}\",\n-            path.display()\n-        ));\n-    }\n-\n-    Ok(Scratch {\n-        path,\n-        canonical,\n-        repo_root,\n-    })\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n     COUNTER.fetch_add(1, Ordering::Relaxed)\n }\n \n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:134:5: replace materialise_in -> Result<Scratch, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 230
+      },
+      "start": {
+        "column": 5,
+        "line": 134
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in materialise_in\n@@ -126,17 +126,17 @@\n     base: &Path,\n     git: &Git,\n     commit: &str,\n     repo_root: &Path,\n ) -> Result<Scratch, String> {\n     // An object id, not an option and not a path: `git worktree add` must never\n     // see a value beginning with `-`, and commands.rs only ever passes the\n     // hexadecimal OID returned by `commit-tree`.\n-    if !is_hex_object_id(commit) {\n+    if  /* ~ changed by cargo-mutants ~ */is_hex_object_id(commit) {\n         return Err(format!(\n             \"refusing to materialise {commit:?}: expected a hexadecimal object id\"\n         ));\n     }\n \n     let repo_root = canonical_dir(repo_root, \"repository root\")?;\n     let base_display = base.to_path_buf();\n     let base_canonical = canonical_dir(&base_display, \"scratch base\")?;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:134:8: delete ! in materialise_in",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 134
+      },
+      "start": {
+        "column": 8,
+        "line": 134
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard e.kind() == io::ErrorKind::AlreadyExists with true in materialise_in\n@@ -154,17 +154,17 @@\n         if is_within(&repo_root, &canonical) {\n             return Err(refusal_message(&canonical, &repo_root));\n         }\n         match fs::create_dir(&display) {\n             Ok(()) => {\n                 created = Some((display, canonical));\n                 break;\n             }\n-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,\n+            Err(e) if true /* ~ changed by cargo-mutants ~ */ => continue,\n             Err(e) => {\n                 return Err(format!(\n                     \"cannot create scratch directory {}: {e}\",\n                     display.display()\n                 ))\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:162:23: replace match guard e.kind() == io::ErrorKind::AlreadyExists with true in materialise_in",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 63,
+        "line": 162
+      },
+      "start": {
+        "column": 23,
+        "line": 162
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard e.kind() == io::ErrorKind::AlreadyExists with false in materialise_in\n@@ -154,17 +154,17 @@\n         if is_within(&repo_root, &canonical) {\n             return Err(refusal_message(&canonical, &repo_root));\n         }\n         match fs::create_dir(&display) {\n             Ok(()) => {\n                 created = Some((display, canonical));\n                 break;\n             }\n-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,\n+            Err(e) if false /* ~ changed by cargo-mutants ~ */ => continue,\n             Err(e) => {\n                 return Err(format!(\n                     \"cannot create scratch directory {}: {e}\",\n                     display.display()\n                 ))\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:162:23: replace match guard e.kind() == io::ErrorKind::AlreadyExists with false in materialise_in",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 63,
+        "line": 162
+      },
+      "start": {
+        "column": 23,
+        "line": 162
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace == with != in materialise_in\n@@ -154,17 +154,17 @@\n         if is_within(&repo_root, &canonical) {\n             return Err(refusal_message(&canonical, &repo_root));\n         }\n         match fs::create_dir(&display) {\n             Ok(()) => {\n                 created = Some((display, canonical));\n                 break;\n             }\n-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,\n+            Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ io::ErrorKind::AlreadyExists => continue,\n             Err(e) => {\n                 return Err(format!(\n                     \"cannot create scratch directory {}: {e}\",\n                     display.display()\n                 ))\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:162:32: replace == with != in materialise_in",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 162
+      },
+      "start": {
+        "column": 32,
+        "line": 162
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard add.status == 0 with true in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if true /* ~ changed by cargo-mutants ~ */ => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with true in materialise_in",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 194
+      },
+      "start": {
+        "column": 20,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard add.status == 0 with false in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if false /* ~ changed by cargo-mutants ~ */ => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with false in materialise_in",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 194
+      },
+      "start": {
+        "column": 20,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace == with != in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if add.status != /* ~ changed by cargo-mutants ~ */ 0 => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:194:31: replace == with != in materialise_in",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 194
+      },
+      "start": {
+        "column": 31,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace next_sequence -> u64 with 0\n@@ -228,17 +228,17 @@\n         canonical,\n         repo_root,\n     })\n }\n \n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n-    COUNTER.fetch_add(1, Ordering::Relaxed)\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The path of the `seq`-th candidate under `base` (before collision retries).\n pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {\n     base.join(format!(\"{NAME_PREFIX}-{}-{seq}\", std::process::id()))\n }\n \n /// True for a hexadecimal object id as `git worktree add` will accept it.\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "next_sequence",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 237
+        },
+        "start": {
+          "column": 1,
+          "line": 233
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 236
+      },
+      "start": {
+        "column": 5,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace next_sequence -> u64 with 1\n@@ -228,17 +228,17 @@\n         canonical,\n         repo_root,\n     })\n }\n \n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n-    COUNTER.fetch_add(1, Ordering::Relaxed)\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The path of the `seq`-th candidate under `base` (before collision retries).\n pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {\n     base.join(format!(\"{NAME_PREFIX}-{}-{seq}\", std::process::id()))\n }\n \n /// True for a hexadecimal object id as `git worktree add` will accept it.\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "next_sequence",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 237
+        },
+        "start": {
+          "column": 1,
+          "line": 233
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 236
+      },
+      "start": {
+        "column": 5,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace candidate_path -> PathBuf with Default::default()\n@@ -233,17 +233,17 @@\n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n     COUNTER.fetch_add(1, Ordering::Relaxed)\n }\n \n /// The path of the `seq`-th candidate under `base` (before collision retries).\n pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {\n-    base.join(format!(\"{NAME_PREFIX}-{}-{seq}\", std::process::id()))\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// True for a hexadecimal object id as `git worktree add` will accept it.\n ///\n /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an\n /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to\n /// name a tree. The value still may not begin with `-` (it is hex) and never\n /// reaches a file name, so the wider length is a convenience, not a widening of\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "candidate_path",
+      "return_type": "-> PathBuf",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 242
+        },
+        "start": {
+          "column": 1,
+          "line": 239
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:241:5: replace candidate_path -> PathBuf with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 69,
+        "line": 241
+      },
+      "start": {
+        "column": 5,
+        "line": 241
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace is_hex_object_id -> bool with true\n@@ -244,17 +244,17 @@\n /// True for a hexadecimal object id as `git worktree add` will accept it.\n ///\n /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an\n /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to\n /// name a tree. The value still may not begin with `-` (it is hex) and never\n /// reaches a file name, so the wider length is a convenience, not a widening of\n /// the identifier-to-path rule used for receipts.\n fn is_hex_object_id(value: &str) -> bool {\n-    (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {\n     let resolved = path\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n     if !resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "is_hex_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 253
+        },
+        "start": {
+          "column": 1,
+          "line": 244
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:252:5: replace is_hex_object_id -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 90,
+        "line": 252
+      },
+      "start": {
+        "column": 5,
+        "line": 252
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace is_hex_object_id -> bool with false\n@@ -244,17 +244,17 @@\n /// True for a hexadecimal object id as `git worktree add` will accept it.\n ///\n /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an\n /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to\n /// name a tree. The value still may not begin with `-` (it is hex) and never\n /// reaches a file name, so the wider length is a convenience, not a widening of\n /// the identifier-to-path rule used for receipts.\n fn is_hex_object_id(value: &str) -> bool {\n-    (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {\n     let resolved = path\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n     if !resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "is_hex_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 253
+        },
+        "start": {
+          "column": 1,
+          "line": 244
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:252:5: replace is_hex_object_id -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 90,
+        "line": 252
+      },
+      "start": {
+        "column": 5,
+        "line": 252
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace && with || in is_hex_object_id\n@@ -244,17 +244,17 @@\n /// True for a hexadecimal object id as `git worktree add` will accept it.\n ///\n /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an\n /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to\n /// name a tree. The value still may not begin with `-` (it is hex) and never\n /// reaches a file name, so the wider length is a convenience, not a widening of\n /// the identifier-to-path rule used for receipts.\n fn is_hex_object_id(value: &str) -> bool {\n-    (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())\n+    (4..=64).contains(&value.len()) || /* ~ changed by cargo-mutants ~ */ value.bytes().all(|byte| byte.is_ascii_hexdigit())\n }\n \n fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {\n     let resolved = path\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n     if !resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "is_hex_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 253
+        },
+        "start": {
+          "column": 1,
+          "line": 244
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:252:37: replace && with || in is_hex_object_id",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 252
+      },
+      "start": {
+        "column": 37,
+        "line": 252
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace canonical_dir -> Result<PathBuf, String> with Ok(Default::default())\n@@ -248,23 +248,17 @@\n /// name a tree. The value still may not begin with `-` (it is hex) and never\n /// reaches a file name, so the wider length is a convenience, not a widening of\n /// the identifier-to-path rule used for receipts.\n fn is_hex_object_id(value: &str) -> bool {\n     (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())\n }\n \n fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {\n-    let resolved = path\n-        .canonicalize()\n-        .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n-    if !resolved.is_dir() {\n-        return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n-    }\n-    Ok(resolved)\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n     candidate.starts_with(root)\n }\n \n fn refusal_message(candidate: &Path, repo_root: &Path) -> String {\n     format!(\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "canonical_dir",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 263
+        },
+        "start": {
+          "column": 1,
+          "line": 255
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:256:5: replace canonical_dir -> Result<PathBuf, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 262
+      },
+      "start": {
+        "column": 5,
+        "line": 256
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in canonical_dir\n@@ -251,17 +251,17 @@\n fn is_hex_object_id(value: &str) -> bool {\n     (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())\n }\n \n fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {\n     let resolved = path\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n-    if !resolved.is_dir() {\n+    if  /* ~ changed by cargo-mutants ~ */resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n     }\n     Ok(resolved)\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n     candidate.starts_with(root)\n }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "canonical_dir",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 263
+        },
+        "start": {
+          "column": 1,
+          "line": 255
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:259:8: delete ! in canonical_dir",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 259
+      },
+      "start": {
+        "column": 8,
+        "line": 259
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace is_within -> bool with true\n@@ -258,17 +258,17 @@\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n     if !resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n     }\n     Ok(resolved)\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n-    candidate.starts_with(root)\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn refusal_message(candidate: &Path, repo_root: &Path) -> String {\n     format!(\n         \"refusing to create a scratch directory inside the repository: {} is inside {}\",\n         candidate.display(),\n         repo_root.display()\n     )\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "is_within",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 267
+        },
+        "start": {
+          "column": 1,
+          "line": 265
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:266:5: replace is_within -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 266
+      },
+      "start": {
+        "column": 5,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace is_within -> bool with false\n@@ -258,17 +258,17 @@\n         .map_err(|e| format!(\"cannot canonicalise {what} {}: {e}\", path.display()))?;\n     if !resolved.is_dir() {\n         return Err(format!(\"{what} {} is not a directory\", resolved.display()));\n     }\n     Ok(resolved)\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n-    candidate.starts_with(root)\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn refusal_message(candidate: &Path, repo_root: &Path) -> String {\n     format!(\n         \"refusing to create a scratch directory inside the repository: {} is inside {}\",\n         candidate.display(),\n         repo_root.display()\n     )\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "is_within",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 267
+        },
+        "start": {
+          "column": 1,
+          "line": 265
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:266:5: replace is_within -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 266
+      },
+      "start": {
+        "column": 5,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace refusal_message -> String with String::new()\n@@ -262,21 +262,17 @@\n     Ok(resolved)\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n     candidate.starts_with(root)\n }\n \n fn refusal_message(candidate: &Path, repo_root: &Path) -> String {\n-    format!(\n-        \"refusing to create a scratch directory inside the repository: {} is inside {}\",\n-        candidate.display(),\n-        repo_root.display()\n-    )\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn verify_created_dir(path: &Path, canonical: &Path) -> Result<(), String> {\n     let meta = fs::symlink_metadata(path)\n         .map_err(|e| format!(\"cannot inspect scratch directory {}: {e}\", path.display()))?;\n     if meta.file_type().is_symlink() {\n         return Err(format!(\n             \"refusing scratch directory {}: it is a symlink/reparse point\",\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "refusal_message",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 275
+        },
+        "start": {
+          "column": 1,
+          "line": 269
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:270:5: replace refusal_message -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 274
+      },
+      "start": {
+        "column": 5,
+        "line": 270
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace refusal_message -> String with \"xyzzy\".into()\n@@ -262,21 +262,17 @@\n     Ok(resolved)\n }\n \n fn is_within(root: &Path, candidate: &Path) -> bool {\n     candidate.starts_with(root)\n }\n \n fn refusal_message(candidate: &Path, repo_root: &Path) -> String {\n-    format!(\n-        \"refusing to create a scratch directory inside the repository: {} is inside {}\",\n-        candidate.display(),\n-        repo_root.display()\n-    )\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn verify_created_dir(path: &Path, canonical: &Path) -> Result<(), String> {\n     let meta = fs::symlink_metadata(path)\n         .map_err(|e| format!(\"cannot inspect scratch directory {}: {e}\", path.display()))?;\n     if meta.file_type().is_symlink() {\n         return Err(format!(\n             \"refusing scratch directory {}: it is a symlink/reparse point\",\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "refusal_message",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 275
+        },
+        "start": {
+          "column": 1,
+          "line": 269
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:270:5: replace refusal_message -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 274
+      },
+      "start": {
+        "column": 5,
+        "line": 270
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace verify_created_dir -> Result<(), String> with Ok(())\n@@ -270,44 +270,17 @@\n     format!(\n         \"refusing to create a scratch directory inside the repository: {} is inside {}\",\n         candidate.display(),\n         repo_root.display()\n     )\n }\n \n fn verify_created_dir(path: &Path, canonical: &Path) -> Result<(), String> {\n-    let meta = fs::symlink_metadata(path)\n-        .map_err(|e| format!(\"cannot inspect scratch directory {}: {e}\", path.display()))?;\n-    if meta.file_type().is_symlink() {\n-        return Err(format!(\n-            \"refusing scratch directory {}: it is a symlink/reparse point\",\n-            path.display()\n-        ));\n-    }\n-    if !meta.is_dir() {\n-        return Err(format!(\n-            \"refusing scratch directory {}: it is not a directory\",\n-            path.display()\n-        ));\n-    }\n-    let resolved = fs::canonicalize(path).map_err(|e| {\n-        format!(\n-            \"cannot canonicalise scratch directory {}: {e}\",\n-            path.display()\n-        )\n-    })?;\n-    if resolved != canonical {\n-        return Err(format!(\n-            \"refusing scratch directory {}: it resolves to {} (symlink/reparse redirection)\",\n-            path.display(),\n-            resolved.display()\n-        ));\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Remove the worktree's `.git` link (a file) so ordinary repository discovery\n /// from inside the scratch directory cannot reach the shared Git directory.\n fn detach_git_link(dir: &Path) -> Result<(), String> {\n     let link = dir.join(\".git\");\n     let meta = match fs::symlink_metadata(&link) {\n         Ok(meta) => meta,\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "verify_created_dir",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 306
+        },
+        "start": {
+          "column": 1,
+          "line": 277
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:278:5: replace verify_created_dir -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 305
+      },
+      "start": {
+        "column": 5,
+        "line": 278
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in verify_created_dir\n@@ -278,17 +278,17 @@\n     let meta = fs::symlink_metadata(path)\n         .map_err(|e| format!(\"cannot inspect scratch directory {}: {e}\", path.display()))?;\n     if meta.file_type().is_symlink() {\n         return Err(format!(\n             \"refusing scratch directory {}: it is a symlink/reparse point\",\n             path.display()\n         ));\n     }\n-    if !meta.is_dir() {\n+    if  /* ~ changed by cargo-mutants ~ */meta.is_dir() {\n         return Err(format!(\n             \"refusing scratch directory {}: it is not a directory\",\n             path.display()\n         ));\n     }\n     let resolved = fs::canonicalize(path).map_err(|e| {\n         format!(\n             \"cannot canonicalise scratch directory {}: {e}\",\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "verify_created_dir",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 306
+        },
+        "start": {
+          "column": 1,
+          "line": 277
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:286:8: delete ! in verify_created_dir",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 286
+      },
+      "start": {
+        "column": 8,
+        "line": 286
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace != with == in verify_created_dir\n@@ -290,17 +290,17 @@\n         ));\n     }\n     let resolved = fs::canonicalize(path).map_err(|e| {\n         format!(\n             \"cannot canonicalise scratch directory {}: {e}\",\n             path.display()\n         )\n     })?;\n-    if resolved != canonical {\n+    if resolved == /* ~ changed by cargo-mutants ~ */ canonical {\n         return Err(format!(\n             \"refusing scratch directory {}: it resolves to {} (symlink/reparse redirection)\",\n             path.display(),\n             resolved.display()\n         ));\n     }\n     Ok(())\n }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "verify_created_dir",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 306
+        },
+        "start": {
+          "column": 1,
+          "line": 277
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:298:17: replace != with == in verify_created_dir",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 298
+      },
+      "start": {
+        "column": 17,
+        "line": 298
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace detach_git_link -> Result<(), String> with Ok(())\n@@ -303,45 +303,17 @@\n         ));\n     }\n     Ok(())\n }\n \n /// Remove the worktree's `.git` link (a file) so ordinary repository discovery\n /// from inside the scratch directory cannot reach the shared Git directory.\n fn detach_git_link(dir: &Path) -> Result<(), String> {\n-    let link = dir.join(\".git\");\n-    let meta = match fs::symlink_metadata(&link) {\n-        Ok(meta) => meta,\n-        Err(e) if e.kind() == io::ErrorKind::NotFound => {\n-            return Err(format!(\n-                \"refusing scratch directory {}: `git worktree add` did not create a .git link\",\n-                dir.display()\n-            ))\n-        }\n-        Err(e) => return Err(format!(\"cannot inspect {}: {e}\", link.display())),\n-    };\n-    if meta.file_type().is_symlink() {\n-        return Err(format!(\n-            \"refusing {}: .git is a symlink/reparse point\",\n-            link.display()\n-        ));\n-    }\n-    if !meta.is_file() {\n-        return Err(format!(\n-            \"refusing {}: .git is not a regular file\",\n-            link.display()\n-        ));\n-    }\n-    if fs::remove_file(&link).is_err() {\n-        // Windows refuses to unlink a read-only file; clear the bit, retry once.\n-        make_writable(&link);\n-        fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n     remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "detach_git_link",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 340
+        },
+        "start": {
+          "column": 1,
+          "line": 308
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:311:5: replace detach_git_link -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 339
+      },
+      "start": {
+        "column": 5,
+        "line": 311
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard e.kind() == io::ErrorKind::NotFound with true in detach_git_link\n@@ -306,17 +306,17 @@\n }\n \n /// Remove the worktree's `.git` link (a file) so ordinary repository discovery\n /// from inside the scratch directory cannot reach the shared Git directory.\n fn detach_git_link(dir: &Path) -> Result<(), String> {\n     let link = dir.join(\".git\");\n     let meta = match fs::symlink_metadata(&link) {\n         Ok(meta) => meta,\n-        Err(e) if e.kind() == io::ErrorKind::NotFound => {\n+        Err(e) if true /* ~ changed by cargo-mutants ~ */ => {\n             return Err(format!(\n                 \"refusing scratch directory {}: `git worktree add` did not create a .git link\",\n                 dir.display()\n             ))\n         }\n         Err(e) => return Err(format!(\"cannot inspect {}: {e}\", link.display())),\n     };\n     if meta.file_type().is_symlink() {\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "detach_git_link",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 340
+        },
+        "start": {
+          "column": 1,
+          "line": 308
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:314:19: replace match guard e.kind() == io::ErrorKind::NotFound with true in detach_git_link",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 314
+      },
+      "start": {
+        "column": 19,
+        "line": 314
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard e.kind() == io::ErrorKind::NotFound with false in detach_git_link\n@@ -306,17 +306,17 @@\n }\n \n /// Remove the worktree's `.git` link (a file) so ordinary repository discovery\n /// from inside the scratch directory cannot reach the shared Git directory.\n fn detach_git_link(dir: &Path) -> Result<(), String> {\n     let link = dir.join(\".git\");\n     let meta = match fs::symlink_metadata(&link) {\n         Ok(meta) => meta,\n-        Err(e) if e.kind() == io::ErrorKind::NotFound => {\n+        Err(e) if false /* ~ changed by cargo-mutants ~ */ => {\n             return Err(format!(\n                 \"refusing scratch directory {}: `git worktree add` did not create a .git link\",\n                 dir.display()\n             ))\n         }\n         Err(e) => return Err(format!(\"cannot inspect {}: {e}\", link.display())),\n     };\n     if meta.file_type().is_symlink() {\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "detach_git_link",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 340
+        },
+        "start": {
+          "column": 1,
+          "line": 308
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:314:19: replace match guard e.kind() == io::ErrorKind::NotFound with false in detach_git_link",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 314
+      },
+      "start": {
+        "column": 19,
+        "line": 314
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace == with != in detach_git_link\n@@ -306,17 +306,17 @@\n }\n \n /// Remove the worktree's `.git` link (a file) so ordinary repository discovery\n /// from inside the scratch directory cannot reach the shared Git directory.\n fn detach_git_link(dir: &Path) -> Result<(), String> {\n     let link = dir.join(\".git\");\n     let meta = match fs::symlink_metadata(&link) {\n         Ok(meta) => meta,\n-        Err(e) if e.kind() == io::ErrorKind::NotFound => {\n+        Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ io::ErrorKind::NotFound => {\n             return Err(format!(\n                 \"refusing scratch directory {}: `git worktree add` did not create a .git link\",\n                 dir.display()\n             ))\n         }\n         Err(e) => return Err(format!(\"cannot inspect {}: {e}\", link.display())),\n     };\n     if meta.file_type().is_symlink() {\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "detach_git_link",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 340
+        },
+        "start": {
+          "column": 1,
+          "line": 308
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:314:28: replace == with != in detach_git_link",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 314
+      },
+      "start": {
+        "column": 28,
+        "line": 314
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in detach_git_link\n@@ -320,17 +320,17 @@\n         Err(e) => return Err(format!(\"cannot inspect {}: {e}\", link.display())),\n     };\n     if meta.file_type().is_symlink() {\n         return Err(format!(\n             \"refusing {}: .git is a symlink/reparse point\",\n             link.display()\n         ));\n     }\n-    if !meta.is_file() {\n+    if  /* ~ changed by cargo-mutants ~ */meta.is_file() {\n         return Err(format!(\n             \"refusing {}: .git is not a regular file\",\n             link.display()\n         ));\n     }\n     if fs::remove_file(&link).is_err() {\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "detach_git_link",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 340
+        },
+        "start": {
+          "column": 1,
+          "line": 308
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:328:8: delete ! in detach_git_link",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 328
+      },
+      "start": {
+        "column": 8,
+        "line": 328
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace abandon with ()\n@@ -335,18 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n-    prune_worktrees(repo_root);\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n     }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:343:5: replace abandon with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 344
+      },
+      "start": {
+        "column": 5,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with - in abandon\n@@ -335,17 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n+    remove_tree_bounded(path, Instant::now() - /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:343:46: replace + with - in abandon",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 343
+      },
+      "start": {
+        "column": 46,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with * in abandon\n@@ -335,17 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n+    remove_tree_bounded(path, Instant::now() * /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:343:46: replace + with * in abandon",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 343
+      },
+      "start": {
+        "column": 46,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace prune_worktrees with ()\n@@ -342,32 +342,17 @@\n fn abandon(path: &Path, repo_root: &Path) {\n     remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n-    if !repo_root.is_dir() {\n-        return;\n-    }\n-    let obligation = Obligation {\n-        id: \"scratch-prune\".to_string(),\n-        program: \"git\".to_string(),\n-        args: vec![\n-            \"worktree\".to_string(),\n-            \"prune\".to_string(),\n-            \"--expire\".to_string(),\n-            \"now\".to_string(),\n-        ],\n-        required: false,\n-        timeout_s: PRUNE_TIMEOUT_S,\n-    };\n-    let _ = gitcli::run_obligation(&obligation, repo_root);\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Iterative, bounded removal: no recursion (deep trees cannot overflow the\n /// stack), no panic, no error when the path is already gone. Symlinks are\n /// unlinked, never followed.\n fn remove_tree_bounded(root: &Path, deadline: Instant) {\n     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];\n     let mut processed = 0usize;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "prune_worktrees",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 347
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:350:5: replace prune_worktrees with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 365
+      },
+      "start": {
+        "column": 5,
+        "line": 350
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in prune_worktrees\n@@ -342,17 +342,17 @@\n fn abandon(path: &Path, repo_root: &Path) {\n     remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n-    if !repo_root.is_dir() {\n+    if  /* ~ changed by cargo-mutants ~ */repo_root.is_dir() {\n         return;\n     }\n     let obligation = Obligation {\n         id: \"scratch-prune\".to_string(),\n         program: \"git\".to_string(),\n         args: vec![\n             \"worktree\".to_string(),\n             \"prune\".to_string(),\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "prune_worktrees",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 347
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:350:8: delete ! in prune_worktrees",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 350
+      },
+      "start": {
+        "column": 8,
+        "line": 350
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace remove_tree_bounded with ()\n@@ -364,43 +364,17 @@\n     };\n     let _ = gitcli::run_obligation(&obligation, repo_root);\n }\n \n /// Iterative, bounded removal: no recursion (deep trees cannot overflow the\n /// stack), no panic, no error when the path is already gone. Symlinks are\n /// unlinked, never followed.\n fn remove_tree_bounded(root: &Path, deadline: Instant) {\n-    let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];\n-    let mut processed = 0usize;\n-    while let Some((path, children_pushed)) = stack.pop() {\n-        if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n-            break;\n-        }\n-        if children_pushed {\n-            make_writable(&path);\n-            let _ = fs::remove_dir(&path);\n-            continue;\n-        }\n-        processed += 1;\n-        let Ok(meta) = fs::symlink_metadata(&path) else {\n-            continue;\n-        };\n-        if meta.is_dir() {\n-            stack.push((path.clone(), true));\n-            if let Ok(entries) = fs::read_dir(&path) {\n-                for entry in entries.flatten() {\n-                    stack.push((entry.path(), false));\n-                }\n-            }\n-        } else {\n-            make_writable(&path);\n-            let _ = fs::remove_file(&path);\n-        }\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n fn make_writable(path: &Path) {\n     #[cfg(windows)]\n     {\n         let Ok(meta) = fs::symlink_metadata(path) else {\n             return;\n         };\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:372:5: replace remove_tree_bounded with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 398
+      },
+      "start": {
+        "column": 5,
+        "line": 372
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace || with && in remove_tree_bounded\n@@ -367,17 +367,17 @@\n \n /// Iterative, bounded removal: no recursion (deep trees cannot overflow the\n /// stack), no panic, no error when the path is already gone. Symlinks are\n /// unlinked, never followed.\n fn remove_tree_bounded(root: &Path, deadline: Instant) {\n     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];\n     let mut processed = 0usize;\n     while let Some((path, children_pushed)) = stack.pop() {\n-        if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n+        if Instant::now() >= deadline && /* ~ changed by cargo-mutants ~ */ processed >= MAX_CLEANUP_ENTRIES {\n             break;\n         }\n         if children_pushed {\n             make_writable(&path);\n             let _ = fs::remove_dir(&path);\n             continue;\n         }\n         processed += 1;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:375:39: replace || with && in remove_tree_bounded",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 375
+      },
+      "start": {
+        "column": 39,
+        "line": 375
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace >= with < in remove_tree_bounded\n@@ -367,17 +367,17 @@\n \n /// Iterative, bounded removal: no recursion (deep trees cannot overflow the\n /// stack), no panic, no error when the path is already gone. Symlinks are\n /// unlinked, never followed.\n fn remove_tree_bounded(root: &Path, deadline: Instant) {\n     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];\n     let mut processed = 0usize;\n     while let Some((path, children_pushed)) = stack.pop() {\n-        if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n+        if Instant::now() < /* ~ changed by cargo-mutants ~ */ deadline || processed >= MAX_CLEANUP_ENTRIES {\n             break;\n         }\n         if children_pushed {\n             make_writable(&path);\n             let _ = fs::remove_dir(&path);\n             continue;\n         }\n         processed += 1;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:375:27: replace >= with < in remove_tree_bounded",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 375
+      },
+      "start": {
+        "column": 27,
+        "line": 375
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace >= with < in remove_tree_bounded\n@@ -367,17 +367,17 @@\n \n /// Iterative, bounded removal: no recursion (deep trees cannot overflow the\n /// stack), no panic, no error when the path is already gone. Symlinks are\n /// unlinked, never followed.\n fn remove_tree_bounded(root: &Path, deadline: Instant) {\n     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];\n     let mut processed = 0usize;\n     while let Some((path, children_pushed)) = stack.pop() {\n-        if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n+        if Instant::now() >= deadline || processed < /* ~ changed by cargo-mutants ~ */ MAX_CLEANUP_ENTRIES {\n             break;\n         }\n         if children_pushed {\n             make_writable(&path);\n             let _ = fs::remove_dir(&path);\n             continue;\n         }\n         processed += 1;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:375:52: replace >= with < in remove_tree_bounded",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 375
+      },
+      "start": {
+        "column": 52,
+        "line": 375
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace += with -= in remove_tree_bounded\n@@ -375,17 +375,17 @@\n         if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n             break;\n         }\n         if children_pushed {\n             make_writable(&path);\n             let _ = fs::remove_dir(&path);\n             continue;\n         }\n-        processed += 1;\n+        processed -= /* ~ changed by cargo-mutants ~ */ 1;\n         let Ok(meta) = fs::symlink_metadata(&path) else {\n             continue;\n         };\n         if meta.is_dir() {\n             stack.push((path.clone(), true));\n             if let Ok(entries) = fs::read_dir(&path) {\n                 for entry in entries.flatten() {\n                     stack.push((entry.path(), false));\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:383:19: replace += with -= in remove_tree_bounded",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 383
+      },
+      "start": {
+        "column": 19,
+        "line": 383
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace += with *= in remove_tree_bounded\n@@ -375,17 +375,17 @@\n         if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {\n             break;\n         }\n         if children_pushed {\n             make_writable(&path);\n             let _ = fs::remove_dir(&path);\n             continue;\n         }\n-        processed += 1;\n+        processed *= /* ~ changed by cargo-mutants ~ */ 1;\n         let Ok(meta) = fs::symlink_metadata(&path) else {\n             continue;\n         };\n         if meta.is_dir() {\n             stack.push((path.clone(), true));\n             if let Ok(entries) = fs::read_dir(&path) {\n                 for entry in entries.flatten() {\n                     stack.push((entry.path(), false));\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "remove_tree_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 399
+        },
+        "start": {
+          "column": 1,
+          "line": 368
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:383:19: replace += with *= in remove_tree_bounded",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 383
+      },
+      "start": {
+        "column": 19,
+        "line": 383
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace make_writable with ()\n@@ -394,37 +394,17 @@\n         } else {\n             make_writable(&path);\n             let _ = fs::remove_file(&path);\n         }\n     }\n }\n \n fn make_writable(path: &Path) {\n-    #[cfg(windows)]\n-    {\n-        let Ok(meta) = fs::symlink_metadata(path) else {\n-            return;\n-        };\n-        if meta.file_type().is_symlink() {\n-            return;\n-        }\n-        let mut permissions = meta.permissions();\n-        if permissions.readonly() {\n-            #[allow(clippy::permissions_set_readonly_false)]\n-            permissions.set_readonly(false);\n-            let _ = fs::set_permissions(path, permissions);\n-        }\n-    }\n-    #[cfg(not(windows))]\n-    {\n-        // Unix unlink only needs a writable parent directory; the checkout's\n-        // files are not modified chmod-wise.\n-        let _ = path;\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn refuses_non_object_ids() {\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "make_writable",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 423
+        },
+        "start": {
+          "column": 1,
+          "line": 401
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:402:5: replace make_writable with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 422
+      },
+      "start": {
+        "column": 5,
+        "line": 402
+      }
+    }
+  }
+]
