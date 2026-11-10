@@ -26,7 +26,7 @@ that injects the interruption.
 | I8 | The published commit carries exactly the verified tree | a commit with another tree published under a valid receipt | `commit-tree` + `rev-parse ^{tree}` before CAS | `m1` asserts `ref^{tree} == candidate tree` | `RECEIPT_COMMIT_MISMATCH` path | n/a | PASSED |
 | I9 | An interrupted publication is observed, never replayed | double publication after a crash | fsynced intent → CAS → outcome; `reconcile` observes | `crash_after_ref_is_observed_as_published` | `crash_after_intent_is_not_published_and_reconciles`, `crash_before_intent_leaves_no_pending_intent`, `p0c_one_outcome_cannot_close_two_intents`, `p0c_duplicate_intent_id_requires_a_human` | all three crash points + torn journal | PASSED |
 | I10 | A corrupt or unreadable journal is never "reconciled" | torn line read as empty | typed `JournalError`, propagated, `manual_required` | `crash_after_intent_…` | `p0c_corrupt_journal_is_not_reported_as_reconciled`, `p0c_status_refuses_to_guess_on_a_corrupt_journal` | torn/duplicated journal | PASSED |
-| I11 | Two Flow writers never both publish the same old OID | race between publishers | `flow-lock/2`, atomic creation, live-owner-safe | `two_concurrent_publishes_publish_at_most_once`, `eight_concurrent_publishes_publish_at_most_once` | `a_live_old_lock_is_never_stolen`, `an_unparseable_lock_is_refused_and_preserved`, `a_dead_owners_lock_is_recovered` | 8-process contention | PASSED (does not fence an external `git`) |
+| I11 | Two Flow writers never both publish the same old OID | race between publishers | `flow-lock/2`, atomic creation, live-owner-safe (an unprovable liveness answer is `LOCK_UNKNOWN`, never a steal — EPERM included) | `two_concurrent_publishes_publish_at_most_once`, `eight_concurrent_publishes_publish_at_most_once` | `a_live_old_lock_is_never_stolen`, `an_unparseable_lock_is_refused_and_preserved`, `a_dead_owners_lock_is_recovered` | 8-process contention | PASSED (does not fence an external `git`) |
 
 ## 3. Filesystem and workspace boundary
 
@@ -54,7 +54,7 @@ that injects the interruption.
 | I21 | Git and obligations are bounded in memory and wall clock | a repository or obligation that floods stdout | `run_bounded` (64 MiB, 300 s), obligation cap 1 MiB + drain | `obligation_stdout_is_bounded_through_the_cli` | `read_capped_at_retains_at_most_the_cap_and_flags_truncation`, 65 MiB Git stdout refused | PASSED |
 | I22 | A hostile environment cannot redirect Git | `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_CONFIG_*` | environment scrub + one explicit absolute index | `hijacked_git_environment_does_not_redirect_the_cli` | idem (control run) | PASSED |
 | I23 | A test hook does not exist in a released binary | shipping `FLOW_TEST_CRASH` | `crash_point()` compiled out of release | CI: "the release binary ignores the test crash hook" | local release proof (§G7) | PASSED (CI + local) |
-| I24 | Usage errors never mutate | unknown or valueless option silently ignored | `validate_flags`, exit 2 | `unknown_and_valueless_options_are_usage_errors` | idem | PASSED |
+| I24 | Usage errors never mutate | unknown, valueless **or value-carrying** option silently ignored | `validate_flags`, exit 2 | `unknown_and_valueless_options_are_usage_errors`, `a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation`, `a_timeout_that_cannot_be_applied_is_a_usage_error` | idem | PASSED (the `--dry-run=true` hole found by the second review is closed and pinned) |
 
 ## 6. What this matrix does **not** prove
 

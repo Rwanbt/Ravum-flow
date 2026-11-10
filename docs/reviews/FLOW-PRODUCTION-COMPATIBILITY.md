@@ -43,8 +43,8 @@ identifiers, so `0.1.x` is not silently reinterpreted as `0.2.x`:
 
 | OS | Status | Evidence |
 |---|---|---|
-| Windows 11 x86_64 (MSVC, rustc 1.95) | **supported, local + CI** | 142 tests, polyglot demo, RC install smoke |
-| Ubuntu (GitHub `ubuntu-latest`) | **supported, CI only** | CI runs the same 142 tests and the polyglot demo |
+| Windows 11 x86_64 (MSVC, rustc 1.95.0) | **supported, local + CI** | 163 tests, polyglot demo, RC install smoke (local and CI) |
+| Ubuntu (GitHub `ubuntu-latest`, rustc 1.95.0) | **supported, CI only** | 162 tests (the PATH/PATHEXT shim test is Windows-only), polyglot demo, install smoke |
 | macOS | `NOT_TESTED_MACOS` | no runner, no claim |
 
 Language fixtures: Rust (`cargo fmt/clippy/test`, offline), Node JavaScript (`node --test`), Python

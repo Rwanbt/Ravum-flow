@@ -36,7 +36,8 @@ CI at `ea181d4`: runs `42698150980` (pull_request) and `42698141703` (push), bot
 | P0 hardening report | 83 | `3b51052` | 21 unit + 37 CLI + 25 isolation |
 | MVP 0.1 verification report | 132 | `ea181d4` | 24 unit + 21 bounds + 41 CLI + 8 concurrency + 25 isolation + 13 proposals |
 | this branch, G0→G4 | 142 | `f237d57` | 24 unit + 21 bounds + 47 CLI + 8 concurrency + 25 isolation + 17 proposals |
-| this branch, after the fuzz/property evidence | **148** | `HEAD` (see the gate report) | 25 + 22 + 49 + 9 + 25 + 18 (the `json` unit tests are also collected by the `cli` and `bounds` binaries via `#[path]`) |
+| this branch, after the fuzz/property evidence | **148** | `HEAD` at G0 | 25 + 22 + 49 + 9 + 25 + 18 (the `json` unit tests are also collected by the `cli` and `bounds` binaries via `#[path]`) |
+| this branch, after the second review | **163** | `997f983` | 35 + 22 + 54 + 9 + 25 + 18; 162 on Linux (the PATH/PATHEXT test is Windows-only) |
 
 No earlier number was rewritten: each is an **historical state at its own SHA**, and the CI of each
 wave counted the tests that actually ran. The 128/129 figures that appear in intermediate notes are

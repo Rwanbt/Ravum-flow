@@ -1,11 +1,10 @@
 # Flow CLI and JSON reference
 
-**Scope:** the CLI that exists in this worktree at branch point `d884e29`
-(`crate flow 0.1.0`, policy `FLOW-POLICY-1`). The final MVP 0.1 surface
-(`propose`, `proposals`, `assemble`, `run --candidate`, `publish --candidate`,
-`publish --dry-run`, `init --adopt-policy`, `approve`, the `--json` flags and
-the `flow-proposal/1` / `flow-candidate/1` / `flow-plan/1` / `flow-status/1`
-schemas) is being implemented in parallel and is **NOT_RUN** here; see §10.
+**Scope:** the CLI shipped by `crate flow 0.2.0-rc.1` (policy `FLOW-POLICY-1`) on
+`feat/flow-production-candidate`, code head `997f983`. The whole documented surface is
+implemented and covered by the executed tests counted in the gate report; §10 is the reference for
+the commands added after 0.1.0, and §12 lists what is still **NOT_RUN** so no reader mistakes
+"documented" for "measured everywhere".
 
 **How to read the labels:**
 
@@ -83,17 +82,19 @@ flow version | flow --version
 | `policy_version` | string | policy vocabulary of this build (`FLOW-POLICY-1`) |
 | `git` | string | first line of `git --version` |
 | `schema` | string | receipt schema this build writes (`flow-receipt/2`) |
+| `schemas` | string | every schema this build can emit, comma-separated (built from the `state::SCHEMA_*` constants) |
 
-**MEASURED** (works outside a repository, exit 0):
+**MEASURED** (works outside a repository, exit 0), on the `997f983` binary:
 
 ```console
 $ flow version
 {
   "status": "VERSION",
-  "tool": "flow 0.1.0",
+  "tool": "flow 0.2.0-rc.1",
   "policy_version": "FLOW-POLICY-1",
   "git": "git version 2.51.1.windows.1",
-  "schema": "flow-receipt/2"
+  "schema": "flow-receipt/2",
+  "schemas": "flow-config/1, flow-receipt/2, flow-journal/1, flow-proposal/1, flow-candidate/1, flow-adoption/1, flow-plan/1, flow-status/1, flow-proposal-list/1"
 }
 ```
 
@@ -838,15 +839,20 @@ Compatibility rules this document asserts, all grounded in the code above:
 
 ## 12. NOT_RUN inventory
 
-- `init --adopt-policy` (integration-checked at `17c0156` through the drivers,
-  not part of this worktree), `approve`, `--json` flags, `status --json`.
-- `propose`, `proposals list`, `proposals show`, `assemble`,
-  `run --candidate`, `publish --candidate`, `publish --dry-run`,
-  `explain --candidate`.
-- Schemas `flow-proposal/1`, `flow-candidate/1`, `flow-plan/1`,
-  `flow-status/1`.
-- Exit codes for `PLAN`, `PROPOSED`, `ADMITTED`, `ASSEMBLED`, `APPROVED`,
-  `STATUS`.
-- The proposal-level collision semantics of §9 of the
-  [user guide](MVP-USER-GUIDE.md#9-a-controlled-collision-and-its-resolution).
-- CI on Ubuntu and Windows (owned by the integration branch).
+What the `0.2.0-rc.1` evidence package deliberately does **not** measure, with the reason, so no
+reader has to guess where the boundary is. Everything else in this document is `MEASURED` or
+`CODE_READ` as labelled per section.
+
+- **macOS**: `NOT_TESTED_MACOS`. No runner was available in this wave; no claim is made.
+- **Whole-crate mutation**: `NOT_RUN` (960 mutants ≈ 24 h serial). Only `paths.rs` + `lock.rs` are
+  measured — see the gate report §6 for the score and the survivors.
+- **`cargo-fuzz` / libFuzzer**: `NOT_RUN`. A seeded, hand-rolled fuzzer ran against the JSON parser and
+  the option parser and found one real defect (F1, fixed); that is not libFuzzer coverage and is not
+  described as such.
+- **Bit-for-bit reproducible build**: `REPRODUCIBILITY_NOT_PROVEN`. Two clean archive builds produced
+  different digests (release checklist §5); the cause is consistent with embedded build paths, and no
+  bit-for-bit claim is made.
+- **Performance as a benchmark, and productivity**: descriptive timings only, on one host;
+  `UNPROVEN`.
+- **Untrusted code execution**: `UNSUPPORTED` by design — there is no OS sandbox, and `doctor` says so
+  in the working copy it inspects.

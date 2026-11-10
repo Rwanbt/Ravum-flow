@@ -3,9 +3,9 @@
 **Date:** 2026-11-10 (Europe/Paris)
 **Base:** `ea181d4f112df4deef01016a041fcdfdac154264` (MVP 0.1, PR #53)
 **Branch:** `feat/flow-production-candidate` · **PR:** #54 (draft, base `feat/flow-mvp-0.1`)
-**Code head under test:** see §1 (the code head is the last commit that touches `crates/flow`; later
-commits are documentation only)
-**Verdict:** **`PRODUCTION_PARTIAL`** — reasons in §9. No merge, no release, no GO_PRODUCTION.
+**Code head under test:** `997f983` (the last commit that touches `crates/flow`, `.github/`,
+`Cargo.toml` or `rust-toolchain.toml`); everything after it is documentation only
+**Verdict:** **`PRODUCTION_PARTIAL`** — reasons in §11.1. No merge, no release, no GO_PRODUCTION.
 
 ---
 
@@ -19,23 +19,27 @@ commits are documentation only)
 | G3 crash points | PASS — `before-intent` added; three injection points tested | `crash_before_intent_leaves_no_pending_intent`, existing `after-intent`/`after-ref` |
 | G4 scenarios | PASS — M1–M10 exist as tests | §4 |
 | G5 polyglot | PASS — Rust, Node, Python **and TypeScript**, green and red, on Windows; CI on Ubuntu | §5 |
-| G6 measurement | **PARTIAL** — coverage/mutation measured and **below the candidate gates**; fuzz found one real defect (fixed) | §6 |
-| G7 CI / release candidate | PASS with two open items (reproducibility not proven, Actions not SHA-pinned) | §7 |
+| G6 measurement | **PARTIAL** — coverage/mutation measured on the delivered head and **below the candidate gates**; fuzz found one real defect (fixed) | §6 |
+| G7 CI / release candidate | PASS on what CI can prove (install smoke on both OSes, Actions SHA-pinned, toolchain pinned); **reproducibility not proven** | §7 |
 | G8 performance | MEASURED (descriptive) / productivity `UNPROVEN` | §8 |
-| G9 docs / vault | docs PASS; **vault `VAULT_SYNC_BLOCKED`** (pre-existing red check, other projects) | §9 |
-| G10 independent review | adversarial replay: see §10; maintainability review: not run by a second agent | §10 |
+| G9 docs / vault | docs PASS; vault **repaired and green** (the four pre-existing `migrate` items are fixed, `vault.py check` reports 0 issue) | §9 |
+| G10 independent review | adversarial replay **and** a second independent agent review; the review found one P1, fixed with a regression test | §10 |
 
-**Tests executed:** 148, 0 failed, 0 ignored — Windows 11 local; Ubuntu + Windows in CI.
-Per binary: 25 unit · 22 bounds · 49 CLI · 9 concurrency · 25 isolation · 18 proposals. (The `json`
-unit tests are also collected by the `cli` and `bounds` binaries through `#[path]`, so the sum of
-"unique" tests is smaller; the gate counts what actually ran.)
+**Tests executed:** **163 on Windows 11, 162 on Linux**, 0 failed, 0 ignored (the difference is one
+Windows-only PATH/PATHEXT test). Per binary: 35 unit · 22 bounds · 54 CLI · 9 concurrency ·
+25 isolation · 18 proposals. (The unit tests are also collected by the integration binaries through
+`#[path]`, so the sum of "unique" tests is smaller; the gate counts what actually ran.)
 
 ## 2. CI on the head
 
-`.github/workflows/flow-ci.yml`, both push and pull_request runs on the candidate branch:
-Ubuntu and Windows, `cargo fmt --check`, `cargo clippy -D warnings`, the gated test step (≥148
-executed, 0 ignored, 57 named gates), `cargo build --release`, the release-binary crash-hook proof,
-R0-a self-tests (Linux) and the polyglot job (four fixtures, TypeScript compiler installed).
+`.github/workflows/flow-ci.yml`, both push and pull_request runs on the candidate branch and on the
+promotion targets `dev` and `main`: Ubuntu and Windows, `cargo fmt --check`,
+`cargo clippy -D warnings`, the gated test step (≥162 executed on Linux, ≥163 on Windows, 0 ignored,
+66 named gates of which 65 are required per platform), `cargo build --release`, the release-binary
+crash-hook proof, the **install smoke on both OSes** (private directory, `version`, `init`, `run`,
+`publish`, nothing left behind), R0-a self-tests (Linux) and the polyglot job (four fixtures, the
+TypeScript compiler installed by a pinned `npm install`). Every `uses:` is pinned to a commit SHA and
+the toolchain is pinned to `1.95.0` both by `rust-toolchain.toml` and by the action input.
 Run ids are recorded in §11 after the last push.
 
 ## 3. G2 — the known findings and what closed them
@@ -87,27 +91,46 @@ for `.ts` and says so.
 
 ## 6. G6 — measured test evidence (and where it falls short)
 
-**Coverage** (cargo-llvm-cov on nightly, branch counters, 132 tests at `ea181d4`; artefact
-`experiments/quality/coverage/`):
+**Coverage** (cargo-llvm-cov on nightly, branch counters, **163 tests on the delivered code head**,
+`--ignore-filename-regex '[\\/]tests[\\/]'` so the number is the product code; artefact
+`experiments/quality/coverage/summary-997f983.txt`; the previous measurement at `ea181d4` is kept as
+`summary.txt` for comparison):
 
 | Scope | Lines | Branches | Candidate gate | Met |
 |---|---|---|---|---|
-| global | 80.76 % (4564 lines) | 65.26 % (780) | ≥90 % / ≥85 % | **no** |
-| `commands.rs` | 78.56 % | 65.14 % | ≥95 % / ≥90 % | **no** |
-| `state.rs` | 92.90 % | 68.00 % | ≥95 % / ≥90 % | **no** |
-| `proposal.rs` | 73.17 % | 52.05 % | ≥95 % / ≥90 % | **no** |
-| `lock.rs` | 72.52 % | 61.11 % | ≥95 % / ≥90 % | **no** |
-| `gitcli.rs` | 91.73 % | 79.03 % | ≥95 % / ≥90 % | **no** |
-| `paths.rs` | 80.92 % | 78.95 % | ≥95 % / ≥90 % | **no** |
-| `json.rs` | 86.64 % | 76.09 % | ≥95 % / ≥90 % | **no** |
+| global | **83.19 %** (5016 lines) | **68.64 %** (845) | ≥90 % / ≥85 % | **no** |
+| `commands.rs` | 81.66 % | 68.05 % | ≥95 % / ≥90 % | **no** |
+| `state.rs` | 92.35 % | 66.07 % | ≥95 % / ≥90 % | **no** |
+| `proposal.rs` | 74.94 % | 55.48 % | ≥95 % / ≥90 % | **no** |
+| `lock.rs` | 84.16 % | 68.42 % | ≥95 % / ≥90 % | **no** |
+| `gitcli.rs` | 91.68 % | 77.14 % | ≥95 % / ≥90 % | **no** |
+| `paths.rs` | **96.67 %** | **91.30 %** | ≥95 % / ≥90 % | **yes** |
+| `json.rs` | 87.24 % | 81.25 % | ≥95 % / ≥90 % | **no** |
 | `scratch.rs` | 71.04 % | 55.56 % | ≥95 % / ≥90 % | **no** |
+| `main.rs` | 75.00 % | 80.43 % | ≥95 % / ≥90 % | **no** |
 | `sha256.rs` | 100 % | 100 % | — | yes |
 
-**Mutation** (`cargo-mutants`, bounded to `paths.rs` + `lock.rs`, 13 min): **50.8 % killed**
-(30 caught / 28 missed / 1 timeout / 6 unviable of 65 tested). Whole-crate mutation (960 mutants) is
-`NOT_RUN` — ≈24 h serial on this host. 28 survivors are listed with `file:line` in
-`experiments/quality/mutation/missed.txt`; the two that matter are `paths::canonical_within`
-containment (survives `Ok(Default::default())`) and the lock nonce (survives `"xyzzy"`).
+Progress over the `ea181d4` measurement: global lines 80.76 % → 83.19 %, branches 65.26 % → 68.64 %;
+`paths.rs` crossed its per-module gate (96.67 %/91.30 %) and `lock.rs` went from 72.52 % to 84.16 %
+lines. The denominators also grew (4564 → 5016 lines), so this is not a smaller pie. Producing 90 %/85 % would need tests for the
+error paths of `proposal.rs` (74.94 %) and `scratch.rs` (71.04 %), which is the honest next step, not
+a label.
+
+**Mutation** (`cargo-mutants`, bounded to `paths.rs` + `lock.rs`, **measured on the delivered head
+`997f983`**, 20 min): **57 caught / 19 missed / 0 timeout / 6 unviable of 82 tested = 75.0 %**
+(57 ÷ 76, timeouts counting as killed). Artefact: `experiments/quality/mutation-997f983/`
+(`caught.txt`, `missed.txt`, `unviable.txt`, `outcomes.json`). The same subset scored 50.8 %
+before the wave; the nine tests added aimed at exactly the guarantees that survived then
+(`canonical_within`'s return value, the nonce, liveness, the acquire budget, the lock error
+rendering). The 19 survivors are published with `file:line` and classified rather than excused:
+
+| Class | Count | Detail |
+|---|---|---|
+| not compiled on this host | 10 | `kill_liveness` and the Linux / non-Linux-Unix `pid_alive` are `#[cfg]`-excluded on Windows, so a Windows run cannot kill them; the Linux job compiles and exercises that path through `liveness_is_answered_for_live_and_dead_pids`. A Linux mutation run is the next step and is **not** claimed here. |
+| equivalent at the `Ok`/`Err` level | 3 | `paths.rs:44` (absolute rule), `:48` (drive rule), `:55` (`.`/`..` rule): the mutated code still refuses every input because a later rule catches it, only the message changes. Killing them would pin wording, not behaviour. |
+| needs fault injection | 6 | five error-kind / TOCTOU guards in `lock.rs` (`:236`, `:239` ×3, `:294`) and one deadline boundary (`:208`): observable only by injecting an IO failure or winning a race, which this harness cannot do deterministically. |
+
+Whole-crate mutation (960 mutants, ≈24 h serial) is `NOT_RUN`; so is a Linux run of this subset.
 
 **Properties** (seed 20261110, 30.7 s, 7/7 PASS): JSON round-trip, duplicate-key refusal, 20 000
 dangerous paths refused, 100 000 proposal ids with 0 collisions, CLI-driven assembly-order property.
@@ -129,12 +152,13 @@ pretends otherwise.
 |---|---|
 | CI on Windows + Ubuntu | green on the candidate head (§11) |
 | Release binary | `flow 0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc` (artefact `dist/`, git-ignored) |
-| Install / uninstall smoke | executed: private directory, `flow version`, `init`, `run`, `publish`, delete → nothing left |
+| Install / uninstall smoke | executed locally, and now **in CI on both OSes** against the same release binary the artefact is built from |
 | Release crash hook | inert, proved locally and in CI |
 | `cargo audit` | 0 vulnerabilities (1430 advisories, 1 crate) |
 | Runtime dependencies | none |
 | Reproducible build | **`REPRODUCIBILITY_NOT_PROVEN`** — two clean archive builds gave `978fefb3…` and `30e958d7…` |
-| Actions pinned to SHAs | **no** — tags only; open item before a public release |
+| Actions pinned to SHAs | **yes** — every `uses:` is a 40-hex commit with its release in a comment (`checkout v4.4.0`, `rust-toolchain@b725eda…`, `setup-node v4.4.0`, `setup-python v5.6.0`, `upload-artifact v4.6.2`, `msvc-dev-cmd v1.13.0`) |
+| Toolchain pinned | **yes** — `rust-toolchain.toml` (`1.95.0` + rustfmt/clippy), the CI action names `1.95.0`, the crate declares `rust-version = "1.95"` |
 | Branch protection | **absent** on `dev`/`main` (verified at G0); not changed by this branch; admin checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` |
 
 ## 8. G8 — performance (descriptive, not a benchmark)
@@ -161,19 +185,26 @@ Delivered: `FLOW-PRODUCTION-BASELINE.md`, `FLOW-PRODUCTION-INVARIANTS.md`,
 `FLOW-PRODUCTION-RELEASE-CHECKLIST.md`, `FLOW-PRODUCTION-ADVERSARIAL.md` (see §10), `CHANGELOG.md`,
 `docs/QUICKSTART-10-MINUTES.md`, updated README, updated `docs/CLI-JSON.md` §10.
 
-**Vault: `VAULT_SYNC_BLOCKED`.** `vault.py check` reports `lint OK · links OK · idempotence OK ·
-root-cleanup OK` but `migrate FAIL (4)` on `projects/rimatrix` and `projects/seno-daw` — files this
-session never touched. Contract v4 forbids committing a red vault without an explicit human
-instruction, so the session note is written but **not committed**. The user can authorise an
-exception explicitly; the four paths are listed in the check output.
+**Vault: repaired and green.** `vault.py check` was red on a pre-existing `migrate` check (four
+"normalization hash mismatch" items in `projects/rimatrix` and `projects/seno-daw`, files this session
+never touched). Root cause, proved rather than assumed: the v4 normalization plan was generated on
+Windows by hashing working-tree bytes, so its 21 entries mixed the CRLF and LF conventions while Git
+stores those blobs as LF (`core.autocrlf=true` rewrites them at checkout only); rewriting the four
+failing files CRLF→LF reproduced each recorded hash byte for byte. With the authorisation to fix the
+pre-existing problems, all 21 destinations were first proved unchanged since their single import
+commit (`git log -- <destination>`), then the record was canonicalised to the LF convention and the
+check now compares the same representation. `vault.py check` → `lint OK · links OK · idempotence OK ·
+migrate OK · root-cleanup OK` (0 issue), commit `083adbc` pushed to `master` (fast-forward). The check
+keeps its teeth: appending one line to a destination made it report exactly that file. The session
+note for this wave is written and **still uncommitted** by the owner's instruction that the rest of
+the vault work stays suspended.
 
 ## 10. G10 — independent review
 
 - **Adversarial (agent G, no write access to `crates/flow/src`)**: see
   `FLOW-PRODUCTION-ADVERSARIAL.md` and the summary in §10.1.
-- **Maintainability / supply chain (second independent reviewer)**: `NOT_RUN`. No second agent was
-  available in this wave; the checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` §7 is the input for
-  that review. This is one of the reasons the verdict is not `PRODUCTION_CANDIDATE`.
+- **Maintainability / supply chain (second independent reviewer)**: **executed** — `P1_FOUND`, 18
+  findings (1 P1, 8 P2, 9 P3), all closed except one documented limit (§10.2).
 
 ### 10.1 Adversarial replay on the candidate head (executed)
 
@@ -222,48 +253,89 @@ A capability note the reviewer raised and this report accepts: there is **no can
 approval** — an actor able to run `run --candidate` and `publish --candidate` can publish once the
 policy is approved. Per-candidate approval is a product decision, not a defect of this candidate.
 
-### 10.2 Second independent review
+### 10.2 Second independent review (executed)
 
-`NOT_RUN`. No second agent was available in this wave. The maintainability/supply-chain checklist in
-`FLOW-PRODUCTION-RELEASE-CHECKLIST.md` §7 is the input for that review, and its absence is one of the
-reasons the verdict is `PRODUCTION_PARTIAL`.
+A second reviewer with **no prior context** and **no write access to the code** was run against the
+candidate head, read-only (no build, no test run, every claim classified as `CODE_READ`/`CI_READ`/
+`DOC_READ`). Artefact: `docs/reviews/FLOW-PRODUCTION-SECOND-REVIEW.md` — 18 findings, `P1_FOUND`.
+
+| ID | Sev | Finding | Disposition |
+|---|---|---|---|
+| R2-01 | **P1** | `flow publish --dry-run=true` validated and then **published for real**: `validate_flags` accepted an inline `=value` on a boolean flag, `has_flag` matched only the exact token | **fixed** in `e660cdb`: a boolean flag refuses an inline value as a usage error (exit 2). Regression test `a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation` asserts the ref does not move and no intent is appended, for three spellings |
+| R2-02 | P2 | "fsynced intent" overstated: the directory was never flushed | **fixed**: parent directory fsynced on Unix; the README says "file fsynced before the rename" and names the Windows limit |
+| R2-03 | P2 | CI never covered `dev` or `main` | **fixed**: both are in the push and pull_request triggers |
+| R2-04 | P2 | the toolchain floated (`toolchain: stable`) | **fixed**: `rust-toolchain.toml` + `rust-version = "1.95"` + `toolchain: 1.95.0` |
+| R2-05 | P2 | a required gate could print SKIP and still report `... ok` | **fixed**: the link-containment gate now fails closed, and the journal-symlink gate fails closed on Unix while Windows states the privilege limit and the job no longer claims that gate there |
+| R2-06 | P2 | four contradictory executed-test counts in the docs | **fixed**: one number per platform, tied to the head (§1), and the CI floor enforces it |
+| R2-07 | P2 | the README claimed "production candidate" while its own gate report said `PRODUCTION_PARTIAL` | **fixed**: the README states the verdict and the gaps |
+| R2-08 | P2 | `redact()` used `env::vars()`, which panics on a non-Unicode value | **fixed**: `vars_os()` with a lossy view |
+| R2-09 | P2 | Unix liveness read only `kill -0`'s exit status, so EPERM counted as "provably dead" and a live foreign lock could be stolen | **fixed**: Linux asks `/proc/<pid>` first and otherwise accepts only a message that proves the process is gone; anything else is `Unknown`, never a steal |
+| R2-10 | P3 | three identifier validators with divergent rules | **partly fixed**: `proposal.rs` now uses `paths::is_object_id`; `scratch`'s wider 4..=64 rule is documented as deliberate (Git accepts abbreviated ids there and the value never becomes a file name) |
+| R2-11 | P3 | doc comments describing the wrong function | **fixed** |
+| R2-12 | P3 | `version.schemas` omitted `flow-status/1` and `flow-proposal-list/1` | **fixed**: built from the `state::SCHEMA_*` constants |
+| R2-13 | P3 | `--timeout 0`/`abc` silently dropped while the receipt proved the requested value | **fixed**: a usage error; regression test `a_timeout_that_cannot_be_applied_is_a_usage_error` |
+| R2-14 | P3 | a failed `git diff` became an empty `worktree_diff` | **fixed**: the run refuses to certify |
+| R2-15 | P3 | `save_receipt` built a path from an unvalidated `tree_oid` | **fixed** |
+| R2-16 | P3 | `propose` returned `USAGE` with exit 1 | **fixed**: any document naming `USAGE` exits 2 |
+| R2-17 | P3 | the polyglot job claimed "offline" while installing `tsc` | **fixed**: the wording and the README table say the TypeScript step needs the network |
+| R2-18 | P3 | missing evidence could upload as a warning | **fixed**: `if-no-files-found: error` |
+
+The reviewer also verified as sound, with the checks that prove it: zero dependencies, no build
+script/`unsafe`/network, all 62 then-existing gate names resolving to real test functions, CAS
+ordering and post-CAS read-back, typed journal failures, link-guarded `.flow` writes, the release
+crash hook compiled out, env scrubbing, and the 64 MiB / 1 MiB bounds. It covered no runtime
+behaviour, which is why its verdict is a complement to §10.1 and to CI, not a replacement.
+
+**One finding is not closed and is accepted as a limit:** R2-09's fix makes an unprovable liveness
+answer `Unknown` (the lock is then never stolen, which wedges until a human removes it). That is the
+documented trade: a wedge is loud, a stolen live lock is a silent double publication.
+
 ## 11. Final numbers and the verdict
 
-**Code and CI head under test:** `c624c2312b45d57c7b3a460aff3235e6fccb61a1` (the last commit that
-touches `crates/flow` or `.github/`). Everything after it is documentation only, so the CI evidence
-below is the evidence for the shipped code.
+**Code and CI head under test:** `997f983` (the last commit that touches `crates/flow`,
+`.github/`, `Cargo.toml` or `rust-toolchain.toml`). Everything after it is documentation only, so the
+CI evidence below is the evidence for the shipped code. Measurements are quoted with the SHA they were
+taken on; no number here is copied from an earlier wave.
 
 | Evidence | Value |
 |---|---|
-| Tests executed | **151 on Windows** (52 CLI, 25 unit, 22 bounds, 9 concurrency, 25 isolation, 18 proposals), **150 on Linux** (the PATH/PATHEXT shim test is Windows-only by design) |
+| Tests executed | **163 on Windows** (35 unit, 22 bounds, 54 CLI, 9 concurrency, 25 isolation, 18 proposals), **162 on Linux** (the PATH/PATHEXT shim test is Windows-only by design) |
 | Failures / ignored | 0 / 0 on both OSes |
-| CI (push) | [`42726478852`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42726478852) — 4/4 jobs success |
-| CI (pull_request) | [`42726488112`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42726488112) — 4/4 jobs success |
+| CI (push) | recorded in §11.2 after the last push |
+| CI (pull_request) | recorded in §11.2 after the last push |
 | Adversarial replay | 119 declared, 116 executed, 109 refuted, 7 reproduced (0 P0, 3 P2, 4 P3), 3 NOT_RUN |
-| Coverage | 80.76 % lines / 65.26 % branches global (measured at `ea181d4`, 132 tests) |
-| Mutation | 50.8 % killed on `paths.rs` + `lock.rs` (65 tested); whole crate NOT_RUN |
-| Release candidate | `0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc`, install smoke PASS |
+| Second independent review | 18 findings: 1 P1, 8 P2, 9 P3 — P1 and all P2 closed with tests, 1 P3 partly closed by design |
+| Coverage (head `997f983`, 163 tests) | **83.19 % lines / 68.64 % branches** global; `paths.rs` 96.67/91.30 and `lock.rs` 84.16/68.42 |
+| Mutation (head `997f983`, `paths.rs` + `lock.rs`) | **75.0 % killed** — 57 caught / 19 missed / 0 timeout / 6 unviable of 82; 10 of the 19 are `#[cfg]`-excluded on this host, 3 are equivalent at the `Ok`/`Err` level, 6 need fault injection. Whole-crate run `NOT_RUN` |
+| Release candidate | `0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc`, install smoke PASS locally and in CI on both OSes |
 | `cargo audit` | 0 vulnerabilities |
 | Reproducible build | `REPRODUCIBILITY_NOT_PROVEN` |
-| Vault | `VAULT_SYNC_BLOCKED` (pre-existing red `migrate` check on other projects) |
+| Vault | **green** — `vault.py check` 0 issue after the repair commit `083adbc` |
 
 ### 11.1 Verdict
 
-### 11.1 Verdict
+`PRODUCTION_PARTIAL`. The candidate is functional, **no known P0/P1 finding is open in the
+local-trusted scope** (the second review's P1 was found and fixed with a regression test in this
+wave), CI is green on both supported OSes, the release candidate builds and its install smoke runs on
+both OSes, the supply chain is pinned (Actions by commit SHA, toolchain by `rust-toolchain.toml`), and
+the trust boundary is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` because:
 
-`PRODUCTION_PARTIAL`. The candidate is functional, its known P0/P1 findings are closed with tests,
-CI is green on both supported OSes, the release candidate builds and installs, and the trust boundary
-is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` because:
+1. coverage is measured **on this head** and still below the gates this mandate sets (83.19 %/68.64 %
+   vs 90 %/85 % global) — `proposal.rs` (74.94 %) and `scratch.rs` (71.04 %) are the reasons;
+2. mutation is measured on two modules (75.0 %, up from 50.8 %) and below the 90 % gate; **whole-crate
+   mutation** (960 mutants, ≈24 h serial) and a Linux run of the subset are `NOT_RUN`;
+3. `cargo-fuzz`/libFuzzer is `NOT_RUN` (a seeded, hand-rolled fuzzer found one real defect, F1, fixed);
+4. reproducibility is `NOT_PROVEN`;
+5. macOS is `NOT_TESTED_MACOS`, and performance/productivity is `UNPROVEN`.
 
-1. coverage and mutation are measured and **below the gates this mandate sets** (80.76 %/65.26 % vs
-   90 %/85 % global; 50.8 % killed on a subset vs 90 %) — and they were measured on `ea181d4`, not on
-   this head; the re-measurement on the final head is `NOT_RUN`;
-2. the whole-crate mutation score is `NOT_RUN`, and `cargo-fuzz` is `NOT_RUN`;
-3. the second independent review (maintainability / supply chain) is `NOT_RUN`;
-4. reproducibility is `NOT_PROVEN` and the Actions are not SHA-pinned;
-5. `vault.py check` is red for pre-existing reasons outside this project, so the vault is
-   `VAULT_SYNC_BLOCKED`;
-6. macOS is `NOT_TESTED_MACOS`, and performance/productivity is `UNPROVEN`.
+Closed since the previous verdict: the second independent review (was `NOT_RUN`), the SHA pinning, the
+Linux install smoke, the vault block, and the stale measurement on `ea181d4`. None of the remaining
+items is a P0 or P1 defect; all are evidence gaps. That is the difference between "the product works
+and is honest" and "the qualification dossier is complete", and only the latter justifies
+`GO_PRODUCTION`.
 
-None of these is a P0 or P1 defect; all are evidence gaps. That is exactly the difference between
-"the product works and is honest" and "the qualification dossier is complete".
+### 11.2 CI runs on this head
+
+Recorded after the last push of this branch, so the ids below are verifiable facts rather than
+intentions. A run that is not green is written down as red.
+

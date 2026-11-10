@@ -31,13 +31,13 @@ below is additive evidence under `experiments/quality/` plus this document.
 
 | # | Gate | Verdict | Evidence |
 | --- | --- | --- | --- |
-| G1 | Full suite executes and passes (CI parity command) | **PASSED** | 132 executed, 0 failed, 0 ignored — `experiments/quality/test-run-full.log` |
+| G1 | Full suite executes and passes (CI parity command) | **PASSED** | **163 executed on Windows, 162 on Linux**, 0 failed, 0 ignored — `experiments/quality/test-run-full.log` |
 | G2 | Concurrency suite is not flaky (3 consecutive runs) | **PASSED** | 8/8 passed 3× in 6.94 s / 7.97 s / 7.02 s — `concurrency-run-1..3.log` |
 | G3 | Line coverage | **MEASURED** — 80.76 % (4 564 lines) | `coverage/summary.txt`, `coverage/lcov.info`, `coverage/coverage.json` |
 | G4 | Branch coverage | **MEASURED** — 65.26 % (780 branches) | same run (`--branch`, nightly) |
 | G5 | Per-module line/branch coverage | **MEASURED** — table in §3 | `coverage/summary.txt` |
 | G6 | Mutation testing, whole crate (960 mutants) | **NOT_RUN** — time box; 960 × ~90 s test suite ≈ 24 h serial | count from `mutation/all-mutants-list.txt` |
-| G7 | Mutation testing, bounded subset (`paths.rs`, `lock.rs`) | **PARTIAL / MEASURED** — 65 tested: 30 caught, 28 missed, 1 timeout, 6 unviable ⇒ **50.8 %** killed | `mutation/run-paths-lock.log`, `mutation/missed.txt`, `mutation/outcomes.json` |
+| G7 | Mutation testing, bounded subset (`paths.rs`, `lock.rs`) | **PARTIAL / MEASURED** — 82 tested: 57 caught, 19 missed, 0 timeout, 6 unviable ⇒ **75.0 %** killed | `mutation-997f983/{caught,missed,unviable}.txt`, `outcomes.json` |
 | G8 | Seeded property harness (no new dependency) | **PASSED** — 7/7 properties, seed 20261110 | `properties/run.log`, `properties/props.rs` |
 | G9 | Seeded JSON-parser fuzz, 60 s | **FAILED (finding)** — round-trip contract violated by non-finite numbers | `fuzz/run-json.log`, `fuzz/stats-json.json`, `fuzz/crashes/` |
 | G10 | Seeded CLI option-parser fuzz, 60 s | **PASSED** — 0 findings in 273 invocations | `fuzz/run-cli.log`, `fuzz/stats-cli.json` |
@@ -49,7 +49,7 @@ below is additive evidence under `experiments/quality/` plus this document.
 
 ## 2. Suite inventory (executed names → invariant)
 
-132 tests executed; the complete name list per binary is in
+**163 tests executed on the delivered head `997f983`** (162 on Linux); the complete name list per binary is in
 `experiments/quality/test-inventory.txt`. Unit tests are compiled into every test
 binary (they are `#[cfg(test)]` modules re-reached through `#[path]`), so the same
 name appears in several binaries; the count below is what CI counts.
@@ -173,122 +173,73 @@ cargo +nightly llvm-cov report --json  --output-path experiments/quality/coverag
 cargo +nightly llvm-cov report --branch > experiments/quality/coverage/summary.txt
 ```
 
-All 132 tests passed inside the instrumented run (`coverage/run-branch.log`).
-`--branch` is cargo-llvm-cov's unstable flag; it worked on nightly 1.97.0 and
-produced real branch counters, so branch coverage is MEASURED, not estimated.
+All 163 tests passed inside the instrumented run, **on the delivered head `997f983`**
+(`experiments/quality/coverage/summary-997f983.txt`). `--branch` is cargo-llvm-cov's unstable flag;
+it worked on nightly and produced real branch counters, so branch coverage is MEASURED, not
+estimated. `--ignore-filename-regex '[\\/]tests[\\/]'` keeps the number on the product code.
 
 | File | Lines | Line cover | Branches | Branch cover | Regions | Functions |
 | --- | --- | --- | --- | --- | --- | --- |
-| `commands.rs` | 1 637 | **78.56 %** (351 missed) | 284 | **65.14 %** (99 missed) | 82.56 % | 81.82 % |
-| `gitcli.rs` | 423 | **91.73 %** (35) | 62 | **79.03 %** (13) | 93.84 % | 93.33 % |
-| `json.rs` | 277 | **86.64 %** (37) | 46 | **76.09 %** (11) | 84.96 % | 96.55 % |
-| `lock.rs` | 222 | **72.52 %** (61) | 36 | **61.11 %** (14) | 80.98 % | 77.78 % |
-| `main.rs` | 203 | **78.82 %** (43) | 36 | **77.78 %** (8) | 84.82 % | 100 % |
-| `paths.rs` | 131 | **80.92 %** (25) | 38 | **78.95 %** (8) | 81.18 % | 66.67 % |
-| `proposal.rs` | 764 | **73.17 %** (205) | 146 | **52.05 %** (70) | 79.08 % | 74.51 % |
+| `commands.rs` | 1 816 | **81.66 %** (333 missed) | 313 | **68.05 %** (100 missed) | 86.18 % | 83.93 % |
+| `gitcli.rs` | 457 | **91.68 %** (38) | 70 | **78.57 %** (15) | 93.64 % | 92.00 % |
+| `json.rs` | 290 | **87.24 %** (37) | 48 | **81.25 %** (9) | 85.71 % | 96.67 % |
+| `lock.rs` | 322 | **84.16 %** (51) | 38 | **68.42 %** (12) | 90.98 % | 96.30 % |
+| `main.rs` | 240 | **75.00 %** (60) | 46 | **80.43 %** (9) | 84.77 % | 100 % |
+| `paths.rs` | 210 | **96.67 %** (7) | 46 | **91.30 %** (4) | 95.61 % | 86.36 % |
+| `proposal.rs` | 770 | **74.94 %** (193) | 146 | **55.48 %** (65) | 79.89 % | 75.51 % |
 | `scratch.rs` | 297 | **71.04 %** (86) | 72 | **55.56 %** (32) | 77.09 % | 82.14 % |
 | `sha256.rs` | 117 | **100 %** | 10 | **100 %** | 100 % | 100 % |
-| `state.rs` | 493 | **92.90 %** (35) | 50 | **68.00 %** (16) | 91.19 % | 78.38 % |
-| **TOTAL** | **4 564** | **80.76 %** (878) | **780** | **65.26 %** (271) | **84.40 %** | **82.98 %** |
+| `state.rs` | 497 | **92.35 %** (38) | 56 | **66.07 %** (19) | 90.77 % | 80.56 % |
+| **TOTAL** | **5 016** | **83.19 %** (843) | **845** | **68.64 %** (265) | **86.94 %** | **85.82 %** |
 
-Lowest branch coverage: `proposal.rs` 52.05 %, `scratch.rs` 55.56 %, `lock.rs`
-61.11 % — exactly the three modules where the mutation run (below) also shows the
-weakest test pressure. `region`/`function` columns come from the same report.
+Lowest branch coverage: `scratch.rs` 55.56 %, `proposal.rs` 55.48 %, `state.rs` 66.07 % — exactly
+the modules where the whole-crate mutation run (`NOT_RUN`, see below) is missing. `paths.rs` and
+`lock.rs` crossed their own line gates after the mutation-driven test wave; the global gate
+(90 %/85 %) is not met.
 
 ---
 
 ## 4. Mutation testing (bounded — MEASURED on a subset, NOT_RUN for the rest)
 
 ```
-cargo install cargo-mutants --locked                                   # 2 m 06 s
-cargo mutants --list > experiments/quality/mutation/all-mutants-list.txt   # 960 mutants
-CARGO_BUILD_JOBS=4 cargo mutants \
-  --file crates/flow/src/paths.rs --file crates/flow/src/lock.rs \
-  --jobs 4 --timeout 180 \
-  | tee experiments/quality/mutation/run-paths-lock.log
+cargo mutants --list > experiments/quality/mutation/all-mutants-list.txt      # 960 mutants
+cargo mutants --file crates/flow/src/paths.rs --file crates/flow/src/lock.rs \
+  -o experiments/quality/mutation-997f983 --timeout 240                      # head 997f983
 ```
 
-Bounded subset: **65 mutants** (21 `paths.rs` + 44 `lock.rs`) in 13 m 09 s with a
-verified green baseline (6 s build + 59 s test). Per-mutant outcome:
+Bounded subset on the delivered head `997f983`: **82 mutants** in 20 min with a verified green
+baseline (3 s build + 30 s test). Per-mutant outcome (`experiments/quality/mutation-997f983/`):
 
 | Outcome | Count |
 | --- | --- |
-| caught (killed) | **30** |
-| missed (survived) | **28** |
-| timeout | **1** |
+| caught (killed) | **57** |
+| missed (survived) | **19** |
+| timeout | **0** |
 | unviable (did not compile) | **6** |
-| **total tested** | **65** |
-| **mutation score** (killed ÷ (killed + survived + timeout)) | **50.8 %** (30/59) |
+| **total tested** | **82** |
+| **mutation score** (killed ÷ (killed + survived + timeout)) | **75.0 %** (57/76) |
 
-Excluding the timeout: 30/58 = **51.7 %**. The full crate has **960** mutants; at
-~90 s of test suite per mutant (the suite is 132 integration tests, ~45–95 s) a
-whole-crate run is ≈ 24 h serial / ≈ 6 h at `--jobs 4`, which the time box does
-not allow. `commands.rs` (177 mutants) was therefore **NOT_RUN**, and so were
-`gitcli.rs` (98), `json.rs` (138), `main.rs` (62), `proposal.rs` (123),
-`scratch.rs` (54), `sha256.rs` (98), `state.rs` (145). No percentage is claimed
-for the crate as a whole.
+The same subset scored **50.8 %** (30/59) before this wave. The nine tests added for this measurement
+target exactly what survived then: `canonical_within`'s return value, the nonce, liveness for a live
+and a reaped PID, the acquire budget against a live foreign owner, the guard that must not delete a
+successor's lock, a record written after the first read, the path length boundaries, the identifier
+sizes, and the lock error rendering. Each of those mutants is killed now.
 
-### Survivors (28) — `experiments/quality/mutation/missed.txt`
+The full crate has **960** mutants; at ~35 s of suite per mutant a whole-crate run is ≈ 9 h serial
+(the suite is 163 tests, ~30 s). `commands.rs` (177 mutants) is **NOT_RUN**, and so are `gitcli.rs`
+(98), `json.rs` (138), `main.rs` (62), `proposal.rs` (123), `scratch.rs` (54), `sha256.rs` (98) and
+`state.rs` (145). No percentage is claimed for the crate as a whole.
 
-```
-crates/flow/src/lock.rs:49:9   replace LockError::message -> &str with ""
-crates/flow/src/lock.rs:49:9   replace LockError::message -> &str with "xyzzy"
-crates/flow/src/lock.rs:57:9   replace <impl Display for LockError>::fmt -> Result with Ok(Default::default())
-crates/flow/src/lock.rs:63:9   replace <impl From<LockError> for String>::from -> String with String::new()
-crates/flow/src/lock.rs:63:9   replace <impl From<LockError> for String>::from -> String with "xyzzy".into()
-crates/flow/src/lock.rs:161:5  replace nonce -> String with "xyzzy".into()
-crates/flow/src/lock.rs:205:35 replace + with - in wait_for_record
-crates/flow/src/lock.rs:206:26 replace < with == in wait_for_record
-crates/flow/src/lock.rs:206:26 replace < with > in wait_for_record
-crates/flow/src/lock.rs:206:26 replace < with <= in wait_for_record
-crates/flow/src/lock.rs:224:35 replace + with - in acquire_lock
-crates/flow/src/lock.rs:234:23 replace match guard e.kind() == AlreadyExists with true in acquire_lock
-crates/flow/src/lock.rs:237:33 replace match guard err.kind() == NotFound with true in acquire_lock
-crates/flow/src/lock.rs:237:33 replace match guard err.kind() == NotFound with false in acquire_lock
-crates/flow/src/lock.rs:237:44 replace == with != in acquire_lock
-crates/flow/src/lock.rs:269:43 replace >= with < in acquire_lock
-crates/flow/src/lock.rs:292:42 replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true
-crates/flow/src/lock.rs:334:5  replace pid_alive -> Option<bool> with None
-crates/flow/src/lock.rs:334:5  replace pid_alive -> Option<bool> with Some(false)
-crates/flow/src/lock.rs:334:5  replace pid_alive -> Option<bool> with Some(true)
-crates/flow/src/paths.rs:23:19 replace > with == in validate_relative
-crates/flow/src/paths.rs:23:19 replace > with >= in validate_relative
-crates/flow/src/paths.rs:29:30 replace || with && in validate_relative
-crates/flow/src/paths.rs:33:20 replace >= with < in validate_relative
-crates/flow/src/paths.rs:40:29 replace || with && in validate_relative
-crates/flow/src/paths.rs:45:28 replace > with == in validate_relative
-crates/flow/src/paths.rs:45:28 replace > with >= in validate_relative
-crates/flow/src/paths.rs:73:5  replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())
-```
+### The 19 survivors — classified, not excused (`missed.txt`)
 
-Timeout (1): `lock.rs:292:42 replace match guard … with false` (hit the 180 s cap).
+| Class | Count | Why it survives | What would kill it |
+| --- | --- | --- | --- |
+| not compiled on this host | 10 | `kill_liveness`, the Linux `pid_alive` and the non-Linux-Unix `pid_alive` are `#[cfg]`-excluded on Windows (`lock.rs:342`, `:351`, `:363`, `:371`), so a Windows run cannot execute them | a Linux mutation run — the Linux job does compile and exercise that path through `liveness_is_answered_for_live_and_dead_pids` |
+| equivalent at the `Ok`/`Err` level | 3 | `paths.rs:44` (absolute rule), `:48` (drive rule), `:55` (`.`/`..` rule): the mutated code still refuses the input because a later rule catches it, and only the message changes | asserting the message instead of `is_err()`, i.e. pinning wording rather than behaviour |
+| needs fault injection | 6 | `lock.rs:236`, `:239` ×3 (error-kind guards), `:294` (nonce match before a steal) and `:208` (deadline boundary): an IO failure or a won race is required | a fault-injection hook for the lock, which does not exist |
 
-### What the survivors mean (each is a real test gap, none is a test change)
-
-1. **`paths.rs:73 canonical_within` → `Ok(Default::default())` survives.** No test
-   fails when containment resolution is replaced by "return an empty path". The
-   symlink/junction escape defence is therefore *untested at unit level*; it is
-   only exercised indirectly by `scratch` integration tests, which apparently
-   never reach a path whose canonicalisation matters.
-2. **`paths.rs:23` (`len() > 4096`), `paths.rs:45` (`component.len() > 255`)
-   boundary mutations survive.** No test pins the exact boundary (4 096 vs 4 097
-   bytes, 255 vs 256-byte component). The property harness (P3) uses 4 097 and
-   256, so it also misses the boundary.
-3. **`paths.rs:29/40` `||` → `&&` survives.** The two-branch absolute-path and
-   dot-component guards are not distinguished by any test.
-4. **`lock.rs:161 nonce` → constant `"xyzzy"` survives.** Nonce uniqueness is a
-   *security claim* (it binds a lock to its owner) and no test asserts it.
-5. **`lock.rs:334 pid_alive` → `None`/`Some(true)`/`Some(false)` survives.** The
-   liveness probe is not pinned by any test: dead-owner recovery works through a
-   different signal.
-6. **`lock.rs:49/57/63` message/Display/From mutations survive.** No test asserts
-   the lock diagnostic text.
-7. **`lock.rs:205/206/224/269` arithmetic/comparison mutants survive.** The
-   retry/backoff bounds are not asserted (a test-only timing race could pass by
-   luck; here the suite is simply silent).
-
-The timeout mutant (`lock.rs:292:42` nonce-match guard → `false`) is consistent
-with survivor 4: the guard's false branch is never forced.
+The four `lock.rs` message/`Display`/`From` mutants and the `nonce` mutant that survived the earlier
+run are killed now by `a_lock_error_renders_its_message` and `nonces_are_unique_and_file_safe`.
 
 ---
 
@@ -393,7 +344,7 @@ are behavioural, and the only coverage numbers in this document are §3.
 
 ## 7. Flakiness
 
-* Full suite, first run: 132/132 (this repo's own evidence, `test-run-full.log`).
+* Full suite on the delivered head: 163/163 Windows, 162/162 Linux (this repo's own evidence, `test-run-full.log`).
 * Concurrency suite, re-run 3× back to back after the full suite, same binary:
 
 | Run | Result | Duration |
@@ -428,7 +379,7 @@ most likely future flakes.
 ```
 experiments/quality/
 ├── coverage/
-│   ├── run-branch.log       instrumented test run (132 passed)
+│   ├── summary-997f983.txt  instrumented coverage report (163 passed)
 │   ├── lcov.info            raw LCOV (line + BRDA branch records)
 │   ├── coverage.json        raw llvm-cov JSON export
 │   ├── summary.txt          per-file table (source of §3)
@@ -437,7 +388,7 @@ experiments/quality/
 ├── mutation/
 │   ├── run-paths-lock.log   13 m 09 s bounded run, per-mutant outcomes
 │   ├── all-mutants-list.txt 960 mutants (full-crate population, NOT_RUN)
-│   ├── caught.txt, missed.txt (28 survivors), timeout.txt, unviable.txt
+│   ├── caught.txt, missed.txt (19 survivors), timeout.txt, unviable.txt
 │   ├── outcomes.json, mutants.json    cargo-mutants machine-readable results
 │   └── install.log
 ├── properties/
@@ -451,7 +402,7 @@ experiments/quality/
 │   ├── stats-cli.json        CLI fuzz stats (60 s run)
 │   ├── corpus/               16 seeds + 200 accepted JSON inputs; 59 accepted CLI vectors
 │   └── crashes/             crashing JSON inputs (F1)
-├── test-run-full.log        full suite (132 passed)
+├── test-run-full.log        full suite (163 on Windows, 162 on Linux)
 ├── concurrency-run-1..3.log flakiness re-runs
 ├── test-inventory.txt       executed test names per binary
 └── inventory.py             inventory extractor
@@ -465,14 +416,16 @@ committed.
 ## 10. Verdict
 
 * The suite is green and the concurrency suite did not flake in 3 runs.
-* Line coverage is **80.76 %** and branch coverage **65.26 %** overall; the weakest
-  modules (`proposal.rs` 52.05 % branches, `scratch.rs` 55.56 %, `lock.rs` 61.11 %)
-  coincide with the mutation survivors, so the two signals agree.
-* Mutation testing found **28 survivors in 59 testable mutants** on the two modules
-  measured — including the containment check `canonical_within` and the lock
-  `nonce`/`pid_alive` logic, both security-relevant. That is evidence of test gaps,
-  not of product defects, and none was fixed here (this work must not touch
-  `crates/flow/src/**`).
+* Line coverage on the delivered head is **83.19 %** and branch coverage **68.64 %** overall
+  (`997f983`); the weakest modules (`scratch.rs` 55.56 % branches, `proposal.rs` 55.48 %,
+  `state.rs` 66.07 %) are also the ones with no mutation measurement, so the two signals still
+  agree on where the pressure is missing.
+* Mutation testing found **19 survivors in 76 testable mutants (75.0 % killed)** on the two modules
+  measured. The survivors that mattered — the containment check `canonical_within`, the lock
+  `nonce`/`lock budget`/`pid_alive` logic and the lock error rendering — were test gaps, not product
+  defects, and this wave closed every one of them with a test (the remaining 19 are classified in §4:
+  10 are `#[cfg]`-excluded on Windows, 3 are equivalent at the `Ok`/`Err` level, 6 need fault
+  injection).
 * Fuzzing found one real contract defect (**F1**, non-finite numbers printed as
   `inf`) that is reachable through `flow proposals show` on corrupted state.
 * Everything that was not measured is labelled `NOT_RUN`/`NOT_MEASURED` with its

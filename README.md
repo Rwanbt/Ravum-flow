@@ -1,6 +1,7 @@
 # Ravum Flow
-> **Status: production candidate `0.2.0-rc.1` on `feat/flow-production-candidate` (draft PR) — local-trusted, not merged, not released.**  
+> **Status: evidence package `0.2.0-rc.1` on `feat/flow-production-candidate` (draft PR), gate verdict `PRODUCTION_PARTIAL` — local-trusted, not merged, not released.**  
 > This branch ships a small local CLI (`flow`) that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
+> No known P0/P1 finding is open in the local-trusted scope; the gate report names the evidence gaps that keep the verdict below `PRODUCTION_CANDIDATE` (coverage/mutation below their thresholds, whole-crate mutation and libFuzzer not run, reproducibility not proven, macOS not tested).  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
 **Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.
@@ -42,7 +43,8 @@ If two agents touch the same hunk, `assemble` refuses with `CONFLICT` (or
 failing proposal. Resolution is explicit: publish the disjoint subset, then
 re-propose against the new base. A stale base is `BASE_MISMATCH`, never a forced
 update. `--dry-run` performs the whole preflight and prints a `PLAN` without
-creating a commit, moving a ref or writing the journal.
+creating a commit, moving a ref or writing the journal. A boolean flag takes no
+value: `--dry-run=true` is a usage error (exit 2) rather than a live publication.
 
 | Command | State | Guarantee actually delivered |
 |---|---|---|
@@ -63,7 +65,7 @@ creating a commit, moving a ref or writing the journal.
 | `explain` | implemented | receipt + journal entries for a tree |
 | `disable` / `enable` | implemented | mutating commands refuse while disabled |
 
-**Guarantees:** receipts bind an exact Git tree OID *and* one effective policy digest (policy version, execution boundary, every obligation's id/program/args/required/timeout, and the obligation environment allowlist); a receipt altered on disk is refused; a required obligation that cannot run yields `UNSUPPORTED`, never `PASSED`; a receipt produced under a weaker or different policy is `STALE_POLICY`; publication is ref-CAS with a fsynced intent before and an outcome after; dirty/untracked user files are never modified.
+**Guarantees:** receipts bind an exact Git tree OID *and* one effective policy digest (policy version, execution boundary, every obligation's id/program/args/required/timeout, and the obligation environment allowlist); a receipt altered on disk is refused; a required obligation that cannot run yields `UNSUPPORTED`, never `PASSED`; a receipt produced under a weaker or different policy is `STALE_POLICY`; publication is ref-CAS with an intent whose file is fsynced before the rename (and whose directory is fsynced on Unix; Windows has no directory fsync) and an outcome recorded after; dirty/untracked user files are never modified. A usage error exits 2 and never mutates.
 
 **Non-guarantees (by design in this MVP):** no OS sandbox (obligations run with your rights and a scrubbed environment), no hook dispatch of its own — the Git plumbing it calls can still run `post-checkout` on `worktree add` and `reference-transaction` on `update-ref` — no completeness proof of the build context, no working-tree checkout after publishing, single local writer only. The receipt `integrity` digest detects accidental corruption and casual edits; it is not a signature, so anyone who can write `.flow/receipts` can forge a receipt. A tree this host cannot reproduce faithfully (case collisions, symlinks without `core.symlinks`, gitlinks) is refused rather than certified. The local advisory lock serialises Flow processes but does not fence an external `git` writer. Untrusted code execution is `UNSUPPORTED`.
 
@@ -74,6 +76,7 @@ creating a commit, moving a ref or writing the journal.
 | `examples/polyglot/rust` | `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --locked --offline` | yes (no dependencies) |
 | `examples/polyglot/node` | `node --test` (built-in runner) | yes (no `npm install`) |
 | `examples/polyglot/python` | `python -m unittest discover -v` | yes (stdlib) |
+| `examples/polyglot/typescript` | `tsc --noEmit`, `node --test test/math.test.ts` | no — `tsc` is a one-time, version-pinned prerequisite installed by the demo/CI |
 
 ```bash
 pwsh -File examples/polyglot/run-demo.ps1 -Fixture all   # Windows
@@ -84,8 +87,7 @@ Each demo copies the fixture to a throw-away directory, runs `init --adopt-polic
 verifies, publishes, applies the fixture's documented red edit, and shows that
 `run` fails and `publish` is refused. Nothing is written into this repository.
 
-**Tested platforms:** 129 tests executed on Windows 11 (Rust 1.95); Ubuntu and
-Windows in CI. A claim that is not in the report is not a claim.
+**Tested platforms:** **163 tests executed on Windows 11, 162 on Linux, 0 ignored** (the difference is one Windows-only PATH/PATHEXT test), Rust **1.95.0** pinned by `rust-toolchain.toml` and by CI; Ubuntu and Windows in CI, where every GitHub Action is pinned to a commit SHA. A claim that is not in the report is not a claim.
 
 See the [production gate report](docs/reviews/FLOW-PRODUCTION-GATE-REPORT.md), the [MVP 0.1 verification report](docs/reviews/FLOW-MVP-0.1-VERIFICATION-REPORT.md),
 the [user guide](docs/MVP-USER-GUIDE.md), the [CLI/JSON contract](docs/CLI-JSON.md)

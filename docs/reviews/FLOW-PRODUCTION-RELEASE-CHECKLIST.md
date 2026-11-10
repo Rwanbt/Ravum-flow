@@ -61,7 +61,7 @@ PE metadata; no `--remap-path-prefix` campaign was run in this wave. No bit-for-
 | Runtime dependencies | **none** (`[dependencies]` empty, `Cargo.lock` has one package: `flow`) |
 | Dev dependencies | none; test tools are external (`cargo-llvm-cov`, `cargo-mutants` — see the test matrix) |
 | `cargo audit --file Cargo.lock` | 0 vulnerabilities (1430 advisories loaded, 1 crate scanned) |
-| GitHub Actions | `actions/checkout@v4`, `dtolnay/rust-toolchain@stable`, `actions/setup-node@v4`, `actions/setup-python@v5`, `actions/upload-artifact@v4`, `ilammy/msvc-dev-cmd@v1` — **tag-pinned, not SHA-pinned**; SHA pinning is recommended before production and is an open item |
+| GitHub Actions | every `uses:` is pinned to a commit SHA (`checkout@11d5960…` v4.4.0, `dtolnay/rust-toolchain@b725eda…` with `toolchain: 1.95.0`, `setup-node@49933ea…` v4.4.0, `setup-python@a26af69…` v5.6.0, `upload-artifact@ea165f8…` v4.6.2, `msvc-dev-cmd@0b201ec…` v1.13.0), with the release in a comment |
 | CI permissions | `contents: read` only |
 | Secrets in artefacts | none; fixtures use fictional canaries only |
 | Licence | MPL-2.0, `LICENSE` shipped with the artefact; no third-party code was copied |
@@ -78,7 +78,7 @@ Required before production, by repository administration:
    `flow-ci / polyglot (ubuntu-latest)`, `flow-ci / polyglot (windows-latest)`, dismiss stale
    approvals, block force-push and deletion.
 2. `CODEOWNERS` for `crates/flow/**`, `.github/**`, `docs/reviews/**`.
-3. Pin the third-party Actions to commit SHAs.
+3. ~~Pin the third-party Actions to commit SHAs~~ — done (`e660cdb`), keep them pinned on upgrade.
 4. Decide whether `flow-ci` is required on the stacked PR chain or only on `dev`.
 
 ## 8. Rollback
@@ -99,5 +99,5 @@ The product touches only `.flow/` in the target repository and, on publication, 
 | Branch protection / required checks | admin action, out of mandate |
 | `H4` (confirmatory performance) | not required to ship, required for any productivity claim |
 | `H3` (untrusted execution) | out of scope; this candidate is local-trusted only |
-| Action SHA pinning | supply-chain hardening before a public release |
+| Action SHA pinning | **done** (`e660cdb`); re-pin on every action upgrade |
 | Release publication | out of mandate |

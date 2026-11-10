@@ -22,10 +22,19 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 
 ### Changed
 - `doctor` exits 1 when `overall` is `FAILED` (documented contract); `status` carries `flow-status/1`.
-- Unknown options and value flags without a value are usage errors (exit 2).
+- Unknown options and value flags without a value are usage errors (exit 2); a **boolean** flag with an
+  inline value (`--dry-run=true`) is a usage error too, instead of being validated and ignored.
+- `--timeout` must be a whole number of seconds ≥ 1: an unparseable or zero value is a usage error, so
+  a receipt can no longer prove a deadline the run did not use.
+- Any document whose `code` is `USAGE` exits 2 (`flow propose` included), matching the published
+  contract.
+- `flow version`'s `schemas` lists every schema this build emits, including `flow-status/1` and
+  `flow-proposal-list/1`, built from the `state::SCHEMA_*` constants.
 - `explain --tree` accepts only a 40/64-character hex object id (`INVALID_TREE_ID` otherwise).
 - The obligation environment allowlist includes MSVC toolchain variables, so older receipts become
   `STALE_POLICY` and must be re-run.
+- The toolchain is pinned: `rust-toolchain.toml` (`1.95.0` + rustfmt/clippy) and
+  `rust-version = "1.95"` in the crate manifest; CI names the same version.
 
 ### Fixed
 - A cloned repository could ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink and make Flow
@@ -36,6 +45,17 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - `FLOW_TEST_CRASH` is compiled out of release builds (proved on the release binary in CI).
 - A symbolic ref is refused as a publication target (`REF_IS_SYMREF`), and the ref is read back after
   the CAS (`NEEDS_RECONCILIATION` if it is not the prepared commit).
+- The journal write flushes the containing directory after the rename on Unix: an intent is no longer
+  "fsynced" only in the file-sense. Windows has no directory fsync and the README says so.
+- `redact()` used `env::vars()`, which panics on a non-Unicode environment value in the middle of
+  `run`; it now uses `vars_os()` with a lossy view.
+- Unix lock liveness treated `kill -0`'s EPERM (a live process owned by another user) as "provably
+  dead" and could steal a live lock. Linux now asks `/proc/<pid>` first and otherwise accepts only a
+  message that proves the process is gone; an unprovable answer is `LOCK_UNKNOWN`, never a steal.
+- A failed `git diff --name-only` was turned into an empty `worktree_diff`, i.e. a receipt claiming no
+  worktree changes; the run now refuses to certify.
+- `save_receipt` built a file name from an unvalidated `tree_oid`; it now requires a 40/64 hex object
+  id, like `Receipt::load`.
 
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
