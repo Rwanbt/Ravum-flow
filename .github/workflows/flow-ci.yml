@@ -195,7 +195,15 @@ jobs:
           repo_dir="$(mktemp -d)"
           trap 'rm -rf "$install_dir" "$repo_dir"' EXIT
           cp "$BIN" "$install_dir/"
-          FLOW="$install_dir/$(basename "$BIN")"
+          # MSYS resolves `flow` to `flow.exe` for `-x` and for exec, so the name
+          # that lands in the install directory is read from the directory itself
+          # instead of being assumed from the path.
+          binary_name="$(ls -A "$install_dir" | grep -E '^flow(\.exe)?$' | head -n1)"
+          if [ -z "$binary_name" ]; then
+            echo "::error::the installed copy is not named flow or flow.exe"
+            exit 1
+          fi
+          FLOW="$install_dir/$binary_name"
           "$FLOW" version | tee "$install_dir/version.json"
           grep -q 'flow 0\.2\.0-rc\.1' "$install_dir/version.json"
           grep -q 'flow-receipt/2' "$install_dir/version.json"
@@ -220,7 +228,7 @@ jobs:
           echo "published head: $(git log --oneline -1)"
           # The tool wrote nothing next to itself: the install directory still
           # holds exactly the binary and this log.
-          extra="$(ls -A "$install_dir" | grep -v -x -e "$(basename "$BIN")" -e version.json || true)"
+          extra="$(ls -A "$install_dir" | grep -v -x -e "$binary_name" -e version.json || true)"
           if [ -n "$extra" ]; then
             echo "::error::the install directory gained files: $extra"
             exit 1
