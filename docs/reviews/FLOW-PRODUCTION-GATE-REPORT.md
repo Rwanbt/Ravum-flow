@@ -20,7 +20,7 @@
 | G4 scenarios | PASS — M1–M10 exist as tests | §4 |
 | G5 polyglot | PASS — Rust, Node, Python **and TypeScript**, green and red, on Windows; CI on Ubuntu | §5 |
 | G6 measurement | **PARTIAL** — coverage/mutation measured on the delivered head and **below the candidate gates**; fuzz found one real defect (fixed) | §6 |
-| G7 CI / release candidate | PASS on what CI can prove (install smoke on both OSes, Actions SHA-pinned, toolchain pinned); **reproducibility not proven** | §7 |
+| G7 CI / release candidate | PASS — install smoke on both OSes, Actions SHA-pinned, toolchain pinned, **reproducibility proved on Windows** and checked in CI | §7 |
 | G8 performance | MEASURED (descriptive) / productivity `UNPROVEN` | §8 |
 | G9 docs / vault | docs PASS; vault **repaired and green** (the four pre-existing `migrate` items are fixed, `vault.py check` reports 0 issue) | §9 |
 | G10 independent review | adversarial replay **and** a second independent agent review; the review found one P1, fixed with a regression test | §10 |
@@ -156,7 +156,7 @@ pretends otherwise.
 | Release crash hook | inert, proved locally and in CI |
 | `cargo audit` | 0 vulnerabilities (1430 advisories, 1 crate) |
 | Runtime dependencies | none |
-| Reproducible build | **`REPRODUCIBILITY_NOT_PROVEN`** — two clean archive builds gave `978fefb3…` and `30e958d7…` |
+| Reproducible build | **`REPRODUCIBLE`** on Windows with rustc 1.95.0: two clean archives give `9c7a7c37…e807e`, proved by elimination (`--remap-path-prefix` alone is not enough; `-C codegen-units=1 -C link-arg=/Brepro` finishes the job). CI repeats the check on every Windows run. Linux not claimed |
 | Actions pinned to SHAs | **yes** — every `uses:` is a 40-hex commit with its release in a comment (`checkout v4.4.0`, `rust-toolchain@b725eda…`, `setup-node v4.4.0`, `setup-python v5.6.0`, `upload-artifact v4.6.2`, `msvc-dev-cmd v1.13.0`) |
 | Toolchain pinned | **yes** — `rust-toolchain.toml` (`1.95.0` + rustfmt/clippy), the CI action names `1.95.0`, the crate declares `rust-version = "1.95"` |
 | Branch protection | **absent** on `dev`/`main` (verified at G0); not changed by this branch; admin checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` |
@@ -317,7 +317,7 @@ quoted with the SHA they were taken on; no number here is copied from an earlier
 | Mutation (head `997f983`, `paths.rs` + `lock.rs`) | **75.0 % killed** — 57 caught / 19 missed / 0 timeout / 6 unviable of 82; 10 of the 19 are `#[cfg]`-excluded on this host, 3 are equivalent at the `Ok`/`Err` level, 6 need fault injection. Whole-crate run `NOT_RUN` |
 | Release candidate | `0.2.0-rc.1` rebuilt from `997f983`: **1 033 216 B**, SHA-256 `bbde18c5…264a`; install smoke PASS locally on the rebuilt binary and in CI on both OSes; `FLOW_TEST_CRASH=after-intent` → exit 0 `PUBLISHED` on it |
 | `cargo audit` | 0 vulnerabilities |
-| Reproducible build | `REPRODUCIBILITY_NOT_PROVEN` |
+| Reproducible build | **`REPRODUCIBLE`** on Windows (`9c7a7c37…e807e`, two clean archives), checked in CI on every Windows run; Linux not claimed |
 | Vault | **green** — `vault.py check` 0 issue after the repair commit `083adbc` |
 
 ### 11.1 Verdict
@@ -333,8 +333,7 @@ the trust boundary is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` be
 2. mutation is measured on two modules (75.0 %, up from 50.8 %) and below the 90 % gate; **whole-crate
    mutation** (960 mutants, ≈24 h serial) and a Linux run of the subset are `NOT_RUN`;
 3. `cargo-fuzz`/libFuzzer is `NOT_RUN` (a seeded, hand-rolled fuzzer found one real defect, F1, fixed);
-4. reproducibility is `NOT_PROVEN`;
-5. macOS is `NOT_TESTED_MACOS`, and performance/productivity is `UNPROVEN`.
+4. macOS is `NOT_TESTED_MACOS`, and performance/productivity is `UNPROVEN`.
 
 Closed since the previous verdict: the second independent review (was `NOT_RUN`), the SHA pinning, the
 Linux install smoke, the vault block, and the stale measurement on `ea181d4`. None of the remaining

@@ -179,6 +179,38 @@ jobs:
       - name: build release
         run: cargo build --locked --release
 
+      # Reproducibility, checked rather than claimed: two clean archives of the
+      # same commit, built in two different directories, must produce the same
+      # bytes. `/Brepro` and `codegen-units=1` remove the PE timestamp/PDB identity
+      # and the parallel-codegen ordering; `--remap-path-prefix` removes the build
+      # directory. Proved on Windows with rustc 1.95.0 (see the release checklist
+      # §5); the Linux side is not claimed because the linker flags differ.
+      - name: reproducible build (Windows, two clean archives)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          for n in a b; do
+            mkdir -p "$work/$n"
+            git archive HEAD | tar -x -C "$work/$n"
+            (
+              cd "$work/$n"
+              RUSTFLAGS="-C link-arg=/Brepro -C codegen-units=1 --remap-path-prefix=$work/$n= " \
+                cargo build --locked --release --offline > /dev/null
+            )
+          done
+          ha="$(sha256sum "$work/a/target/release/flow.exe" | cut -d' ' -f1)"
+          hb="$(sha256sum "$work/b/target/release/flow.exe" | cut -d' ' -f1)"
+          echo "archive a: $ha"
+          echo "archive b: $hb"
+          if [ "$ha" != "$hb" ]; then
+            echo "::error::the build is not reproducible ($ha vs $hb)"
+            exit 1
+          fi
+          echo "::notice::reproducible build: $ha"
+
       # "Installable" has to be proved per OS, not only on the author's host. The
       # install model is one self-contained binary in a private directory: no
       # registry, no service, no writes outside `.flow/` in the repository it is

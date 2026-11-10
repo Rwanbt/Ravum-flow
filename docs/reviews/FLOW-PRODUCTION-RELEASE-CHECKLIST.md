@@ -55,12 +55,29 @@ repository being used, and nothing is installed system-wide.
 
 ## 5. Reproducible build
 
-Two clean `git archive` checkouts, same toolchain and flags, built sequentially:
-`978fefb3e864af1d6f14e6713acea631d895802a541f6b7912f3ba2c14751ed8` vs
-`30e958d7b88131b8afc880ec9cbc9c65cc044a429aa7e019caad7e7f41fe78cc`.
+**`REPRODUCIBLE`** on Windows `x86_64-pc-windows-msvc` with `rustc 1.95.0`. Recipe: two clean
+`git archive HEAD` checkouts in two different directories, built sequentially with
 
-**`REPRODUCIBILITY_NOT_PROVEN`.** The divergence is consistent with embedded absolute build paths /
-PE metadata; no `--remap-path-prefix` campaign was run in this wave. No bit-for-bit claim is made.
+```
+RUSTFLAGS="-C link-arg=/Brepro -C codegen-units=1 --remap-path-prefix=$PWD/= " \
+  cargo build --locked --release --offline
+```
+
+Both archives produced the identical `flow.exe`:
+`9c7a7c372e5b76941ee5a4fc5caa4525cb80afaeec299493ad1262689bae807e` (1 033 216 B).
+
+What each flag removes was established by elimination, not assumed:
+
+| Flags | Result |
+|---|---|
+| none | `6a608e71…` vs `748869ca…` (same size) — **not** reproducible |
+| `--remap-path-prefix` only | `60c90251…` vs `2bbda724…` — still not |
+| `--remap-path-prefix -C codegen-units=1 -C link-arg=/Brepro` | **identical** |
+
+So the divergence was the PE/PDB identity and codegen ordering, not the source paths alone. CI repeats
+this check on every Windows run (`reproducible build (Windows, two clean archives)`). Linux is **not**
+claimed: the linker flags differ and the campaign was not run there. (The earlier attempt at `c624c23`,
+without these flags, gave `978fefb3…` vs `30e958d7…`, which is why the claim was withheld then.)
 
 ## 6. Supply chain
 
