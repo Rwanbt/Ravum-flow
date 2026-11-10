@@ -82,6 +82,8 @@ that happens after it, is not seen. `doctor` states that limit, and the capabili
 repeats it. The honest claim is: *a change to a declared file while the obligations run
 cannot be certified*.
 
+A fourth hole came from the re-check itself (A20): the walker skipped any root `.git` entry, so a hook that waited for `materialise` to unlink the worktree link and then re-created it could let the obligations reach the shared repository while the run was certified. The link is removed *before* the check, so a `.git` present at check time is by definition undeclared: the walker now refuses it like any other extra entry (re-checked 3/3, `REFUSED/UNSUPPORTED_CHECKOUT`). A `.git` re-created *after* the check is the documented TOCTOU limit, not a walker gap.
+
 Two smaller findings from the same review were also closed: the file-set check skipped
 every root name starting with `.flow-scratch` (only the exact marker is Flow's now), and a
 non-UTF-8 tree path was folded to `U+FFFD` and misdiagnosed as a case collision (it is now
@@ -171,7 +173,9 @@ from the exact commit** and uploads it.
 | `ccdbec9` | `42799312898` | 4/4 success |
 | `d7e1015`, `2e9b122` | `42800468915`, `42800689970` | **failure** — the wave-3 tests failed because the implementation of §2.3 was not in the commit (see §7) |
 | `7a034ff` | `42801612167` | Ubuntu 4/4 job success; Windows test job failed at the **packaging** step (a release-script bug, fixed in `de86b3e`) |
-| `de86b3e` | recorded in the closing report | the run that qualifies the artefact |
+| `de86b3e` | `42802527240` / `42802536498` | **4/4 jobs success on both the push and the PR run**, including the two packaging steps and the artefact upload |
+| `f5bb271` (final product code: `d6d7ea9`) | `42803928091` / `42803936581` | **4/4 jobs success on both runs**; the packaged artefacts are downloadable from the run and carry `PROVENANCE.json` with `commit=f5bb271`, `tree=a870b34a…`, `identical=true` per host |
+| `6525c46`, `d5f0a11` (docs only) | green on push | no `crates/` change, so the product evidence above still describes the head |
 
 The floor and the gate list are part of the workflow, so deleting or renaming a gate fails the
 build; `cargo test --all-targets` counts *executed* tests, so a deleted test cannot pass
@@ -216,10 +220,14 @@ implemented the two that were previously `NOT_RUN`:
   `changed during checkout`) was scored as a reproduced defect. The scenario now accepts the
   new wording; with the corrected assertion the campaign is **6 REPRODUCED / 115 REFUTED / 1
   NOT_RUN**, unchanged from wave 3.
-- The independent reviewer's 19-scenario attack on the P0 fix is in
-  [`FLOW-P0-GIT-FIDELITY-REVIEW.md`](FLOW-P0-GIT-FIDELITY-REVIEW.md): 15 refuted, 4 defects
-  (the P1 of §2.3 and three P3s), all fixed and re-checked in
-  [`FLOW-P0-GIT-FIDELITY-RECHECK.md`](FLOW-P0-GIT-FIDELITY-RECHECK.md).
+- The independent reviewer's attack on the P0 fix is in
+  [`FLOW-P0-GIT-FIDELITY-REVIEW.md`](FLOW-P0-GIT-FIDELITY-REVIEW.md) (19 scenarios, 15
+  refuted, 4 defects: the P1 of §2.3 and three P3s) and
+  [`FLOW-P0-GIT-FIDELITY-RECHECK.md`](FLOW-P0-GIT-FIDELITY-RECHECK.md): at the final pin every
+  P0/P1/P2 finding that review filed against the fidelity gate is **closed and re-measured on
+  Windows and Linux** (A07/A08/A09/A16/A18/A19/A20 all `REFUTED`, typed refusal, no receipt),
+  the campaign with the committed harness stays at 6/115/1/0 with no harness false positive,
+  and the remaining risks are exactly the documented limits of §9.
 
 ## 6. Distribution artefacts
 
