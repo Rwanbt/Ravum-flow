@@ -1,0 +1,69 @@
+--- crates/flow/src/json.rs
++++ replace Json::write with ()
+@@ -67,65 +67,17 @@
+ impl Json {
+     pub fn to_string_pretty(&self) -> String {
+         let mut out = String::new();
+         self.write(&mut out, Some(2), 0);
+         out
+     }
+ 
+     fn write(&self, out: &mut String, indent: Option<usize>, level: usize) {
+-        match self {
+-            Json::Null => out.push_str("null"),
+-            Json::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+-            Json::Num(n) => {
+-                if n.fract() == 0.0 && n.abs() < 9.0e15 {
+-                    out.push_str(&format!("{}", *n as i64));
+-                } else {
+-                    out.push_str(&format!("{}", n));
+-                }
+-            }
+-            Json::Str(s) => write_string(out, s),
+-            Json::Arr(items) => {
+-                if items.is_empty() {
+-                    out.push_str("[]");
+-                    return;
+-                }
+-                out.push('[');
+-                for (i, item) in items.iter().enumerate() {
+-                    if i > 0 {
+-                        out.push(',');
+-                    }
+-                    newline(out, indent, level + 1);
+-                    item.write(out, indent, level + 1);
+-                }
+-                newline(out, indent, level);
+-                out.push(']');
+-            }
+-            Json::Obj(pairs) => {
+-                if pairs.is_empty() {
+-                    out.push_str("{}");
+-                    return;
+-                }
+-                out.push('{');
+-                for (i, (k, v)) in pairs.iter().enumerate() {
+-                    if i > 0 {
+-                        out.push(',');
+-                    }
+-                    newline(out, indent, level + 1);
+-                    write_string(out, k);
+-                    out.push(':');
+-                    if indent.is_some() {
+-                        out.push(' ');
+-                    }
+-                    v.write(out, indent, level + 1);
+-                }
+-                newline(out, indent, level);
+-                out.push('}');
+-            }
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ fn newline(out: &mut String, indent: Option<usize>, level: usize) {
+     if let Some(width) = indent {
+         out.push('\n');
+         for _ in 0..width * level {
+             out.push(' ');

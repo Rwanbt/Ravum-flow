@@ -1,0 +1,994 @@
+[
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace is_object_id -> bool with true\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 93,
+        "line": 23
+      },
+      "start": {
+        "column": 5,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace is_object_id -> bool with false\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 93,
+        "line": 23
+      },
+      "start": {
+        "column": 5,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in is_object_id\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    (value.len() == 40 || value.len() == 64) || /* ~ changed by cargo-mutants ~ */ value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:46: replace && with || in is_object_id",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 48,
+        "line": 23
+      },
+      "start": {
+        "column": 46,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in is_object_id\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    (value.len() == 40 && /* ~ changed by cargo-mutants ~ */ value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:24: replace || with && in is_object_id",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 23
+      },
+      "start": {
+        "column": 24,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in is_object_id\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    (value.len() != /* ~ changed by cargo-mutants ~ */ 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:18: replace == with != in is_object_id",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 23
+      },
+      "start": {
+        "column": 18,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in is_object_id\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.\n ///\n /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a\n /// raw `../` or an absolute path must never reach the filesystem.\n pub fn is_object_id(value: &str) -> bool {\n-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n+    (value.len() == 40 || value.len() != /* ~ changed by cargo-mutants ~ */ 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_object_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 24
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:39: replace == with != in is_object_id",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 23
+      },
+      "start": {
+        "column": 39,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace is_record_id -> bool with true\n@@ -22,17 +22,17 @@\n pub fn is_object_id(value: &str) -> bool {\n     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n-    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_record_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 31
+        },
+        "start": {
+          "column": 1,
+          "line": 26
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 30
+      },
+      "start": {
+        "column": 5,
+        "line": 30
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace is_record_id -> bool with false\n@@ -22,17 +22,17 @@\n pub fn is_object_id(value: &str) -> bool {\n     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n-    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_record_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 31
+        },
+        "start": {
+          "column": 1,
+          "line": 26
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 70,
+        "line": 30
+      },
+      "start": {
+        "column": 5,
+        "line": 30
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in is_record_id\n@@ -22,17 +22,17 @@\n pub fn is_object_id(value: &str) -> bool {\n     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n-    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n+    value.len() == 32 || /* ~ changed by cargo-mutants ~ */ value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_record_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 31
+        },
+        "start": {
+          "column": 1,
+          "line": 26
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:30:23: replace && with || in is_record_id",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 30
+      },
+      "start": {
+        "column": 23,
+        "line": 30
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in is_record_id\n@@ -22,17 +22,17 @@\n pub fn is_object_id(value: &str) -> bool {\n     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n-    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n+    value.len() != /* ~ changed by cargo-mutants ~ */ 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "is_record_id",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 31
+        },
+        "start": {
+          "column": 1,
+          "line": 26
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:30:17: replace == with != in is_record_id",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 30
+      },
+      "start": {
+        "column": 17,
+        "line": 30
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace validate_relative -> Result<(), String> with Ok(())\n@@ -27,65 +27,17 @@\n /// Hex case is not significant: the ids this crate writes are lowercase, and\n /// accepting an uppercase spelling only widens what can be *read*.\n pub fn is_record_id(value: &str) -> bool {\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n-    if path.is_empty() {\n-        return Err(\"empty path\".into());\n-    }\n-    if path.len() > 4096 {\n-        return Err(\"path longer than 4096 bytes\".into());\n-    }\n-    if path.bytes().any(|b| b < 0x20) {\n-        return Err(\"control character in path\".into());\n-    }\n-    if path.starts_with('/') || path.starts_with('\\\\') {\n-        return Err(\"absolute path is not allowed\".into());\n-    }\n-    let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n-        return Err(\"drive-qualified path is not allowed\".into());\n-    }\n-    for component in path.split(['/', '\\\\']) {\n-        if component.is_empty() {\n-            return Err(\"empty path component\".into());\n-        }\n-        if component == \".\" || component == \"..\" {\n-            return Err(format!(\n-                \"path traversal component {component:?} is not allowed\"\n-            ));\n-        }\n-        if component.len() > 255 {\n-            return Err(\"path component longer than 255 bytes\".into());\n-        }\n-        // Conservative portability rule: a colon is a drive separator or an NTFS\n-        // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n-        // receipts portable across platforms instead of silently rewriting them.\n-        if component.contains(':') {\n-            return Err(format!(\"colon in component {component:?} is not portable\"));\n-        }\n-        if component.ends_with('.') || component.ends_with(' ') {\n-            return Err(format!(\n-                \"component {component:?} ends with a dot or space (not representable on Windows)\"\n-            ));\n-        }\n-        let stem = component\n-            .split('.')\n-            .next()\n-            .unwrap_or(component)\n-            .to_ascii_uppercase();\n-        if RESERVED.contains(&stem.as_str()) {\n-            return Err(format!(\"reserved device name {component:?}\"));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve `candidate` (which may not exist yet) and require it to stay under `root`.\n pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String> {\n     let root = root\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise root {}: {e}\", root.display()))?;\n     let mut probe = candidate.to_path_buf();\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:35:5: replace validate_relative -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 83
+      },
+      "start": {
+        "column": 5,
+        "line": 35
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with == in validate_relative\n@@ -30,17 +30,17 @@\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() == /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:38:19: replace > with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 38
+      },
+      "start": {
+        "column": 19,
+        "line": 38
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with < in validate_relative\n@@ -30,17 +30,17 @@\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() < /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:38:19: replace > with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 38
+      },
+      "start": {
+        "column": 19,
+        "line": 38
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with >= in validate_relative\n@@ -30,17 +30,17 @@\n     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())\n }\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() >= /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:38:19: replace > with >= in validate_relative",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 38
+      },
+      "start": {
+        "column": 19,
+        "line": 38
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with == in validate_relative\n@@ -33,17 +33,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b == /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:41:31: replace < with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 41
+      },
+      "start": {
+        "column": 31,
+        "line": 41
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with > in validate_relative\n@@ -33,17 +33,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b > /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:41:31: replace < with > in validate_relative",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 41
+      },
+      "start": {
+        "column": 31,
+        "line": 41
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with <= in validate_relative\n@@ -33,17 +33,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b <= /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:41:31: replace < with <= in validate_relative",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 41
+      },
+      "start": {
+        "column": 31,
+        "line": 41
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -36,17 +36,17 @@\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n-    if path.starts_with('/') || path.starts_with('\\\\') {\n+    if path.starts_with('/') && /* ~ changed by cargo-mutants ~ */ path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:44:30: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 44
+      },
+      "start": {
+        "column": 30,
+        "line": 44
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() || /* ~ changed by cargo-mutants ~ */ bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:59: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 48
+      },
+      "start": {
+        "column": 59,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 || /* ~ changed by cargo-mutants ~ */ bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:25: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 48
+      },
+      "start": {
+        "column": 25,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace >= with < in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() < /* ~ changed by cargo-mutants ~ */ 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:20: replace >= with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 48
+      },
+      "start": {
+        "column": 20,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] != /* ~ changed by cargo-mutants ~ */ b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:71: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 48
+      },
+      "start": {
+        "column": 71,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" && /* ~ changed by cargo-mutants ~ */ component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:29: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 55
+      },
+      "start": {
+        "column": 29,
+        "line": 55
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component != /* ~ changed by cargo-mutants ~ */ \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:22: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 24,
+        "line": 55
+      },
+      "start": {
+        "column": 22,
+        "line": 55
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" || component != /* ~ changed by cargo-mutants ~ */ \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:42: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 55
+      },
+      "start": {
+        "column": 42,
+        "line": 55
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with == in validate_relative\n@@ -52,17 +52,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() == /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:60:28: replace > with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 60
+      },
+      "start": {
+        "column": 28,
+        "line": 60
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with < in validate_relative\n@@ -52,17 +52,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() < /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:60:28: replace > with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 60
+      },
+      "start": {
+        "column": 28,
+        "line": 60
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with >= in validate_relative\n@@ -52,17 +52,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() >= /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:60:28: replace > with >= in validate_relative",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 60
+      },
+      "start": {
+        "column": 28,
+        "line": 60
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -61,17 +61,17 @@\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n-        if component.ends_with('.') || component.ends_with(' ') {\n+        if component.ends_with('.') && /* ~ changed by cargo-mutants ~ */ component.ends_with(' ') {\n             return Err(format!(\n                 \"component {component:?} ends with a dot or space (not representable on Windows)\"\n             ));\n         }\n         let stem = component\n             .split('.')\n             .next()\n             .unwrap_or(component)\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:69:37: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 69
+      },
+      "start": {
+        "column": 37,
+        "line": 69
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())\n@@ -80,49 +80,17 @@\n             return Err(format!(\"reserved device name {component:?}\"));\n         }\n     }\n     Ok(())\n }\n \n /// Resolve `candidate` (which may not exist yet) and require it to stay under `root`.\n pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String> {\n-    let root = root\n-        .canonicalize()\n-        .map_err(|e| format!(\"cannot canonicalise root {}: {e}\", root.display()))?;\n-    let mut probe = candidate.to_path_buf();\n-    let mut suffix: Vec<std::ffi::OsString> = Vec::new();\n-    loop {\n-        if probe.exists() {\n-            let mut resolved = probe\n-                .canonicalize()\n-                .map_err(|e| format!(\"cannot canonicalise {}: {e}\", probe.display()))?;\n-            for part in suffix.iter().rev() {\n-                resolved.push(part);\n-            }\n-            if !resolved.starts_with(&root) {\n-                return Err(format!(\n-                    \"path {} escapes {} (symlink or junction)\",\n-                    resolved.display(),\n-                    root.display()\n-                ));\n-            }\n-            return Ok(resolved);\n-        }\n-        match probe.file_name().map(|n| n.to_os_string()) {\n-            Some(name) => {\n-                suffix.push(name);\n-                probe = probe\n-                    .parent()\n-                    .ok_or_else(|| \"path has no existing ancestor\".to_string())?\n-                    .to_path_buf();\n-            }\n-            None => return Err(\"path has no file name\".into()),\n-        }\n-    }\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// True when `candidate` is lexically inside `root`, used only by tests now:\n /// containment is enforced by `scratch::materialise`, which also resolves the\n /// canonical path (a lexical check alone does not see a junction).\n #[cfg(test)]\n pub fn lexically_inside(root: &Path, candidate: &Path) -> bool {\n     let mut depth: i32 = 0;\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "canonical_within",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 121
+        },
+        "start": {
+          "column": 1,
+          "line": 86
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:88:5: replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 120
+      },
+      "start": {
+        "column": 5,
+        "line": 88
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ delete ! in canonical_within\n@@ -93,17 +93,17 @@\n     loop {\n         if probe.exists() {\n             let mut resolved = probe\n                 .canonicalize()\n                 .map_err(|e| format!(\"cannot canonicalise {}: {e}\", probe.display()))?;\n             for part in suffix.iter().rev() {\n                 resolved.push(part);\n             }\n-            if !resolved.starts_with(&root) {\n+            if  /* ~ changed by cargo-mutants ~ */resolved.starts_with(&root) {\n                 return Err(format!(\n                     \"path {} escapes {} (symlink or junction)\",\n                     resolved.display(),\n                     root.display()\n                 ));\n             }\n             return Ok(resolved);\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "canonical_within",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 121
+        },
+        "start": {
+          "column": 1,
+          "line": 86
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/paths.rs:101:16: delete ! in canonical_within",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 101
+      },
+      "start": {
+        "column": 16,
+        "line": 101
+      }
+    }
+  }
+]

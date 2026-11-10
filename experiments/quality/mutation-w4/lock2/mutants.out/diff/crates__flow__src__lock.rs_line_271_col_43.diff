@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace >= with < in acquire_lock
+@@ -263,17 +263,17 @@
+                         "this process already holds {} for {:?}",
+                         path.display(),
+                         owner.purpose
+                     )));
+                 }
+                 match pid_alive(owner.pid) {
+                     // A live owner is never displaced, whatever the age says.
+                     Some(true) => {
+-                        if Instant::now() >= deadline {
++                        if Instant::now() < /* ~ changed by cargo-mutants ~ */ deadline {
+                             return Err(LockError::Held(format!(
+                                 "another flow process (pid {}, purpose {:?}, {}s old) holds {}",
+                                 owner.pid,
+                                 owner.purpose,
+                                 crate::state::unix_now().saturating_sub(owner.at),
+                                 path.display()
+                             )));
+                         }

@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace Json::str -> Json with Default::default()
+@@ -12,17 +12,17 @@
+ }
+ 
+ impl Json {
+     pub fn obj(pairs: Vec<(&str, Json)>) -> Json {
+         Json::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+     }
+ 
+     pub fn str(s: impl Into<String>) -> Json {
+-        Json::Str(s.into())
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn get(&self, key: &str) -> Option<&Json> {
+         match self {
+             Json::Obj(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+             _ => None,
+         }
+     }

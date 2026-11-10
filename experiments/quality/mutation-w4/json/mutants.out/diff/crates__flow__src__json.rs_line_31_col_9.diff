@@ -1,0 +1,24 @@
+--- crates/flow/src/json.rs
++++ replace Json::as_str -> Option<&str> with None
+@@ -23,20 +23,17 @@
+     pub fn get(&self, key: &str) -> Option<&Json> {
+         match self {
+             Json::Obj(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+             _ => None,
+         }
+     }
+ 
+     pub fn as_str(&self) -> Option<&str> {
+-        match self {
+-            Json::Str(s) => Some(s),
+-            _ => None,
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn as_bool(&self) -> Option<bool> {
+         match self {
+             Json::Bool(b) => Some(*b),
+             _ => None,
+         }
+     }

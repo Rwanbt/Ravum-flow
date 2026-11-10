@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace += with *= in Parser<'a>::array
+@@ -253,17 +253,17 @@
+             self.pos += 1;
+             return Ok(Json::Arr(items));
+         }
+         loop {
+             self.ws();
+             items.push(self.value()?);
+             self.ws();
+             match self.peek() {
+-                Some(b',') => self.pos += 1,
++                Some(b',') => self.pos *= /* ~ changed by cargo-mutants ~ */ 1,
+                 Some(b']') => {
+                     self.pos += 1;
+                     break;
+                 }
+                 _ => return Err(format!("expected ',' or ']' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Arr(items))

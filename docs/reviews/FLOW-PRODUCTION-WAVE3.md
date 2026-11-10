@@ -9,13 +9,19 @@ release artefacts built with provenance on both platforms. The remaining gaps ar
 **evidence gaps and product decisions**, listed in §9; none is a known P0/P1 defect in the
 `local-trusted` scope.
 
+**Wave-4 addendum (2026-11-10):** commits `42ed7e0`/`3e03209` close the two evidence gaps this record
+left open — the candidate coverage gates are met (90 % lines / 85 % branches / 85 % functions)
+and mutation is reported per module instead of as a bounded subset. Nothing else changed: no
+threshold, no product behaviour, no merge, no release. See
+[`FLOW-QUALITY-WAVE4.md`](FLOW-QUALITY-WAVE4.md).
+
 This document is the authoritative record of wave 3. The detailed sub-reports are:
 
 | Subject | Document |
 |---|---|
 | Independent attack on the P0 fix (19 scenarios, the four defects it found) | [`FLOW-P0-GIT-FIDELITY-REVIEW.md`](FLOW-P0-GIT-FIDELITY-REVIEW.md), then [`FLOW-P0-GIT-FIDELITY-RECHECK.md`](FLOW-P0-GIT-FIDELITY-RECHECK.md) |
 | Adversarial campaign replay on this wave | [`FLOW-PRODUCTION-ADVERSARIAL-WAVE3.md`](FLOW-PRODUCTION-ADVERSARIAL-WAVE3.md) |
-| Coverage and mutation measurements | [`FLOW-QUALITY-WAVE3.md`](FLOW-QUALITY-WAVE3.md) |
+| Coverage and mutation measurements | [`FLOW-QUALITY-WAVE3.md`](FLOW-QUALITY-WAVE3.md), then [`FLOW-QUALITY-WAVE4.md`](FLOW-QUALITY-WAVE4.md) |
 | Artefacts, provenance, SBOM, smoke tests | [`FLOW-PACKAGING-WAVE3.md`](FLOW-PACKAGING-WAVE3.md) |
 | Capability matrix (available / demonstrated / specified-only / not available) | [`../CAPABILITIES.md`](../CAPABILITIES.md) |
 
@@ -183,25 +189,27 @@ silently.
 
 ### 5.3 Coverage and mutation (measured on the final source, see `FLOW-QUALITY-WAVE3.md`)
 
-| Scope | Gate report (`997f983`) | Wave-3 baseline (`dfb941d`) | **Final (`7a034ff`)** |
-|---|---|---|---|
-| Global lines | 83.19 % | 83.27 % | **88.68 %** |
-| Global branches | 68.64 % | 69.11 % | **75.67 %** |
-| `proposal.rs` | 74.94 / 55.48 | 74.94 / 55.48 | **90.91 / 80.14** |
-| `scratch.rs` | 71.04 / 55.56 | 71.04 / 55.56 | 75.42 / 59.72 |
+| Scope | Gate report (`997f983`) | Wave-3 baseline (`dfb941d`) | **Final (`7a034ff`)** | **Wave 4 (final)** |
+|---|---|---|---|---|
+| Global lines | 83.19 % | 83.27 % | **88.68 %** | **93.14 %** |
+| Global branches | 68.64 % | 69.11 % | **75.67 %** | **85.37 %** |
+| Global functions | — | — | — | **89.78 %** |
+| `proposal.rs` | 74.94 / 55.48 | 74.94 / 55.48 | **90.91 / 80.14** | 91.04 / 80.82 |
+| `scratch.rs` | 71.04 / 55.56 | 71.04 / 55.56 | 75.42 / 59.72 | 85.51 / 71.62 |
 
-The candidate gates (90 % lines / 85 % branches) are **not met**. The growth is from real
-refusal tests (32 error-path tests, +5.4 points on their own), not from assertions added for
-the percentage. `scratch.rs` cannot honestly reach 85 % under the prescribed command: the
-`tests/` filter also discards source modules imported by integration tests through
-`#[path]`, so the direct-module paths are invisible to the metric (documented in the quality
-report with the exact uncovered lines).
+The candidate gates (90 % lines / 85 % branches) were **not met in wave 3** and are met as of
+wave 4: 31 operator-surface tests plus unit tests for private refusal paths, with no threshold
+changed, no test removed and no assertion written for the percentage. Wave 4 also publishes the
+product-only view (each module's `#[cfg(test)]` block excluded): **92.79 % lines / 86.17 %
+branches**, because the prescribed command instruments unit-test code that lives in `src/`.
+`scratch.rs` remains the weakest module honestly: its remaining gaps need injected filesystem
+failures, documented in `FLOW-QUALITY-WAVE3.md` §3.1. The wave-4 record, method and mutation
+results are in [`FLOW-QUALITY-WAVE4.md`](FLOW-QUALITY-WAVE4.md).
 
-Mutation: bounded to `proposal.rs`, **13 of 119 mutants tested in ~14 min (8 caught, 2
-missed, 3 unviable, 0 timeout, 106 NOT_RUN)** — every viable mutant re-runs the whole suite,
-so the full run does not fit the session budget. Both survivors were real gaps
-(`MAX_PATCH_BYTES` not pinned from below); the new 1 MiB admission test kills them, verified
-by a targeted rerun (**2/2 caught**). Whole-crate mutation remains `NOT_RUN`.
+Mutation in wave 3 was bounded to `proposal.rs` (13 of 119 mutants, 106 `NOT_RUN`). Wave 4 runs
+three modules in full (`json`, `paths`, `lock`, 221 mutants against their own unit tests);
+`scratch`, `main`, `proposal`, `state`, `gitcli` and `commands.rs` stay `NOT_RUN` this wave, and
+the whole-crate rate is still not claimed (see `FLOW-QUALITY-WAVE4.md` §6).
 
 ### 5.4 Adversarial campaign
 
@@ -277,7 +285,7 @@ on the same ref.
 | 1 | A hook/obligation can write to the checkout *outside* the re-check window (write-and-revert, or after the re-check); a hostile obligation runs with the user's rights (no OS sandbox) | P1 (product decision) | Requires a real sandbox or a read-only snapshot; both are product/architecture decisions (`H3`), not a defect to paper over |
 | 2 | A receipt is integrity-protected but not signed: a local writer with the same rights can forge one (`PRF-01`) | P2 (accepted) | Needs a key/authentication model (a product decision) |
 | 3 | Evidence retention: deleting `.flow/logs` is displayed as incomplete evidence but publication is unaffected (`PRF-02`/`PRF-08`) | P3 (documented) | Needs a retention/rotation policy |
-| 4 | Coverage 88.68 % / 75.67 % and mutation 75 % (subset) are below the candidate gates; whole-crate mutation and the Linux mutation run are `NOT_RUN`; `cargo-fuzz` is `NOT_RUN` | Evidence gap | The full mutation run needs ~24 h of CPU; the coverage gap is dominated by `scratch.rs` paths invisible to the prescribed metric |
+| 4 | Coverage is **met** as of wave 4 (93.14 % lines / 85.37 % branches / 89.78 % functions; 93.04 / 86.17 product-only). Mutation is widened to three modules in full (`json`, `paths`, `lock`; 221 mutants) and reported per module with its denominator; `scratch`, `main`, `proposal`, `state`, `gitcli` and `commands.rs` (177 mutants) remain `NOT_RUN` for mutation, the Linux mutation run is `NOT_RUN`, and `cargo-fuzz` is `NOT_RUN` | Evidence gap | The full-suite mutation run is ~70 s per viable mutant (every test spawns real `flow` processes), so whole-crate mutation needs ~24 h of CPU; coverage now depends on tests that exist, not on injected faults (`scratch.rs` remains the weakest module) |
 | 5 | Productivity benefit over plain Git/worktrees is `UNPROVEN`: no confirmatory campaign on this head (the exploratory `n=5` pilot remains the only data) | Evidence gap | The pre-registered protocol needs a quiet machine and a fresh campaign; it is not a code defect |
 | 6 | macOS is `NOT_TESTED_MACOS`; cross-host reproducibility is not claimed | Scope limit | No macOS runner in scope; the reproducible-build flags are MSVC-specific |
 | 7 | An external `git` writer is not fenced (only Flow's own writers are serialised) | Documented | Would need repository-level hooks or server-side enforcement |

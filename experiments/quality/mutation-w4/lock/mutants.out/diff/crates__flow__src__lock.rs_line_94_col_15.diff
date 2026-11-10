@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace != with == in parse
+@@ -86,17 +86,17 @@
+     at: u64,
+     nonce: String,
+     purpose: String,
+ }
+ 
+ fn parse(text: &str) -> Option<Owner> {
+     let mut parts = text.split_whitespace();
+     let schema = parts.next()?;
+-    if schema != LOCK_SCHEMA {
++    if schema == /* ~ changed by cargo-mutants ~ */ LOCK_SCHEMA {
+         return None;
+     }
+     Some(Owner {
+         pid: parts.next()?.parse().ok()?,
+         at: parts.next()?.parse().ok()?,
+         nonce: parts.next()?.to_string(),
+         purpose: parts.next().unwrap_or("unknown").to_string(),
+     })

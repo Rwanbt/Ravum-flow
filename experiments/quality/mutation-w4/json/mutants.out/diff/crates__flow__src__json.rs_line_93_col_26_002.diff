@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace > with >= in Json::write
+@@ -85,17 +85,17 @@
+             Json::Str(s) => write_string(out, s),
+             Json::Arr(items) => {
+                 if items.is_empty() {
+                     out.push_str("[]");
+                     return;
+                 }
+                 out.push('[');
+                 for (i, item) in items.iter().enumerate() {
+-                    if i > 0 {
++                    if i >= /* ~ changed by cargo-mutants ~ */ 0 {
+                         out.push(',');
+                     }
+                     newline(out, indent, level + 1);
+                     item.write(out, indent, level + 1);
+                 }
+                 newline(out, indent, level);
+                 out.push(']');
+             }

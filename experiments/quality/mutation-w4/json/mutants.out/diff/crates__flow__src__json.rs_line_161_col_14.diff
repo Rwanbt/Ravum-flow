@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace != with == in parse
+@@ -153,17 +153,17 @@
+ pub fn parse(src: &str) -> Result<Json, String> {
+     let mut p = Parser {
+         bytes: src.as_bytes(),
+         pos: 0,
+     };
+     p.ws();
+     let v = p.value()?;
+     p.ws();
+-    if p.pos != p.bytes.len() {
++    if p.pos == /* ~ changed by cargo-mutants ~ */ p.bytes.len() {
+         return Err(format!("trailing data at byte {}", p.pos));
+     }
+     Ok(v)
+ }
+ 
+ struct Parser<'a> {
+     bytes: &'a [u8],
+     pos: usize,

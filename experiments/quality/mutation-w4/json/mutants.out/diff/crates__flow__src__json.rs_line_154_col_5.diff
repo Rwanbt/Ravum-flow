@@ -1,0 +1,31 @@
+--- crates/flow/src/json.rs
++++ replace parse -> Result<Json, String> with Ok(Default::default())
+@@ -146,27 +146,17 @@
+             c => out.push(c),
+         }
+     }
+     out.push('"');
+ }
+ 
+ // ------------------------------------------------------------------ parser
+ pub fn parse(src: &str) -> Result<Json, String> {
+-    let mut p = Parser {
+-        bytes: src.as_bytes(),
+-        pos: 0,
+-    };
+-    p.ws();
+-    let v = p.value()?;
+-    p.ws();
+-    if p.pos != p.bytes.len() {
+-        return Err(format!("trailing data at byte {}", p.pos));
+-    }
+-    Ok(v)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ struct Parser<'a> {
+     bytes: &'a [u8],
+     pos: usize,
+ }
+ 
+ impl<'a> Parser<'a> {

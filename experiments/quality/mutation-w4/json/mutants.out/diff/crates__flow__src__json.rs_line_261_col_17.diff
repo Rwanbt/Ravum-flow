@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm Some(b',') in Parser<'a>::array
+@@ -253,17 +253,17 @@
+             self.pos += 1;
+             return Ok(Json::Arr(items));
+         }
+         loop {
+             self.ws();
+             items.push(self.value()?);
+             self.ws();
+             match self.peek() {
+-                Some(b',') => self.pos += 1,
++                 /* ~ changed by cargo-mutants ~ */
+                 Some(b']') => {
+                     self.pos += 1;
+                     break;
+                 }
+                 _ => return Err(format!("expected ',' or ']' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Arr(items))

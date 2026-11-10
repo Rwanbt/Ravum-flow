@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm b'"' in Parser<'a>::string
+@@ -271,17 +271,17 @@
+ 
+     fn string(&mut self) -> Result<String, String> {
+         self.pos += 1; // opening quote
+         let mut out = String::new();
+         loop {
+             let b = self.peek().ok_or("unterminated string")?;
+             self.pos += 1;
+             match b {
+-                b'"' => return Ok(out),
++                 /* ~ changed by cargo-mutants ~ */
+                 b'\\' => {
+                     let esc = self.peek().ok_or("unterminated escape")?;
+                     self.pos += 1;
+                     match esc {
+                         b'"' => out.push('"'),
+                         b'\\' => out.push('\\'),
+                         b'/' => out.push('/'),
+                         b'b' => out.push('\u{8}'),

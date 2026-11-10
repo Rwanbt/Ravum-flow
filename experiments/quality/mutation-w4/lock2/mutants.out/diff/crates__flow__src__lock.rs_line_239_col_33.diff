@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock
+@@ -231,17 +231,17 @@
+                 return Ok(LockGuard {
+                     path: path.clone(),
+                     nonce: ours,
+                 })
+             }
+             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                 let text = match fs::read_to_string(&path) {
+                     Ok(t) => t,
+-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
++                    Err(err) if true /* ~ changed by cargo-mutants ~ */ => continue,
+                     Err(err) => {
+                         return Err(LockError::Unknown(format!(
+                             "lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running",
+                             path.display()
+                         )))
+                     }
+                 };
+                 // A creator may have created the file and not finished writing it

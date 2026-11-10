@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace != with == in Parser<'a>::object
+@@ -215,17 +215,17 @@
+         }
+         loop {
+             self.ws();
+             if self.peek() != Some(b'"') {
+                 return Err(format!("expected key at {}", self.pos));
+             }
+             let key = self.string()?;
+             self.ws();
+-            if self.peek() != Some(b':') {
++            if self.peek() == /* ~ changed by cargo-mutants ~ */ Some(b':') {
+                 return Err(format!("expected ':' at {}", self.pos));
+             }
+             self.pos += 1;
+             self.ws();
+             let value = self.value()?;
+             // Duplicate names are ambiguous: two readers can disagree about
+             // which value wins. Flow refuses them instead of picking one.
+             if pairs.iter().any(|(k, _)| k == &key) {

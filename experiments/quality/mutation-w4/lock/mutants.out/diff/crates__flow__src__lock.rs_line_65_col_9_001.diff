@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace <impl From<LockError> for String>::from -> String with "xyzzy".into()
+@@ -57,17 +57,17 @@
+ impl std::fmt::Display for LockError {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         f.write_str(self.message())
+     }
+ }
+ 
+ impl From<LockError> for String {
+     fn from(e: LockError) -> String {
+-        e.to_string()
++        "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub fn lock_path(root: &Path) -> PathBuf {
+     crate::state::flow_dir(root).join("lock")
+ }
+ 
+ /// What an inspection can honestly say about the lock currently on disk.

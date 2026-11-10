@@ -1,0 +1,4 @@
+crates/flow/src/lock.rs:239:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock
+crates/flow/src/lock.rs:239:44: replace == with != in acquire_lock
+crates/flow/src/lock.rs:294:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock
+crates/flow/src/lock.rs:294:73: replace == with != in acquire_lock

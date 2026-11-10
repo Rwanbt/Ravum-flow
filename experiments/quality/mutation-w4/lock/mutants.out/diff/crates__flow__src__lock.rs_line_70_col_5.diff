@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace lock_path -> PathBuf with Default::default()
+@@ -62,17 +62,17 @@
+ 
+ impl From<LockError> for String {
+     fn from(e: LockError) -> String {
+         e.to_string()
+     }
+ }
+ 
+ pub fn lock_path(root: &Path) -> PathBuf {
+-    crate::state::flow_dir(root).join("lock")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// What an inspection can honestly say about the lock currently on disk.
+ #[derive(Debug, Clone)]
+ pub struct LockInfo {
+     pub present: bool,
+     pub pid: Option<u32>,
+     pub age_s: Option<u64>,

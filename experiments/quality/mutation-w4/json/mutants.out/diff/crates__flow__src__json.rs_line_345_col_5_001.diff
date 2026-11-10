@@ -1,0 +1,26 @@
+--- crates/flow/src/json.rs
++++ replace utf8_len -> usize with 1
+@@ -337,22 +337,17 @@
+                 "number {s:?} is not finite; JSON has no infinity, so it is refused"
+             ));
+         }
+         Ok(Json::Num(value))
+     }
+ }
+ 
+ fn utf8_len(first: u8) -> usize {
+-    match first {
+-        0x00..=0x7f => 1,
+-        0xc0..=0xdf => 2,
+-        0xe0..=0xef => 3,
+-        _ => 4,
+-    }
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn round_trip() {

@@ -1,0 +1,24 @@
+--- crates/flow/src/lock.rs
++++ replace pid_alive -> Option<bool> with Some(true)
+@@ -355,20 +355,17 @@
+     }
+ }
+ 
+ /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while
+ /// the pid exists, and it cannot confuse "gone" with "not mine". Only when the
+ /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.
+ #[cfg(target_os = "linux")]
+ fn pid_alive(pid: u32) -> Option<bool> {
+-    if Path::new(&format!("/proc/{pid}")).exists() {
+-        return Some(true);
+-    }
+-    kill_liveness(pid)
++    Some(true) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(all(unix, not(target_os = "linux")))]
+ fn pid_alive(pid: u32) -> Option<bool> {
+     kill_liveness(pid)
+ }
+ 
+ #[cfg(test)]

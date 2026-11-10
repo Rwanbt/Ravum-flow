@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace Parser<'a>::peek -> Option<u8> with Some(0)
+@@ -174,17 +174,17 @@
+         while self.pos < self.bytes.len()
+             && matches!(self.bytes[self.pos], b' ' | b'\t' | b'\n' | b'\r')
+         {
+             self.pos += 1;
+         }
+     }
+ 
+     fn peek(&self) -> Option<u8> {
+-        self.bytes.get(self.pos).copied()
++        Some(0) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn value(&mut self) -> Result<Json, String> {
+         match self.peek() {
+             Some(b'{') => self.object(),
+             Some(b'[') => self.array(),
+             Some(b'"') => Ok(Json::Str(self.string()?)),
+             Some(b't') => self.literal("true", Json::Bool(true)),

@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace == with != in acquire_lock
+@@ -286,17 +286,17 @@
+                             path.display()
+                         )))
+                     }
+                     Some(false) => {
+                         // Provably dead owner: steal only if the file still
+                         // carries the nonce that was observed, so a concurrent
+                         // successor is never removed.
+                         match fs::read_to_string(&path) {
+-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {
++                            Ok(again) if parse(&again).map(|o| o.nonce) != /* ~ changed by cargo-mutants ~ */ Some(owner.nonce.clone()) => {
+                                 match fs::remove_file(&path) {
+                                     Ok(()) => continue,
+                                     Err(err) => {
+                                         return Err(LockError::Io(format!(
+                                             "cannot remove the dead lock {}: {err}",
+                                             path.display()
+                                         )))
+                                     }

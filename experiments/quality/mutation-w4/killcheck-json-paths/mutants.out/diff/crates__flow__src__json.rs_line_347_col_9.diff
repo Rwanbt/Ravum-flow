@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm 0xc0..= 0xdf in utf8_len
+@@ -339,17 +339,17 @@
+         }
+         Ok(Json::Num(value))
+     }
+ }
+ 
+ fn utf8_len(first: u8) -> usize {
+     match first {
+         0x00..=0x7f => 1,
+-        0xc0..=0xdf => 2,
++         /* ~ changed by cargo-mutants ~ */
+         0xe0..=0xef => 3,
+         _ => 4,
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;

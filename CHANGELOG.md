@@ -73,6 +73,24 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - `save_receipt` built a file name from an unvalidated `tree_oid`; it now requires a 40/64 hex object
   id, like `Receipt::load`.
 
+### Tests and evidence (wave 4, 2026-11-10 — tests only)
+- New `tests/operator_surfaces.rs` (30 tests) pins the operator-facing contracts: `init` shows a
+  committed policy and adopts nothing without `--adopt-policy`, `doctor` discloses a policy changed
+  since approval, a corrupt adoption record, hooks, every attribute source, case folding, a live or
+  unparseable lock and a disabled policy, `publish` refuses an unusable ref name, a detached HEAD, an
+  unknown or pruned candidate and an unattributable lock, `reconcile` reports incomplete intents,
+  shared ids and only decisive observations, and `status`/`proposals`/`assemble` stay safe on corrupt
+  or missing local state.
+- Unit tests inside six modules cover private refusal paths the CLI cannot reach deterministically
+  (JSON shapes and pretty nesting, config/adoption/journal/receipt validation, lock ownership, path
+  validation, scratch ownership, secret redaction).
+- Candidate coverage gates **met**: 93.14 % lines / 85.37 % branches / 89.78 % functions
+  (93.04 / 86.17 % product-only), up from 88.68 / 75.67. The CI floor rises to 349 executed tests
+  and 11 new blocking gates; no threshold was changed and no test was removed or ignored.
+- Mutation widened from 13/119 mutants in one module to 221 mutants in three modules (`json`,
+  `paths`, `lock`) with per-module denominators; the rest of the crate stays `NOT_RUN` and no
+  whole-crate rate is claimed (`docs/reviews/FLOW-QUALITY-WAVE4.md`).
+
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
 signature, the local lock does not fence an external `git` writer, `publish` moves refs only,

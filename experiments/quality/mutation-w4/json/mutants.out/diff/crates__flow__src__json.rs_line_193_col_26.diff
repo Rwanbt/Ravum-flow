@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace == with != in Parser<'a>::value
+@@ -185,17 +185,17 @@
+     fn value(&mut self) -> Result<Json, String> {
+         match self.peek() {
+             Some(b'{') => self.object(),
+             Some(b'[') => self.array(),
+             Some(b'"') => Ok(Json::Str(self.string()?)),
+             Some(b't') => self.literal("true", Json::Bool(true)),
+             Some(b'f') => self.literal("false", Json::Bool(false)),
+             Some(b'n') => self.literal("null", Json::Null),
+-            Some(c) if c == b'-' || c.is_ascii_digit() => self.number(),
++            Some(c) if c != /* ~ changed by cargo-mutants ~ */ b'-' || c.is_ascii_digit() => self.number(),
+             Some(c) => Err(format!("unexpected byte {:?} at {}", c as char, self.pos)),
+             None => Err("unexpected end of input".into()),
+         }
+     }
+ 
+     fn literal(&mut self, word: &str, value: Json) -> Result<Json, String> {
+         if self.bytes[self.pos..].starts_with(word.as_bytes()) {
+             self.pos += word.len();

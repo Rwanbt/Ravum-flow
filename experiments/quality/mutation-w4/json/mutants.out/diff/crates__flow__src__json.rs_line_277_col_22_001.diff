@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace += with *= in Parser<'a>::string
+@@ -269,17 +269,17 @@
+         Ok(Json::Arr(items))
+     }
+ 
+     fn string(&mut self) -> Result<String, String> {
+         self.pos += 1; // opening quote
+         let mut out = String::new();
+         loop {
+             let b = self.peek().ok_or("unterminated string")?;
+-            self.pos += 1;
++            self.pos *= /* ~ changed by cargo-mutants ~ */ 1;
+             match b {
+                 b'"' => return Ok(out),
+                 b'\\' => {
+                     let esc = self.peek().ok_or("unterminated escape")?;
+                     self.pos += 1;
+                     match esc {
+                         b'"' => out.push('"'),
+                         b'\\' => out.push('\\'),

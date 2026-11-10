@@ -1,0 +1,24 @@
+--- crates/flow/src/json.rs
++++ replace Json::as_arr -> Option<&[Json]> with None
+@@ -37,20 +37,17 @@
+     pub fn as_bool(&self) -> Option<bool> {
+         match self {
+             Json::Bool(b) => Some(*b),
+             _ => None,
+         }
+     }
+ 
+     pub fn as_arr(&self) -> Option<&[Json]> {
+-        match self {
+-            Json::Arr(v) => Some(v),
+-            _ => None,
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn as_num(&self) -> Option<f64> {
+         match self {
+             Json::Num(n) => Some(*n),
+             _ => None,
+         }
+     }

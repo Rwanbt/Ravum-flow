@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace Json::obj -> Json with Default::default()
+@@ -8,17 +8,17 @@
+     Num(f64),
+     Str(String),
+     Arr(Vec<Json>),
+     Obj(Vec<(String, Json)>),
+ }
+ 
+ impl Json {
+     pub fn obj(pairs: Vec<(&str, Json)>) -> Json {
+-        Json::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn str(s: impl Into<String>) -> Json {
+         Json::Str(s.into())
+     }
+ 
+     pub fn get(&self, key: &str) -> Option<&Json> {
+         match self {
