@@ -97,11 +97,11 @@ a report paragraph: the `coverage` CI job in
 [`.github/workflows/flow-ci.yml`](../../.github/workflows/flow-ci.yml) exits 1
 below either threshold. No waiver is used; every measured point counts.
 
-Measured on the CI job itself (Linux, run `42886979136`):
-**95.66 % lines (4382/4581), 92.61 % branches (789/852)** — `gate lines: ok`,
+Measured on the CI job itself (Linux, run `42896473842`):
+**95.66 % lines (4382/4581), 92.72 % branches (790/852)** — `gate lines: ok`,
 `gate branches: ok`. The Linux denominator is 6 lines larger than the Windows one
-(six Unix-only lines, e.g. the executable-bit comparison) and the result is 0.08 /
-0.20 points lower: the same code, measured where the gate runs.
+(six Unix-only lines, e.g. the executable-bit comparison) and lines are 0.08
+points lower: the same code, measured where the gate runs.
 
 ## 3. Tests added
 
@@ -154,7 +154,9 @@ of the evidence, not something to overwrite.
 
 After the fix, both events for the same commit are green: push run
 `42886979136` and pull-request run `42886998986`, **5/5 jobs each** (test ×2,
-polyglot ×2, coverage ×1). The coverage job's own totals are quoted in §2.3.
+polyglot ×2, coverage ×1). The final head (`3da1c46`) is green on both events too:
+push `42896473842` and pull-request `42896483330`, **5/5 each**, with the measured
+floor and the coverage totals quoted in §2.3 and §3.
 
 ## 5. Mutation: the remaining modules
 

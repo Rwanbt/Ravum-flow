@@ -101,7 +101,7 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   used to advance past the end and panic instead of refusing). A panic is not a refusal: it skips
   `Drop` cleanup.
 - Product-only coverage (unit-test code excluded) **raised from 93.04 % lines / 86.17 % branches to
-  95.74 % / 92.81 %** on Windows and **95.66 % / 92.61 %** on the Linux CI job, with 54 new test functions (422 executed on Windows, 419 on Linux, 0 ignored). The candidate thresholds are now
+  95.74 % / 92.81 %** on Windows and **95.66 % / 92.72 %** on the Linux CI job, with 54 new test functions (422 executed on Windows, 419 on Linux, 0 ignored). The candidate thresholds are now
   **95 % lines / 90 % branches**, enforced by a new `coverage` CI job; no test, gate or security
   property was removed or weakened, and no waiver is used.
 - The executed-test floor and the named gates were raised with the tests (17 new gates), so a

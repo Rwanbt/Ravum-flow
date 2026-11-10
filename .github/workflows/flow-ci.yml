@@ -85,10 +85,10 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
-          # number that would silently shrink. 422 executed on Windows after the
-          # wave-5 boundary tests; the Linux count was 412 when Windows was 415
-          # (run 42886979136), so it is expected to be 419 here and is set to that
-          # expectation. A mismatch is a real signal, not a rounding error.
+          # number that would silently shrink. Both numbers are measured, not
+          # projected: 422 on Windows and 419 on Linux in run 42896473842
+          # (2026-11-10, wave 5), 0 ignored.
+
           minimum=419
           if [ "${RUNNER_OS}" = "Windows" ]; then minimum=422; fi
           if [ "$passed" -lt "$minimum" ]; then
