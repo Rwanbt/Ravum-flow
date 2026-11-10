@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "post": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\debug\\flow.exe",
+    "sha256": "520a6bee56fe133a1dde95e810c9a7f61a43eaa66114307728d618b431fe6eff"
+  },
+  "probes": {
+    "clean_receipt": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 945
+      },
+      "receipt_written": true,
+      "receipt_status": "PASSED",
+      "receipt_keys": [
+        "candidate_id",
+        "checkout_recheck",
+        "commit_oid",
+        "context_id",
+        "execution_boundary",
+        "finished_at",
+        "integrity",
+        "logs",
+        "obligations",
+        "parent_oid",
+        "policy",
+        "policy_digest",
+        "policy_version",
+        "schema",
+        "scope_note",
+        "started_at",
+        "status",
+        "tree_oid",
+        "verification_scope",
+        "worktree_diff"
+      ],
+      "checkout_recheck_present": true,
+      "checkout_recheck_value": "OK",
+      "checkout_unchanged_present": true
+    },
+    "flags": {
+      "run_dry_run": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 59
+      },
+      "status_force": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 66
+      },
+      "doctor_adopt_policy": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 55
+      },
+      "receipt_written": false,
+      "obligation_logs_written": false,
+      "ref_unchanged": true,
+      "publish_dry_run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "NO_RECEIPT",
+        "reason": "no complete receipt for tree 42d4c5245460645340a0b5b189f055b93cca0f7e: run `flow run` on this exact index tree first (a selective run never produces one)",
+        "duration_ms": 278
+      }
+    },
+    "doctor": {
+      "guarantees": [
+        "receipts bind an exact Git tree OID and one effective policy digest",
+        "publication uses ref CAS with a durable intent/outcome journal",
+        "the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)",
+        "a required obligation that cannot run makes the result UNSUPPORTED, never PASSED",
+        "a selective run is recorded as PARTIAL and is never publishable"
+      ],
+      "non_guarantees": [
+        "no OS-level isolation of obligations",
+        "hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A change already present when the checkout is checked is refused, and a change to a declared file while the obligations run is caught by a re-check after the last obligation; a hook that writes outside the checkout, a write reverted before the re-check, or a write after it is not detected. A blocking reference-transaction aborts publish",
+        "no completeness proof of the build context",
+        "no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one",
+        "a checkout that cannot reproduce the tree is refused, not repaired"
+      ],
+      "gitattributes_status": "WARN",
+      "gitattributes_detail": "content-attribute source(s) present (.git/info/attributes (local, not in the tree), core.attributesFile=C:\\Users\\barat\\AppData\\Local\\Temp\\flow-recheck-probes-pxuygtpd\\host-attributes): eol/filter rules can rewrite a checkout; `flow run` compares every regular file with the blob the tree names and refuses a checkout that differs, so this is a disclosure, not a bypass"
+    },
+    "non_utf8": {
+      "update_index": {
+        "exit": 0,
+        "status": null,
+        "code": null,
+        "reason": "",
+        "duration_ms": 47
+      },
+      "run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "UNSUPPORTED_CHECKOUT",
+        "reason": "tree 1a252586329ba4e8e6e57a8ceb5a2e469460446e holds a path that is not valid UTF-8: this platform cannot represent it faithfully, so the tree cannot be verified",
+        "duration_ms": 445
+      },
+      "tree": "1a252586329ba4e8e6e57a8ceb5a2e469460446e",
+      "receipt": false,
+      "ls_tree_hex": "31303036343420626c6f62203461353830303730353261363566626332666333663931306632383535663435613430353865373409612e7478740031303036343420626c6f62206332393831613939333162333833623565623132386463356533353035363534616235323639623609626164efbfbd2e74"
+    },
+    "delayed_write": {
+      "run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "CHECKOUT_MUTATED_DURING_RUN",
+        "reason": "tree 68abc2af836277545cfb01d5672cc43e48a0ed0c entry \"a.txt\" changed while the obligations ran (6 on disk vs 6 in the tree, blob 4a58007052a6): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+        "duration_ms": 9941
+      },
+      "receipt_written": false,
+      "obligation_log": "content_hex=414c5048410a"
+    }
+  }
+}
