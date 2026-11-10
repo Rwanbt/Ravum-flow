@@ -336,7 +336,8 @@ the trust boundary is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` be
 4. macOS is `NOT_TESTED_MACOS`, and performance/productivity is `UNPROVEN`.
 
 Closed since the previous verdict: the second independent review (was `NOT_RUN`), the SHA pinning, the
-Linux install smoke, the vault block, and the stale measurement on `ea181d4`. None of the remaining
+Linux install smoke, the vault block, the stale measurement on `ea181d4`, and reproducibility (now
+`REPRODUCIBLE` on Windows, checked on every Windows CI run). None of the remaining
 items is a P0 or P1 defect; all are evidence gaps. That is the difference between "the product works
 and is honest" and "the qualification dossier is complete", and only the latter justifies
 `GO_PRODUCTION`.
