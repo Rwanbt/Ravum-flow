@@ -175,15 +175,78 @@ exception explicitly; the four paths are listed in the check output.
   available in this wave; the checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` §7 is the input for
   that review. This is one of the reasons the verdict is not `PRODUCTION_CANDIDATE`.
 
-### 10.1 Adversarial replay status
+### 10.1 Adversarial replay on the candidate head (executed)
 
-See §11 for the final numbers after the replay on the candidate head. The previous harness run
-(`d884e29`, 93 executed) is preserved unchanged in `docs/reviews/MVP-QA-ADVERSARIAL-REPORT.md` as an
-historical state; it was not retroactively edited.
+The independent reviewer adapted its harness to the `0.2.0-rc.1` surface (fixtures now adopt their
+policy, the seven `FUT-*` scenarios are enabled, `.flow` link/junction/hardlink shapes are added) and
+re-ran it on `f237d57`; artefacts: `experiments/mvp-qa/results.json`, per-axis table in
+`docs/reviews/FLOW-PRODUCTION-ADVERSARIAL.md`.
 
+| Axis | Scenarios | Refuted | Reproduced | NOT_RUN |
+|---|---|---|---|---|
+| identity | 20 | 20 | 0 | 0 |
+| scope | 11 | 11 | 0 | 0 |
+| git | 12 | 12 | 0 | 0 |
+| durable | 11 | 10 | 0 | 1 |
+| files | 23 | 21 | 1 | 1 |
+| process | 14 | 13 | 1 | 0 |
+| proof | 9 | 5 | 3 | 1 |
+| compat | 7 | 6 | 1 | 0 |
+| 0.1 surface | 7 | 7 | 0 | 0 |
+| inputs | 5 | 4 | 1 | 0 |
+| **total** | **119** | **109** | **7** | **3** |
+
+**0 P0.** Severity of the 7: P2 × 3, P3 × 4. What happened to them:
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| FIL-20 hard-linked `.flow/journal.jsonl` appends outside the repo on **Windows** | P2 | **fixed** in `3da89c4`: the journal is rewritten and renamed, so a hard link is replaced rather than appended to (test `a_hardlinked_journal_is_not_written_through`, now cross-platform); the outside file keeps its bytes |
+| PRF-02 missing logs not visible in `status` | P3 | **fixed**: `status.latest_receipt` now carries `evidence_complete` and `missing_logs` |
+| INP-03 case-colliding obligation ids share one log file | P3 | **fixed**: refused as `INVALID_POLICY` (`obligation_ids_that_differ_only_by_case_are_refused`) |
+| PRC-10 `FLOW_TEST_CRASH` honoured by the **debug** binary (exit 89) | P2 | **accepted, documented**: the hook exists only where `debug_assertions` is on, never in a released artefact, and CI proves the release binary is inert. It is a test signal, not a product behaviour. |
+| PRF-01 re-sealed forged receipt publishes | P2 | **accepted limitation**: integrity is not a signature; a local writer with the same rights can forge state. Documented in `doctor` and in this report. |
+| PRF-02/PRF-08 retention (deleted logs) | P3 | **documented**: no retention policy; absence is now displayed as incomplete evidence, publication is unaffected |
+| CMP-01 `help` prints text | P3 | **documented**: `help` is text by contract; machine commands emit JSON |
+
+The reviewer also re-attacked every fix from §3 (identifier-as-path, tampered display, byte-exact
+fidelity, symlink/junction guards, missing `tsc`) and refuted them all, and added a TOCTOU attempt
+(`.flow/receipts` swapped during a 5 s obligation) which the guard refused.
+
+**NOT_RUN, with reasons:** `DUR-09` crash *before* the intent append (the harness does not know the
+`before-intent` injection point added in this wave — it is covered by
+`crash_before_intent_leaves_no_pending_intent`); `FIL-06` reserved names / `..` in a verified tree
+(Git refuses to build such an index); `PRF-09` a NUL byte in an argument (Windows `CreateProcess`
+rejects it before Flow starts).
+
+A capability note the reviewer raised and this report accepts: there is **no candidate-bound human
+approval** — an actor able to run `run --candidate` and `publish --candidate` can publish once the
+policy is approved. Per-candidate approval is a product decision, not a defect of this candidate.
+
+### 10.2 Second independent review
+
+`NOT_RUN`. No second agent was available in this wave. The maintainability/supply-chain checklist in
+`FLOW-PRODUCTION-RELEASE-CHECKLIST.md` §7 is the input for that review, and its absence is one of the
+reasons the verdict is `PRODUCTION_PARTIAL`.
 ## 11. Final numbers and the verdict
 
-Filled by the final commit of this wave.
+**Code head under test:** `a7c0f17` (the last commit that touches `crates/flow` or `.github/`); tests
+and CI below are that head. Later commits in this branch are documentation only.
+
+| Evidence | Value |
+|---|---|
+| Tests executed | **151 on Windows** (52 CLI, 25 unit, 22 bounds, 9 concurrency, 25 isolation, 18 proposals), **150 on Linux** (the PATH/PATHEXT shim test is Windows-only by design) |
+| Failures / ignored | 0 / 0 on both OSes |
+| CI (push) | [`42726478852`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42726478852) — 4/4 jobs success |
+| CI (pull_request) | [`42726488112`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42726488112) — 4/4 jobs success |
+| Adversarial replay | 119 declared, 116 executed, 109 refuted, 7 reproduced (0 P0, 3 P2, 4 P3), 3 NOT_RUN |
+| Coverage | 80.76 % lines / 65.26 % branches global (measured at `ea181d4`, 132 tests) |
+| Mutation | 50.8 % killed on `paths.rs` + `lock.rs` (65 tested); whole crate NOT_RUN |
+| Release candidate | `0.2.0-rc.1`, 1 013 248 B, SHA-256 `d6edbec0…d19bc`, install smoke PASS |
+| `cargo audit` | 0 vulnerabilities |
+| Reproducible build | `REPRODUCIBILITY_NOT_PROVEN` |
+| Vault | `VAULT_SYNC_BLOCKED` (pre-existing red `migrate` check on other projects) |
+
+### 11.1 Verdict
 
 ### 11.1 Verdict
 
@@ -192,7 +255,8 @@ CI is green on both supported OSes, the release candidate builds and installs, a
 is explicit. It is **not** labelled `PRODUCTION_CANDIDATE` because:
 
 1. coverage and mutation are measured and **below the gates this mandate sets** (80.76 %/65.26 % vs
-   90 %/85 % global; 50.8 % killed on a subset vs 90 %);
+   90 %/85 % global; 50.8 % killed on a subset vs 90 %) — and they were measured on `ea181d4`, not on
+   this head; the re-measurement on the final head is `NOT_RUN`;
 2. the whole-crate mutation score is `NOT_RUN`, and `cargo-fuzz` is `NOT_RUN`;
 3. the second independent review (maintainability / supply chain) is `NOT_RUN`;
 4. reproducibility is `NOT_PROVEN` and the Actions are not SHA-pinned;
