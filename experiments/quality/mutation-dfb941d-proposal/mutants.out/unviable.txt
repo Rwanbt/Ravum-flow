@@ -1,0 +1,3 @@
+crates/flow/src/proposal.rs:43:5: replace refusal -> Json with Default::default()
+crates/flow/src/proposal.rs:64:9: replace Change::to_json -> Json with Default::default()
+crates/flow/src/proposal.rs:96:9: replace Proposal::load -> Result<Option<Proposal>, String> with Ok(Some(Default::default()))

@@ -1,0 +1,25 @@
+--- crates/flow/src/proposal.rs
++++ replace refusal -> Json with Default::default()
+@@ -35,21 +35,17 @@
+ use crate::state::{self, SCHEMA_CANDIDATE, SCHEMA_PROPOSAL};
+ 
+ /// A patch larger than this is not a proposal, it is a repository dump.
+ pub const MAX_PATCH_BYTES: usize = 32 * 1024 * 1024;
+ /// Blobs are read only to validate a symlink target; bound that read too.
+ const MAX_SYMLINK_TARGET_BYTES: usize = 4096;
+ 
+ pub fn refusal(code: &str, detail: impl Into<String>) -> Json {
+-    Json::obj(vec![
+-        ("status", Json::str("REFUSED")),
+-        ("code", Json::str(code)),
+-        ("reason", Json::str(detail.into())),
+-    ])
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ------------------------------------------------------------------ records
+ 
+ /// One path touched by a proposal or a candidate, with its Git modes.
+ #[derive(Debug, Clone)]
+ pub struct Change {
+     pub status: String,

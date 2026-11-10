@@ -1629,10 +1629,65 @@ def dur_non_object_journal_line(c: Case):
 
 
 def dur_crash_before_intent(c: Case):
-    raise NotRun("no injection point exists for a crash before the intent append: "
-                 "FLOW_TEST_CRASH supports only after-intent and after-ref, and "
-                 "killing the process between commit-tree and append-journal is "
-                 "not deterministic from outside")
+    """Crash between `commit-tree` and the intent append (`before-intent`).
+
+    Wave 3: this head has a `before-intent` injection point, so the scenario is
+    executable. The durable state a kill at that point leaves is: a dangling
+    commit object, no journal line, the ref unchanged. `reconcile` must invent
+    nothing, and the next publish must publish exactly once.
+    """
+    c.prepare([ob_green()], staged=True)
+    check(c.flow("run").exit == 0, "green run must pass")
+    before = {"ref": c.ref(), "journal": c.journal_bytes(),
+              "commits": c.git_out("rev-list", "--count", "HEAD")}
+    crash = c.flow("publish", env={"FLOW_TEST_CRASH": "before-intent"})
+    after_crash = {"ref": c.ref(), "journal": c.journal_bytes(),
+                   "commits": c.git_out("rev-list", "--count", "HEAD")}
+    rec = c.flow("reconcile")
+    journal_after_reconcile = c.journal_bytes()
+    status = c.flow("status")
+    pub = c.flow("publish")
+    records = c.journal_records()
+    intents = [r for r in records
+               if isinstance(r, dict) and r.get("event") == "intent"]
+    outcomes = [r for r in records
+                if isinstance(r, dict) and r.get("event") == "outcome"]
+    evidence = {
+        "crash": crash.brief(), "ref_before": before["ref"],
+        "ref_after_crash": after_crash["ref"],
+        "journal_bytes_before": len(before["journal"]),
+        "journal_bytes_after_crash": len(after_crash["journal"]),
+        "journal_bytes_after_reconcile": len(journal_after_reconcile),
+        "commits_before_after": [before["commits"], after_crash["commits"]],
+        "reconcile": rec.brief(), "status": status.brief(),
+        "publish": pub.brief(), "intents": len(intents),
+        "outcomes": len(outcomes),
+        "published_tree": c.git_out("rev-parse", "refs/heads/main^{tree}"),
+    }
+    ok = (crash.exit == 89
+          and after_crash["ref"] == before["ref"]
+          and after_crash["journal"] == before["journal"]
+          and after_crash["commits"] == before["commits"]
+          and rec.exit == 0 and rec.status == "RECONCILED"
+          and journal_after_reconcile == after_crash["journal"]
+          and pub.exit == 0 and pub.status == "PUBLISHED"
+          and len(intents) == 1 and len(outcomes) == 1)
+    if ok:
+        return X("a crash before the intent append leaves no durable trace: the "
+                 "ref and journal are unchanged, reconcile invents no outcome, "
+                 "and the next publish publishes exactly once",
+                 f"crash exit=89; journal unchanged at {len(before['journal'])} "
+                 f"bytes; reconcile={rec.status}; one intent + one outcome after "
+                 f"the next publish (tree {evidence['published_tree'][:12]})",
+                 **evidence)
+    return R("a crash before intent must leave no journal line and the next "
+             "publish must publish exactly once",
+             f"crash={crash.brief()} ref_unchanged="
+             f"{after_crash['ref'] == before['ref']} journal_changed="
+             f"{after_crash['journal'] != before['journal']} "
+             f"reconcile={rec.brief()} publish={pub.brief()} "
+             f"intents={len(intents)} outcomes={len(outcomes)}",
+             **evidence)
 
 
 def dur_crafted_balance(c: Case):
@@ -1779,41 +1834,85 @@ def fil_case_collision(c: Case):
 
 
 def fil_reserved_and_dotdot(c: Case):
-    c.new_repo(staged=False)
-    c.init_flow()
-    c.write_config([ob_green()])
-    attempts = {}
+    """Reserved / `..` tree paths, reached through a clone-shippable candidate.
+
+    Wave 3: the index route (`update-index`, `read-tree`) refuses these names,
+    but `git mktree` builds a raw tree from the same bytes, and a
+    `.flow/candidates/<32-hex>.json` record is just a file a clone can ship.
+    `flow run --candidate` is therefore asked to materialise a tree whose path
+    cannot be represented on this host; it must refuse, not certify.
+    """
+    c.prepare([ob_green()], staged=True)
     proc = subprocess.run(["git", "hash-object", "-w", "--stdin"], cwd=str(c.repo),
-                          env=c.env, input="x\n", text=True, capture_output=True)
+                          env=c.env, input="payload\n", text=True,
+                          capture_output=True)
     blob = proc.stdout.strip()
-    for name in ("CON", "AUX.txt", "x.", "../evil.txt"):
-        res = c.git("update-index", "--add", "--cacheinfo", f"100644,{blob},{name}")
-        attempts[name] = {"exit": res.exit, "stderr": res.stderr.strip()[:160]}
-    # A raw tree object bypasses index validation; read-tree still refuses to
-    # materialise those paths in an index, so the fixture cannot be built.
-    raw_ok = 0
-    for mode, name in (("100644", "CON"), ("100644", "AUX.txt"), ("100644", "x.")):
-        import binascii
-        data = mode.encode() + b" " + name.encode() + b"\0" + binascii.unhexlify(blob)
-        p = subprocess.run(["git", "hash-object", "-t", "tree", "-w", "--stdin"],
-                           cwd=str(c.repo), env=c.env, input=data, capture_output=True)
-        if p.returncode == 0:
-            oid = p.stdout.decode().strip()
-            rt = c.git("read-tree", oid)
-            attempts[name]["raw_tree"] = {"oid": oid[:12], "read_tree_exit": rt.exit,
-                                          "read_tree_stderr": rt.stderr.strip()[:120]}
-            if rt.exit == 0:
-                raw_ok += 1
-    if raw_ok == 0:
-        raise NotRun(
-            "Git itself refuses to place a Windows-reserved name or a `..` path "
-            "in the index (update-index: Invalid path; read-tree refuses the raw "
-            "tree), so no verified index tree can contain one. Fixture impossible "
-            "on this host; paths are still validated in `.flow` state paths and "
-            "obligation ids (see FIL-obligation-id). Attempts: " +
-            json.dumps(attempts, ensure_ascii=False)[:600])
-    raise NotRun("raw tree with reserved path was accepted by read-tree; rewrite "
-                 "this scenario as an active attack")
+    base = c.ref()
+    attempts = {}
+    accepted = []
+    for label, raw in (("CON", "CON"), ("NUL", "NUL"), ("dotdot", ".."),
+                       (".git", ".git"), ("trailing-dot", "x."),
+                       ("backslash", "a\\b.txt")):
+        # Context: the index route, which Git refuses.
+        idx = c.git("update-index", "--add", "--cacheinfo",
+                    f"100644,{blob},{raw}")
+        attempts.setdefault(label, {})["index_route"] = {
+            "exit": idx.exit, "stderr": idx.stderr.strip()[:120]}
+        mk = subprocess.run(["git", "mktree"], cwd=str(c.repo), env=c.env,
+                            input=f"100644 blob {blob}\t{raw}\n", text=True,
+                            capture_output=True)
+        if mk.returncode != 0:
+            attempts[label]["mktree"] = mk.returncode
+            attempts[label]["mktree_stderr"] = mk.stderr.strip()[:160]
+            continue
+        tree = mk.stdout.strip()
+        listed = subprocess.run(["git", "ls-tree", "-r", "-z", tree],
+                                cwd=str(c.repo), env=c.env,
+                                capture_output=True).stdout
+        if raw.encode() not in listed:
+            attempts[label]["listed_hex"] = listed[:120].hex()
+            continue
+        accepted.append(label)
+        cid = hashlib.sha256(label.encode()).hexdigest()[:32]
+        cdir = c.repo / ".flow" / "candidates"
+        cdir.mkdir(parents=True, exist_ok=True)
+        (cdir / f"{cid}.json").write_text(json.dumps({
+            "schema": "flow-candidate/1", "candidate_id": cid,
+            "base_commit": base, "tree_oid": tree,
+            "proposals": [], "changes": [],
+        }), encoding="utf-8", newline="\n")
+        run = c.flow("run", "--candidate", cid)
+        attempts[label].update({
+            "tree": tree[:12], "candidate_id": cid, "run": run.brief(),
+            "receipt": c.receipt_for_tree(tree).exists(),
+            "verdict": ("DEFECT_REPRODUCED" if run.status == "PASSED"
+                        else "REFUTED" if run.exit == 1 else "NOT_RUN"),
+        })
+    if not accepted:
+        raise NotRun("neither the index route nor `git mktree` can name a "
+                     "reserved / `..` path on this host: "
+                     + json.dumps(attempts, ensure_ascii=False)[:600])
+    passed = [k for k, v in attempts.items()
+              if v.get("verdict") == "DEFECT_REPRODUCED"]
+    refused = [k for k, v in attempts.items() if v.get("verdict") == "REFUTED"]
+    codes = {k: (v.get("run") or {}).get("code") for k, v in attempts.items()
+             if v.get("run")}
+    if passed:
+        return R("a repository-shipped candidate record must not make `flow run` "
+                 "certify a tree whose paths cannot be materialised",
+                 f"PASSED for {passed}", **{"attempts": attempts})
+    if refused:
+        return X("a tree naming a reserved or `..` path is refused before any "
+                 "obligation runs: `git worktree add` rejects the invalid path "
+                 "and Flow returns a typed refusal with no receipt",
+                 f"refused {refused} with codes {codes}; no receipt",
+                 notes="Wave 3 replaces the wave-2 NOT_RUN with an executable "
+                       "route: the path cannot enter an index, but it can enter a "
+                       "raw tree via `git mktree`, and a clone can ship the "
+                       "candidate record that names it.",
+                 **{"attempts": attempts})
+    raise NotRun("accepted trees were neither certified nor refused: "
+                 + json.dumps(attempts, ensure_ascii=False)[:600])
 
 
 def fil_obligation_id_traversal(c: Case):
@@ -3851,6 +3950,142 @@ def inp_long_path(c: Case):
              **evidence)
 
 
+# ==========================================================================
+# AXIS 11 — wave-3 checkout fidelity (the P0 fix under review)
+# ==========================================================================
+
+def _install_tracked_hook(c: Case, body: str) -> None:
+    """Install a tracked `post-checkout` hook that `git worktree add` will run.
+
+    `core.hooksPath` points at a directory that is part of the tree, so the hook
+    is repository content, not host-local state. It is forced to mode 100755 in
+    the index so the fixture does not depend on the host filesystem.
+    """
+    hooks = c.repo / ".hooks"
+    hooks.mkdir(exist_ok=True)
+    (hooks / "post-checkout").write_text("#!/bin/sh\n" + body + "\n",
+                                         encoding="utf-8", newline="\n")
+    c.stage(".hooks/post-checkout")
+    c.git("update-index", "--chmod=+x", "--", ".hooks/post-checkout")
+    c.git("commit", "-q", "-m", "fixture post-checkout hook")
+    c.git("config", "core.hooksPath", ".hooks")
+
+
+def w3_local_attribute_conversion(c: Case):
+    """A *local* attribute source rewrites the checkout; the byte comparison must
+    refuse it (wave-2 FIL-08 only covered an in-tree `.gitattributes`).
+
+    Both host-local sources are exercised in independent repositories, because a
+    single refused run names only the first entry that differs:
+    `.git/info/attributes` (eol on a tracked `.md`) and `core.attributesFile`
+    outside the repository (eol on `data.txt`). `doctor` must disclose both.
+
+    Blobs must be LF for `eol=crlf` to have anything to convert:
+    `Path.write_text` translates "\\n" to CRLF on Windows, so bytes are staged
+    *before* the attributes are installed.
+    """
+    probes = {}
+    for tag, use_info in (("repo-info-attributes", True),
+                          ("repo-host-attributes", False)):
+        c.fresh(tag, [ob_green()], staged=True)
+        c.write_file("payload.md", b"# title\nbody\n")
+        c.stage("payload.md")
+        c.write_file("data.txt", b"v1\n")
+        c.stage("data.txt")
+        if use_info:
+            info = c.repo / ".git" / "info"
+            info.mkdir(parents=True, exist_ok=True)
+            (info / "attributes").write_text("*.md text eol=crlf\n",
+                                             encoding="utf-8")
+            expected_entry = "payload.md"
+            disclosed_as = ".git/info/attributes"
+        else:
+            host_attrs = c.root / "host-attributes"
+            host_attrs.write_text("data.txt text eol=crlf\n", encoding="utf-8")
+            c.git("config", "core.attributesFile", str(host_attrs))
+            expected_entry = "data.txt"
+            disclosed_as = "core.attributesFile"
+        tree = c.git_out("write-tree")
+        run = c.flow("run")
+        doctor = c.flow("doctor")
+        checks = {(check.get("id") or ""): check
+                  for check in ((doctor.json or {}).get("checks") or [])}
+        detail = (checks.get("gitattributes") or {}).get("detail", "")
+        probes[tag] = {
+            "tree": tree, "run": run.brief(),
+            "entry_named": expected_entry,
+            "refused_naming_entry": (run.code == "UNSUPPORTED_CHECKOUT"
+                                     and expected_entry in (run.reason or "")),
+            "receipt_written": c.receipt_for_tree(tree).exists(),
+            "doctor_check": (checks.get("gitattributes") or {}).get("status"),
+            "doctor_detail": detail[:400],
+            "doctor_names_source": disclosed_as in detail,
+        }
+    evidence = {
+        "probes": probes,
+        "doctor_discloses_both": all(p["doctor_names_source"]
+                                     for p in probes.values()),
+    }
+    ok = (all(p["refused_naming_entry"] and not p["receipt_written"]
+              and p["doctor_names_source"] for p in probes.values()))
+    if ok:
+        return X("each host-local attribute source converts the checkout on its "
+                 "own; `flow run` refuses both with UNSUPPORTED_CHECKOUT naming "
+                 "the converted entry, writes no receipt, and `doctor` names the "
+                 "local source present in that repository",
+                 "both probes refused on the converted entry; no receipt; doctor "
+                 "names `.git/info/attributes` and `core.attributesFile` in the "
+                 "repository that carries each", **evidence)
+    return R("a host-local attribute conversion must be refused, not certified, "
+             "and doctor must disclose the sources",
+             f"probes={json.dumps(probes, ensure_ascii=False)[:700]}", **evidence)
+
+
+def w3_hook_creates_extra_file(c: Case):
+    """A `post-checkout` hook creates a file the tree does not declare."""
+    c.prepare([ob_green()], staged=True)
+    _install_tracked_hook(c, "printf 'injected\\n' > injected.txt")
+    tree = c.git_out("write-tree")
+    run = c.flow("run")
+    evidence = {"run": run.brief(), "tree": tree,
+                "receipt": c.receipt_for_tree(tree).exists()}
+    if (run.exit == 1 and run.code == "UNSUPPORTED_CHECKOUT"
+            and "does not declare" in (run.reason or "")
+            and not c.receipt_for_tree(tree).exists()):
+        return X("the checkout must hold exactly the tree: a hook-created extra "
+                 "file is refused (UNSUPPORTED_CHECKOUT) and no receipt is "
+                 "written", f"refused: {run.reason[:240]}", **evidence)
+    return R("a hook-created extra file must be detected and refused",
+             f"run={run.brief()} receipt={evidence['receipt']}", **evidence)
+
+
+def w3_hook_same_length_rewrite(c: Case):
+    """A `post-checkout` hook rewrites a declared file at equal byte length.
+
+    A size comparison cannot see this and no attribute source is involved, so it
+    is the exact case the old "no conversion looks possible" shortcut skipped.
+    """
+    c.prepare([ob_green()], staged=True)
+    # `write_bytes` so the blob is the 6-byte `hello\n`; the hook then writes the
+    # 6-byte `HELLO\n`, which a size comparison cannot distinguish.
+    c.write_file("README.md", b"hello\n")
+    c.stage("README.md")
+    _install_tracked_hook(c, "printf 'HELLO\\n' > README.md")
+    tree = c.git_out("write-tree")
+    run = c.flow("run")
+    blob = c.git_out("cat-file", "-p", f"{tree}:README.md")
+    evidence = {"run": run.brief(), "tree": tree, "blob": blob,
+                "receipt": c.receipt_for_tree(tree).exists()}
+    if (run.exit == 1 and run.code == "UNSUPPORTED_CHECKOUT"
+            and "different bytes" in (run.reason or "")
+            and not c.receipt_for_tree(tree).exists()):
+        return X("a same-length rewrite by post-checkout is refused by the byte "
+                 "comparison (no receipt), not certified",
+                 f"refused: {run.reason[:240]}", **evidence)
+    return R("a same-length hook rewrite must be refused by the byte comparison",
+             f"run={run.brief()} receipt={evidence['receipt']}", **evidence)
+
+
 # --------------------------------------------------------------------------
 # Registry
 # --------------------------------------------------------------------------
@@ -4001,6 +4236,15 @@ SCENARIOS = [
     Scn("INP-03", "inputs", "Unicode/ASCII case pair as obligation ids", "P3", inp_case_pair_ids),
     Scn("INP-04", "inputs", "Windows reserved name as an obligation id", "P2", inp_reserved_name),
     Scn("INP-05", "inputs", "344-character path inside the verified tree", "P2", inp_long_path),
+
+    # Axis 11 — wave-3 checkout fidelity (the P0 fix under review)
+    Scn("W3-01", "fidelity", "Local attribute source converts the checkout "
+        "(`.git/info/attributes`, `core.attributesFile`)", "P0",
+        w3_local_attribute_conversion),
+    Scn("W3-02", "fidelity", "post-checkout creates a file the tree does not "
+        "declare", "P1", w3_hook_creates_extra_file),
+    Scn("W3-03", "fidelity", "post-checkout rewrites a file at equal byte length",
+        "P0", w3_hook_same_length_rewrite),
 ]
 
 # Kept as an alias so external callers of the 1.0 harness keep working; the 0.1
@@ -4146,6 +4390,7 @@ def write_markdown(records: list, path: Path, meta: dict) -> None:
         "compat": "Compatibility",
         "future": "0.1 multi-agent surface (proposals, candidates, dry run)",
         "inputs": "Huge and odd inputs",
+        "fidelity": "Checkout fidelity (wave 3)",
     }
     lines = ["<!-- generated by experiments/mvp-qa/attacks.py; do not edit by hand -->", ""]
     lines.append(f"Binary: `{meta['flow']['path']}` (sha256 "

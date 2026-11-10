@@ -1,0 +1,69 @@
+FLOW QUALITY WAVE 3 — COVERAGE BASELINE (clean, attributable)
+=============================================================
+
+MEASURED TREE
+  commit            dfb941db8b22d3340ad873950113fcdf03166f81
+                    "fix: prove the verification checkout equals the verified tree"
+                    (the Lead's git-checkout-fidelity patch + crates/flow/tests/git_fidelity.rs
+                    are committed in this commit; there were no uncommitted source changes)
+  checkout          separate `git worktree add --detach <TEMP>/flow-quality-base-dfb941d dfb941d`
+                    so the measurement is not polluted by later commits on the branch
+  git status        clean (empty `git status --porcelain` in that worktree)
+  environment       Windows 11, Rust 1.95.0 pinned (+ nightly for instrumentation),
+                    cargo-llvm-cov 0.9.1, offline build; CARGO_TARGET_DIR fresh (no stale profraw)
+
+EXACT COMMANDS
+  # in the dfb941d worktree
+  CARGO_TARGET_DIR=D:\App\Ravum-flow\wt-quality-target-base \
+  CARGO_BUILD_JOBS=4 \
+  cargo +nightly llvm-cov --locked --offline --all-targets --branch \
+      --ignore-filename-regex '[\\/]tests[\\/]' --no-report
+
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]'
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --lcov --output-path experiments/quality/coverage/lcov-dfb941d-wave3.info
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --json --output-path experiments/quality/coverage/coverage-dfb941d-wave3.json
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --text --output-path experiments/quality/coverage/text-dfb941d-wave3.txt
+
+TEST RUN (inside the instrumented build)
+  173 passed, 0 failed, 0 ignored across 7 suites:
+  35 unit (src/main.rs), 22 bounds, 54 cli, 9 concurrency, 10 git_fidelity,
+  25 isolation, 18 proposals.
+  `--branch` is cargo-llvm-cov's unstable flag; it produced real branch counters.
+
+PER-MODULE (product code; tests/ excluded)
+  Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  commands.rs                      2775               367    86.77%         112                17    84.82%        1833               327    82.16%         313                94    69.97%
+  gitcli.rs                         708                47    93.36%          50                 4    92.00%         457                43    90.59%          70                16    77.14%
+  json.rs                           539                77    85.71%          30                 1    96.67%         290                37    87.24%          48                 9    81.25%
+  lock.rs                           499                45    90.98%          27                 1    96.30%         322                51    84.16%          38                13    65.79%
+  main.rs                           394                60    84.77%          11                 0   100.00%         240                60    75.00%          46                 9    80.43%
+  paths.rs                          342                15    95.61%          22                 3    86.36%         210                 7    96.67%          46                 4    91.30%
+  proposal.rs                      1069               215    79.89%          49                12    75.51%         770               193    74.94%         146                65    55.48%
+  scratch.rs                        454               104    77.09%          28                 5    82.14%         297                86    71.04%          72                32    55.56%
+  sha256.rs                         212                 0   100.00%           8                 0   100.00%         117                 0   100.00%          10                 0   100.00%
+  state.rs                          802                74    90.77%          72                14    80.56%         497                38    92.35%          56                19    66.07%
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  TOTAL                            7794              1004    87.12%         409                57    86.06%        5033               842    83.27%         845               261    69.11%
+
+  This matches the earlier `997f983` measurement (83.19 / 68.64) within the size of the
+  Lead patch (+17 lines in commands.rs) and within the reproduced run-to-run variance
+  (branch counters: 260–261 missed on identical runs).
+
+CAVEAT THAT MATTERS FOR THE NEXT MEASUREMENT (MEASURED, see FLOW-QUALITY-WAVE3.md)
+  `--ignore-filename-regex '[\\/]tests[\\/]'` does not only exclude test sources: a source
+  module imported into an integration test with `#[path = "../src/x.rs"]` is recorded with
+  the filename `crates\flow\tests\..\src\x.rs`, which this regex also excludes. All
+  coverage exercised by `tests/isolation.rs` through the imported `scratch.rs`, and by
+  `tests/bounds.rs` through the imported `gitcli.rs`, is therefore invisible above.
+  `scratch.rs`'s real exercised coverage is higher than the 71.04 % shown; the filtered
+  number is the one the gate uses, so it is the one kept as the baseline.
+
+  A second, independent hygiene fact: `cargo-llvm-cov report` merges every `*.profraw`
+  present in the target directory, and those files accumulate across runs (measured
+  455 → 769 after one extra run). Measurements must start with
+  `cargo +nightly llvm-cov clean --workspace` (or a fresh CARGO_TARGET_DIR); this file's
+  numbers were produced in a fresh directory.

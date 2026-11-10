@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in Proposal::load
+@@ -104,17 +104,17 @@
+         }
+         let value = json::parse(
+             &fs::read_to_string(&path)
+                 .map_err(|e| format!("cannot read {}: {e}", path.display()))?,
+         )?;
+         // A record written by a different schema is never reinterpreted: the
+         // fields could mean something else entirely.
+         let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-        if schema != SCHEMA_PROPOSAL {
++        if schema == /* ~ changed by cargo-mutants ~ */ SCHEMA_PROPOSAL {
+             return Err(format!(
+                 "proposal {id} carries schema {schema:?}, not {SCHEMA_PROPOSAL}: refusing to reinterpret it"
+             ));
+         }
+         Ok(Some(Self::from_json(value)))
+     }
+ 
+     pub fn list(root: &Path) -> Result<Vec<Proposal>, String> {

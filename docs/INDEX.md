@@ -3,6 +3,7 @@
 - [V6 master reference, 42 Ravum ADRs and Claude report](reviews/RAVUM-FLOW-V6-POST-CLAUDE-REFERENCE.md)
 - [Project charter](PROJECT_CHARTER.md)
 - [Architecture](ARCHITECTURE.md)
+- [Capabilities and their evidence](CAPABILITIES.md) — what is available, demonstrated, specified-only or not available
 - [Human decision register](DECISION_REGISTER.md)
 - [Roadmap / gates](ROADMAP.md)
 - [User stories](USER_STORIES.md)
@@ -42,3 +43,17 @@ No ADR/RFC is ratified, no GO is granted by this dossier alone, and no code was 
 - The execution phase (R0-a/b/c, minimal CLI, CI, draft PR #51) is reported in the [verified-foundation report](reviews/FLOW-FOUNDATION-VERIFIED-REPORT.md).
 
 **All technical choices remain proposals until a human sign-off.**
+
+## Production candidate dossier (2026-11-10, `feat/flow-production-candidate`)
+
+Read in this order; each document states the SHA and OS its numbers were taken on.
+
+- [Capabilities and their evidence](CAPABILITIES.md) — the qualification matrix (status vocabulary, limits, no inferred capability)
+- [Gate report G10](reviews/FLOW-PRODUCTION-GATE-REPORT.md) — `PRODUCTION_PARTIAL`, the 24 invariants and the evidence per gate
+- [Invariants and proofs G1](reviews/FLOW-PRODUCTION-INVARIANTS.md) — one executed test per invariant
+- [Baseline G0](reviews/FLOW-PRODUCTION-BASELINE.md) · [Compatibility G5](reviews/FLOW-PRODUCTION-COMPATIBILITY.md) · [Test matrix G6](reviews/FLOW-PRODUCTION-TEST-MATRIX.md) · [Release checklist G7](reviews/FLOW-PRODUCTION-RELEASE-CHECKLIST.md)
+- [Adversarial campaign](reviews/FLOW-PRODUCTION-ADVERSARIAL.md) and [its wave-3 replay](reviews/FLOW-PRODUCTION-ADVERSARIAL-WAVE3.md)
+- [Second independent review](reviews/FLOW-PRODUCTION-SECOND-REVIEW.md)
+- [Wave 3 — git fidelity, secrets, crash and artefacts](reviews/FLOW-PRODUCTION-WAVE3.md)
+- [Packaging and artefacts](reviews/FLOW-PACKAGING-WAVE3.md) · [Quality measurements](reviews/FLOW-QUALITY-WAVE3.md)
+- [Git-fidelity independent review](reviews/FLOW-P0-GIT-FIDELITY-REVIEW.md)

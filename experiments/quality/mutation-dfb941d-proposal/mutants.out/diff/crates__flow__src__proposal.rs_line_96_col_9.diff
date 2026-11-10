@@ -1,0 +1,42 @@
+--- crates/flow/src/proposal.rs
++++ replace Proposal::load -> Result<Option<Proposal>, String> with Ok(None)
+@@ -88,38 +88,17 @@
+         state::proposals_dir(root).join(format!("{id}.json"))
+     }
+ 
+     pub fn patch_path(root: &Path, id: &str) -> PathBuf {
+         state::proposals_dir(root).join(format!("{id}.patch"))
+     }
+ 
+     pub fn load(root: &Path, id: &str) -> Result<Option<Proposal>, String> {
+-        if !paths::is_record_id(id) {
+-            return Err(format!(
+-                "INVALID_RECORD_ID: {id:?} is not a 32-character hex proposal id"
+-            ));
+-        }
+-        let path = Self::metadata_path(root, id);
+-        if !path.exists() {
+-            return Ok(None);
+-        }
+-        let value = json::parse(
+-            &fs::read_to_string(&path)
+-                .map_err(|e| format!("cannot read {}: {e}", path.display()))?,
+-        )?;
+-        // A record written by a different schema is never reinterpreted: the
+-        // fields could mean something else entirely.
+-        let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-        if schema != SCHEMA_PROPOSAL {
+-            return Err(format!(
+-                "proposal {id} carries schema {schema:?}, not {SCHEMA_PROPOSAL}: refusing to reinterpret it"
+-            ));
+-        }
+-        Ok(Some(Self::from_json(value)))
++        Ok(None) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn list(root: &Path) -> Result<Vec<Proposal>, String> {
+         let dir = state::proposals_dir(root);
+         let mut out = Vec::new();
+         let Ok(entries) = fs::read_dir(&dir) else {
+             return Ok(out);
+         };

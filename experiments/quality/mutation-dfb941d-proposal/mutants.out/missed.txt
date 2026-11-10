@@ -1,0 +1,2 @@
+crates/flow/src/proposal.rs:38:46: replace * with +
+crates/flow/src/proposal.rs:38:39: replace * with +

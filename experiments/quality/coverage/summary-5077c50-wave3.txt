@@ -1,0 +1,85 @@
+FLOW QUALITY WAVE 3 — COVERAGE AFTER THE ERROR-PATH TESTS (clean)
+=================================================================
+
+MEASURED TREE
+  commit            5077c508b00c9e6b2062ec4a68e166c265140547
+                    "fix: verify the executable bit of the verification checkout on Unix"
+  working tree      `crates/flow/tests/error_paths.rs` is NEW and UNTRACKED (the file this wave
+                    adds; 28 own tests, 32 counted with the imported src/json.rs unit tests).
+                    Teammates' concurrently delivered tests are committed at this SHA:
+                    crash_run.rs (6), secrets.rs (8), plus additions in bounds.rs/isolation.rs.
+                    Other untracked paths at measurement time were other agents' artefacts
+                    (experiments/mvp-qa/**, experiments/verify-p0/, scripts/) and this wave's
+                    experiment outputs; none is compiled by `cargo test`.
+  tree drift        HEAD later advanced to fc80af3; `git diff 5077c50..fc80af3` touches only
+                    crates/flow/tests/git_fidelity.rs (+51 lines, one new test, no src/ change),
+                    so these product-code numbers still describe the current source.
+  environment       Windows 11, Rust 1.95.0 pinned (+ nightly for instrumentation),
+                    cargo-llvm-cov 0.9.1, offline build.
+  profdata          cleaned with `cargo +nightly llvm-cov clean --workspace` immediately before
+                    the run: no stale profile data from earlier measurements.
+
+EXACT COMMANDS
+  CARGO_TARGET_DIR=D:\App\Ravum-flow\wt-quality-target
+  CARGO_BUILD_JOBS=4
+  cargo +nightly llvm-cov clean --workspace
+  cargo +nightly llvm-cov --locked --offline --all-targets --branch \
+      --ignore-filename-regex '[\\/]tests[\\/]' --no-report
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]'
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --lcov --output-path experiments/quality/coverage/lcov-5077c50-wave3.info
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --json --output-path experiments/quality/coverage/coverage-5077c50-wave3.json
+  cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]' \
+      --text --output-path experiments/quality/coverage/text-5077c50-wave3.txt
+
+TEST RUN (inside the instrumented build)
+  225 passed, 0 failed, 0 ignored across 10 suites:
+  37 unit (src/main.rs), 24 bounds, 54 cli, 9 concurrency, 6 crash_run,
+  32 error_paths (28 own + 4 re-run src/json.rs unit tests), 10 git_fidelity,
+  27 isolation, 18 proposals, 8 secrets.
+  No test was deleted, weakened or ignored by this wave; 28 own tests were added.
+
+PER-MODULE (product code; tests/ excluded)
+  Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  commands.rs                      2775               321    88.43%         112                16    85.71%        1833               238    87.02%         313                83    73.48%
+  gitcli.rs                         730                45    93.84%          52                 4    92.31%         474                41    91.35%          70                14    80.00%
+  json.rs                           539                77    85.71%          30                 1    96.67%         290                37    87.24%          48                 9    81.25%
+  lock.rs                           499                45    90.98%          27                 1    96.30%         322                51    84.16%          38                12    68.42%
+  main.rs                           394                19    95.18%          11                 0   100.00%         240                15    93.75%          46                 8    82.61%
+  paths.rs                          342                15    95.61%          22                 3    86.36%         210                 7    96.67%          46                 4    91.30%
+  proposal.rs                      1069                73    93.17%          49                 7    85.71%         770                70    90.91%         146                29    80.14%
+  scratch.rs                        454                81    82.16%          28                 4    85.71%         297                72    75.76%          72                28    61.11%
+  sha256.rs                         212                 0   100.00%           8                 0   100.00%         117                 0   100.00%          10                 0   100.00%
+  state.rs                          802                71    91.15%          72                13    81.94%         497                37    92.56%          56                19    66.07%
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  TOTAL                            7816               747    90.44%         411                49    88.08%        5050               568    88.75%         845               206    75.62%
+
+SAME-TREE CONTROL: THE WAVE'S OWN CONTRIBUTION
+  On the same commit, the same commands and the same clean start, excluding only the new
+  `tests/error_paths.rs` binary (explicit `--bins --test bounds --test cli --test concurrency
+  --test crash_run --test git_fidelity --test isolation --test proposals --test secrets`):
+    global        83.33 % lines / 69.23 % branches
+    proposal.rs   74.94 % / 55.48 %          scratch.rs   71.04 % / 55.56 %
+  So this wave's tests alone moved: global +5.42 pts lines / +6.39 pts branches,
+  proposal.rs +15.97 / +14.66, scratch.rs +4.72 / +5.55.
+  (Log: run-5077c50-without-errorpaths.log.)
+
+TARGETS
+  global        >= 88 % lines  : MET   (88.75 %)
+  global        >= 78 % branches: NOT MET (75.62 %)
+  proposal.rs   >= 85 / 80     : MET   (90.91 / 80.14)
+  scratch.rs    >= 85 / 80     : NOT MET (75.76 / 61.11) — see the measured reason below
+
+WHY scratch.rs CANNOT HONESTLY REACH 85 % UNDER THIS COMMAND (MEASURED)
+  The ignore filter drops coverage of every source module imported into an integration test
+  via `#[path = "../src/x.rs"]`: the profile records such code as
+  `crates\flow\tests\..\src\scratch.rs`, which `[\\/]tests[\\/]` excludes. `tests/isolation.rs`
+  imports `scratch.rs` directly and exercises `materialise_in`, `verify_created_dir`,
+  `detach_git_link` and `Drop` refusals there; none of it reaches the number above. Through
+  the shipped binary only the paths reachable from `flow run` count (a host temp directory
+  redirected into the repository, a hook that removes the checkout's `.git` link), and those
+  are covered by this wave. The remaining 67 uncovered lines are enumerated in
+  docs/reviews/FLOW-QUALITY-WAVE3.md §3; most are only reachable by calling the module
+  directly, which the prescribed metric cannot see.

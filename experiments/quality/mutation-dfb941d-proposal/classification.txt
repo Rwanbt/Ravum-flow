@@ -1,0 +1,54 @@
+MUTATION — crates/flow/src/proposal.rs — PARTIAL BOUNDED RUN
+============================================================
+Command : cargo mutants --file crates/flow/src/proposal.rs --timeout 120 --jobs 2 --no-shuffle
+          -o experiments/quality/mutation-dfb941d-proposal
+Tree    : dfb941d (mutation copy), suite at run time (teammates' tests included, error_paths.rs
+          existed but was NOT in the copy — it was added later; see killcheck below)
+Started : 2026-11-10 ~11:15 local. Stopped by Lead instruction after ~14 min, far below the
+          45-minute cap: whole-suite cost is 4 s build + 60-75 s test per viable mutant, so
+          119 mutants cannot finish in 45 min at --jobs 2.
+
+PARTIAL OUTCOME (honest denominator: 13 of 119 tested; 106 NOT_RUN)
+  caught      8
+  missed      2
+  timeout     0
+  unviable    3
+  not run   106
+Baseline: 4 s build + 62 s test (225-test suite at the measured tree).
+
+CAUGHT (8)
+  proposal.rs:38:46  replace * with /            (MAX_PATCH_BYTES divisor)
+  proposal.rs:38:39  replace * with /            (MAX_PATCH_BYTES factor)
+  proposal.rs:88:9   Proposal::metadata_path -> Default::default()
+  proposal.rs:92:9   Proposal::patch_path -> Default::default()
+  proposal.rs:96:9   Proposal::load -> Ok(None)
+  proposal.rs:96:12  delete ! in Proposal::load
+  proposal.rs:102:12 delete ! in Proposal::load
+  proposal.rs:112:19 replace != with == in Proposal::load
+
+MISSED (2) — both classified REAL GAP, both now killed (verified, see below)
+  proposal.rs:38:39  replace * with +   => MAX_PATCH_BYTES = 32*1024+1024 (~33 KiB) survived,
+  proposal.rs:38:46  replace * with +      i.e. nothing pinned the declared 32 MiB admission
+                                           bound from below: every small patch was still accepted.
+  Kill test (final suite): crates/flow/tests/error_paths.rs
+    propose_admits_a_patch_between_one_mebibyte_and_the_declared_bound
+  Verified with: cargo mutants --file crates/flow/src/proposal.rs -F 'replace \* with \+'
+    --timeout 120 --jobs 1 --no-shuffle (small worktree at fc80af3 + final suite,
+    external CARGO_TARGET_DIR) => "2 mutants tested in 3m: 2 caught".
+    Artefacts: experiments/quality/mutation-fc80af3-killcheck/
+
+UNVIABLE (3) — do not compile on this host (intrinsic type constraints, not a host issue)
+  proposal.rs:43:5   refusal -> Json with Default::default()          (Json has no Default)
+  proposal.rs:64:9   Change::to_json -> Json with Default::default() (Json has no Default)
+  proposal.rs:96:9   Proposal::load -> Ok(Some(Default::default()))   (Proposal has no Default)
+
+OPERATIONAL NOTE
+  cargo-mutants copies the whole source tree per run. CARGO_TARGET_DIR directories that live
+  inside the repository but are excluded only via .git/info/exclude are copied too: this is
+  slow, and one targeted rerun filled the C: volume (os error 112). Use a properly git-ignored
+  target dir (or an external one) for mutation runs.
+
+FIRST ATTEMPT DISCARDED
+  A run started before this one was invalidated by a transient probe file created in the tree
+  while cargo-mutants was copying it: 113/119 became unviable. Its numbers were discarded, not
+  reported.
