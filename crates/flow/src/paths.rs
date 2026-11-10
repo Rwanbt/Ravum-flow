@@ -308,6 +308,24 @@ mod tests {
     }
 
     #[test]
+    fn each_refusal_names_its_own_reason() {
+        // The reason is what an operator or an agent acts on: "absolute",
+        // "drive-qualified", "traversal" and "empty component" must not collapse
+        // into one message, or the fix is not obvious from the refusal.
+        for (path, needle) in [
+            (r"\x", "absolute path is not allowed"),
+            ("/x", "absolute path is not allowed"),
+            ("C:/x", "drive-qualified path is not allowed"),
+            ("a/./b", "path traversal component"),
+            ("a/../b", "path traversal component"),
+            ("a//b", "empty path component"),
+        ] {
+            let reason = validate_relative(path).expect_err("this path must be refused");
+            assert!(reason.contains(needle), "{path:?}: {reason}");
+        }
+    }
+
+    #[test]
     fn a_path_without_a_name_cannot_be_resolved() {
         let root = temp_root("no-name");
         let err = canonical_within(&root, Path::new(""))

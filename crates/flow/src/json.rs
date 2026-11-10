@@ -463,6 +463,9 @@ mod tests {
         assert_eq!(Json::Num(-2.0).to_string(), "-2");
         assert_eq!(Json::Num(1.5).to_string(), "1.5");
         assert_eq!(Json::Num(1.0e16).to_string(), "10000000000000000");
+        // JSON has one zero. `-0.0` is integral and must print as `0`, not `-0`
+        // (and not as a float), so the integral fast path is observable.
+        assert_eq!(Json::Num(-0.0).to_string(), "0");
         // A control character has no escaped spelling of its own and must become
         // a `\u` escape; emitting it raw would produce unparsable text.
         assert_eq!(Json::str("a\u{1}b").to_string(), "\"a\\u0001b\"");
@@ -471,6 +474,31 @@ mod tests {
         for text in [Json::Bool(true).to_string(), Json::Null.to_string(), pretty] {
             assert!(parse(&text).is_ok(), "{text} must parse back");
         }
+    }
+
+    #[test]
+    fn pretty_printing_nests_indentation_per_level() {
+        // Receipts, candidates and adoption records are written with
+        // `to_string_pretty` and reviewed as diffs: two spaces per level, one
+        // member per line, no trailing comma. That shape is a contract a human
+        // reads, so it is pinned exactly instead of being "whatever we emit".
+        let value = Json::obj(vec![
+            (
+                "obligations",
+                Json::Arr(vec![Json::obj(vec![
+                    ("id", Json::str("a")),
+                    ("required", Json::Bool(true)),
+                ])]),
+            ),
+            ("count", Json::Num(1.0)),
+        ]);
+        let expected = "{\n  \"obligations\": [\n    {\n      \"id\": \"a\",\n      \"required\": true\n    }\n  ],\n  \"count\": 1\n}";
+        assert_eq!(value.to_string_pretty(), expected);
+        // The compact spelling is the one the integrity digest covers.
+        assert_eq!(
+            value.to_string(),
+            "{\"obligations\":[{\"id\":\"a\",\"required\":true}],\"count\":1}"
+        );
     }
 
     #[test]
@@ -488,5 +516,34 @@ mod tests {
         // The two empty containers are valid and carry no member.
         assert_eq!(parse("{}").unwrap(), Json::Obj(vec![]));
         assert_eq!(parse("[]").unwrap(), Json::Arr(vec![]));
+    }
+
+    #[test]
+    fn escapes_and_multi_byte_utf8_survive_the_round_trip() {
+        // A receipt can carry an escaped code point; it must decode to the code
+        // point, not to the literal six bytes.
+        assert_eq!(parse(r#""\u0041\u00e9""#).unwrap(), Json::str("Aé"));
+        // A truncated or non-hex `\u` escape is refused, never half-decoded.
+        assert!(parse(r#""\u12""#).is_err(), "truncated escape");
+        assert!(parse(r#""\uZZZZ""#).is_err(), "non-hex escape");
+        assert!(
+            parse(r#""\ud800""#).is_err(),
+            "surrogate is not a scalar value"
+        );
+        // A multi-byte character is copied as one sequence: the lead byte decides
+        // the length, so a wrong length truncates or corrupts the value.
+        assert_eq!(parse("\"é\"").unwrap(), Json::str("é"), "2-byte sequence");
+        assert_eq!(parse("\"€\"").unwrap(), Json::str("€"), "3-byte sequence");
+        assert_eq!(parse("\"😀\"").unwrap(), Json::str("😀"), "4-byte sequence");
+        // A space is an ordinary character in a string and is not escaped.
+        assert_eq!(parse("\"a b\"").unwrap(), Json::str("a b"));
+        assert_eq!(Json::str("a b").to_string(), "\"a b\"");
+        // A multi-byte character that starts after the first byte exercises the
+        // length check with a non-trivial offset (the check is `start + len`).
+        assert_eq!(parse("\"ab€\"").unwrap(), Json::str("ab€"));
+        // An unterminated string whose last character is multi-byte is reported
+        // as unterminated: the character decodes, the quote is what is missing.
+        let reason = parse("\"é").expect_err("an unterminated string is refused");
+        assert!(reason.contains("unterminated string"), "{reason}");
     }
 }
