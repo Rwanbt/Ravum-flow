@@ -722,4 +722,202 @@ mod tests {
         }
         assert!(Config::from_json(&value).is_err());
     }
+
+    // The tests below pin the local-state contracts the CLI relies on: a record
+    // is never reinterpreted, a file name is never taken from a record without a
+    // check, and a failure is reported rather than swallowed. They live here
+    // because these are private helpers of the durable-state module.
+
+    fn temp_root(tag: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("flow-state-{}-{tag}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn a_journal_error_names_its_kind_and_never_looks_like_empty_state() {
+        assert_eq!(
+            JournalError::Io("cannot open".into()).to_string(),
+            "journal unreadable: cannot open"
+        );
+        assert_eq!(
+            JournalError::Corrupt("torn line 2".into()).to_string(),
+            "journal corrupt: torn line 2"
+        );
+        assert_eq!(
+            String::from(JournalError::Corrupt("x".into())),
+            "journal corrupt: x"
+        );
+    }
+
+    #[test]
+    fn an_obligation_missing_its_program_is_refused_not_dropped() {
+        let torn =
+            json::parse(r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":""}]}"#)
+                .unwrap();
+        let reason = Config::from_json(&torn)
+            .err()
+            .expect("a policy with an unusable obligation must be refused");
+        assert!(reason.contains("non-empty id and program"), "{reason}");
+
+        let no_id =
+            json::parse(r#"{"schema":"flow-config/1","obligations":[{"program":"git"}]}"#).unwrap();
+        assert!(Config::from_json(&no_id).is_err());
+    }
+
+    #[test]
+    fn a_config_whose_obligations_are_not_a_list_keeps_the_declared_defaults() {
+        // A shape Flow does not understand is not an obligation set: the record
+        // still names its policy version and boundary, and declares nothing.
+        let value = json::parse(
+            r#"{"schema":"flow-config/1","obligations":"none","policy_version":"FLOW-POLICY-1"}"#,
+        )
+        .unwrap();
+        let config = Config::from_json(&value).unwrap();
+        assert_eq!(config.obligations.len(), 0);
+        assert_eq!(config.policy_version, POLICY_VERSION);
+        assert_eq!(config.execution_boundary, "local-trusted");
+        assert!(!config.disabled);
+    }
+
+    #[test]
+    fn an_adoption_record_from_another_schema_is_not_reinterpreted() {
+        let root = temp_root("adoption");
+        assert!(load_adoption(&root).unwrap().is_none());
+
+        let path = adoption_path(&root);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, r#"{"schema":"flow-adoption/9","policy_digest":"x"}"#).unwrap();
+        let reason = load_adoption(&root)
+            .err()
+            .expect("a foreign adoption schema must be refused");
+        assert!(reason.contains("refusing to guess"), "{reason}");
+
+        let adoption = Adoption {
+            policy_digest: "digest".into(),
+            policy_version: POLICY_VERSION.into(),
+            approved_at: "2026-01-01T00:00:00Z".into(),
+            source: "test".into(),
+        };
+        save_adoption(&root, &adoption).unwrap();
+        let loaded = load_adoption(&root).unwrap().expect("a saved adoption");
+        assert_eq!(loaded.policy_digest, "digest");
+        assert_eq!(loaded.source, "test");
+        assert_eq!(loaded.approved_at, "2026-01-01T00:00:00Z");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_journal_append_keeps_a_record_schema_and_a_missing_journal_is_empty() {
+        let root = temp_root("journal");
+        // A fresh repository has no journal: that is an empty journal, not an
+        // unreadable one.
+        assert!(read_journal(&root).unwrap().is_empty());
+
+        // A record that already carries a schema keeps it (a future reader must
+        // be able to see the version the record was written under).
+        let tagged = Json::obj(vec![
+            ("schema", Json::str("flow-journal/0")),
+            ("event", Json::str("note")),
+        ]);
+        append_journal(&root, &tagged).unwrap();
+        // A record that is not an object cannot be tagged; it is still appended
+        // as the caller wrote it rather than being silently rewritten.
+        append_journal(&root, &Json::Num(1.0)).unwrap();
+        let records = read_journal(&root).unwrap();
+        assert_eq!(records.len(), 2);
+        assert_eq!(
+            records[0].get("schema").and_then(Json::as_str),
+            Some("flow-journal/0")
+        );
+        assert_eq!(records[1], Json::Num(1.0));
+
+        // Blank lines are layout, never records.
+        let mut text = fs::read_to_string(journal_path(&root)).unwrap();
+        text.push_str("\n \n");
+        fs::write(journal_path(&root), &text).unwrap();
+        assert_eq!(read_journal(&root).unwrap().len(), 2);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_receipt_can_only_be_stored_under_an_object_id_and_a_known_slot() {
+        let root = temp_root("receipts");
+        let tree = "a".repeat(40);
+        let receipt = |mode: &str, context: Option<&str>, tree_oid: &str| {
+            let mut pairs = vec![
+                ("schema".to_string(), Json::str(SCHEMA_RECEIPT)),
+                ("tree_oid".to_string(), Json::str(tree_oid)),
+                (
+                    "verification_scope".to_string(),
+                    Json::obj(vec![("mode", Json::str(mode))]),
+                ),
+            ];
+            if let Some(context) = context {
+                pairs.push(("context_id".to_string(), Json::str(context)));
+            }
+            Json::Obj(pairs)
+        };
+
+        // The tree id becomes a file name: a path must never reach it.
+        let reason = save_receipt(&root, &receipt("complete", None, "../../escape")).unwrap_err();
+        assert!(reason.contains("INVALID_TREE_ID"), "{reason}");
+        assert!(
+            !receipts_dir(&root).exists(),
+            "nothing may be written first"
+        );
+
+        // An unknown slot is refused instead of being coerced to "complete".
+        let reason = save_receipt(&root, &receipt("everything", None, &tree)).unwrap_err();
+        assert!(
+            reason.contains("unknown verification_scope.mode"),
+            "{reason}"
+        );
+
+        // A partial record needs the context that names its own file.
+        let reason = save_receipt(&root, &receipt("selected", None, &tree)).unwrap_err();
+        assert!(
+            reason.contains("selected receipt without context_id"),
+            "{reason}"
+        );
+
+        let written = save_receipt(&root, &receipt("selected", Some("ctx-123"), &tree)).unwrap();
+        assert!(written.is_file(), "{}", written.display());
+        assert!(
+            written.to_string_lossy().contains(".partial.ctx-123"),
+            "a selected receipt never shares the complete slot: {}",
+            written.display()
+        );
+        // Loading a receipt that is not there is `None`, not an error.
+        assert!(Receipt::load(&root, &tree).unwrap().is_none());
+        // An id that is not an object id cannot name a receipt at all.
+        assert!(Receipt::load(&root, "../config.json").is_err());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_write_outside_the_flow_directory_is_not_guarded_and_still_atomic() {
+        let root = temp_root("guard");
+        // No `.flow` component: the guard has no anchor and the write proceeds.
+        let plain = root.join("plain.json");
+        write_atomic(&plain, "content\n").unwrap();
+        assert_eq!(fs::read_to_string(&plain).unwrap(), "content\n");
+        // The guarded shape creates `.flow` and lands in it.
+        save_config(&root, &Config::default()).unwrap();
+        assert!(config_path(&root).is_file());
+        assert!(load_config(&root).is_ok());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_civil_calendar_handles_days_before_the_epoch() {
+        assert_eq!(civil_from_days(0), (1970, 1, 1));
+        assert_eq!(civil_from_days(-1), (1969, 12, 31));
+        assert_eq!(civil_from_days(-365), (1969, 1, 1));
+        // A timestamp is always formatted, never "negative days" garbage.
+        let stamp = iso8601_now();
+        assert_eq!(stamp.len(), 20, "{stamp}");
+        assert!(stamp.ends_with('Z'), "{stamp}");
+    }
 }

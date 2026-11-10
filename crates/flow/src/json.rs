@@ -395,4 +395,98 @@ mod tests {
             "printed output must still be JSON: {text}"
         );
     }
+
+    #[test]
+    fn an_accessor_never_panics_on_another_shape() {
+        // Receipts and journals are read from disk; a field of an unexpected
+        // shape must answer "not this shape", never panic and never guess.
+        let null = Json::Null;
+        let boolean = Json::Bool(false);
+        let number = Json::Num(2.0);
+        let text = Json::str("text");
+        let array = Json::Arr(vec![Json::Num(1.0)]);
+        let object = Json::Obj(vec![("k".into(), Json::Bool(true))]);
+
+        assert_eq!(
+            (null.as_str(), null.as_bool(), null.as_num(), null.as_arr()),
+            (None, None, None, None)
+        );
+        assert_eq!(null.get("k"), None);
+
+        assert_eq!(boolean.as_bool(), Some(false));
+        assert_eq!(
+            (boolean.as_str(), boolean.as_num(), boolean.as_arr()),
+            (None, None, None)
+        );
+        assert_eq!(boolean.get("k"), None);
+
+        assert_eq!(number.as_num(), Some(2.0));
+        assert_eq!(
+            (number.as_str(), number.as_bool(), number.as_arr()),
+            (None, None, None)
+        );
+        assert_eq!(number.get("k"), None);
+
+        assert_eq!(text.as_str(), Some("text"));
+        assert_eq!(
+            (text.as_bool(), text.as_num(), text.as_arr()),
+            (None, None, None)
+        );
+        assert_eq!(text.get("k"), None);
+
+        assert_eq!(array.as_arr().map(<[Json]>::len), Some(1));
+        assert_eq!(
+            (array.as_str(), array.as_bool(), array.as_num()),
+            (None, None, None)
+        );
+        assert_eq!(array.get("k"), None);
+
+        assert_eq!(object.get("k").and_then(Json::as_bool), Some(true));
+        assert_eq!(
+            (
+                object.as_str(),
+                object.as_bool(),
+                object.as_num(),
+                object.as_arr()
+            ),
+            (None, None, None, None)
+        );
+    }
+
+    #[test]
+    fn the_writer_emits_every_shape_as_text_that_parses_back() {
+        // An empty container is `{}`/`[]`, not a broken pair of delimiters.
+        assert_eq!(Json::Obj(vec![]).to_string(), "{}");
+        assert_eq!(Json::Arr(vec![]).to_string(), "[]");
+        // Integral numbers keep the integer spelling; anything else keeps its
+        // own, because a receipt's numbers are part of what a digest covers.
+        assert_eq!(Json::Num(-2.0).to_string(), "-2");
+        assert_eq!(Json::Num(1.5).to_string(), "1.5");
+        assert_eq!(Json::Num(1.0e16).to_string(), "10000000000000000");
+        // A control character has no escaped spelling of its own and must become
+        // a `\u` escape; emitting it raw would produce unparsable text.
+        assert_eq!(Json::str("a\u{1}b").to_string(), "\"a\\u0001b\"");
+        let pretty = Json::obj(vec![("only", Json::Num(1.0))]).to_string_pretty();
+        assert!(pretty.contains("\"only\": 1"), "{pretty}");
+        for text in [Json::Bool(true).to_string(), Json::Null.to_string(), pretty] {
+            assert!(parse(&text).is_ok(), "{text} must parse back");
+        }
+    }
+
+    #[test]
+    fn the_parser_refuses_shapes_json_does_not_allow() {
+        // A leading `+` is not a JSON number, even though Rust parses it.
+        assert!(parse("+1").is_err());
+        assert!(parse("@").is_err());
+        // A truncated literal never becomes `true`/`null`.
+        assert!(parse("tru").is_err());
+        assert!(parse("nul").is_err());
+        // A colon and a closing delimiter are required where JSON requires them.
+        assert!(parse(r#"{"a" 1}"#).is_err());
+        assert!(parse(r#"{"a":1"#).is_err());
+        assert!(parse(r#"{"a":1,}"#).is_err());
+        // The two empty containers are valid and carry no member.
+        assert_eq!(parse("{}").unwrap(), Json::Obj(vec![]));
+        assert_eq!(parse("[]").unwrap(), Json::Arr(vec![]));
+    }
 }

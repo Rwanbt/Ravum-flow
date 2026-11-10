@@ -297,4 +297,40 @@ mod tests {
         assert!(!is_record_id(&"a".repeat(33)));
         assert!(!is_record_id(&"z".repeat(32)));
     }
+
+    #[test]
+    fn every_absolute_and_traversal_shape_is_refused() {
+        // A leading backslash is as absolute as a leading slash on Windows, and
+        // a single dot is a traversal component like `..`.
+        for bad in [r"\server\share", r"\x", "./a", "a/./b", ".", ".."] {
+            assert!(validate_relative(bad).is_err(), "{bad} must be refused");
+        }
+    }
+
+    #[test]
+    fn a_path_without_a_name_cannot_be_resolved() {
+        let root = temp_root("no-name");
+        let err = canonical_within(&root, Path::new(""))
+            .expect_err("a path with no file name has no existing ancestor to resolve");
+        assert!(err.contains("no file name"), "{err}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn the_windows_link_helper_reports_failure_instead_of_claiming_success() {
+        // A gate that cannot create its fixture must be loud; and a helper that
+        // failed must not return `Ok(())`, which would make that gate vacuous.
+        let root = temp_root("link-twice");
+        let outside = temp_root("link-twice-out");
+        let link = root.join("link");
+        make_dir_link(&outside, &link).unwrap();
+        assert!(
+            make_dir_link(&outside, &link).is_err(),
+            "re-creating an existing junction must be reported as a failure"
+        );
+        let _ = std::fs::remove_dir(&link);
+        let _ = std::fs::remove_dir_all(&root);
+        let _ = std::fs::remove_dir_all(&outside);
+    }
 }

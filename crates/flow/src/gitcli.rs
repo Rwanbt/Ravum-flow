@@ -858,4 +858,16 @@ mod tests {
         assert!(!captured.truncated);
         assert_eq!(finish(captured), ("hello".to_string(), false));
     }
+
+    #[test]
+    fn a_short_secret_value_and_a_bare_shape_are_not_mistaken_for_secrets() {
+        // A secret-named variable whose value is too short to be a credential is
+        // not replaced: redaction matches values, not names alone.
+        std::env::set_var("FLOW_TEST_TOKEN_SHORT_Z", "abc");
+        assert_eq!(redact("abc"), "abc");
+        std::env::remove_var("FLOW_TEST_TOKEN_SHORT_Z");
+        // A family prefix with no payload after it names no token.
+        assert_eq!(redact("ghp_"), "ghp_", "a bare prefix is not a token");
+        assert_eq!(redact("AKIA"), "AKIA", "a bare AWS prefix is not an id");
+    }
 }

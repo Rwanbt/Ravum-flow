@@ -585,4 +585,77 @@ mod tests {
         assert_eq!(owner.nonce, "abcdef");
         let _ = fs::remove_dir_all(&root);
     }
+
+    // The tests below pin the release paths a predecessor or a crash can create:
+    // a guard whose file vanished, a lock path that cannot hold a record, and a
+    // record that never becomes readable. None of them may panic, and none of
+    // them may be reported as an owned lock.
+
+    #[test]
+    fn a_guard_whose_file_vanished_is_dropped_without_panicking() {
+        let root = temp_flow_dir("vanished");
+        let guard = acquire_lock(&root, "publish").unwrap();
+        fs::remove_file(lock_path(&root)).unwrap();
+        drop(guard);
+        assert!(
+            !lock_path(&root).exists(),
+            "dropping a guard must not recreate anything"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_lock_path_that_cannot_hold_a_record_is_unattributable_not_stolen() {
+        let root = temp_flow_dir("directory");
+        // A directory where the record belongs: the link fails, then the read
+        // fails for a reason that is not "it disappeared".
+        fs::create_dir(lock_path(&root)).unwrap();
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Unknown(m)) => assert!(
+                m.contains("cannot be established"),
+                "the refusal must ask for a human: {m}"
+            ),
+            other => panic!("an unattributable lock is never stolen: {other:?}"),
+        }
+        assert!(
+            lock_path(&root).is_dir(),
+            "the refusal must preserve whatever is on disk"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_record_that_disappears_while_waiting_is_not_attributed() {
+        let root = temp_flow_dir("disappear");
+        let path = lock_path(&root);
+        fs::write(&path, "").unwrap();
+        let late = path.clone();
+        let remover = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(100));
+            let _ = fs::remove_file(&late);
+        });
+        let owner = wait_for_record(&path, String::new());
+        remover.join().unwrap();
+        assert!(
+            owner.is_none(),
+            "a record that vanished cannot be attributed to anyone"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_empty_record_is_never_attributed_however_long_we_wait() {
+        let root = temp_flow_dir("empty-timeout");
+        let path = lock_path(&root);
+        fs::write(&path, "").unwrap();
+        let started = Instant::now();
+        let owner = wait_for_record(&path, String::new());
+        assert!(owner.is_none(), "an empty record names no owner");
+        assert!(
+            started.elapsed() >= CREATE_GRACE * 9 / 10,
+            "the reader must give a concurrent creator its grace period: {:?}",
+            started.elapsed()
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
 }

@@ -475,4 +475,187 @@ mod tests {
         remove_tree_bounded(&root, deadline);
         assert!(!root.exists());
     }
+
+    // The tests below pin the ownership guard: `Drop` deletes a directory only
+    // when it is still the real directory this value created, still resolves to
+    // the identity recorded at creation, and still carries the marker written
+    // after materialisation. Everything else is left untouched, because the
+    // alternative is deleting a user's directory after a redirect.
+
+    fn unit_root(tag: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let root =
+            std::env::temp_dir().join(format!("flow-scratch-{tag}-{}-{nanos}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    fn scratch_for(path: &Path, repo_root: &Path) -> Scratch {
+        Scratch {
+            path: path.to_path_buf(),
+            canonical: fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()),
+            repo_root: repo_root.to_path_buf(),
+        }
+    }
+
+    #[cfg(windows)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        let out = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("mklink /J failed"))
+        }
+    }
+
+    #[cfg(unix)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    #[test]
+    fn cleanup_leaves_a_directory_it_did_not_mark_as_owned() {
+        let root = unit_root("unowned");
+        let tree = root.join("tree");
+        fs::create_dir(&tree).unwrap();
+        fs::write(tree.join("pre-existing.txt"), "keep").unwrap();
+        drop(scratch_for(&tree, &root.join("gone-repo")));
+        assert!(
+            tree.join("pre-existing.txt").is_file(),
+            "a directory without the ownership marker is never removed"
+        );
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn cleanup_leaves_a_path_that_is_no_longer_the_scratch_directory() {
+        let root = unit_root("not-owned");
+        // A file where the scratch directory was: never removed.
+        let file = root.join("tree");
+        fs::write(&file, "x").unwrap();
+        drop(scratch_for(&file, &root));
+        assert!(file.is_file(), "a file is not a scratch directory");
+
+        // A marker that is itself a directory does not prove ownership.
+        let marked = root.join("marked");
+        fs::create_dir_all(marked.join(OWNED_MARKER)).unwrap();
+        fs::write(marked.join("keep.txt"), "keep").unwrap();
+        drop(scratch_for(&marked, &root));
+        assert!(
+            marked.join("keep.txt").is_file(),
+            "an unowned tree survives"
+        );
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn cleanup_removes_a_directory_it_created_and_marked() {
+        let root = unit_root("owned");
+        let tree = root.join("tree");
+        fs::create_dir(&tree).unwrap();
+        fs::write(tree.join(OWNED_MARKER), "owned\n").unwrap();
+        fs::write(tree.join("file.txt"), "x").unwrap();
+        // A repository root that no longer exists: the prune is skipped, the
+        // removal still happens.
+        drop(scratch_for(&tree, &root.join("gone-repo")));
+        assert!(!tree.exists(), "an owned, marked tree is removed");
+        assert!(root.exists(), "only the scratch tree is removed");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn cleanup_never_traverses_a_redirect_that_replaced_the_scratch() {
+        let root = unit_root("redirect");
+        let outside = unit_root("redirect-out");
+        fs::write(outside.join("keep.txt"), "keep").unwrap();
+        let link = root.join("tree");
+        make_dir_link(&outside, &link).expect(
+            "this gate proves that a redirect is never traversed, so the host must allow one",
+        );
+        drop(scratch_for(&link, &root));
+        assert!(
+            outside.join("keep.txt").is_file(),
+            "content behind a redirect must survive cleanup"
+        );
+        let _ = fs::remove_dir(&link);
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+        remove_tree_bounded(&outside, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn verify_created_dir_refuses_a_missing_path_and_a_file() {
+        let root = unit_root("verify");
+        let missing = root.join("missing");
+        let reason = verify_created_dir(&missing, &missing)
+            .expect_err("a vanished scratch directory is a refusal");
+        assert!(reason.contains("cannot inspect"), "{reason}");
+
+        let file = root.join("file");
+        fs::write(&file, "x").unwrap();
+        let reason =
+            verify_created_dir(&file, &file).expect_err("a file is not a scratch directory");
+        assert!(reason.contains("not a directory"), "{reason}");
+
+        let dir = root.join("dir");
+        fs::create_dir(&dir).unwrap();
+        verify_created_dir(&dir, &fs::canonicalize(&dir).unwrap())
+            .expect("a real directory at the recorded identity is accepted");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn detach_git_link_refuses_anything_but_the_worktree_link() {
+        let root = unit_root("detach");
+        let missing = root.join("no-git");
+        fs::create_dir(&missing).unwrap();
+        let reason =
+            detach_git_link(&missing).expect_err("a checkout without a .git link is refused");
+        assert!(reason.contains("did not create a .git link"), "{reason}");
+
+        let dir_git = root.join("dir-git");
+        fs::create_dir_all(dir_git.join(".git")).unwrap();
+        let reason =
+            detach_git_link(&dir_git).expect_err("a .git directory is not the worktree link");
+        assert!(reason.contains("not a regular file"), "{reason}");
+
+        let ok = root.join("ok");
+        fs::create_dir(&ok).unwrap();
+        fs::write(ok.join(".git"), "gitdir: ../x\n").unwrap();
+        #[cfg(windows)]
+        {
+            // Windows refuses to unlink a read-only file; the retry must clear
+            // the bit rather than fail the run.
+            let mut permissions = fs::metadata(ok.join(".git")).unwrap().permissions();
+            permissions.set_readonly(true);
+            fs::set_permissions(ok.join(".git"), permissions).unwrap();
+        }
+        detach_git_link(&ok).expect("a regular .git link is removed");
+        assert!(!ok.join(".git").exists());
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn bounded_removal_stops_at_its_deadline_and_tolerates_a_missing_path() {
+        let root = unit_root("deadline");
+        let tree = root.join("tree");
+        fs::create_dir_all(tree.join("nested")).unwrap();
+        fs::write(tree.join("nested/file.txt"), "x").unwrap();
+        // An expired budget leaves the tree alone instead of running long.
+        remove_tree_bounded(&tree, Instant::now() - Duration::from_secs(1));
+        assert!(
+            tree.join("nested/file.txt").is_file(),
+            "an expired budget removes nothing"
+        );
+        // A path that is already gone is a no-op, never an error.
+        make_writable(&root.join("absent"));
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+        assert!(!root.exists());
+    }
 }

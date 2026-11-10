@@ -29,3 +29,6 @@ dist/
 
 # Coverage instrumentation leaves profile data next to the binary
 *.profraw
+
+# Coverage target used by the documented measurement command (summary-*.txt)
+/wt-quality-target/
