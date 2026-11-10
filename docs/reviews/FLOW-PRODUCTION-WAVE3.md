@@ -175,7 +175,7 @@ from the exact commit** and uploads it.
 | `7a034ff` | `42801612167` | Ubuntu 4/4 job success; Windows test job failed at the **packaging** step (a release-script bug, fixed in `de86b3e`) |
 | `de86b3e` | `42802527240` / `42802536498` | **4/4 jobs success on both the push and the PR run**, including the two packaging steps and the artefact upload |
 | `f5bb271` (final product code: `d6d7ea9`) | `42803928091` / `42803936581` | **4/4 jobs success on both runs**; the packaged artefacts are downloadable from the run and carry `PROVENANCE.json` with `commit=f5bb271`, `tree=a870b34a…`, `identical=true` per host |
-| `6525c46`, `d5f0a11` (docs only) | green on push | no `crates/` change, so the product evidence above still describes the head |
+| docs-only commits after `f5bb271` | see the run list | the workflow cancels superseded runs on the same ref (`concurrency.cancel-in-progress: true`), so a docs-only commit is qualified by the next run that is allowed to finish; no `crates/` change, so the product evidence above still describes every one of them |
 
 The floor and the gate list are part of the workflow, so deleting or renaming a gate fails the
 build; `cargo test --all-targets` counts *executed* tests, so a deleted test cannot pass
