@@ -259,7 +259,16 @@ fn a_core_attributes_file_conversion_is_refused_not_certified() {
 fn install_tracked_hook(repo: &Repo, body: &str) {
     let hooks = repo.path.join(".hooks");
     fs::create_dir_all(&hooks).unwrap();
-    fs::write(hooks.join("post-checkout"), format!("#!/bin/sh\n{body}")).unwrap();
+    let path = hooks.join("post-checkout");
+    fs::write(&path, format!("#!/bin/sh\n{body}")).unwrap();
+    // Unix runs a hook only when the file on disk is executable. A clone does
+    // that from the tree mode; this fixture was written directly, so the bit is
+    // set explicitly (a no-op on Windows, where the mode is not consulted).
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    }
     git(&repo.path, &["add", "-A"]);
     git(
         &repo.path,
