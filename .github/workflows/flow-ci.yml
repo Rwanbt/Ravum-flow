@@ -85,8 +85,8 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution) do not run on
           # Linux, so the floor is per-platform rather than a single number that
           # would silently shrink.
-          minimum=186
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=187; fi
+          minimum=227
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=227; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -111,8 +111,14 @@ jobs:
             a_core_attributes_file_conversion_is_refused_not_certified \
             a_hook_that_adds_a_file_is_refused_not_certified \
             a_hook_that_rewrites_a_file_is_refused_not_certified \
+            a_hook_that_changes_the_executable_bit_is_refused_not_certified \
             a_hook_that_deletes_a_file_is_refused_not_certified \
             a_faithful_checkout_is_still_certified \
+            a_local_smudge_filter_is_refused_not_certified \
+            propose_admits_a_patch_between_one_mebibyte_and_the_declared_bound \
+            run_refuses_a_scratch_base_the_host_redirected_into_the_repository \
+            run_refuses_a_scratch_whose_git_link_a_hook_removed \
+            publish_refuses_every_tampered_receipt_field_with_its_named_check \
             an_unlisted_environment_variable_is_not_inherited_by_an_obligation \
             a_secret_shaped_value_is_redacted_before_it_is_persisted \
             a_run_killed_during_verification_leaves_no_proof_and_recovers \
@@ -169,6 +175,11 @@ jobs:
             hijacked_git_environment_does_not_redirect_the_cli \
             missing_toolchain_is_unsupported_and_never_publishable ; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
+            # Windows does not carry the Unix executable bit, so the mode gate is
+            # compiled out there; the Linux job runs it for real.
+            if [ "$gate" = "a_hook_that_changes_the_executable_bit_is_refused_not_certified" ] && [ "${RUNNER_OS}" = "Windows" ]; then
               continue
             fi
             # Windows only creates a file symlink with SeCreateSymbolicLinkPrivilege:
