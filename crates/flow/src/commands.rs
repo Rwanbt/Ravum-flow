@@ -900,6 +900,31 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             _ => {}
         }
     }
+
+    // On a host that carries the executable bit, the checkout must carry the
+    // tree's mode too: a hook that chmods a file (or a filesystem that cannot
+    // represent the mode) changes what an obligation *executes*, without touching
+    // a byte the content comparison can see. Windows is not checked because the
+    // platform does not represent the bit; that limit is documented.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        for (mode, _, path, _) in &expected {
+            if mode != "100644" && mode != "100755" {
+                continue;
+            }
+            let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+            let meta = fs::symlink_metadata(&full)
+                .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+            let executable = meta.permissions().mode() & 0o111 != 0;
+            if executable != (mode == "100755") {
+                return Err(format!(
+                    "tree {tree} entry {path:?} declares mode {mode} but was checked out {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree",
+                    if executable { "executable" } else { "non-executable" }
+                ));
+            }
+        }
+    }
     verify_checkout_content(git, scratch, tree, &expected)
 }
 

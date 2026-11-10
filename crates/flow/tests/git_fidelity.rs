@@ -319,6 +319,22 @@ fn a_hook_that_deletes_a_file_is_refused_not_certified() {
     assert_checkout_refused(&repo, &tree, "missing file after post-checkout");
 }
 
+/// A hook that changes the **executable bit**. The bytes are identical, so only a
+/// mode check can see it; on a host that carries the bit, an obligation would run
+/// a different file than the tree declares. Windows does not represent the bit,
+/// so the gate is Unix-only and the limit is documented.
+#[cfg(unix)]
+#[test]
+fn a_hook_that_changes_the_executable_bit_is_refused_not_certified() {
+    let repo = new_repo("hook-chmod");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    install_tracked_hook(&repo, "chmod +x a.txt\n");
+    let tree = git(&repo.path, &["write-tree"]);
+    assert_checkout_refused(&repo, &tree, "executable bit changed by post-checkout");
+}
+
 /// Control test: with no local attribute source and no hook, the same fixture
 /// must still be certifiable. A gate that refuses everything would pass the
 /// tests above while proving nothing.
