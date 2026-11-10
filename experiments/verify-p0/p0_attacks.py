@@ -901,6 +901,55 @@ def a16_non_utf8_paths(ctx: Ctx):
                "NOT_RUN", ev, post["code"] or "")
 
 
+def a20_hook_recreates_dot_git(ctx: Ctx):
+    """A hook recreates `.git` after `materialise` unlinks the worktree link.
+
+    Deterministic "after the unlink, before the check" point: `materialise`
+    removes `.git` and then writes the scratch ownership marker, so the hook's
+    background process waits for the marker and creates `.git/`. At `7a034ff` the
+    walker skipped a root `.git` and the run was `PASSED`; at `f5bb271` it must be
+    an undeclared entry and refused.
+    """
+    repo = ctx.new_repo("dot-git-race")
+    ctx.hook(repo,
+             "( while [ ! -f .flow-scratch-owned ]; do :; done; mkdir -p .git; "
+             "printf 'ref: refs/heads/main\\n' > .git/HEAD ) >/dev/null 2>&1 &")
+    obligation = {
+        "id": "probe", "program": "python",
+        "args": ["-c",
+                 "import pathlib,sys; p=pathlib.Path('.git'); "
+                 "print('git_dir_seen=%s' % p.is_dir()); "
+                 "raise SystemExit(0 if p.is_dir() else 7)"],
+        "required": True, "timeout_s": 30,
+    }
+    ctx.policy(repo, [obligation])
+    tree = ctx.tree(repo)
+    post = ctx.run_on(ctx.post, repo, "run", timeout=120)
+    log = repo / ".flow" / "logs" / tree / "probe.stdout.log"
+    log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+    ev = {"post": brief(post), "obligation_log": log_text.strip()[:200],
+          "receipt_present": ctx.receipt_path(repo, tree).exists()}
+    if post["exit"] == 1 and post["code"] == "UNSUPPORTED_CHECKOUT":
+        record("A20", "Hook recreates `.git` after materialise unlinks it, "
+               "before the check", "P3",
+               "background hook waits for `.flow-scratch-owned`, then creates "
+               "`.git/` + HEAD",
+               "a `.git` present at check time is an undeclared entry and must "
+               "be refused (the obligations must not discover a repository)",
+               f"REFUSED/{post['code']}: {(post['reason'] or '')[:300]}; no receipt",
+               "REFUTED", ev, post["code"] or "")
+    elif post["status"] == "PASSED":
+        record("A20", "Hook recreates `.git` before the check", "P3",
+               "marker-synchronised `.git` creation", "must refuse",
+               "PASSED: the walker still skips the `.git` entry",
+               "DEFECT_REPRODUCED", ev, "")
+    else:
+        record("A20", "Hook recreates `.git` before the check", "P3",
+               "marker-synchronised `.git` creation", "must refuse",
+               f"exit={post['exit']} status={post['status']} code={post['code']}",
+               "NOT_RUN", ev, post["code"] or "")
+
+
 # ======================================================================
 # Axis A5 - publish and documentation
 # ======================================================================
@@ -1032,6 +1081,7 @@ def main(argv=None):
         a17_publish_not_unverified,
         a18_doctor_disclosure,
         a19_hook_makes_declared_path_a_directory,
+        a20_hook_recreates_dot_git,
     ]
     if args.filter:
         scenarios = [s for s in scenarios if s.__name__.startswith(args.filter)

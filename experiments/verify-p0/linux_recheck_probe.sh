@@ -2,14 +2,14 @@
 # Linux (WSL) data point for 7a034ff: the post-run re-check proves the Unix mode
 # of declared files. An obligation chmods a declared 100644 file to 0755; the
 # re-check must refuse with CHECKOUT_MUTATED_DURING_RUN and write no receipt.
-# Built from `git archive 7a034ff` (pinned), not from the moving worktree.
+# Built from `git archive ${PIN:-f5bb271}` (pinned), not from the moving worktree.
 set -u
 
 SRC=/tmp/flow-7a-linux-src
 TGT=/tmp/flow-7a-linux-target
 rm -rf "$SRC" "$TGT"
 mkdir -p "$SRC"
-( cd /mnt/d/App/Ravum-flow && git archive 7a034ff ) | tar -x -C "$SRC" || {
+( cd /mnt/d/App/Ravum-flow && git archive "${PIN:-f5bb271}" ) | tar -x -C "$SRC" || {
   echo "ARCHIVE_FAILED"; exit 1; }
 ( cd "$SRC" && CARGO_TARGET_DIR="$TGT" cargo build --locked --offline >/dev/null 2>&1 ) || {
   echo "BUILD_FAILED"; exit 1; }

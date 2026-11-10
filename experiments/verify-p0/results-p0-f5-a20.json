@@ -1,0 +1,153 @@
+{
+  "meta": {
+    "review": "FLOW-P0-GIT-FIDELITY-REVIEW",
+    "date": "2026-11-10T11:04:56Z",
+    "post": {
+      "path": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-f5-target\\debug\\flow.exe",
+      "sha256": "50c92cd80be2947724be64da437ec19b7bd882e4af6f796c30af4767d2ee414d"
+    },
+    "pre": {
+      "path": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-prefix-target\\debug\\flow.exe",
+      "sha256": "2556febb27ac6f75c94aa5a641dce1cf14eed26c7ff2958d9d618ef8f4cc52ce"
+    },
+    "smudge_helper": {
+      "path": "D:\\App\\Ravum-flow\\experiments\\verify-p0\\smudge.exe",
+      "sha256": "d452b152328b27c55a62c814febb9dd4524b095fcfd6e16ba00967f88eed5f46"
+    },
+    "passthru_helper": {
+      "path": "D:\\App\\Ravum-flow\\experiments\\verify-p0\\passthru.exe",
+      "sha256": "8e5a307b89d4231c482251b0cd3d73dd7c66a822778162960f2c9b586d8d5c79"
+    },
+    "fixtures_root": "<removed>",
+    "duration_s": 1.2,
+    "platform": "win32"
+  },
+  "summary": {
+    "REFUTED": 1
+  },
+  "scenarios": [
+    {
+      "id": "A20",
+      "title": "Hook recreates `.git` after materialise unlinks it, before the check",
+      "severity": "P3",
+      "setup": "background hook waits for `.flow-scratch-owned`, then creates `.git/` + HEAD",
+      "expected": "a `.git` present at check time is an undeclared entry and must be refused (the obligations must not discover a repository)",
+      "observed": "REFUSED/UNSUPPORTED_CHECKOUT: the checkout holds 1 file(s) the tree does not declare (for example [\".git/HEAD\"]): a hook or the host created them, so the obligations would not see exactly the verified tree; no receipt",
+      "verdict": "REFUTED",
+      "gate": "UNSUPPORTED_CHECKOUT",
+      "notes": "",
+      "evidence": {
+        "post": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "the checkout holds 1 file(s) the tree does not declare (for example [\".git/HEAD\"]): a hook or the host created them, so the obligations would not see exactly the verified tree",
+          "duration_ms": 439
+        },
+        "obligation_log": "",
+        "receipt_present": false
+      },
+      "duration_ms": 1167,
+      "commands": [
+        {
+          "argv": [
+            "git",
+            "-C",
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-p0-review-1v5wi7jb\\repo-dot-git-race",
+            "update-index",
+            "--chmod=+x",
+            "--",
+            ".hooks/post-checkout"
+          ],
+          "exit": 0,
+          "stdout": "",
+          "stderr": "",
+          "duration_ms": 52
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-p0-review-1v5wi7jb\\repo-dot-git-race",
+            "commit",
+            "-q",
+            "-m",
+            "fixture hook"
+          ],
+          "exit": 0,
+          "stdout": "",
+          "stderr": "",
+          "duration_ms": 88
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-p0-review-1v5wi7jb\\repo-dot-git-race",
+            "config",
+            "core.hooksPath",
+            ".hooks"
+          ],
+          "exit": 0,
+          "stdout": "",
+          "stderr": "",
+          "duration_ms": 38
+        },
+        {
+          "argv": [
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-f5-target\\debug\\flow.exe",
+            "init",
+            "--adopt-policy"
+          ],
+          "exit": 0,
+          "stdout": "{\n  \"status\": \"INITIALIZED\",\n  \"flow_dir\": \".flow\",\n  \"policy_version\": \"FLOW-POLICY-1\",\n  \"adopted\": true,\n  \"adoption_source\": \"init --adopt-policy\",\n  \"policy_digest\": \"5cc32ee029f6\",\n  \"journal_preserved\": true,\n  \"note\": \"the adopted policy declares obligations; `.flow/.gitignore` keeps Flow state out of the verified tree\"\n}\n",
+          "stderr": "",
+          "duration_ms": 112,
+          "json": {
+            "status": "INITIALIZED",
+            "flow_dir": ".flow",
+            "policy_version": "FLOW-POLICY-1",
+            "adopted": true,
+            "adoption_source": "init --adopt-policy",
+            "policy_digest": "5cc32ee029f6",
+            "journal_preserved": true,
+            "note": "the adopted policy declares obligations; `.flow/.gitignore` keeps Flow state out of the verified tree"
+          },
+          "status": "INITIALIZED",
+          "code": null,
+          "reason": ""
+        },
+        {
+          "argv": [
+            "git",
+            "-C",
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-p0-review-1v5wi7jb\\repo-dot-git-race",
+            "write-tree"
+          ],
+          "exit": 0,
+          "stdout": "ebe0d134484207edd0c2fdb15b0cc78e6bfb1e8e\n",
+          "stderr": "",
+          "duration_ms": 43
+        },
+        {
+          "argv": [
+            "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-f5-target\\debug\\flow.exe",
+            "run"
+          ],
+          "exit": 1,
+          "stdout": "{\n  \"status\": \"REFUSED\",\n  \"code\": \"UNSUPPORTED_CHECKOUT\",\n  \"reason\": \"the checkout holds 1 file(s) the tree does not declare (for example [\\\".git/HEAD\\\"]): a hook or the host created them, so the obligations would not see exactly the verified tree\"\n}\n",
+          "stderr": "",
+          "duration_ms": 439,
+          "json": {
+            "status": "REFUSED",
+            "code": "UNSUPPORTED_CHECKOUT",
+            "reason": "the checkout holds 1 file(s) the tree does not declare (for example [\".git/HEAD\"]): a hook or the host created them, so the obligations would not see exactly the verified tree"
+          },
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "the checkout holds 1 file(s) the tree does not declare (for example [\".git/HEAD\"]): a hook or the host created them, so the obligations would not see exactly the verified tree"
+        }
+      ]
+    }
+  ]
+}

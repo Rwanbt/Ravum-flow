@@ -127,12 +127,13 @@ def main(argv):
     }
 
     # (e) hook races the .git unlink and recreates a `.git` directory -----
-    # The entry walker still skips a root `.git` (the worktree link is removed by
-    # `materialise`), so a hook that recreates it after the unlink can hide a
-    # directory the tree does not declare.
+    # `materialise` removes the worktree `.git` link and then writes the scratch
+    # ownership marker; the hook's background process waits for that marker (a
+    # deterministic "after the unlink, before the check" point) and creates a
+    # `.git` directory. A `.git` entry present at check time must be refused.
     repo = ctx.new_repo("dot-git-race")
     ctx.hook(repo,
-             "( while [ -f .git ]; do sleep 0.05; done; mkdir -p .git; "
+             "( while [ ! -f .flow-scratch-owned ]; do :; done; mkdir -p .git; "
              "printf 'ref: refs/heads/main\\n' > .git/HEAD ) >/dev/null 2>&1 &")
     ctx.policy(repo, [{
         "id": "probe", "program": "python",
@@ -150,8 +151,36 @@ def main(argv):
         "receipt": ctx.receipt_path(repo, tree).exists(),
         "obligation_log": log.read_text(encoding="utf-8", errors="replace").strip()
         if log.exists() else "",
-        "expected": "REFUSED if the initial check treats a recreated `.git` as an "
-                    "undeclared extra; the walker currently skips it",
+        "expected": "REFUSED/UNSUPPORTED_CHECKOUT: `materialise` removes the "
+                    "`.git` link before the check, so a `.git` entry present at "
+                    "check time is an extra entry (was skipped at 7a034ff)",
+    }
+
+    # (e2) `.git` created *after* the initial check, by an obligation -------
+    # Extras created during the obligations are allowed at the re-check
+    # (build outputs); this is the documented "after the check" limit.
+    repo = ctx.new_repo("dot-git-after")
+    ctx.policy(repo, [{
+        "id": "make-git", "program": "python",
+        "args": ["-c",
+                 "import pathlib; g=pathlib.Path('.git'); g.mkdir(exist_ok=True); "
+                 "(g/'HEAD').write_text('ref: refs/heads/main\\n'); "
+                 "print('git_dir_seen=%s' % g.is_dir())"],
+        "required": True, "timeout_s": 30,
+    }])
+    tree = ctx.tree(repo)
+    run = ctx.run_on(post, repo, "run")
+    log = repo / ".flow" / "logs" / tree / "make-git.stdout.log"
+    rpath = ctx.receipt_path(repo, tree)
+    receipt = json.loads(rpath.read_text(encoding="utf-8")) if rpath.exists() else {}
+    result["probes"]["e2_dot_git_after_check"] = {
+        "run": P.brief(run),
+        "receipt": rpath.exists(),
+        "checkout_recheck": receipt.get("checkout_recheck"),
+        "obligation_log": log.read_text(encoding="utf-8", errors="replace").strip()
+        if log.exists() else "",
+        "expected": "PASSED: the re-check proves only declared files; extras "
+                    "created while the obligations run are allowed (documented)",
     }
 
     out = Path(argv[2]) if len(argv) > 2 else Path(
