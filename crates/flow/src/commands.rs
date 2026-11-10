@@ -484,7 +484,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             Json::Arr(vec![
                 Json::str("receipts bind an exact Git tree OID and one effective policy digest"),
                 Json::str("publication uses ref CAS with a durable intent/outcome journal"),
-                Json::str("the verification checkout equals the verified tree exactly: every regular file byte for byte, no missing file, no extra file"),
+                Json::str("the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)"),
                 Json::str("a required obligation that cannot run makes the result UNSUPPORTED, never PASSED"),
                 Json::str("a selective run is recorded as PARTIAL and is never publishable"),
             ]),
@@ -493,7 +493,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             "non_guarantees",
             Json::Arr(vec![
                 Json::str("no OS-level isolation of obligations"),
-                Json::str("hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A post-checkout that changes the disposable checkout is detected and refused (bytes and file set), not prevented; a blocking reference-transaction aborts publish"),
+                Json::str("hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A change already present when the checkout is checked is refused, and a change to a declared file while the obligations run is caught by a re-check after the last obligation; a hook that writes outside the checkout, a write reverted before the re-check, or a write after it is not detected. A blocking reference-transaction aborts publish"),
                 Json::str("no completeness proof of the build context"),
                 Json::str("no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one"),
                 Json::str("a checkout that cannot reproduce the tree is refused, not repaired"),
@@ -777,48 +777,13 @@ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
 /// materialised. Without this check a required obligation runs on content that is
 /// not the verified tree while the receipt claims the tree was checked, which is
 /// a false `PASSED` with no tampering involved.
+///
+/// This is a statement about the checkout **at the moment it is checked**: a hook
+/// (or an obligation) can change it afterwards. `verify_checkout_unchanged` runs
+/// the same byte and mode proof again after the last obligation and refuses a run
+/// whose declared files changed meanwhile.
 fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
-    /// A tree beyond this size is not a realistic verification target; refusing
-    /// keeps the walk bounded.
-    const MAX_ENTRIES: usize = 200_000;
-
-    // The listing comes from the source repository: the checkout deliberately
-    // has no `.git`, so it cannot answer for itself.
-    let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
-    if listing.status != 0 {
-        return Err(format!(
-            "cannot list tree {tree}: {}",
-            listing.stderr.trim()
-        ));
-    }
-    let mut expected: Vec<(String, String, String, u64)> = Vec::new();
-    for entry in listing.stdout.split('\0') {
-        if entry.trim().is_empty() {
-            continue;
-        }
-        let (meta, path) = entry
-            .split_once('\t')
-            .ok_or_else(|| format!("unparsable ls-tree entry {entry:?}"))?;
-        let mut fields = meta.split_whitespace();
-        let mode = fields.next().unwrap_or("").to_string();
-        let _kind = fields.next().unwrap_or("");
-        let oid = fields.next().unwrap_or("").to_string();
-        // `ls-tree -l` prints the object size, right-aligned, before the tab.
-        let size = fields
-            .next()
-            .and_then(|v| v.parse::<u64>().ok())
-            .unwrap_or(0);
-        if path.is_empty() {
-            continue;
-        }
-        expected.push((mode, oid, path.replace('\\', "/"), size));
-    }
-    if expected.len() > MAX_ENTRIES {
-        return Err(format!(
-            "tree {tree} has {} entries, above the {MAX_ENTRIES}-entry fidelity budget",
-            expected.len()
-        ));
-    }
+    let expected = ls_tree_entries(git, tree)?;
 
     // Two paths differing only by case cannot both exist on a case-insensitive
     // filesystem: the checkout silently keeps one of them.
@@ -832,10 +797,17 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
         ));
     }
 
-    // Everything the tree names must actually exist on disk.
-    let mut actual: Vec<String> = Vec::new();
-    collect_files(scratch, scratch, &mut actual)?;
-    let present: BTreeSet<&str> = actual.iter().map(String::as_str).collect();
+    // Everything the tree names must actually exist on disk, and nothing else may
+    // be present. `git worktree add` runs the repository's `post-checkout` hook
+    // (including one reached through `core.hooksPath` pointing at a directory the
+    // tree itself ships), so the checkout can gain files and directories after it
+    // was written. An extra path is not cosmetic: a toolchain file, a
+    // `.cargo/config.toml`, an empty cache directory or a test found by a glob
+    // changes what an obligation sees without touching a byte the tree declares.
+    let mut actual_files: Vec<String> = Vec::new();
+    let mut actual_dirs: Vec<String> = Vec::new();
+    collect_entries(scratch, scratch, &mut actual_files, &mut actual_dirs)?;
+    let present: BTreeSet<&str> = actual_files.iter().map(String::as_str).collect();
     let mut missing: Vec<&str> = expected
         .iter()
         .map(|(_, _, path, _)| path.as_str())
@@ -850,14 +822,6 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             &missing[..missing.len().min(3)]
         ));
     }
-
-    // And nothing else may be present. `git worktree add` runs the repository's
-    // `post-checkout` hook (including one reached through `core.hooksPath`
-    // pointing at a directory the tree itself ships), so the checkout can gain
-    // files after it was written. An extra file is not cosmetic: a toolchain
-    // file, a `.cargo/config.toml` or a test found by a glob changes what an
-    // obligation sees without touching a single byte the tree declares. The
-    // checkout must be *exactly* the tree.
     let declared: BTreeSet<&str> = expected
         .iter()
         .map(|(_, _, path, _)| path.as_str())
@@ -873,6 +837,20 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             "the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree",
             unexpected.len(),
             &unexpected[..unexpected.len().min(3)]
+        ));
+    }
+    let declared_dirs = ls_tree_dirs(git, tree)?;
+    let mut unexpected_dirs: Vec<&str> = actual_dirs
+        .iter()
+        .map(String::as_str)
+        .filter(|dir| !declared_dirs.contains(*dir))
+        .collect();
+    if !unexpected_dirs.is_empty() {
+        unexpected_dirs.sort_unstable();
+        return Err(format!(
+            "the checkout holds {} directory(ies) the tree does not declare (for example {:?}): a hook or the host created them, and an empty directory can change what an obligation discovers",
+            unexpected_dirs.len(),
+            &unexpected_dirs[..unexpected_dirs.len().min(3)]
         ));
     }
 
@@ -901,15 +879,108 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
         }
     }
 
-    // On a host that carries the executable bit, the checkout must carry the
-    // tree's mode too: a hook that chmods a file (or a filesystem that cannot
-    // represent the mode) changes what an obligation *executes*, without touching
-    // a byte the content comparison can see. Windows is not checked because the
-    // platform does not represent the bit; that limit is documented.
+    verify_checkout_modes(scratch, tree, &expected)?;
+    verify_checkout_content(git, scratch, tree, &expected, "during checkout")
+}
+
+/// The tree's entries: `(mode, blob oid, path, size)`, from one bounded
+/// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit
+/// reason instead of being lossily folded into `U+FFFD` (two different paths would
+/// then look like a case collision, which is a misleading diagnosis).
+fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {
+    /// A tree beyond this size is not a realistic verification target; refusing
+    /// keeps the walk bounded.
+    const MAX_ENTRIES: usize = 200_000;
+
+    // The listing comes from the source repository: the checkout deliberately
+    // has no `.git`, so it cannot answer for itself.
+    let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
+    if listing.status != 0 {
+        return Err(format!(
+            "cannot list tree {tree}: {}",
+            listing.stderr.trim()
+        ));
+    }
+    let mut expected: Vec<(String, String, String, u64)> = Vec::new();
+    for entry in listing.stdout_bytes.split(|byte| *byte == 0) {
+        if entry.is_empty() {
+            continue;
+        }
+        let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
+            return Err(format!("tree {tree}: unparsable ls-tree entry"));
+        };
+        let meta = String::from_utf8_lossy(&entry[..tab]).to_string();
+        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
+            format!(
+                "tree {tree} holds a path that is not valid UTF-8: this platform cannot represent it faithfully, so the tree cannot be verified"
+            )
+        })?;
+        if path.is_empty() {
+            continue;
+        }
+        let mut fields = meta.split_whitespace();
+        let mode = fields.next().unwrap_or("").to_string();
+        let _kind = fields.next().unwrap_or("");
+        let oid = fields.next().unwrap_or("").to_string();
+        // `ls-tree -l` prints the object size, right-aligned, before the tab.
+        let size = fields
+            .next()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(0);
+        expected.push((mode, oid, path.replace('\\', "/"), size));
+    }
+    if expected.len() > MAX_ENTRIES {
+        return Err(format!(
+            "tree {tree} has {} entries, above the {MAX_ENTRIES}-entry fidelity budget",
+            expected.len()
+        ));
+    }
+    Ok(expected)
+}
+
+/// The directories the tree declares (`ls-tree -r -d`), so an **empty** directory
+/// created by a hook is visible: Git does not represent empty directories, but an
+/// obligation that discovers directories can still see one.
+fn ls_tree_dirs(git: &Git, tree: &str) -> Result<BTreeSet<String>, String> {
+    let listing = git.run(&["ls-tree", "-r", "-d", "-z", tree])?;
+    if listing.status != 0 {
+        return Err(format!(
+            "cannot list the directories of tree {tree}: {}",
+            listing.stderr.trim()
+        ));
+    }
+    let mut dirs = BTreeSet::new();
+    for entry in listing.stdout_bytes.split(|byte| *byte == 0) {
+        if entry.is_empty() {
+            continue;
+        }
+        let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
+            return Err(format!("tree {tree}: unparsable ls-tree -d entry"));
+        };
+        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
+            format!(
+                "tree {tree} holds a directory path that is not valid UTF-8: this platform cannot represent it faithfully"
+            )
+        })?;
+        dirs.insert(path.replace('\\', "/"));
+    }
+    Ok(dirs)
+}
+
+/// On a host that carries the executable bit, the checkout must carry the tree's
+/// mode: a hook that chmods a file (or a filesystem that cannot represent the
+/// mode) changes what an obligation *executes*, without touching a byte the
+/// content comparison can see. Windows does not represent the bit and is not
+/// checked; that limit is documented.
+fn verify_checkout_modes(
+    scratch: &Path,
+    tree: &str,
+    expected: &[(String, String, String, u64)],
+) -> Result<(), String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        for (mode, _, path, _) in &expected {
+        for (mode, _, path, _) in expected {
             if mode != "100644" && mode != "100755" {
                 continue;
             }
@@ -919,13 +990,35 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             let executable = meta.permissions().mode() & 0o111 != 0;
             if executable != (mode == "100755") {
                 return Err(format!(
-                    "tree {tree} entry {path:?} declares mode {mode} but was checked out {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree",
+                    "tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree",
                     if executable { "executable" } else { "non-executable" }
                 ));
             }
         }
     }
-    verify_checkout_content(git, scratch, tree, &expected)
+    #[cfg(not(unix))]
+    {
+        let _ = (scratch, tree, expected);
+    }
+    Ok(())
+}
+
+/// Prove the declared content did not change while the obligations ran.
+///
+/// The fidelity check happens *before* the first obligation. A `post-checkout`
+/// hook can spawn a writer that changes a file later, and an obligation can
+/// rewrite its own input; both would make the receipt claim that the tree passed
+/// while the obligations saw something else. Re-running the same byte and mode
+/// proof after the last obligation closes that window for a declared file.
+///
+/// Extra files are **allowed** here: a legitimate obligation writes build outputs
+/// (`target/`, `node_modules/`). What is not detectable without a snapshot is a
+/// write that is reverted before this re-check, or one that happens after it; the
+/// limit is documented and `doctor` states it.
+fn verify_checkout_unchanged(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
+    let expected = ls_tree_entries(git, tree)?;
+    verify_checkout_modes(scratch, tree, &expected)?;
+    verify_checkout_content(git, scratch, tree, &expected, "while the obligations ran")
 }
 
 /// Prove that the checkout holds the bytes the tree stores.
@@ -944,11 +1037,15 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
 /// a tree Flow cannot prove is a tree Flow does not certify. What this cannot
 /// detect is a filter whose output is byte-identical to the blob: then there is
 /// nothing to detect.
+///
+/// `stage` names *when* the comparison runs (`during checkout` or `while the
+/// obligations ran`) so a refusal says what changed and when.
 fn verify_checkout_content(
     git: &Git,
     scratch: &Path,
     tree: &str,
     expected: &[(String, String, String, u64)],
+    stage: &str,
 ) -> Result<(), String> {
     /// Retained bytes for the whole comparison, before refusing.
     const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
@@ -1014,11 +1111,10 @@ fn verify_checkout_content(
         }
         let blob = &bytes[start..end];
         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
-        let disk =
-            fs::read(&full).map_err(|e| format!("cannot read {path:?} after checkout: {e}"))?;
+        let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
         if disk != blob {
             return Err(format!(
-                "tree {tree} entry {path:?} was checked out with different bytes ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver) or a hook rewrote it, so the obligations would not see the verified tree",
+                "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
                 disk.len(),
                 blob.len(),
                 short(oid)
@@ -1028,25 +1124,37 @@ fn verify_checkout_content(
     }
     Ok(())
 }
-fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> Result<(), String> {
+fn collect_entries(
+    root: &Path,
+    dir: &Path,
+    files: &mut Vec<String>,
+    dirs: &mut Vec<String>,
+) -> Result<(), String> {
     let entries = fs::read_dir(dir).map_err(|e| format!("cannot read {}: {e}", dir.display()))?;
     for entry in entries.flatten() {
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
-        // Flow's own markers are not part of the verified tree.
-        if dir == root && (name == ".git" || name.starts_with(".flow-scratch")) {
+        // Only Flow's own markers are not part of the verified tree: the `.git`
+        // link (removed before this check) and the scratch ownership marker. Any
+        // other root entry — including one whose name merely starts with
+        // `.flow-scratch` — is a file the tree did not declare.
+        if dir == root && (name == ".git" || name == ".flow-scratch-owned") {
             continue;
         }
         let Ok(meta) = fs::symlink_metadata(&path) else {
             continue;
         };
         if meta.is_dir() && !meta.file_type().is_symlink() {
-            collect_files(root, &path, out)?;
+            let rel = path
+                .strip_prefix(root)
+                .map_err(|_| format!("{} escaped the checkout", path.display()))?;
+            dirs.push(rel.to_string_lossy().replace('\\', "/"));
+            collect_entries(root, &path, files, dirs)?;
         } else {
             let rel = path
                 .strip_prefix(root)
                 .map_err(|_| format!("{} escaped the checkout", path.display()))?;
-            out.push(rel.to_string_lossy().replace('\\', "/"));
+            files.push(rel.to_string_lossy().replace('\\', "/"));
         }
     }
     Ok(())
@@ -1236,6 +1344,14 @@ pub fn cmd_run(
         ]));
     }
 
+    // The pre-check proved the checkout before the first obligation; this proves a
+    // declared file was not changed while they ran (a `post-checkout` hook can
+    // spawn a delayed writer, and an obligation can rewrite its own input). Extra
+    // files are allowed here: obligations legitimately write build outputs.
+    if let Err(reason) = verify_checkout_unchanged(&git, scratch.path(), &tree) {
+        return Ok(refused_code("CHECKOUT_MUTATED_DURING_RUN", reason));
+    }
+
     let worktree_diff = git
         .capture(&["diff", "--name-only", &tree])
         // An empty list on a failed diff would be a receipt claiming "no worktree
@@ -1341,6 +1457,10 @@ pub fn cmd_run(
             "worktree_diff",
             Json::Arr(worktree_diff.iter().map(|p| Json::str(p.clone())).collect()),
         ),
+        // Evidence of the post-run proof: the declared files were still the tree's
+        // when the last obligation finished (a run whose checkout changed is
+        // refused before a receipt is written, so this field is always OK here).
+        ("checkout_recheck", Json::str("OK")),
         (
             "scope_note",
             Json::str(if scope_mode == "selected" {
