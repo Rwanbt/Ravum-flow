@@ -1514,3 +1514,26 @@ fn obligation_ids_that_differ_only_by_case_are_refused() {
     assert_eq!(status_of(&out), "REFUSED");
     assert!(out.to_string().contains("differ only by case"), "{out}");
 }
+
+/// On Windows a tool installed by npm is a `.cmd` shim, which `CreateProcess`
+/// does not find by bare name. The obligation resolver uses PATH + PATHEXT.
+#[cfg(windows)]
+#[test]
+fn a_cmd_shim_on_path_is_found_by_a_bare_program_name() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim_dir = repo.path.join("shims");
+    fs::create_dir_all(&shim_dir).unwrap();
+    fs::write(shim_dir.join("flowprobe.cmd"), "@echo off\r\nexit /b 0\r\n").unwrap();
+    write_config(
+        &repo.path,
+        r#"{"id":"shim","program":"flowprobe","args":[],"required":true,"timeout_s":30}"#,
+    );
+    let path = std::env::var("PATH").unwrap_or_default();
+    let prefixed = format!("{};{}", shim_dir.to_string_lossy(), path);
+    let (code, out) = flow_with_env(&repo.path, &["run"], &[("PATH", &prefixed)]);
+    assert_eq!(
+        code, 0,
+        "a .cmd shim on PATH must be executable by bare name: {out}"
+    );
+    assert_eq!(status_of(&out), "PASSED");
+}

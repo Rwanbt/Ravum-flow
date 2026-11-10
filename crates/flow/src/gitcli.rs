@@ -503,9 +503,56 @@ fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {
 ///   The reader thread for that stream is detached after the grace period, so
 ///   the call returns; the thread (and the pipe) lives until the survivor exits
 ///   or the process exits.
+// Resolve a program name through PATH and PATHEXT on Windows.
+//
+// CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim
+// (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow
+// resolves it the way a shell would and only then spawns it. When nothing
+// matches, the caller keeps the declared name so the failure is reported as
+// UNSUPPORTED with the name the policy asked for.#[cfg(windows)]
+fn resolve_program(program: &str) -> Option<PathBuf> {
+    let path = std::env::var_os("PATH")?;
+    let extensions: Vec<String> = std::env::var("PATHEXT")
+        .unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string())
+        .split(';')
+        .filter(|e| !e.is_empty())
+        .map(|e| e.to_ascii_lowercase())
+        .collect();
+    let has_extension = std::path::Path::new(program).extension().is_some();
+    for dir in std::env::split_paths(&path) {
+        if has_extension {
+            let candidate = dir.join(program);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        } else {
+            for extension in &extensions {
+                let candidate = dir.join(format!("{program}{extension}"));
+                if candidate.is_file() {
+                    return Some(candidate);
+                }
+            }
+            let candidate = dir.join(program);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(not(windows))]
+fn resolve_program(_program: &str) -> Option<PathBuf> {
+    None
+}
+
 pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
     let started = Instant::now();
-    let mut cmd = Command::new(&ob.program);
+    // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the
+    // declared name is kept, so the message names what the policy asked for.
+    let program: PathBuf =
+        resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));
+    let mut cmd = Command::new(&program);
     cmd.args(&ob.args)
         .current_dir(cwd)
         .env_clear()
