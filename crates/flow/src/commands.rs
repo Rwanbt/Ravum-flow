@@ -374,14 +374,39 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
         ),
     );
 
-    let attrs = root.join(".gitattributes");
+    // Attribute sources that can rewrite a checkout. They are enumerated here for
+    // disclosure only: `flow run` no longer guesses whether a conversion "can"
+    // apply, it compares every regular file against its blob and refuses a
+    // checkout that differs, so no attribute source (committed or host-local) is
+    // a bypass. The list tells an operator *why* a refusal may have happened.
+    let mut attribute_sources: Vec<String> = Vec::new();
+    if root.join(".gitattributes").exists() {
+        attribute_sources.push(".gitattributes (in the working tree)".to_string());
+    }
+    if root.join(".git").join("info").join("attributes").exists() {
+        attribute_sources.push(".git/info/attributes (local, not in the tree)".to_string());
+    }
+    let attributes_file = git
+        .run(&["config", "--get", "core.attributesFile"])
+        .map(|o| o.stdout.trim().to_string())
+        .unwrap_or_default();
+    if !attributes_file.is_empty() {
+        attribute_sources.push(format!("core.attributesFile={attributes_file}"));
+    }
     push(
         "gitattributes",
-        if attrs.exists() { "WARN" } else { "OK" },
-        if attrs.exists() {
-            ".gitattributes present: eol/filter rules can change bytes; the receipt binds the Git tree OID, not the worktree bytes".to_string()
+        if attribute_sources.is_empty() {
+            "OK"
         } else {
-            "absent".to_string()
+            "WARN"
+        },
+        if attribute_sources.is_empty() {
+            "no content-attribute source present".to_string()
+        } else {
+            format!(
+                "content-attribute source(s) present ({}): eol/filter rules can rewrite a checkout; `flow run` compares every regular file with the blob the tree names and refuses a checkout that differs, so this is a disclosure, not a bypass",
+                attribute_sources.join(", ")
+            )
         },
     );
 
@@ -459,6 +484,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             Json::Arr(vec![
                 Json::str("receipts bind an exact Git tree OID and one effective policy digest"),
                 Json::str("publication uses ref CAS with a durable intent/outcome journal"),
+                Json::str("the verification checkout equals the verified tree exactly: every regular file byte for byte, no missing file, no extra file"),
                 Json::str("a required obligation that cannot run makes the result UNSUPPORTED, never PASSED"),
                 Json::str("a selective run is recorded as PARTIAL and is never publishable"),
             ]),
@@ -467,7 +493,7 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
             "non_guarantees",
             Json::Arr(vec![
                 Json::str("no OS-level isolation of obligations"),
-                Json::str("no hook dispatch of its own: Git plumbing may still run post-checkout on `worktree add` and reference-transaction on `update-ref`"),
+                Json::str("hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A post-checkout that changes the disposable checkout is detected and refused (bytes and file set), not prevented; a blocking reference-transaction aborts publish"),
                 Json::str("no completeness proof of the build context"),
                 Json::str("no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one"),
                 Json::str("a checkout that cannot reproduce the tree is refused, not repaired"),
@@ -825,6 +851,31 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
         ));
     }
 
+    // And nothing else may be present. `git worktree add` runs the repository's
+    // `post-checkout` hook (including one reached through `core.hooksPath`
+    // pointing at a directory the tree itself ships), so the checkout can gain
+    // files after it was written. An extra file is not cosmetic: a toolchain
+    // file, a `.cargo/config.toml` or a test found by a glob changes what an
+    // obligation sees without touching a single byte the tree declares. The
+    // checkout must be *exactly* the tree.
+    let declared: BTreeSet<&str> = expected
+        .iter()
+        .map(|(_, _, path, _)| path.as_str())
+        .collect();
+    let mut unexpected: Vec<&str> = present
+        .iter()
+        .copied()
+        .filter(|path| !declared.contains(path))
+        .collect();
+    if !unexpected.is_empty() {
+        unexpected.sort_unstable();
+        return Err(format!(
+            "the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree",
+            unexpected.len(),
+            &unexpected[..unexpected.len().min(3)]
+        ));
+    }
+
     // And each entry must have the type the tree declares.
     for (mode, _, path, _) in &expected {
         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
@@ -855,14 +906,19 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
 /// Prove that the checkout holds the bytes the tree stores.
 ///
 /// `git worktree add` applies the repository's content filters
-/// (`core.autocrlf`, `core.eol`, `.gitattributes`, driver filters). A filter can
-/// rewrite content **without changing its length**, so a size comparison is not
-/// a proof. The exact bytes of every regular file are compared with the blobs the
-/// tree names, read through one bounded `git cat-file --batch`.
+/// (`core.autocrlf`, `core.eol`, `.gitattributes` — committed **or local**
+/// (`.git/info/attributes`, `core.attributesFile`) — and any driver those
+/// attributes name). A filter can rewrite content **without changing its
+/// length**, so a size comparison is not a proof; and a "no conversion looks
+/// possible" guess is not one either, because the attribute sources include
+/// host-local files Flow cannot enumerate exhaustively. Every regular file is
+/// therefore compared, byte for byte, with the blob the tree names, read through
+/// one bounded `git cat-file --batch`.
 ///
-/// The comparison is skipped when no filter can apply, and refused (not skipped)
-/// above the entry/byte budget. What this cannot detect is a filter whose output
-/// is byte-identical to the blob: then there is nothing to detect.
+/// Above the entry or byte budget the comparison is **refused**, never skipped:
+/// a tree Flow cannot prove is a tree Flow does not certify. What this cannot
+/// detect is a filter whose output is byte-identical to the blob: then there is
+/// nothing to detect.
 fn verify_checkout_content(
     git: &Git,
     scratch: &Path,
@@ -874,24 +930,6 @@ fn verify_checkout_content(
     /// Beyond this entry count the comparison is refused, not skipped.
     const CONTENT_ENTRIES: usize = 20_000;
 
-    let mut conversion_possible = git
-        .run(&["config", "--get", "core.autocrlf"])
-        .map(|o| matches!(o.stdout.trim(), "true" | "input" | "1"))
-        .unwrap_or(false)
-        || !git
-            .capture(&["config", "--get", "core.eol"])
-            .map(|v| v.trim().to_string())
-            .unwrap_or_default()
-            .is_empty();
-    if !conversion_possible {
-        conversion_possible = expected
-            .iter()
-            .any(|(_, _, path, _)| path == ".gitattributes" || path.ends_with("/.gitattributes"));
-    }
-    if !conversion_possible {
-        return Ok(());
-    }
-
     let regular: Vec<&(String, String, String, u64)> = expected
         .iter()
         .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
@@ -901,7 +939,7 @@ fn verify_checkout_content(
     }
     if regular.len() > CONTENT_ENTRIES {
         return Err(format!(
-            "tree {tree} has {} regular files and its checkout may convert content: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",
+            "tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",
             regular.len()
         ));
     }
@@ -946,7 +984,7 @@ fn verify_checkout_content(
         total += size;
         if total > CONTENT_BUDGET {
             return Err(format!(
-                "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget and its checkout may convert content: refusing to certify it"
+                "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
             ));
         }
         let blob = &bytes[start..end];
@@ -955,7 +993,7 @@ fn verify_checkout_content(
             fs::read(&full).map_err(|e| format!("cannot read {path:?} after checkout: {e}"))?;
         if disk != blob {
             return Err(format!(
-                "tree {tree} entry {path:?} was checked out with different bytes ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, .gitattributes or a driver) rewrote it, so the obligations would not see the verified tree",
+                "tree {tree} entry {path:?} was checked out with different bytes ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver) or a hook rewrote it, so the obligations would not see the verified tree",
                 disk.len(),
                 blob.len(),
                 short(oid)
