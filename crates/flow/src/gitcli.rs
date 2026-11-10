@@ -690,6 +690,15 @@ pub fn kill_tree(pid: u32) {
 
 /// Redact values of secret-looking environment variables and known token shapes
 /// BEFORE a log is written to disk.
+///
+/// Name matching is deliberately broad (`SECRET`, `TOKEN`, `PASSWORD`, `PASSWD`,
+/// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a
+/// value that happens to equal a credential is harmless, while leaking one is not.
+/// Shape matching covers the tokens that are recognisable without their variable
+/// name (GitHub `ghp_`/`gho_`/`ghs_`/`github_pat_`, OpenAI `sk-`, AWS `AKIA`/`ASIA`
+/// access-key ids). A secret that is printed from a file, with no matching
+/// environment variable and no recognisable shape, is **not** covered — there is no
+/// sandbox and no secret broker (documented non-guarantee).
 pub fn redact(text: &str) -> String {
     let mut out = text.to_string();
     // `vars()` panics on a non-Unicode value, which on Unix is ordinary. The text
@@ -705,6 +714,11 @@ pub fn redact(text: &str) -> String {
             "PASSWD",
             "PRIVATE_KEY",
             "API_KEY",
+            "APIKEY",
+            "ACCESS_KEY",
+            "SECRET_KEY",
+            "CREDENTIAL",
+            "AUTH_TOKEN",
         ]
         .iter()
         .any(|needle| upper.contains(needle));
@@ -712,7 +726,9 @@ pub fn redact(text: &str) -> String {
             out = out.replace(value.as_ref(), "[REDACTED]");
         }
     }
-    for shape in ["ghp_", "gho_", "ghs_", "github_pat_", "sk-"] {
+    // Prefixes of token families whose value is recognisable on its own. `AKIA`
+    // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.
+    for shape in ["ghp_", "gho_", "ghs_", "github_pat_", "sk-", "AKIA", "ASIA"] {
         while let Some(idx) = out.find(shape) {
             let end = out[idx..]
                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
@@ -743,6 +759,23 @@ mod tests {
     fn redacts_token_shape() {
         let out = redact("token ghp_abcdefghijklmnopqrstuvwxyz1234 done");
         assert!(!out.contains("abcdefghijklmnopqrstuvwxyz1234"));
+    }
+
+    #[test]
+    fn redacts_aws_shaped_access_key_ids() {
+        for text in ["id=AKIAIOSFODNN7EXAMPLE end", "id=ASIAIOSFODNN7EXAMPLE end"] {
+            let out = redact(text);
+            assert!(!out.contains("IOSFODNN7EXAMPLE"), "{out}");
+            assert!(out.contains("[REDACTED]"), "{out}");
+        }
+    }
+
+    #[test]
+    fn redacts_an_access_key_environment_value() {
+        std::env::set_var("FLOW_TEST_AWS_ACCESS_KEY_ID", "AKIAENVVALUE00000000");
+        let out = redact("credential AKIAENVVALUE00000000 leaked");
+        assert!(!out.contains("AKIAENVVALUE00000000"), "{out}");
+        std::env::remove_var("FLOW_TEST_AWS_ACCESS_KEY_ID");
     }
 
     #[test]
