@@ -3,7 +3,7 @@
 **Date:** 2026-11-10 (Europe/Paris)
 **Base:** `ea181d4f112df4deef01016a041fcdfdac154264` (MVP 0.1, PR #53)
 **Branch:** `feat/flow-production-candidate` · **PR:** #54 (draft, base `feat/flow-mvp-0.1`)
-**Code head under test:** `997f983` (the last commit that touches `crates/flow`, `.github/`,
+**Code and CI head under test:** `88ce1b0` (the last commit that touches `crates/flow` or `.github/`; the last `crates/flow` commit is `997f983`, and `88ce1b0` is the CI-only fix the quoted runs test)
 `Cargo.toml` or `rust-toolchain.toml`); everything after it is documentation only
 **Verdict:** **`PRODUCTION_PARTIAL`** — reasons in §11.1. No merge, no release, no GO_PRODUCTION.
 
@@ -161,6 +161,14 @@ pretends otherwise.
 | Toolchain pinned | **yes** — `rust-toolchain.toml` (`1.95.0` + rustfmt/clippy), the CI action names `1.95.0`, the crate declares `rust-version = "1.95"` |
 | Branch protection | **absent** on `dev`/`main` (verified at G0); not changed by this branch; admin checklist in `FLOW-PRODUCTION-RELEASE-CHECKLIST.md` |
 
+The install smoke failed once before it passed, and that failure is kept in the dossier: run
+`42736315902` (`windows-latest`) failed on its own *"the install directory gained no files"* check,
+not on the product — under MSYS, `basename` returns `flow` while the file that lands in the install
+directory is `flow.exe`, so the binary was reported as an intruder. The version/init/run/publish part
+of the same step had already succeeded on both OSes. Fixed in `88ce1b0` (the installed name is now
+read from the directory and drives both the invocation and the exclusion), reproduced in Git Bash
+before pushing, and the green run on the fixed head is the one quoted in §11.2.
+
 ## 8. G8 — performance (descriptive, not a benchmark)
 
 Windows 11, 16 logical CPUs, 15.7 GB RAM, warm build, single run per command (`flow 0.2.0-rc.1`
@@ -292,17 +300,17 @@ documented trade: a wedge is loud, a stolen live lock is a silent double publica
 
 ## 11. Final numbers and the verdict
 
-**Code and CI head under test:** `997f983` (the last commit that touches `crates/flow`,
-`.github/`, `Cargo.toml` or `rust-toolchain.toml`). Everything after it is documentation only, so the
-CI evidence below is the evidence for the shipped code. Measurements are quoted with the SHA they were
-taken on; no number here is copied from an earlier wave.
+**Code and CI head under test:** `88ce1b0` — the last commit that touches `crates/flow` or `.github/`
+(the last `crates/flow` commit is `997f983`; `88ce1b0` is a CI-only fix). Everything after it is
+documentation only, so the CI evidence below is the evidence for the shipped code. Measurements are
+quoted with the SHA they were taken on; no number here is copied from an earlier wave.
 
 | Evidence | Value |
 |---|---|
 | Tests executed | **163 on Windows** (35 unit, 22 bounds, 54 CLI, 9 concurrency, 25 isolation, 18 proposals), **162 on Linux** (the PATH/PATHEXT shim test is Windows-only by design) |
 | Failures / ignored | 0 / 0 on both OSes |
-| CI (push) | recorded in §11.2 after the last push |
-| CI (pull_request) | recorded in §11.2 after the last push |
+| CI (push) | [`42737780234`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737780234) — 4/4 jobs success on `88ce1b0` |
+| CI (pull_request) | [`42737788431`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737788431) — 4/4 jobs success on `88ce1b0` |
 | Adversarial replay | 119 declared, 116 executed, 109 refuted, 7 reproduced (0 P0, 3 P2, 4 P3), 3 NOT_RUN |
 | Second independent review | 18 findings: 1 P1, 8 P2, 9 P3 — P1 and all P2 closed with tests, 1 P3 partly closed by design |
 | Coverage (head `997f983`, 163 tests) | **83.19 % lines / 68.64 % branches** global; `paths.rs` 96.67/91.30 and `lock.rs` 84.16/68.42 |
@@ -336,6 +344,19 @@ and is honest" and "the qualification dossier is complete", and only the latter 
 
 ### 11.2 CI runs on this head
 
-Recorded after the last push of this branch, so the ids below are verifiable facts rather than
-intentions. A run that is not green is written down as red.
+| Run | Head | Jobs | Result |
+|---|---|---|---|
+| [`42737780234`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737780234) (push) | `88ce1b0` | `test ubuntu-latest`, `test windows-latest`, `polyglot ubuntu-latest`, `polyglot windows-latest` | **4/4 success** |
+| [`42737788431`](https://github.com/Rwanbt/Ravum-flow/actions/runs/42737788431) (pull_request) | `88ce1b0` | idem | **4/4 success** |
+
+What those jobs prove, concretely: `cargo fmt --check`, `cargo clippy -D warnings`, **163 executed
+tests on Windows / 162 on Linux with 0 ignored** and 66 named gates, `cargo build --release`, the
+release binary ignoring `FLOW_TEST_CRASH`, the **install smoke on both OSes**, the R0-a self-tests
+(Linux) and the four polyglot fixtures.
+
+Two runs failed before that, and both are written down rather than deleted: `42736315902` and
+`42736324448` (on `d68406f`, the head before the fix) failed the Windows install smoke on its own
+over-strict check (see §7); the fix is `88ce1b0`. The runs on `4680a03` — the head before this wave —
+were green, which is exactly why a second independent review was worth running: a green CI did not
+catch `--dry-run=true`.
 
