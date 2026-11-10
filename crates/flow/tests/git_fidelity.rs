@@ -15,10 +15,18 @@
 //!    `core.hooksPath` pointing at a tracked directory) could create or rewrite
 //!    files and still be certified.
 //!
-//! Each test asserts the refusal code `UNSUPPORTED_CHECKOUT` and that no receipt
-//! was written: a checkout that is not the tree is refused, never repaired, and
-//! no obligation is executed on it. On the pre-fix build every test here prints
+//! Each test asserts the refusal code `UNSUPPORTED_CHECKOUT` (or, for a write that
+//! happens after the check, `CHECKOUT_MUTATED_DURING_RUN`) and that no receipt was
+//! written: a checkout that is not the tree is refused, never repaired, and no
+//! obligation is executed on it. On the pre-fix build every test here reports
 //! `PASSED` instead, which is the reproduction.
+//!
+//! Scope note: the fidelity check observes the checkout **when it runs**. A
+//! `post-checkout` hook that spawns a writer changing a file *later* cannot be seen
+//! by that check; the run re-proves the declared files after the last obligation
+//! and refuses (`a_delayed_write_during_the_obligations_is_refused`). A write that
+//! is reverted before that re-check, or happens after it, is not detectable without
+//! a snapshot — the limit is documented, not claimed away.
 
 #[path = "../src/json.rs"]
 #[allow(dead_code)]
@@ -384,6 +392,142 @@ fn a_hook_that_changes_the_executable_bit_is_refused_not_certified() {
     install_tracked_hook(&repo, "chmod +x a.txt\n");
     let tree = git(&repo.path, &["write-tree"]);
     assert_checkout_refused(&repo, &tree, "executable bit changed by post-checkout");
+}
+
+/// A hook that creates a file whose name merely *starts with* Flow's scratch
+/// prefix. Only the ownership marker itself is Flow's; any other such name is a
+/// file the tree does not declare.
+#[test]
+fn a_hook_file_named_like_a_scratch_marker_is_refused_not_certified() {
+    let repo = new_repo("hook-scratch-prefix");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    install_tracked_hook(&repo, "printf 'x\\n' > .flow-scratch-injected.txt\n");
+    let tree = git(&repo.path, &["write-tree"]);
+    assert_checkout_refused(&repo, &tree, "extra file named like a scratch marker");
+}
+
+/// A hook that creates an **empty directory**. Git trees do not represent empty
+/// directories, but an obligation that discovers directories (`find`, a build
+/// cache, a plugin scanner) sees one, so it is a path the tree does not declare.
+#[test]
+fn a_hook_that_creates_an_empty_directory_is_refused_not_certified() {
+    let repo = new_repo("hook-mkdir");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    install_tracked_hook(&repo, "mkdir .build-cache\n");
+    let tree = git(&repo.path, &["write-tree"]);
+    assert_checkout_refused(&repo, &tree, "empty directory created by post-checkout");
+}
+
+/// A **delayed** write: the hook spawns a writer that changes `a.txt` after the
+/// fidelity check has already passed, and the obligation waits until it actually
+/// saw the changed bytes. The pre-check cannot see this; the post-run re-check
+/// must refuse the run, so no receipt can claim the tree passed.
+#[test]
+fn a_delayed_write_during_the_obligations_is_refused() {
+    let repo = new_repo("hook-delayed");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    // The writer blocks until the obligation creates `gate`, then rewrites a.txt
+    // with the same byte length. No timer is involved, so the test is not racy:
+    // the obligation only exits after it has read the rewritten content.
+    install_tracked_hook(
+        &repo,
+        "( while [ ! -f gate ]; do :; done; printf 'ALPHA\\n' > a.txt ) >/dev/null 2>&1 &\n",
+    );
+    let exe = std::env::current_exe()
+        .expect("test executable")
+        .to_string_lossy()
+        .replace('\\', "/");
+    let obligation = format!(
+        r#"{{"id":"delayed","program":"{}","args":["--exact","delayed_write_probe","--nocapture","{DELAYED_PROBE}"],"required":true,"timeout_s":60}}"#,
+        exe.replace('"', "")
+    );
+    write_config(&repo.path, &obligation);
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 1,
+        "a run whose declared file changed while the obligations ran must not exit 0: {out}"
+    );
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(
+        code_of(&out),
+        "CHECKOUT_MUTATED_DURING_RUN",
+        "the post-run re-check must refuse the run: {out}"
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a run whose checkout changed must not write the receipt for {tree}"
+    );
+}
+
+const DELAYED_PROBE: &str = "FLOW_FIDELITY_DELAYED_WRITE_PROBE";
+
+/// Child probe: create the gate the background writer waits for, then wait until
+/// the declared file really contains the rewritten bytes, and exit 0. If the
+/// rewrite never happens, fail loudly (`exit 3`) instead of reporting a pass.
+#[test]
+fn delayed_write_probe() {
+    if !std::env::args().any(|arg| arg == DELAYED_PROBE) {
+        return;
+    }
+    fs::write("gate", "go\n").expect("write the gate file");
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        if let Ok(bytes) = fs::read("a.txt") {
+            if bytes == b"ALPHA\n" {
+                return;
+            }
+        }
+        if std::time::Instant::now() >= deadline {
+            std::process::exit(3);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// A tree path that is not valid UTF-8 cannot be represented faithfully on this
+/// platform, and must be refused with *that* reason — not misdiagnosed as a case
+/// collision, which is what a lossy conversion to `U+FFFD` produces.
+#[cfg(unix)]
+#[test]
+fn a_tree_path_that_is_not_valid_utf8_is_refused_with_its_own_reason() {
+    use std::os::unix::ffi::OsStringExt;
+    let repo = new_repo("non-utf8");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    let name = std::ffi::OsString::from_vec(b"bad-\xff-name.txt".to_vec());
+    fs::write(repo.path.join(&name), "content\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    git(&repo.path, &["commit", "-q", "-m", "non-utf8 path"]);
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 1,
+        "a non-UTF-8 tree path must not be certified: {out}"
+    );
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(
+        code_of(&out),
+        "UNSUPPORTED_CHECKOUT",
+        "the refusal must name the checkout gate: {out}"
+    );
+    assert!(
+        reason_of(&out).contains("not valid UTF-8"),
+        "the reason must name the real cause, not a lossy case collision: {}",
+        reason_of(&out)
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a refused tree must not gain a receipt"
+    );
 }
 
 /// Control test: with no local attribute source and no hook, the same fixture

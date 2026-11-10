@@ -501,14 +501,17 @@ hand: a torn line is not a successful empty journal.
   the tree without a conversion in the first place.
 - **Hooks.** Flow dispatches no hook of its own, but the Git plumbing it calls
   does: `git worktree add` runs `post-checkout` and `git update-ref` runs
-  `reference-transaction`. A hook that creates, rewrites or deletes a file in the
-  disposable checkout is *detected and refused* (the checkout must equal the
-  tree); it is not prevented, and a hook that writes outside the checkout is not
-  Flow's business. A blocking `post-checkout` makes the run refuse
-  (`SCRATCH_REFUSED`); a blocking `reference-transaction` aborts publication
-  without moving the ref. What Flow does not claim: it cannot stop a hook (or an
-  obligation) that mutates the checkout *after* the fidelity check — the receipt
-  binds the tree OID, and the run is not a sandbox.
+  `reference-transaction`. A hook that creates, rewrites or deletes a file or a
+  directory in the disposable checkout is *detected and refused* (the checkout
+  must equal the tree when it is checked); it is not prevented, and a hook that
+  writes outside the checkout is not Flow's business. After the last obligation,
+  Flow re-proves every declared file and refuses the run if one changed while the
+  obligations were executing (`CHECKOUT_MUTATED_DURING_RUN`), so a delayed write
+  cannot be certified. What Flow still does not claim: it cannot see a write that
+  is reverted before that re-check or one that happens after it. A blocking
+  `post-checkout` makes the run refuse (`SCRATCH_REFUSED`); a blocking
+  `reference-transaction` aborts publication without moving the ref. The run is not
+  a sandbox.
 - **PowerShell.** `run-demo.ps1` requires PowerShell 7 (`#requires -Version
   7.0`), sets `$ErrorActionPreference='Stop'`, and checks `$LASTEXITCODE`
   explicitly. On 7.3+, a native non-zero exit can become a terminating error;
