@@ -488,13 +488,27 @@ hand: a torn line is not a successful empty journal.
 
 ## 11. Windows and Linux notes
 
-- **CRLF.** Flow verifies the Git tree, not worktree bytes. On Windows, Git's
-  `core.autocrlf` conversion can make the worktree differ from the tree; the
-  demo scripts pin `core.autocrlf=false` in their disposable repository so the
-  checkout and the tree match byte for byte. `.gitattributes` eol/filter rules
-  can create the same worktree-versus-tree difference; `flow doctor` warns when
-  `.gitattributes` exists because the receipt binds the tree OID, not worktree
-  bytes.
+- **CRLF and content filters.** Flow verifies the Git tree, and it proves the
+  checkout the obligations run in is *exactly* that tree: every regular file is
+  compared byte for byte with the blob the tree names, and a file the tree does
+  not declare makes the run refuse (`UNSUPPORTED_CHECKOUT`). A conversion is
+  therefore never silent: `core.autocrlf`, `core.eol`, a committed
+  `.gitattributes`, a **local** `.git/info/attributes` or `core.attributesFile`,
+  and any driver they name all end in a refusal instead of a receipt for content
+  the obligations did not see. `flow doctor` lists the attribute sources it can
+  see; it is a disclosure, not the gate. The demo scripts still pin
+  `core.autocrlf=false` in their disposable repository so the checkout matches
+  the tree without a conversion in the first place.
+- **Hooks.** Flow dispatches no hook of its own, but the Git plumbing it calls
+  does: `git worktree add` runs `post-checkout` and `git update-ref` runs
+  `reference-transaction`. A hook that creates, rewrites or deletes a file in the
+  disposable checkout is *detected and refused* (the checkout must equal the
+  tree); it is not prevented, and a hook that writes outside the checkout is not
+  Flow's business. A blocking `post-checkout` makes the run refuse
+  (`SCRATCH_REFUSED`); a blocking `reference-transaction` aborts publication
+  without moving the ref. What Flow does not claim: it cannot stop a hook (or an
+  obligation) that mutates the checkout *after* the fidelity check — the receipt
+  binds the tree OID, and the run is not a sandbox.
 - **PowerShell.** `run-demo.ps1` requires PowerShell 7 (`#requires -Version
   7.0`), sets `$ErrorActionPreference='Stop'`, and checks `$LASTEXITCODE`
   explicitly. On 7.3+, a native non-zero exit can become a terminating error;

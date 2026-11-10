@@ -41,7 +41,11 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   write outside the workspace; every write below `.flow/` now refuses links and reparse points
   (Unix hardlinks too).
 - A checkout that rewrites bytes (filters, CRLF, `core.eol`) is now compared byte-for-byte with the
-  tree blobs and refused (`UNSUPPORTED_CHECKOUT`) instead of producing a false `PASSED`.
+  tree blobs and refused (`UNSUPPORTED_CHECKOUT`) instead of producing a false `PASSED`. Since the
+  checkout-fidelity wave the comparison is **unconditional**: it no longer depends on a "a filter
+  looks possible" guess, so a conversion driven by a **local** attribute source
+  (`.git/info/attributes`, `core.attributesFile`) is refused too, and the file set must match the
+  tree exactly (a `post-checkout` hook that adds, rewrites or deletes a file is refused).
 - `FLOW_TEST_CRASH` is compiled out of release builds (proved on the release binary in CI).
 - A symbolic ref is refused as a publication target (`REF_IS_SYMREF`), and the ref is read back after
   the CAS (`NEEDS_RECONCILIATION` if it is not the prepared commit).
@@ -49,6 +53,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   "fsynced" only in the file-sense. Windows has no directory fsync and the README says so.
 - `redact()` used `env::vars()`, which panics on a non-Unicode environment value in the middle of
   `run`; it now uses `vars_os()` with a lossy view.
+- `redact()` also covers AWS access-key ids (`AKIA`/`ASIA`) and the variable names
+  `*ACCESS_KEY*`, `*CREDENTIAL*`, `*AUTH_TOKEN*`, `*APIKEY*`, and the obligation environment boundary
+  is now pinned end to end: a variable exported by the operator is absent from the obligation process,
+  and a secret-shaped value printed by an obligation never reaches a durable file under `.flow/`.
 - Unix lock liveness treated `kill -0`'s EPERM (a live process owned by another user) as "provably
   dead" and could steal a live lock. Linux now asks `/proc/<pid>` first and otherwise accepts only a
   message that proves the process is gone; an unprovable answer is `LOCK_UNKNOWN`, never a steal.

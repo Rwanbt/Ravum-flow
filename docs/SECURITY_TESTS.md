@@ -60,3 +60,19 @@ Record fixture SHA, OS, execution sandbox, command and limits, redacted setup/pr
 
 **Still `NOT_RUN`:** adversarial campaign consolidation (`docs/reviews/MVP-QA-ADVERSARIAL-REPORT.md`),
 R0 corpus on Linux, OS sandbox, hook execution as a verification source, context completeness.
+
+## Production-candidate wave 3 (2026-11-10) — checkout fidelity and secrets
+
+| Boundary | Test (executed on Windows and Linux) | Assertion |
+|---|---|---|
+| A **local** attribute source converts the checkout | `a_local_info_attributes_conversion_is_refused_not_certified`, `a_core_attributes_file_conversion_is_refused_not_certified` | `UNSUPPORTED_CHECKOUT` before any obligation runs, no receipt written |
+| A hook adds a file | `a_hook_that_adds_a_file_is_refused_not_certified` | the checkout must equal the tree; the extra path is named in the refusal |
+| A hook rewrites a file at equal length | `a_hook_that_rewrites_a_file_is_refused_not_certified` | byte comparison catches it; no receipt |
+| A hook deletes a file | `a_hook_that_deletes_a_file_is_refused_not_certified` | missing entry refused |
+| Positive control | `a_faithful_checkout_is_still_certified` | a clean fixture is still `PASSED` (the gate does not refuse everything) |
+| Secret env inherited by an obligation | `an_unlisted_environment_variable_is_not_inherited_by_an_obligation` | the child prints `ABSENT`; no durable `.flow` file holds the value |
+| Secret printed by an obligation | `a_secret_shaped_value_is_redacted_before_it_is_persisted` | GitHub- and AWS-shaped canaries absent from `.flow/`, `[REDACTED]` present in the logs |
+
+Limit restated: a secret read from a file by the obligation, with no matching
+environment variable and no recognisable token shape, is not redacted — Flow has
+no sandbox and no secret broker, and `doctor` says so.
