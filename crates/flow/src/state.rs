@@ -915,9 +915,70 @@ mod tests {
         assert_eq!(civil_from_days(0), (1970, 1, 1));
         assert_eq!(civil_from_days(-1), (1969, 12, 31));
         assert_eq!(civil_from_days(-365), (1969, 1, 1));
+        // Far enough back that the era itself is negative (`z < 0`): year 0,
+        // 29 February, which is a valid proleptic-Gregorian leap day. The
+        // alternative branch must not be dead code assumed away.
+        assert_eq!(civil_from_days(-719_469), (0, 2, 29));
         // A timestamp is always formatted, never "negative days" garbage.
         let stamp = iso8601_now();
         assert_eq!(stamp.len(), 20, "{stamp}");
         assert!(stamp.ends_with('Z'), "{stamp}");
+    }
+
+    #[test]
+    fn a_receipt_helper_tolerates_a_non_object_without_panicking() {
+        // The helpers are total: a caller that hands them a non-object gets the
+        // value back unchanged instead of a panic inside a refusal path.
+        assert_eq!(
+            without_field(&Json::Bool(true), "integrity"),
+            Json::Bool(true)
+        );
+        assert_eq!(seal_receipt(&Json::Num(1.0)), Json::Num(1.0));
+        let sealed = seal_receipt(&Json::obj(vec![("status", Json::str("PASSED"))]));
+        assert!(verify_receipt_integrity(&sealed).is_ok());
+    }
+
+    #[cfg(windows)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        let out = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("mklink /J failed"))
+        }
+    }
+
+    #[cfg(unix)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    #[test]
+    fn a_reparse_point_below_flow_is_never_written_through() {
+        let root = temp_root("guard-reparse");
+        let outside = temp_root("guard-outside");
+        let link = root.join(".flow");
+        if let Err(e) = make_dir_link(&outside, &link) {
+            eprintln!("SKIP a reparse point below .flow: cannot create a link ({e})");
+            let _ = fs::remove_dir_all(&root);
+            let _ = fs::remove_dir_all(&outside);
+            return;
+        }
+        // A real file beneath the redirect: the guard walks the components and
+        // must refuse at `.flow` before any write reaches the outside directory.
+        fs::write(outside.join("journal.jsonl"), "").unwrap();
+        let reason = guard_below_flow(&link.join("journal.jsonl"))
+            .expect_err("a redirect below .flow is refused");
+        assert!(
+            reason.contains("symbolic link or reparse point"),
+            "{reason}"
+        );
+        let _ = fs::remove_dir(&link);
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&outside);
     }
 }

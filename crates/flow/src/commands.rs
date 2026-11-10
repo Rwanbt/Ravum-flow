@@ -888,10 +888,6 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
 /// reason instead of being lossily folded into `U+FFFD` (two different paths would
 /// then look like a case collision, which is a misleading diagnosis).
 fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {
-    /// A tree beyond this size is not a realistic verification target; refusing
-    /// keeps the walk bounded.
-    const MAX_ENTRIES: usize = 200_000;
-
     // The listing comes from the source repository: the checkout deliberately
     // has no `.git`, so it cannot answer for itself.
     let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
@@ -901,8 +897,22 @@ fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String,
             listing.stderr.trim()
         ));
     }
+    parse_tree_entries(tree, &listing.stdout_bytes)
+}
+
+/// The parsing half of [`ls_tree_entries`], separated so every refusal can be
+/// pinned against a crafted Git answer (a hostile or broken Git is an input, not
+/// an oracle): the walk never panics, and an entry it cannot read is refused.
+fn parse_tree_entries(
+    tree: &str,
+    listing: &[u8],
+) -> Result<Vec<(String, String, String, u64)>, String> {
+    /// A tree beyond this size is not a realistic verification target; refusing
+    /// keeps the walk bounded.
+    const MAX_ENTRIES: usize = 200_000;
+
     let mut expected: Vec<(String, String, String, u64)> = Vec::new();
-    for entry in listing.stdout_bytes.split(|byte| *byte == 0) {
+    for entry in listing.split(|byte| *byte == 0) {
         if entry.is_empty() {
             continue;
         }
@@ -949,8 +959,14 @@ fn ls_tree_dirs(git: &Git, tree: &str) -> Result<BTreeSet<String>, String> {
             listing.stderr.trim()
         ));
     }
+    parse_tree_dirs(tree, &listing.stdout_bytes)
+}
+
+/// The parsing half of [`ls_tree_dirs`], separated for the same reason as
+/// [`parse_tree_entries`]: crafted bytes can pin every refusal directly.
+fn parse_tree_dirs(tree: &str, listing: &[u8]) -> Result<BTreeSet<String>, String> {
     let mut dirs = BTreeSet::new();
-    for entry in listing.stdout_bytes.split(|byte| *byte == 0) {
+    for entry in listing.split(|byte| *byte == 0) {
         if entry.is_empty() {
             continue;
         }
@@ -1047,14 +1063,13 @@ fn verify_checkout_content(
     expected: &[(String, String, String, u64)],
     stage: &str,
 ) -> Result<(), String> {
-    /// Retained bytes for the whole comparison, before refusing.
-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
     /// Beyond this entry count the comparison is refused, not skipped.
     const CONTENT_ENTRIES: usize = 20_000;
 
-    let regular: Vec<&(String, String, String, u64)> = expected
+    let regular: Vec<(&str, &str)> = expected
         .iter()
         .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
+        .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))
         .collect();
     if regular.is_empty() {
         return Ok(());
@@ -1066,7 +1081,7 @@ fn verify_checkout_content(
         ));
     }
     let mut request = String::new();
-    for (_, oid, _, _) in &regular {
+    for (oid, _) in &regular {
         request.push_str(oid);
         request.push('\n');
     }
@@ -1077,14 +1092,50 @@ fn verify_checkout_content(
             out.stderr.trim()
         ));
     }
-    let bytes: &[u8] = &out.stdout_bytes;
+    let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;
+    for ((oid, path), blob) in regular.iter().zip(blobs) {
+        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+        let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
+        if disk != blob {
+            return Err(format!(
+                "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+                disk.len(),
+                blob.len(),
+                short(oid)
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Parse one bounded `git cat-file --batch` answer: exactly one blob per
+/// requested oid, in request order.
+///
+/// Git's machine output is treated as untrusted input here: a missing newline, a
+/// non-blob object, an unparsable size, a truncated body, an entry count or byte
+/// total above the fidelity budget, or an arithmetic overflow is **refused**, not
+/// guessed. Liveness is the point: every one of those is reachable from a
+/// corrupted object store or a Git that answers nonsense, and none of them may
+/// become a panic (a panic is not a refusal and could bypass cleanup).
+fn parse_cat_file_batch<'e, 'b>(
+    tree: &str,
+    regular: &[(&'e str, &'e str)],
+    bytes: &'b [u8],
+) -> Result<Vec<&'b [u8]>, String> {
+    /// Retained bytes for the whole comparison, before refusing.
+    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
+
+    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());
     let mut position = 0usize;
     let mut total = 0usize;
-    for (_, oid, path, _) in &regular {
-        let header_end = match bytes[position..].iter().position(|b| *b == b'\n') {
-            Some(offset) => position + offset,
-            None => return Err(format!("truncated cat-file batch before {path:?}")),
+    for (oid, path) in regular {
+        let rest = bytes
+            .get(position..)
+            .ok_or_else(|| format!("truncated cat-file batch before {path:?}"))?;
+        let Some(offset) = rest.iter().position(|b| *b == b'\n') else {
+            return Err(format!("truncated cat-file batch before {path:?}"));
         };
+        let header_end = position + offset;
         let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();
         let mut fields = header.split(' ');
         let _echo = fields.next();
@@ -1099,30 +1150,22 @@ fn verify_checkout_content(
             .and_then(|v| v.parse().ok())
             .ok_or_else(|| format!("unparsable cat-file header {header:?}"))?;
         let start = header_end + 1;
-        let end = start + size;
-        if end > bytes.len() {
-            return Err(format!("truncated cat-file batch in {path:?}"));
-        }
+        let end = start
+            .checked_add(size)
+            .ok_or_else(|| format!("cat-file header {header:?} overflows a size"))?;
+        let blob = bytes
+            .get(start..end)
+            .ok_or_else(|| format!("truncated cat-file batch in {path:?}"))?;
         total += size;
         if total > CONTENT_BUDGET {
             return Err(format!(
                 "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
             ));
         }
-        let blob = &bytes[start..end];
-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
-        let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
-        if disk != blob {
-            return Err(format!(
-                "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
-                disk.len(),
-                blob.len(),
-                short(oid)
-            ));
-        }
+        blobs.push(blob);
         position = end + 1;
     }
-    Ok(())
+    Ok(blobs)
 }
 fn collect_entries(
     root: &Path,
@@ -2424,4 +2467,295 @@ pub fn cmd_proposals(root: &Path, show: Option<String>) -> Result<Json, String> 
 
 pub fn cmd_assemble(root: &Path, proposals: &[String]) -> Result<Json, String> {
     crate::proposal::assemble(root, proposals)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The three parsers below consume answers from a *separate* Git process.
+    // Their inputs are therefore untrusted: a corrupted object store, a Git that
+    // answers nonsense, or a machine that truncates a pipe must produce a named
+    // refusal, never a panic (which would skip `Drop` cleanup and could be
+    // mistaken for a crash the operator has to debug). These tests pin that
+    // boundary directly, including the arithmetic edges real Git would have to
+    // reach to break it.
+
+    fn entry(mode: &str, oid: &str, size: u64, path: &str) -> Vec<u8> {
+        format!("{mode} blob {oid:>40} {size:>7}\t{path}\0").into_bytes()
+    }
+
+    #[test]
+    fn tree_entries_are_parsed_with_size_and_normalised_separators() {
+        let mut listing = entry("100644", "aaaa", 3, "a.txt");
+        listing.extend(entry("100755", "bbbb", 5, "bin\\run"));
+        listing.extend(entry("120000", "cccc", 1, "link"));
+        let entries = parse_tree_entries("t", &listing).expect("a well-formed listing parses");
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].0, "100644");
+        assert_eq!(entries[0].1, "aaaa");
+        assert_eq!(entries[0].2, "a.txt");
+        assert_eq!(entries[0].3, 3);
+        assert_eq!(
+            entries[1].2, "bin/run",
+            "a Windows Git lists backslashes; the tree's spelling is forward slashes"
+        );
+        assert_eq!(entries[2].0, "120000");
+        assert!(
+            parse_tree_entries("t", b"").unwrap().is_empty(),
+            "no entries is not an error"
+        );
+    }
+
+    #[test]
+    fn tree_entries_refuse_every_unreadable_shape() {
+        let no_tab = parse_tree_entries("t", b"100644 blob aaaa 0").expect_err("no tab");
+        assert!(no_tab.contains("unparsable ls-tree entry"), "{no_tab}");
+
+        let mut invalid = b"100644 blob aaaa 0\t".to_vec();
+        invalid.push(0xff);
+        invalid.push(b'\0');
+        let reason = parse_tree_entries("t", &invalid).expect_err("non-UTF-8 path");
+        assert!(reason.contains("not valid UTF-8"), "{reason}");
+
+        // An entry whose path is empty is skipped, not folded into `""`.
+        let empty_path = parse_tree_entries("t", b"100644 blob aaaa 0\t\0").unwrap();
+        assert!(empty_path.is_empty());
+
+        // A missing or unparsable size is 0, not a refusal: the size is a budget
+        // hint, and an entry without one is still a real entry to compare.
+        let no_size = parse_tree_entries("t", b"100644 blob aaaa\ta\0").unwrap();
+        assert_eq!(no_size[0].3, 0);
+        let bad_size = parse_tree_entries("t", b"100644 blob aaaa nope\ta\0").unwrap();
+        assert_eq!(bad_size[0].3, 0);
+    }
+
+    #[test]
+    fn tree_entries_above_the_fidelity_budget_are_refused_not_truncated() {
+        let mut listing = Vec::new();
+        for index in 0..200_001u32 {
+            listing.extend(entry("100644", "aaaa", 0, &format!("f{index}")));
+        }
+        let reason = parse_tree_entries("t", &listing).expect_err("above the entry budget");
+        assert!(
+            reason.contains("above the 200000-entry fidelity budget"),
+            "{reason}"
+        );
+    }
+
+    #[test]
+    fn tree_dirs_are_parsed_and_refused_the_same_way() {
+        let dirs = parse_tree_dirs(
+            "t",
+            b"040000 tree aaaa 0\tsrc\x00040000 tree bbbb 0\ta\\b\0",
+        )
+        .expect("well-formed");
+        assert_eq!(dirs.len(), 2);
+        assert!(dirs.contains("src"));
+        assert!(dirs.contains("a/b"));
+
+        let no_tab = parse_tree_dirs("t", b"040000 tree aaaa 0").expect_err("no tab");
+        assert!(no_tab.contains("unparsable ls-tree -d entry"), "{no_tab}");
+
+        let mut invalid = b"040000 tree aaaa 0\t".to_vec();
+        invalid.push(0xff);
+        invalid.push(b'\0');
+        let reason = parse_tree_dirs("t", &invalid).expect_err("non-UTF-8 directory");
+        assert!(reason.contains("not valid UTF-8"), "{reason}");
+    }
+
+    fn regular<'a>(pairs: &'a [(&'a str, &'a str)]) -> Vec<(&'a str, &'a str)> {
+        pairs.to_vec()
+    }
+
+    #[test]
+    fn cat_file_batch_reads_the_blobs_in_request_order() {
+        let wanted = regular(&[("aaaa", "a.txt"), ("bbbb", "b.txt")]);
+        let bytes = b"aaaa blob 3\nabc\naaaa blob 0\n\n";
+        let blobs = parse_cat_file_batch("t", &wanted, bytes).expect("well-formed batch");
+        assert_eq!(blobs.len(), 2);
+        assert_eq!(blobs[0], b"abc");
+        assert!(blobs[1].is_empty());
+    }
+
+    #[test]
+    fn cat_file_batch_refuses_truncation_non_blobs_and_bad_sizes() {
+        let wanted = regular(&[("aaaa", "a.txt")]);
+
+        let reason = parse_cat_file_batch("t", &wanted, b"aaaa blob 3").expect_err("no newline");
+        assert!(
+            reason.contains("truncated cat-file batch before"),
+            "{reason}"
+        );
+
+        let reason =
+            parse_cat_file_batch("t", &wanted, b"aaaa tree 3\nabc\n").expect_err("not a blob");
+        assert!(
+            reason.contains("resolved to \"tree\", not a blob"),
+            "{reason}"
+        );
+
+        let reason =
+            parse_cat_file_batch("t", &wanted, b"aaaa blob xx\nabc\n").expect_err("bad size");
+        assert!(reason.contains("unparsable cat-file header"), "{reason}");
+
+        let reason =
+            parse_cat_file_batch("t", &wanted, b"aaaa blob 4\nabc").expect_err("short body");
+        assert!(reason.contains("truncated cat-file batch in"), "{reason}");
+    }
+
+    #[test]
+    fn cat_file_batch_never_panics_when_the_answer_ends_exactly_between_entries() {
+        // The first blob ends the byte stream with no trailing newline. The
+        // previous implementation advanced `position` past the end and sliced
+        // `bytes[position..]` for the next entry, which panics. A hostile Git can
+        // produce this, so it must be a refusal.
+        let wanted = regular(&[("aaaa", "a.txt"), ("bbbb", "b.txt")]);
+        let reason = parse_cat_file_batch("t", &wanted, b"aaaa blob 3\nabc")
+            .expect_err("a batch that stops between entries is truncated");
+        assert!(
+            reason.contains("truncated cat-file batch before \"b.txt\""),
+            "{reason}"
+        );
+    }
+
+    #[test]
+    fn cat_file_batch_refuses_an_overflowing_size_and_the_byte_budget() {
+        let wanted = regular(&[("aaaa", "a.txt")]);
+        let reason = parse_cat_file_batch("t", &wanted, b"aaaa blob 18446744073709551615\n")
+            .expect_err("a size that cannot be a byte count");
+        assert!(
+            reason.contains("overflows a size") || reason.contains("unparsable cat-file header"),
+            "{reason}"
+        );
+
+        // 64 MiB + 1: one byte over the declared budget, with the bytes present so
+        // the refusal is the budget and not a truncation.
+        let over = 64 * 1024 * 1024 + 1;
+        let mut bytes = format!("aaaa blob {over}\n").into_bytes();
+        bytes.extend(std::iter::repeat_n(b'x', over));
+        bytes.push(b'\n');
+        let reason = parse_cat_file_batch("t", &wanted, &bytes).expect_err("over budget");
+        assert!(reason.contains("content-fidelity budget"), "{reason}");
+    }
+
+    // ------------------------------------------------------ checkout proofs
+
+    /// A `Git` that cannot answer for any tree: the calls below reach Git and
+    /// receive a non-zero exit, which is the branch a corrupted object store
+    /// produces ("cannot list tree", not a panic and not an empty listing).
+    fn git_without_a_repository() -> Git {
+        Git::new(std::env::temp_dir())
+    }
+
+    #[test]
+    fn listing_a_tree_that_git_cannot_read_is_a_refusal() {
+        let git = git_without_a_repository();
+        let reason = ls_tree_entries(&git, "0000000").expect_err("no such tree");
+        assert!(reason.contains("cannot list tree"), "{reason}");
+        let reason = ls_tree_dirs(&git, "0000000").expect_err("no such tree");
+        assert!(reason.contains("cannot list the directories"), "{reason}");
+    }
+
+    #[test]
+    fn content_proofs_skip_when_no_regular_file_is_declared() {
+        let git = git_without_a_repository();
+        let scratch = std::env::temp_dir();
+        assert!(
+            verify_checkout_content(&git, &scratch, "t", &[], "during checkout").is_ok(),
+            "an empty tree has no content to compare"
+        );
+        // Only symlinks, gitlinks and entries without a blob oid: nothing to read.
+        let entries = vec![
+            (
+                "120000".to_string(),
+                "aaaa".to_string(),
+                "link".to_string(),
+                0,
+            ),
+            (
+                "160000".to_string(),
+                "bbbb".to_string(),
+                "sub".to_string(),
+                0,
+            ),
+            ("100644".to_string(), String::new(), "no-oid".to_string(), 0),
+        ];
+        assert!(
+            verify_checkout_content(&git, &scratch, "t", &entries, "during checkout").is_ok(),
+            "a tree without regular blobs is not a content-comparison target"
+        );
+    }
+
+    #[test]
+    fn content_proofs_refuse_a_tree_above_the_entry_budget() {
+        let git = git_without_a_repository();
+        let scratch = std::env::temp_dir();
+        let entries: Vec<(String, String, String, u64)> = (0..20_001)
+            .map(|i| ("100644".to_string(), "aaaa".to_string(), format!("f{i}"), 0))
+            .collect();
+        let reason = verify_checkout_content(&git, &scratch, "t", &entries, "during checkout")
+            .expect_err("above the entry budget");
+        assert!(
+            reason.contains("above the 20000-entry fidelity budget"),
+            "{reason}"
+        );
+    }
+
+    #[cfg(windows)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        let out = std::process::Command::new("cmd")
+            .args(["/C", "mklink", "/J"])
+            .arg(link)
+            .arg(target)
+            .output()?;
+        if out.status.success() {
+            Ok(())
+        } else {
+            Err(std::io::Error::other("mklink /J failed"))
+        }
+    }
+
+    #[cfg(unix)]
+    fn make_dir_link(target: &Path, link: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(target, link)
+    }
+
+    #[test]
+    fn collecting_the_checkout_refuses_an_unreadable_directory_and_never_follows_a_link() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-collect-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let file = root.join("plain.txt");
+        fs::write(&file, "x").unwrap();
+        let mut files = Vec::new();
+        let mut dirs = Vec::new();
+        let reason = collect_entries(&root, &file, &mut files, &mut dirs)
+            .expect_err("a file is not a directory to walk");
+        assert!(reason.contains("cannot read"), "{reason}");
+
+        let target = root.join("target");
+        fs::create_dir(&target).unwrap();
+        let link = root.join("link");
+        if make_dir_link(&target, &link).is_ok() {
+            files.clear();
+            dirs.clear();
+            collect_entries(&root, &root, &mut files, &mut dirs).expect("the tree is readable");
+            assert!(
+                !dirs.iter().any(|d| d == "link"),
+                "a link is an entry, not a directory to descend into: {dirs:?}"
+            );
+            assert!(
+                files.iter().any(|f| f == "link"),
+                "a link to a directory must be collected as a file entry: {files:?}"
+            );
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
 }

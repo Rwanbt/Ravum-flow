@@ -409,3 +409,79 @@ fn emit_error(message: &str) {
         ("error", Json::str(message)),
     ]));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn args(values: &[&str]) -> Vec<String> {
+        values.iter().map(|v| v.to_string()).collect()
+    }
+
+    #[test]
+    fn a_value_flag_accepts_both_spellings_and_refuses_a_missing_value() {
+        assert_eq!(
+            flag_value(&args(&["--ref", "main"]), "--ref"),
+            Some("main".to_string())
+        );
+        assert_eq!(
+            flag_value(&args(&["--ref=main"]), "--ref"),
+            Some("main".to_string())
+        );
+        // A trailing flag has no value: it is reported as missing, not read from
+        // the next argument (which does not exist).
+        assert_eq!(flag_value(&args(&["--ref"]), "--ref"), None);
+        let reason = validate_flags("publish", &args(&["--ref"]))
+            .expect_err("a value flag at the end of the line is a usage error");
+        assert!(reason.contains("needs a value"), "{reason}");
+    }
+
+    #[test]
+    fn repeated_and_inline_values_keep_their_order() {
+        let collected = collect_values(
+            &args(&[
+                "--proposal",
+                "a",
+                "--proposal=b",
+                "--other",
+                "x",
+                "--proposal",
+                "c",
+            ]),
+            &["--proposal"],
+        )
+        .expect("values are collected");
+        assert_eq!(collected, vec!["a", "b", "c"]);
+        assert_eq!(collect_values(&args(&[]), &["--proposal"]), None);
+    }
+
+    #[test]
+    fn a_stray_positional_argument_is_a_usage_error_except_for_the_list_subcommand() {
+        let reason = validate_flags("run", &args(&["stray"]))
+            .expect_err("a positional argument to run is a usage error");
+        assert!(reason.contains("unexpected argument"), "{reason}");
+        // `flow proposals show <id>` is the one surface that takes a positional.
+        validate_flags("proposals", &args(&["show"]))
+            .expect("the proposals subcommand takes a positional");
+        // `--` is a separator, and the token after it is still validated.
+        validate_flags("run", &args(&["--", "--json"])).expect("a known flag after -- is valid");
+    }
+
+    #[test]
+    fn exit_codes_separate_usage_from_a_policy_refusal() {
+        let usage = Json::obj(vec![
+            ("status", Json::str("ERROR")),
+            ("code", Json::str("USAGE")),
+        ]);
+        assert_eq!(exit_code_for(&usage), 2);
+        let refusal = Json::obj(vec![
+            ("status", Json::str("ERROR")),
+            ("code", Json::str("REFUSED")),
+        ]);
+        assert_eq!(exit_code_for(&refusal), 1);
+        assert_eq!(
+            exit_code_for(&Json::obj(vec![("status", Json::str("PASSED"))])),
+            0
+        );
+    }
+}

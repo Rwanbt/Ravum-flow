@@ -462,11 +462,7 @@ fn validate_path(git: &Git, change: &Change) -> Result<(), Json> {
             ));
         }
         let target = out.stdout.trim_end_matches(['\n', '\r']);
-        let absolute = target.starts_with('/')
-            || target.starts_with('\\')
-            || (target.len() >= 2 && target.as_bytes()[1] == b':');
-        let escapes = target.split(['/', '\\']).any(|part| part == "..");
-        if target.is_empty() || absolute || escapes {
+        if symlink_target_escapes(target) {
             return Err(refusal(
                 "SYMLINK_ESCAPE",
                 format!(
@@ -476,6 +472,18 @@ fn validate_path(git: &Git, change: &Change) -> Result<(), Json> {
         }
     }
     Ok(())
+}
+
+/// True when a proposed symlink's target would leave the tree or resolve
+/// absolutely. The rules are deliberately syntactic: Flow cannot resolve a host
+/// path at admission time, and a target that *could* escape later must be refused
+/// now, where the agent can still correct it.
+fn symlink_target_escapes(target: &str) -> bool {
+    let absolute = target.starts_with('/')
+        || target.starts_with('\\')
+        || (target.len() >= 2 && target.as_bytes()[1] == b':');
+    let escapes = target.split(['/', '\\']).any(|part| part == "..");
+    target.is_empty() || absolute || escapes
 }
 
 /// Refuse a tree the host cannot represent or Flow cannot verify, whatever route
@@ -490,8 +498,30 @@ fn validate_tree(git: &Git, tree: &str) -> Result<(), Json> {
             format!("cannot list tree {tree}: {}", listing.stderr.trim()),
         ));
     }
+    let entries = parse_tree_listing(tree, &listing.stdout)?;
     let mut folded: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
-    for entry in listing.stdout.split('\0') {
+    for path in entries {
+        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
+    }
+    if let Some((name, count)) = folded.iter().find(|(_, c)| **c > 1) {
+        return Err(refusal(
+            "CASE_COLLISION",
+            format!(
+                "tree {tree} holds {count} paths that differ only by case (for example {name:?}): a case-insensitive host cannot materialise them, so the candidate could not be verified faithfully"
+            ),
+        ));
+    }
+    Ok(())
+}
+
+/// Parse one `ls-tree -r -z` answer into the paths of a candidate tree.
+///
+/// This is the parsing half of [`validate_tree`], separated so a hostile or
+/// corrupted object store can be simulated byte for byte: an entry without a
+/// tab, a gitlink, or a path Flow cannot represent must be a named refusal.
+fn parse_tree_listing(tree: &str, listing: &str) -> Result<Vec<String>, Json> {
+    let mut paths = Vec::new();
+    for entry in listing.split('\0') {
         if entry.trim().is_empty() {
             continue;
         }
@@ -514,17 +544,9 @@ fn validate_tree(git: &Git, tree: &str) -> Result<(), Json> {
                 format!("tree {tree} contains {path:?}, which is not a safe path: {reason}"),
             ));
         }
-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
+        paths.push(path.to_string());
     }
-    if let Some((name, count)) = folded.iter().find(|(_, c)| **c > 1) {
-        return Err(refusal(
-            "CASE_COLLISION",
-            format!(
-                "tree {tree} holds {count} paths that differ only by case (for example {name:?}): a case-insensitive host cannot materialise them, so the candidate could not be verified faithfully"
-            ),
-        ));
-    }
-    Ok(())
+    Ok(paths)
 }
 
 // -------------------------------------------------------------- admission
@@ -739,6 +761,65 @@ fn classify_apply_failure(stderr: &str) -> &'static str {
     }
 }
 
+/// Diagnose incompatible operations on one path across the proposals of one
+/// candidate, before any patch is applied.
+///
+/// Rename/delete/mode/symlink collisions are diagnosed, never merged silently:
+/// applying them in some order would produce a tree nobody agreed on, and a
+/// symlink or a chmod changes what an obligation executes without changing the
+/// bytes the patches mention. Split from `assemble` so every branch can be
+/// pinned on constructed proposals instead of a repository dance.
+fn path_conflicts(proposals: &[Proposal]) -> Option<Json> {
+    let mut per_path: std::collections::BTreeMap<&str, Vec<&Proposal>> =
+        std::collections::BTreeMap::new();
+    for proposal in proposals {
+        for change in &proposal.changes {
+            per_path
+                .entry(change.path.as_str())
+                .or_default()
+                .push(proposal);
+        }
+    }
+    for (path, owners) in &per_path {
+        if owners.len() < 2 {
+            continue;
+        }
+        let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();
+        let mut modes: std::collections::BTreeSet<(String, String)> =
+            std::collections::BTreeSet::new();
+        for proposal in owners {
+            for change in proposal.changes.iter().filter(|c| &c.path == path) {
+                if change.status != "M"
+                    || change.new_mode == "120000"
+                    || change.old_mode == "120000"
+                {
+                    return Some(refusal(
+                        "PATH_OPERATION_CONFLICT",
+                        format!(
+                            "proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently",
+                            proposal.proposal_id,
+                            change.status,
+                            ids.join(", ")
+                        ),
+                    ));
+                }
+                modes.insert((change.old_mode.clone(), change.new_mode.clone()));
+            }
+        }
+        if modes.len() > 1 {
+            return Some(refusal(
+                "PATH_OPERATION_CONFLICT",
+                format!(
+                    "proposals {} change the mode of {path:?} differently: {:?}",
+                    ids.join(", "),
+                    modes.into_iter().collect::<Vec<_>>()
+                ),
+            ));
+        }
+    }
+    None
+}
+
 pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
     let git = Git::new(root);
     if proposal_ids.is_empty() {
@@ -787,52 +868,8 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
 
     // Incompatible operations on one path are refused *before* any patch is
     // applied, so the diagnostic does not depend on application order.
-    let mut per_path: std::collections::BTreeMap<&str, Vec<&Proposal>> =
-        std::collections::BTreeMap::new();
-    for proposal in &proposals {
-        for change in &proposal.changes {
-            per_path
-                .entry(change.path.as_str())
-                .or_default()
-                .push(proposal);
-        }
-    }
-    for (path, owners) in &per_path {
-        if owners.len() < 2 {
-            continue;
-        }
-        let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();
-        let mut modes: std::collections::BTreeSet<(String, String)> =
-            std::collections::BTreeSet::new();
-        for proposal in owners {
-            for change in proposal.changes.iter().filter(|c| &c.path == path) {
-                if change.status != "M"
-                    || change.new_mode == "120000"
-                    || change.old_mode == "120000"
-                {
-                    return Ok(refusal(
-                        "PATH_OPERATION_CONFLICT",
-                        format!(
-                            "proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently",
-                            proposal.proposal_id,
-                            change.status,
-                            ids.join(", ")
-                        ),
-                    ));
-                }
-                modes.insert((change.old_mode.clone(), change.new_mode.clone()));
-            }
-        }
-        if modes.len() > 1 {
-            return Ok(refusal(
-                "PATH_OPERATION_CONFLICT",
-                format!(
-                    "proposals {} change the mode of {path:?} differently: {:?}",
-                    ids.join(", "),
-                    modes.into_iter().collect::<Vec<_>>()
-                ),
-            ));
-        }
+    if let Some(refusal) = path_conflicts(&proposals) {
+        return Ok(refusal);
     }
 
     let index = TempIndex::new();
@@ -945,4 +982,267 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
         state::write_atomic(&path, &(record.to_string_pretty() + "\n"))?;
     }
     Ok(record)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // These parsers read answers from a separate Git process. A corrupted object
+    // store or a Git that answers nonsense must produce a named refusal, never a
+    // panic or a silently folded path.
+
+    #[test]
+    fn raw_diffs_are_parsed_and_truncated_answers_are_refused() {
+        let changes = parse_raw_diff(
+            ":100644 100644 aaaa bbbb M\0a.txt\0:000000 100644 0000 cccc A\0b/c.txt\0",
+        )
+        .expect("a well-formed diff parses");
+        assert_eq!(changes.len(), 2);
+        assert_eq!(changes[0].status, "M");
+        assert_eq!(changes[0].path, "a.txt");
+        assert_eq!(changes[0].old_mode, "100644");
+        assert_eq!(changes[0].new_mode, "100644");
+        assert_eq!(changes[0].new_oid, "bbbb");
+        assert_eq!(changes[1].status, "A");
+        assert_eq!(changes[1].path, "b/c.txt");
+
+        let reason = parse_raw_diff(":100644 100644 a b M").expect_err("meta without a path");
+        assert!(reason.contains("truncated diff-tree output"), "{reason}");
+
+        let reason = parse_raw_diff(":100644 100644 a b\0p\0").expect_err("missing status");
+        assert!(reason.contains("unparsable diff-tree entry"), "{reason}");
+
+        // An empty path is skipped, not recorded as a change of `""`.
+        assert!(parse_raw_diff(":100644 100644 a b M\0\0")
+            .unwrap()
+            .is_empty());
+        assert!(parse_raw_diff("").unwrap().is_empty());
+    }
+
+    #[test]
+    fn apply_failures_are_classified_by_their_cause() {
+        assert_eq!(
+            classify_apply_failure("error: a.txt: already exists in working directory"),
+            "PATH_CONFLICT"
+        );
+        assert_eq!(
+            classify_apply_failure("error: b.txt: does not exist in index"),
+            "PATH_CONFLICT"
+        );
+        assert_eq!(
+            classify_apply_failure("error: patch does not match index"),
+            "HUNK_CONFLICT"
+        );
+        assert_eq!(
+            classify_apply_failure("error: patch does not apply"),
+            "HUNK_CONFLICT"
+        );
+        assert_eq!(
+            classify_apply_failure("error: unknown failure"),
+            "APPLY_REFUSED"
+        );
+        // Git's wording is matched case-insensitively.
+        assert_eq!(
+            classify_apply_failure("ERROR: FILE ALREADY EXISTS"),
+            "PATH_CONFLICT"
+        );
+    }
+
+    #[test]
+    fn symlink_targets_that_leave_the_tree_are_refused() {
+        for escaping in [
+            "",
+            "/etc/passwd",
+            "\\server\\share",
+            "C:/Windows",
+            "c:x",
+            "../a",
+            "a/../../b",
+            "..\\x",
+            // A `..` component is refused even when it would normalise back
+            // inside: admission cannot prove where the tree is materialised.
+            "a/b/../c",
+        ] {
+            assert!(symlink_target_escapes(escaping), "{escaping:?} must escape");
+        }
+        for safe in ["a", "a/b", "./a", "..hidden", "a..b"] {
+            assert!(!symlink_target_escapes(safe), "{safe:?} stays inside");
+        }
+    }
+
+    #[test]
+    fn tree_listings_are_parsed_and_every_unsafe_entry_is_refused() {
+        let listing =
+            "100644 blob aaaa\tb.txt\x00040000 tree bbbb\tsrc\x00120000 blob cccc\tlink\0";
+        let paths = parse_tree_listing("t", listing).expect("a well-formed listing parses");
+        assert_eq!(
+            paths,
+            vec!["b.txt".to_string(), "src".to_string(), "link".to_string()]
+        );
+        assert!(parse_tree_listing("t", "\0\0").unwrap().is_empty());
+
+        let reason = parse_tree_listing("t", "100644 blob aaaa").expect_err("no tab");
+        assert_eq!(
+            reason.get("code").and_then(Json::as_str),
+            Some("TREE_UNREADABLE")
+        );
+
+        let reason = parse_tree_listing("t", "160000 commit aaaa\tsub\0").expect_err("gitlink");
+        assert_eq!(
+            reason.get("code").and_then(Json::as_str),
+            Some("GITLINK_UNSUPPORTED")
+        );
+
+        for unsafe_path in ["../x", "a/../../b", "/abs", ""] {
+            let entry = format!("100644 blob aaaa\t{unsafe_path}\0");
+            let reason = parse_tree_listing("t", &entry).expect_err("unsafe tree path");
+            assert_eq!(
+                reason.get("code").and_then(Json::as_str),
+                Some("FORBIDDEN_PATH"),
+                "{entry:?}"
+            );
+        }
+    }
+
+    // --------------------------------------------------- admission refusals
+
+    fn change(status: &str, path: &str, old_mode: &str, new_mode: &str, new_oid: &str) -> Change {
+        Change {
+            status: status.to_string(),
+            path: path.to_string(),
+            old_mode: old_mode.to_string(),
+            new_mode: new_mode.to_string(),
+            new_oid: new_oid.to_string(),
+        }
+    }
+
+    /// A `Git` whose command fails: every path that runs before Git is reached
+    /// can be tested without building a repository, and the paths that do reach
+    /// Git see a non-zero answer (the "cannot be read" refusal).
+    fn failing_git() -> Git {
+        Git::new(std::env::temp_dir())
+    }
+
+    fn code_of(refusal: &Json) -> String {
+        refusal
+            .get("code")
+            .and_then(Json::as_str)
+            .unwrap_or("<none>")
+            .to_string()
+    }
+
+    #[test]
+    fn validate_path_refuses_metadata_state_gitlinks_and_escaping_symlinks() {
+        let git = failing_git();
+        for (entry, expected) in [
+            (
+                change("M", "../x", "100644", "100644", "aa"),
+                "FORBIDDEN_PATH",
+            ),
+            (
+                change("M", ".git/config", "100644", "100644", "aa"),
+                "FORBIDDEN_PATH",
+            ),
+            (
+                change("M", ".git", "100644", "100644", "aa"),
+                "FORBIDDEN_PATH",
+            ),
+            (
+                change("M", ".flow/state", "100644", "100644", "aa"),
+                "FORBIDDEN_PATH",
+            ),
+            (
+                change("M", "sub/module", "160000", "160000", "aa"),
+                "GITLINK_UNSUPPORTED",
+            ),
+            (
+                change("D", "sub/module", "160000", "000000", "aa"),
+                "GITLINK_UNSUPPORTED",
+            ),
+            // A symlink whose blob this repository does not hold cannot be
+            // inspected, so admission refuses rather than assuming a safe target.
+            (
+                change("M", "link", "100644", "120000", "abcd"),
+                "SYMLINK_UNREADABLE",
+            ),
+        ] {
+            let refusal = validate_path(&git, &entry).expect_err("the change must be refused");
+            assert_eq!(code_of(&refusal), expected, "{entry:?}: {refusal}");
+        }
+        // A deletion of a symlink has no target to inspect, and an ordinary file
+        // change touches no symlink: both are admitted here.
+        validate_path(&git, &change("D", "link", "120000", "000000", "aa")).expect("deletion");
+        validate_path(&git, &change("M", "link", "120000", "120000", "")).expect("empty target");
+        validate_path(&git, &change("M", "a/b.txt", "100644", "100644", "aa")).expect("plain file");
+    }
+
+    #[test]
+    fn an_unreadable_diff_or_tree_listing_is_a_named_refusal() {
+        let git = failing_git();
+        let reason = diff_changes(&git, "aaaa", "bbbb").expect_err("git cannot diff here");
+        assert!(reason.contains("cannot diff"), "{reason}");
+        let refusal = validate_tree(&git, "0000").expect_err("git cannot list this tree");
+        assert_eq!(code_of(&refusal), "TREE_UNREADABLE");
+    }
+
+    // ------------------------------------------ cross-proposal path conflicts
+
+    fn proposal(id: &str, changes: Vec<Change>) -> Proposal {
+        Proposal {
+            proposal_id: id.to_string(),
+            agent_id: "agent".to_string(),
+            task_id: "task".to_string(),
+            base_commit: "base".to_string(),
+            base_tree: "base-tree".to_string(),
+            tree_oid: "tree".to_string(),
+            content_digest: "digest".to_string(),
+            changes,
+            json: Json::Null,
+        }
+    }
+
+    #[test]
+    fn proposals_on_different_paths_never_conflict() {
+        let one = proposal("one", vec![change("M", "a.txt", "100644", "100644", "aa")]);
+        let two = proposal("two", vec![change("M", "b.txt", "100644", "100644", "bb")]);
+        assert!(path_conflicts(&[one, two]).is_none());
+    }
+
+    #[test]
+    fn two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits() {
+        let one = proposal("one", vec![change("M", "a.txt", "100644", "100644", "aa")]);
+        let two = proposal("two", vec![change("M", "a.txt", "100644", "100644", "bb")]);
+        assert!(
+            path_conflicts(&[one.clone(), two]).is_none(),
+            "two plain content edits on one path are compatible"
+        );
+
+        // A delete (or any non-`M` status) on a path another proposal edits is
+        // diagnosed instead of being applied in some order.
+        let delete = proposal("three", vec![change("D", "a.txt", "100644", "000000", "")]);
+        let refusal = path_conflicts(&[one.clone(), delete]).expect("a delete collides");
+        assert_eq!(code_of(&refusal), "PATH_OPERATION_CONFLICT");
+
+        // A symlink conversion is a collision too: the bytes do not say that the
+        // path stopped being a regular file.
+        let to_symlink = proposal("four", vec![change("M", "a.txt", "100644", "120000", "cc")]);
+        assert_eq!(
+            code_of(&path_conflicts(&[one.clone(), to_symlink]).expect("type change collides")),
+            "PATH_OPERATION_CONFLICT"
+        );
+        let from_symlink = proposal("five", vec![change("M", "a.txt", "120000", "100644", "dd")]);
+        assert_eq!(
+            code_of(&path_conflicts(&[one.clone(), from_symlink]).expect("type change collides")),
+            "PATH_OPERATION_CONFLICT"
+        );
+
+        // Two plain edits that disagree on the resulting mode are refused: one of
+        // them would silently win.
+        let changed_mode = proposal("six", vec![change("M", "a.txt", "100644", "100755", "ee")]);
+        assert_eq!(
+            code_of(&path_conflicts(&[one, changed_mode]).expect("mode disagreement collides")),
+            "PATH_OPERATION_CONFLICT"
+        );
+    }
 }

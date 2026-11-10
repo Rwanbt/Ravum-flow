@@ -1144,3 +1144,122 @@ fn a_double_dash_is_accepted_as_a_separator() {
     assert_eq!(code, 0, "{out}");
     assert_eq!(status_of(&out), "REPORT");
 }
+
+#[test]
+fn doctor_reads_hooks_from_an_absolute_hooks_path() {
+    let repo = new_repo("doctor-abs-hooks");
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    // `git rev-parse --git-path hooks` answers with an absolute path when
+    // core.hooksPath is absolute; doctor must list that directory, not
+    // `<root>/<absolute path>`.
+    let hooks = repo.path.join("hooks-absolute");
+    fs::create_dir_all(&hooks).unwrap();
+    fs::write(hooks.join("post-checkout"), "#!/bin/sh\n").unwrap();
+    git(
+        &repo.path,
+        &["config", "core.hooksPath", hooks.to_str().unwrap()],
+    );
+    let (code, out) = flow(&repo.path, &["doctor"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(check_status(&out, "hooks"), "WARN", "{out}");
+    let detail = check_detail(&out, "hooks");
+    assert!(detail.contains("post-checkout"), "{detail}");
+}
+
+#[test]
+fn doctor_reports_toolchains_that_are_not_on_the_path() {
+    let repo = new_repo("doctor-toolchains");
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    // Keep exactly the directory that holds `git`, so Git itself still resolves
+    // but the language toolchains do not. This is the disclosure an operator
+    // reads before declaring an obligation that needs Cargo or Node.
+    let path = std::env::var_os("PATH").unwrap_or_default();
+    let git_dir = std::env::split_paths(&path)
+        .find(|dir| {
+            ["git.exe", "git"]
+                .iter()
+                .any(|name| dir.join(name).is_file())
+        })
+        .expect("git must be on PATH to build the fixture");
+    let out = Command::new(env!("CARGO_BIN_EXE_flow"))
+        .current_dir(&repo.path)
+        .arg("doctor")
+        .env("PATH", &git_dir)
+        .output()
+        .expect("flow runs");
+    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    assert_eq!(out.status.code(), Some(0), "doctor failed: {text}");
+    let report = json::parse(&text).expect("doctor prints JSON");
+    let detail = check_detail(&report, "toolchains");
+    assert!(detail.contains("cargo=missing"), "{detail}");
+    assert!(detail.contains("rustc=missing"), "{detail}");
+}
+
+#[test]
+fn status_ignores_a_receipt_path_it_cannot_read() {
+    let repo = new_repo("status-unreadable-receipt");
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    let receipts = repo.path.join(".flow").join("receipts");
+    fs::create_dir_all(&receipts).unwrap();
+    fs::write(
+        receipts.join("0000000000000000000000000000000000000000.json"),
+        "{}\n",
+    )
+    .unwrap();
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert!(
+        out.get("latest_receipt")
+            .map(|v| !matches!(v, Json::Null))
+            .unwrap_or(false),
+        "the readable receipt must be reported: {out}"
+    );
+    // A *directory* named like a receipt sorts last; reading it fails, and the
+    // status must report no latest receipt instead of panicking or inventing one.
+    fs::create_dir_all(receipts.join("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz.json")).unwrap();
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(status_of(&out), "REPORT");
+    assert!(
+        matches!(out.get("latest_receipt"), Some(Json::Null) | None),
+        "an unreadable receipt path must not be reported as evidence: {out}"
+    );
+}
+
+#[test]
+fn init_discloses_an_optional_obligation_as_optional() {
+    let repo = new_repo("init-optional");
+    write_config(
+        &repo.path,
+        r#"{"id":"git-version","program":"git","args":["--version"],"required":true,"timeout_s":60},{"id":"lint","program":"git","args":["status"],"required":false,"timeout_s":60}"#,
+    );
+    let (code, out) = flow(&repo.path, &["init", "--force"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "POLICY_ADOPTION_REQUIRED", "{out}");
+    let listed = out
+        .get("obligations")
+        .and_then(Json::as_arr)
+        .expect("the refusal must show what would run");
+    assert_eq!(
+        listed[1].as_str(),
+        Some("git status (optional)"),
+        "an optional obligation must not be presented as required"
+    );
+}
+
+#[test]
+fn init_adopt_policy_on_an_empty_flow_directory_still_refuses() {
+    let repo = new_repo("init-adopt-no-config");
+    fs::create_dir_all(repo.path.join(".flow")).unwrap();
+    // `--adopt-policy` is about an *existing config*; an empty state directory
+    // still needs `--force` (or a first `init`), so a half-created state is not
+    // silently taken over.
+    let (code, out) = flow(&repo.path, &["init", "--adopt-policy"]);
+    assert_eq!(code, 1, "{out}");
+    assert!(
+        reason_of(&out).contains(".flow already exists"),
+        "{}",
+        reason_of(&out)
+    );
+    assert!(!repo.path.join(".flow/adopted.json").exists());
+}

@@ -1419,3 +1419,56 @@ fn propose_admits_a_patch_between_one_mebibyte_and_the_declared_bound() {
     );
     assert_eq!(status_of(&out), "ADMITTED");
 }
+
+#[test]
+fn propose_refuses_a_patch_that_changes_nothing() {
+    let repo = new_repo("empty-patch");
+    let base = head(&repo.path);
+    // An empty patch is refused by Git itself before admission can observe an
+    // empty diff: nothing is recorded, and the refusal names the stage.
+    let patch = write_patch("empty-patch", "");
+    let (code, out) = propose(&repo.path, "agent-a", "T1", &base, &patch, Some("k"));
+    assert_eq!(code, 1, "{out}");
+    assert_refused(&out, "PATCH_REFUSED");
+    let proposals = repo.path.join(".flow").join("proposals");
+    assert!(
+        !proposals.exists() || fs::read_dir(&proposals).unwrap().next().is_none(),
+        "a patch that changes nothing must not be recorded"
+    );
+}
+
+#[test]
+fn assemble_refuses_a_candidate_record_whose_proposal_list_changed() {
+    let repo = new_repo("candidate-proposals-tamper");
+    let base = head(&repo.path);
+    let patch = make_patch(&repo.path, &base, &[("one.txt", Some("1\n"))]);
+    let (_, admitted) = propose(&repo.path, "agent-a", "T1", &base, &patch, Some("k"));
+    let id = proposal_id(&admitted);
+    let (code, candidate) = assembled(&repo.path, &[&id]);
+    assert_eq!(code, 0, "{candidate}");
+    let candidate_id = field(&candidate, "candidate_id");
+    let path = candidate_file(&repo.path, &candidate_id);
+
+    // Same candidate id and same tree, different attribution list: the record is
+    // immutable, so this is a refusal rather than a silent overwrite.
+    let original = fs::read_to_string(&path).unwrap();
+    let tampered = original.replacen(
+        &format!("\"{id}\""),
+        "\"0123456789abcdef0123456789abcdef\"",
+        1,
+    );
+    assert_ne!(
+        tampered, original,
+        "the proposals list must be in the record"
+    );
+    fs::write(&path, &tampered).unwrap();
+
+    let (code, out) = assembled(&repo.path, &[&id]);
+    assert_eq!(code, 1, "{out}");
+    assert_refused(&out, "CANDIDATE_IMMUTABLE");
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        tampered,
+        "the tampered record must be left exactly as it was found"
+    );
+}

@@ -85,13 +85,13 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
           # junction-helper gate) do not run on Linux, and two Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
-          # number that would silently shrink. 349 executed tests on 2026-11-10
-          # (wave 4). The Linux count is derived from the two platform-gated tests
-          # on each side and could not be measured on this Windows host, so it is
+          # number that would silently shrink. 415 executed tests on 2026-11-10
+          # (wave 5). The Linux count is derived from the platform-gated tests on
+          # each side and could not be measured on this Windows host, so it is
           # hedged by one: a genuine mass deletion still fails, a counting mistake
           # does not produce a false red.
-          minimum=348
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=349; fi
+          minimum=412
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=415; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -194,8 +194,26 @@ jobs:
             reconcile_diagnoses_a_shared_intent_id_instead_of_closing_both \
             scratch::tests::cleanup_leaves_a_directory_it_did_not_mark_as_owned \
             scratch::tests::cleanup_never_traverses_a_redirect_that_replaced_the_scratch \
-            lock::tests::a_lock_path_that_cannot_hold_a_record_is_unattributable_not_stolen ; do
+            lock::tests::a_lock_path_that_cannot_hold_a_record_is_unattributable_not_stolen \
+            a_symlink_entry_checked_out_as_a_regular_file_is_refused \
+            doctor_reads_hooks_from_an_absolute_hooks_path \
+            doctor_reports_toolchains_that_are_not_on_the_path \
+            status_ignores_a_receipt_path_it_cannot_read \
+            init_discloses_an_optional_obligation_as_optional \
+            init_adopt_policy_on_an_empty_flow_directory_still_refuses \
+            propose_refuses_a_patch_that_changes_nothing \
+            assemble_refuses_a_candidate_record_whose_proposal_list_changed \
+            commands::tests::cat_file_batch_never_panics_when_the_answer_ends_exactly_between_entries \
+            commands::tests::tree_entries_above_the_fidelity_budget_are_refused_not_truncated \
+            proposal::tests::two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits \
+            scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions \
+            gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
+            # Pinned to a Windows shape (PATHEXT resolution): Linux has no
+            # PATHEXT search, so claiming the gate there would be a false green.
+            if [ "$gate" = "gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension" ] && [ "${RUNNER_OS}" != "Windows" ]; then
               continue
             fi
             # Windows does not carry the Unix executable bit, so the mode gate is
@@ -441,3 +459,54 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: pwsh -NoProfile -File examples/polyglot/run-demo.ps1 -Fixture all
+
+  # Coverage is measured where it can be enforced, once, on Linux: the Windows
+  # and Linux counters differ (platform-only code exists on each side), and a gate
+  # that silently averaged them would hide both. The measurement is product-only
+  # — llvm-cov also instruments the unit-test code that lives in `src/`, which
+  # would otherwise count the tests as covered product — and the thresholds are
+  # the ones a reviewer applies, not a number chosen after the fact.
+  #
+  # `--branch` is a nightly feature, so the nightly is pinned by date. The tool is
+  # pinned and built from source: no third-party action decides what is measured.
+  coverage:
+    name: coverage (product-only gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # nightly
+        with:
+          toolchain: nightly-2026-05-06
+          components: llvm-tools-preview
+
+      - name: install cargo-llvm-cov 0.9.1
+        run: cargo install cargo-llvm-cov --version 0.9.1 --locked
+
+      - name: measure (branch coverage, tests excluded)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov --locked --offline --all-targets --branch \
+            --ignore-filename-regex '[\\/]tests[\\/]' --no-report
+          cargo llvm-cov report --branch \
+            --ignore-filename-regex '[\\/]tests[\\/]' \
+            --lcov --output-path coverage-lcov.info
+
+      - name: "gate (product-only: lines >= 95%, branches >= 90%)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/quality/analyze_lcov.py coverage-lcov.info \
+            --product-only \
+            --fail-under-lines 95 \
+            --fail-under-branches 90
+
+      - name: keep the coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-coverage-lcov
+          path: coverage-lcov.info
+          if-no-files-found: warn

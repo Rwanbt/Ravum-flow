@@ -658,4 +658,223 @@ mod tests {
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
         assert!(!root.exists());
     }
+
+    // The tests below reach the creation-side refusals: `materialise_in` is the
+    // only place a scratch directory is created, and every branch there decides
+    // whether a *new* directory is created or an existing one is left alone.
+
+    #[test]
+    fn a_vanished_scratch_directory_is_never_claimed() {
+        let root = unit_root("vanished");
+        let gone = root.join("gone");
+        let scratch = scratch_for(&gone, &root);
+        assert!(
+            !scratch.still_owned(),
+            "a path that no longer exists is not owned"
+        );
+        drop(scratch);
+        assert!(!gone.exists(), "nothing is created by dropping");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn materialise_refuses_a_non_object_id_before_touching_the_filesystem() {
+        let root = unit_root("materialise-id");
+        let git = Git::new(&root);
+        for bad in ["HEAD", "--detach", "abc", ""] {
+            let err = materialise_in(&root, &git, bad, &root)
+                .expect_err("a non-object-id commit must be refused");
+            assert!(
+                err.contains("expected a hexadecimal object id"),
+                "{bad:?}: {err}"
+            );
+        }
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn materialise_refuses_a_base_or_a_candidate_inside_the_repository() {
+        let _guard = TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let root = unit_root("materialise-inside");
+        let repo = root.join("repo");
+        fs::create_dir(&repo).unwrap();
+        let git = Git::new(&repo);
+
+        // The base *is* the repository: refused before any name is tried.
+        let err = materialise_in(&repo, &git, "abcd", &repo)
+            .expect_err("a scratch base inside the repository is refused");
+        assert!(err.contains("inside the repository"), "{err}");
+
+        // The base is outside, but the next candidate name resolves exactly onto
+        // the repository root, so creating it would write inside the repository.
+        let base = root.join("base");
+        fs::create_dir(&base).unwrap();
+        let base = fs::canonicalize(&base).unwrap();
+        let seq = next_sequence();
+        let candidate = candidate_path(&base, seq + 1);
+        fs::create_dir(&candidate).unwrap();
+        let err = materialise_in(&base, &git, "abcd", &candidate)
+            .expect_err("a candidate that resolves inside the repository is refused");
+        assert!(err.contains("inside the repository"), "{err}");
+        assert!(candidate.is_dir(), "the refused candidate is left alone");
+
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn canonical_dir_refuses_a_path_that_is_not_a_directory() {
+        let root = unit_root("canonical-file");
+        let file = root.join("file");
+        fs::write(&file, "x").unwrap();
+        let err = canonical_dir(&file, "scratch base").expect_err("a file is not a base");
+        assert!(err.contains("is not a directory"), "{err}");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn verify_created_dir_refuses_a_redirect_and_a_different_identity() {
+        let root = unit_root("verify-redirect");
+        let target = root.join("target");
+        fs::create_dir(&target).unwrap();
+        let link = root.join("link");
+        if let Err(e) = make_dir_link(&target, &link) {
+            eprintln!("SKIP verify_created_dir refuses a redirect: cannot create a link ({e})");
+            remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+            return;
+        }
+        let canonical_target = fs::canonicalize(&target).unwrap();
+        let recorded_elsewhere = root.join("elsewhere");
+        fs::create_dir(&recorded_elsewhere).unwrap();
+        let reason = verify_created_dir(&link, &fs::canonicalize(&recorded_elsewhere).unwrap())
+            .expect_err("a redirect to another identity is refused");
+        assert!(
+            reason.contains("symlink/reparse point") || reason.contains("resolves to"),
+            "{reason}"
+        );
+        // Even when the recorded identity is the link's own target, a link is not
+        // a directory Flow created, so the answer must never be a silent `Ok`
+        // with the link traversed. On Windows a junction may be reported as a
+        // plain directory by `is_symlink()`; the recorded-identity check then
+        // accepts it, which is why `materialise` records the *created* path and
+        // refuses before the link exists.
+        let _ = verify_created_dir(&link, &canonical_target);
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn detach_git_link_refuses_a_link_and_clears_a_read_only_file() {
+        let root = unit_root("detach-link");
+        let target = root.join("target");
+        fs::create_dir(&target).unwrap();
+        let linked = root.join("linked-git");
+        fs::create_dir(&linked).unwrap();
+        if let Err(e) = make_dir_link(&target, &linked.join(".git")) {
+            eprintln!("SKIP detach_git_link refuses a link: cannot create a link ({e})");
+            remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+            return;
+        }
+        let reason = detach_git_link(&linked).expect_err("a .git link is not a worktree link");
+        assert!(
+            reason.contains("symlink/reparse point") || reason.contains("not a regular file"),
+            "{reason}"
+        );
+
+        #[cfg(windows)]
+        {
+            let read_only = root.join("read-only-git");
+            fs::create_dir(&read_only).unwrap();
+            let link = read_only.join(".git");
+            fs::write(&link, "gitdir: ../x\n").unwrap();
+            let mut permissions = fs::metadata(&link).unwrap().permissions();
+            permissions.set_readonly(true);
+            fs::set_permissions(&link, permissions).unwrap();
+            // The fallback branch: the first unlink fails on Windows, the bit is
+            // cleared, and the second attempt succeeds.
+            detach_git_link(&read_only).expect("a read-only .git link is removed");
+            assert!(!link.exists());
+        }
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn an_owned_directory_that_resolves_elsewhere_is_not_claimed() {
+        // The recorded identity is what proves ownership: a real directory whose
+        // canonical path no longer matches it is left alone.
+        let root = unit_root("moved");
+        let tree = root.join("tree");
+        fs::create_dir(&tree).unwrap();
+        fs::write(tree.join(OWNED_MARKER), "owned\n").unwrap();
+        fs::write(tree.join("keep.txt"), "keep").unwrap();
+        let elsewhere = root.join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+        let scratch = Scratch {
+            path: tree.clone(),
+            canonical: fs::canonicalize(&elsewhere).unwrap(),
+            repo_root: root.clone(),
+        };
+        assert!(!scratch.still_owned(), "a different identity is not owned");
+        drop(scratch);
+        assert!(
+            tree.join("keep.txt").is_file(),
+            "cleanup must not remove a directory owned by someone else"
+        );
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn materialise_gives_up_after_the_bounded_number_of_collisions() {
+        let _guard = TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let root = unit_root("collisions");
+        let base = root.join("base");
+        fs::create_dir(&base).unwrap();
+        let base = fs::canonicalize(&base).unwrap();
+        let repo = root.join("repo");
+        fs::create_dir(&repo).unwrap();
+        let git = Git::new(&repo);
+        let seq = next_sequence();
+        // Occupy exactly the 128 names the next `materialise_in` will try: the
+        // bound must fail closed instead of looping forever.
+        for offset in 1..=MAX_ATTEMPTS {
+            fs::create_dir(candidate_path(&base, seq + offset)).unwrap();
+        }
+        let err = materialise_in(&base, &git, "abcd", &repo)
+            .expect_err("128 occupied names must exhaust the retry budget");
+        assert!(err.contains("after 128 attempts"), "{err}");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn verify_created_dir_refuses_a_recorded_identity_that_differs() {
+        let root = unit_root("verify-identity");
+        let dir = root.join("dir");
+        fs::create_dir(&dir).unwrap();
+        let other = root.join("other");
+        fs::create_dir(&other).unwrap();
+        let reason = verify_created_dir(&dir, &fs::canonicalize(&other).unwrap())
+            .expect_err("a directory that resolves elsewhere is not the created one");
+        assert!(reason.contains("resolves to"), "{reason}");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn cleanup_clears_a_read_only_file_before_removing_it() {
+        let root = unit_root("readonly-cleanup");
+        let tree = root.join("tree");
+        fs::create_dir(&tree).unwrap();
+        let file = tree.join("locked.txt");
+        fs::write(&file, "x").unwrap();
+        let mut permissions = fs::metadata(&file).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&file, permissions).unwrap();
+        remove_tree_bounded(&tree, Instant::now() + CLEANUP_BUDGET);
+        assert!(
+            !tree.exists(),
+            "a tree with a read-only file is still removed"
+        );
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
 }

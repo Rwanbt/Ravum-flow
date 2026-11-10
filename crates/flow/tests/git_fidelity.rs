@@ -552,3 +552,39 @@ fn a_faithful_checkout_is_still_certified() {
         "a PASSED run must not carry a refusal reason: {reason}"
     );
 }
+
+/// A tree entry that declares a symlink must appear as a symlink in the
+/// checkout. On a host with `core.symlinks=false` (the Windows default) Git
+/// writes the link target as a regular file: the obligations would then read a
+/// file where the tree says symlink, so the checkout is refused.
+#[test]
+fn a_symlink_entry_checked_out_as_a_regular_file_is_refused() {
+    let (repo, _) = prepared_repo("symlink-as-file");
+    // Force the Windows default on every platform, so the same refusal is
+    // exercised on Linux too (where symlinks are otherwise materialised).
+    git(&repo.path, &["config", "core.symlinks", "false"]);
+    let blob = git(&repo.path, &["hash-object", "-w", "a.txt"]);
+    git(
+        &repo.path,
+        &[
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            &format!("120000,{blob},link"),
+        ],
+    );
+    let tree = git(&repo.path, &["write-tree"]);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(code_of(&out), "UNSUPPORTED_CHECKOUT", "{out}");
+    assert!(
+        reason_of(&out).contains("checked out as a regular file"),
+        "the refusal must name the type mismatch: {}",
+        reason_of(&out)
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "an unfaithful checkout must never produce a receipt"
+    );
+}

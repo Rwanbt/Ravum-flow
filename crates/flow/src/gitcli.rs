@@ -512,9 +512,25 @@ fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {
 // UNSUPPORTED with the name the policy asked for.
 #[cfg(windows)]
 fn resolve_program(program: &str) -> Option<PathBuf> {
-    let path = std::env::var_os("PATH")?;
-    let extensions: Vec<String> = std::env::var("PATHEXT")
-        .unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string())
+    resolve_program_in(
+        program,
+        std::env::var_os("PATH"),
+        std::env::var("PATHEXT").ok(),
+    )
+}
+
+/// The testable half of [`resolve_program`]: the search locations are arguments
+/// so the resolution rules can be pinned without mutating the process
+/// environment (which other tests read).
+#[cfg(windows)]
+fn resolve_program_in(
+    program: &str,
+    path: Option<std::ffi::OsString>,
+    pathext: Option<String>,
+) -> Option<PathBuf> {
+    let path = path?;
+    let extensions: Vec<String> = pathext
+        .unwrap_or_else(|| ".COM;.EXE;.BAT;.CMD".to_string())
         .split(';')
         .filter(|e| !e.is_empty())
         .map(|e| e.to_ascii_lowercase())
@@ -869,5 +885,102 @@ mod tests {
         // A family prefix with no payload after it names no token.
         assert_eq!(redact("ghp_"), "ghp_", "a bare prefix is not a token");
         assert_eq!(redact("AKIA"), "AKIA", "a bare AWS prefix is not an id");
+    }
+
+    /// A reader that reports `Interrupted` before producing its data, as a real
+    /// pipe does when a signal lands between reads.
+    struct InterruptedOnce(u8);
+
+    impl std::io::Read for InterruptedOnce {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            match self.0 {
+                0 => {
+                    self.0 = 1;
+                    Err(std::io::Error::from(std::io::ErrorKind::Interrupted))
+                }
+                1 => {
+                    self.0 = 2;
+                    buf[..3].copy_from_slice(b"abc");
+                    Ok(3)
+                }
+                _ => Ok(0),
+            }
+        }
+    }
+
+    #[test]
+    fn read_capped_at_retries_after_an_interrupted_read() {
+        let captured = read_capped_at(InterruptedOnce(0), 16);
+        assert_eq!(captured.bytes, b"abc");
+        assert!(!captured.truncated);
+    }
+
+    #[test]
+    fn a_relative_index_override_is_refused_before_git_is_spawned() {
+        let root = std::env::temp_dir();
+        let git = Git::new(&root);
+        match git.run_bounded(&["--version"], None, Some(Path::new("relative-index"))) {
+            Err(e) => assert!(
+                e.starts_with("GIT_INDEX_REFUSED"),
+                "a relative index must be refused by name, got {e}"
+            ),
+            Ok(_) => panic!("a relative GIT_INDEX_FILE must not be used"),
+        }
+    }
+
+    #[test]
+    fn capture_names_the_exit_code_and_stderr_of_a_failing_git() {
+        // A directory that is not a repository: `rev-parse` exits non-zero, and
+        // the failure must be reported with its status instead of an empty value.
+        let root = std::env::temp_dir().join(format!(
+            "flow-gitcli-capture-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let git = Git::new(&root);
+        let err = git
+            .capture(&["rev-parse", "--verify", "HEAD"])
+            .expect_err("no HEAD");
+        assert!(
+            err.contains("failed (") && err.contains("rev-parse"),
+            "{err}"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn program_resolution_appends_pathext_and_honours_an_explicit_extension() {
+        let dir = std::env::temp_dir().join(format!(
+            "flow-gitcli-resolve-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("tool.cmd"), "@echo off\r\n").unwrap();
+        std::fs::write(dir.join("shim.BAT"), "@echo off\r\n").unwrap();
+        let path = std::env::join_paths([dir.as_os_str()]).unwrap();
+        let pathext = Some(".COM;.EXE;.BAT;.CMD".to_string());
+
+        // A bare name is resolved through PATHEXT, like a shell would.
+        let found = resolve_program_in("tool", Some(path.clone()), pathext.clone())
+            .expect("tool.cmd must be found through PATHEXT");
+        assert_eq!(found.file_name().unwrap(), "tool.cmd");
+        // An explicit extension is taken literally (case-insensitively on NTFS).
+        let found = resolve_program_in("shim.BAT", Some(path.clone()), pathext.clone())
+            .expect("an explicit extension must not be doubled");
+        assert_eq!(found.file_name().unwrap(), "shim.BAT");
+        // No match keeps the declared name (the caller reports UNSUPPORTED).
+        assert!(resolve_program_in("missing", Some(path), pathext).is_none());
+        // An empty PATH cannot resolve anything.
+        assert!(resolve_program_in("tool", None, None).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
