@@ -94,7 +94,26 @@ fn dispatch(args: &[String]) -> u8 {
                 ("policy_version", Json::str(state::POLICY_VERSION)),
                 ("git", Json::str(gitcli::Git::new(".").version())),
                 ("schema", Json::str(state::SCHEMA_RECEIPT)),
-                ("schemas", Json::str("flow-config/1, flow-receipt/2, flow-journal/1, flow-proposal/1, flow-candidate/1, flow-adoption/1, flow-plan/1")),
+                // Every document this build can emit, so a client that discovers
+                // schemas from `version` learns the whole contract instead of
+                // half of it.
+                (
+                    "schemas",
+                    Json::str(
+                        [
+                            state::SCHEMA_CONFIG,
+                            state::SCHEMA_RECEIPT,
+                            state::SCHEMA_JOURNAL,
+                            state::SCHEMA_PROPOSAL,
+                            state::SCHEMA_CANDIDATE,
+                            state::SCHEMA_ADOPTION,
+                            state::SCHEMA_PLAN,
+                            state::SCHEMA_STATUS,
+                            state::SCHEMA_PROPOSAL_LIST,
+                        ]
+                        .join(", "),
+                    ),
+                ),
             ]));
             0
         }
@@ -120,12 +139,29 @@ fn dispatch(args: &[String]) -> u8 {
                 "approve" => commands::cmd_approve(&root),
                 "doctor" => commands::cmd_doctor(&root),
                 "status" => commands::cmd_status(&root),
-                "run" => commands::cmd_run(
-                    &root,
-                    collect_values(rest, &["--obligation", "--obligations"]),
-                    flag_value(rest, "--timeout").and_then(|v| v.parse::<u64>().ok()),
-                    flag_value(rest, "--candidate"),
-                ),
+                "run" => {
+                    // A timeout that is silently dropped would make the receipt
+                    // prove a deadline that was never applied, so an unparseable
+                    // or zero value is a usage error rather than a default.
+                    let timeout = match flag_value(rest, "--timeout") {
+                        None => None,
+                        Some(raw) => match raw.parse::<u64>() {
+                            Ok(seconds) if seconds >= 1 => Some(seconds),
+                            _ => {
+                                emit_error(&format!(
+                                    "`--timeout` needs a whole number of seconds >= 1 (found {raw:?})"
+                                ));
+                                return 2;
+                            }
+                        },
+                    };
+                    commands::cmd_run(
+                        &root,
+                        collect_values(rest, &["--obligation", "--obligations"]),
+                        timeout,
+                        flag_value(rest, "--candidate"),
+                    )
+                }
                 "publish" => commands::cmd_publish(
                     &root,
                     flag_value(rest, "--ref"),
@@ -229,10 +265,12 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
             continue;
         }
         if let Some(body) = arg.strip_prefix("--") {
-            let name = format!("--{}", body.split('=').next().unwrap_or(""));
-            let inline = body.contains('=');
+            let (name, inline_value) = match body.split_once('=') {
+                Some((head, value)) => (format!("--{head}"), Some(value)),
+                None => (format!("--{body}"), None),
+            };
             if takes_value.contains(&name.as_str()) {
-                if !inline {
+                if inline_value.is_none() {
                     match args.get(index + 1) {
                         None => return Err(format!("`{name}` needs a value (flow {command} ...)")),
                         Some(value) if value.starts_with("--") => {
@@ -245,7 +283,17 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
                     index += 2;
                     continue;
                 }
-            } else if !BOOL_FLAGS.contains(&name.as_str()) {
+            } else if BOOL_FLAGS.contains(&name.as_str()) {
+                // A boolean flag is a token, not a `key=value` pair. Accepting
+                // `--dry-run=true` here and then matching only the exact token in
+                // `has_flag` would run a real publication for an operator who
+                // asked for a plan, so the shape is refused rather than guessed.
+                if let Some(value) = inline_value {
+                    return Err(format!(
+                        "`{name}` takes no value (found {value:?}); write `{name}` on its own"
+                    ));
+                }
+            } else {
                 return Err(format!(
                     "unknown option {name:?} for `flow {command}` (see `flow help`)"
                 ));
@@ -312,6 +360,12 @@ fn has_flag(args: &[String], name: &str) -> bool {
 }
 
 fn exit_code_for(value: &Json) -> u8 {
+    // A document that names USAGE is a usage error whatever its status: the
+    // published contract reserves exit 2 for "you called me wrong", and a script
+    // must be able to tell that apart from a policy refusal (exit 1).
+    if value.get("code").and_then(Json::as_str) == Some("USAGE") {
+        return 2;
+    }
     match value.get("status").and_then(Json::as_str) {
         Some("PASSED") | Some("PUBLISHED") | Some("PLAN") | Some("INITIALIZED")
         | Some("APPROVED") | Some("ADMITTED") | Some("ASSEMBLED") | Some("RECORD")

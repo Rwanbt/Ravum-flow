@@ -241,6 +241,13 @@ pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {
     base.join(format!("{NAME_PREFIX}-{}-{seq}", std::process::id()))
 }
 
+/// True for a hexadecimal object id as `git worktree add` will accept it.
+///
+/// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an
+/// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to
+/// name a tree. The value still may not begin with `-` (it is hex) and never
+/// reaches a file name, so the wider length is a convenience, not a widening of
+/// the identifier-to-path rule used for receipts.
 fn is_hex_object_id(value: &str) -> bool {
     (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }

@@ -15,7 +15,6 @@ const RESERVED: &[&str] = &[
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
 ];
 
-/// Validate a repository-relative path as written in a receipt or config.
 /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.
 ///
 /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a
@@ -24,11 +23,14 @@ pub fn is_object_id(value: &str) -> bool {
     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-/// True for a Flow record id (proposal / candidate): 32 lowercase hex characters.
+/// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.
+/// Hex case is not significant: the ids this crate writes are lowercase, and
+/// accepting an uppercase spelling only widens what can be *read*.
 pub fn is_record_id(value: &str) -> bool {
     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())
 }
 
+/// Validate a repository-relative path as written in a receipt or config.
 pub fn validate_relative(path: &str) -> Result<(), String> {
     if path.is_empty() {
         return Err("empty path".into());
@@ -243,12 +245,12 @@ mod tests {
         let outside = base.join("out");
         std::fs::create_dir_all(&outside).unwrap();
         let link = root.join("link");
-        if make_dir_link(&outside, &link).is_err() {
-            println!("SKIP canonical_within_refuses_a_link_that_leaves_the_root: this host cannot create a directory link");
-            let _ = std::fs::remove_dir_all(&root);
-            let _ = std::fs::remove_dir_all(&base);
-            return;
-        }
+        // This is a required gate: a host that cannot create a directory link
+        // cannot certify containment, and a silent skip would report "ok"
+        // without the refusal ever running.
+        make_dir_link(&outside, &link).expect(
+            "this gate proves that a link out of the root is refused, so the host must be able to create one",
+        );
         let err = canonical_within(&root, &link.join("receipt.json"))
             .expect_err("a link out of the root must be refused, even for a missing child");
         assert!(err.contains("escapes"), "{err}");

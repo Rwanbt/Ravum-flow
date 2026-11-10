@@ -26,3 +26,6 @@ __pycache__/
 # R0-b git fixtures are rebuilt by experiments/r0b/git/run_tests.py
 /experiments/r0b/git/fixtures/
 dist/
+
+# Coverage instrumentation leaves profile data next to the binary
+*.profraw

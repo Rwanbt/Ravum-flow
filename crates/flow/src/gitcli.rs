@@ -692,8 +692,12 @@ pub fn kill_tree(pid: u32) {
 /// BEFORE a log is written to disk.
 pub fn redact(text: &str) -> String {
     let mut out = text.to_string();
-    for (name, value) in std::env::vars() {
-        let upper = name.to_ascii_uppercase();
+    // `vars()` panics on a non-Unicode value, which on Unix is ordinary. The text
+    // being redacted is already valid UTF-8, so a lossy view of the value matches
+    // it exactly whenever the secret is actually present.
+    for (name, value) in std::env::vars_os() {
+        let upper = name.to_string_lossy().to_ascii_uppercase();
+        let value = value.to_string_lossy();
         let looks_secret = [
             "SECRET",
             "TOKEN",
@@ -704,8 +708,8 @@ pub fn redact(text: &str) -> String {
         ]
         .iter()
         .any(|needle| upper.contains(needle));
-        if looks_secret && value.len() >= 8 && out.contains(&value) {
-            out = out.replace(&value, "[REDACTED]");
+        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {
+            out = out.replace(value.as_ref(), "[REDACTED]");
         }
     }
     for shape in ["ghp_", "gho_", "ghs_", "github_pat_", "sk-"] {

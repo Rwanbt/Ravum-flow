@@ -16,9 +16,11 @@
 //! * a lock is stolen only when its owner is **provably gone** (the PID is dead
 //!   and the file still carries the same nonce that was observed);
 //! * when liveness cannot be established (no `tasklist`/`kill`, an unreadable or
-//!   unparseable file, an empty file left by a crash between create and write)
-//!   the answer is [`LockError::Unknown`] — a refusal that names the file and
-//!   asks for a human, never a guess.
+//!   unparseable file, an empty file left by a crash between create and write, a
+//!   `kill -0` that failed for any reason other than "no such process") the
+//!   answer is [`LockError::Unknown`] — a refusal that names the file and asks
+//!   for a human, never a guess. `EPERM` is not "gone": a group-writable checkout
+//!   can hold a live lock owned by another user.
 //!
 //! Age is reported, never used to justify a steal. PID reuse therefore wedges the
 //! lock until someone removes it by hand. That is deliberate: a wedge is loud and
@@ -329,13 +331,44 @@ fn pid_alive(pid: u32) -> Option<bool> {
     Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
 }
 
+/// Ask `kill -0` and read its message.
+///
+/// The exit status alone cannot answer the question: it is non-zero both for a
+/// process that is gone (ESRCH) and for a live process owned by another user
+/// (EPERM). Liveness is only "provable" when the message says the process does
+/// not exist; anything else is unknown, and unknown is never stolen.
 #[cfg(not(windows))]
-fn pid_alive(pid: u32) -> Option<bool> {
-    let status = std::process::Command::new("kill")
+fn kill_liveness(pid: u32) -> Option<bool> {
+    let out = std::process::Command::new("kill")
         .args(["-0", &pid.to_string()])
-        .status()
+        .env("LC_ALL", "C")
+        .output()
         .ok()?;
-    Some(status.success())
+    if out.status.success() {
+        return Some(true);
+    }
+    let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();
+    if message.contains("no such process") || message.contains("does not exist") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while
+/// the pid exists, and it cannot confuse "gone" with "not mine". Only when the
+/// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.
+#[cfg(target_os = "linux")]
+fn pid_alive(pid: u32) -> Option<bool> {
+    if Path::new(&format!("/proc/{pid}")).exists() {
+        return Some(true);
+    }
+    kill_liveness(pid)
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+fn pid_alive(pid: u32) -> Option<bool> {
+    kill_liveness(pid)
 }
 
 #[cfg(test)]

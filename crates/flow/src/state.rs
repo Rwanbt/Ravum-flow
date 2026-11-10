@@ -27,6 +27,10 @@ pub const SCHEMA_CANDIDATE: &str = "flow-candidate/1";
 pub const SCHEMA_ADOPTION: &str = "flow-adoption/1";
 /// A publication plan: the full preflight of a publish, with no mutation.
 pub const SCHEMA_PLAN: &str = "flow-plan/1";
+/// The read-only status document: what the working copy holds and what it owes.
+pub const SCHEMA_STATUS: &str = "flow-status/1";
+/// The proposal listing: a list of immutable proposal records.
+pub const SCHEMA_PROPOSAL_LIST: &str = "flow-proposal-list/1";
 /// Identity of the way a context digest is computed. Part of the digest itself,
 /// so a future codec change invalidates older receipts instead of reusing them.
 pub const CONTEXT_CODEC: &str = "flow-context/2";
@@ -363,7 +367,20 @@ pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
         file.sync_all()
             .map_err(|e| format!("cannot fsync {}: {e}", tmp.display()))?;
     }
-    fs::rename(&tmp, path).map_err(|e| format!("cannot rename into {}: {e}", path.display()))
+    fs::rename(&tmp, path).map_err(|e| format!("cannot rename into {}: {e}", path.display()))?;
+    // The rename is durable only once the containing directory is flushed. A
+    // journal entry whose rename is lost after a power cut, while `update-ref`
+    // already moved the ref, is precisely the state recovery must never have to
+    // guess about. Windows exposes no directory fsync, so the claim there is
+    // "file fsynced before the rename" and the README says so.
+    #[cfg(not(windows))]
+    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        let dir = File::open(parent)
+            .map_err(|e| format!("cannot open {} for fsync: {e}", parent.display()))?;
+        dir.sync_all()
+            .map_err(|e| format!("cannot fsync {}: {e}", parent.display()))?;
+    }
+    Ok(())
 }
 
 pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
@@ -595,6 +612,14 @@ pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
         .get("tree_oid")
         .and_then(Json::as_str)
         .ok_or("receipt without tree_oid")?;
+    // The tree id becomes a file name here too: a receipt is loaded from disk as
+    // well as written, and a hand-edited or foreign one must never choose where
+    // the next write lands.
+    if !crate::paths::is_object_id(tree) {
+        return Err(format!(
+            "INVALID_TREE_ID: receipt tree_oid {tree:?} is not a 40- or 64-character hex object id"
+        ));
+    }
     let mode = receipt
         .get("verification_scope")
         .and_then(|s| s.get("mode"))

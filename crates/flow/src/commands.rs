@@ -634,7 +634,7 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
     };
     Ok(Json::obj(vec![
         ("status", Json::str("REPORT")),
-        ("schema", Json::str("flow-status/1")),
+        ("schema", Json::str(crate::state::SCHEMA_STATUS)),
         ("policy", policy),
         ("branch", Json::str(branch)),
         ("head", Json::str(head)),
@@ -1175,7 +1175,11 @@ pub fn cmd_run(
 
     let worktree_diff = git
         .capture(&["diff", "--name-only", &tree])
-        .unwrap_or_default()
+        // An empty list on a failed diff would be a receipt claiming "no worktree
+        // differences" the check never observed, so the run refuses to certify.
+        .map_err(|e| {
+            format!("cannot record the worktree diff against {tree} (a receipt with an empty diff would be a false claim): {e}")
+        })?
         .lines()
         .filter(|l| !l.trim().is_empty())
         .map(str::to_string)
@@ -2222,7 +2226,7 @@ pub fn cmd_proposals(root: &Path, show: Option<String>) -> Result<Json, String> 
             let proposals = crate::proposal::Proposal::list(root)?;
             Ok(Json::obj(vec![
                 ("status", Json::str("RECORD")),
-                ("schema", Json::str("flow-proposal-list/1")),
+                ("schema", Json::str(crate::state::SCHEMA_PROPOSAL_LIST)),
                 (
                     "proposals",
                     Json::Arr(proposals.iter().map(|p| p.json.clone()).collect()),

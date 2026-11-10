@@ -10,9 +10,14 @@ on:
       - feat/flow-mvp-0.1
       - fix/flow-foundation-proof-gates
       - feat/flow-verified-foundation
+      # The promotion targets are verified too: a green feature branch says
+      # nothing about the branch the code is finally promoted to.
+      - dev
+      - main
   pull_request:
     branches:
       - dev
+      - main
       - feat/flow-verified-foundation
       - fix/flow-foundation-proof-gates
       - feat/flow-mvp-0.1
@@ -42,7 +47,7 @@ jobs:
       # infers it from the ref name, and a SHA has none.
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          toolchain: stable
+          toolchain: 1.95.0
           components: rustfmt, clippy
 
       - name: cargo fmt
@@ -80,8 +85,8 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution) do not run on
           # Linux, so the floor is per-platform rather than a single number that
           # would silently shrink.
-          minimum=159
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=160; fi
+          minimum=161
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=162; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -143,6 +148,8 @@ jobs:
             lock::tests::a_guard_never_removes_a_successors_lock \
             paths::tests::canonical_within_returns_the_resolved_path \
             paths::tests::canonical_within_refuses_a_link_that_leaves_the_root \
+            a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation \
+            a_timeout_that_cannot_be_applied_is_a_usage_error \
             an_unparseable_lock_is_refused_and_preserved \
             a_dead_owners_lock_is_recovered \
             obligation_stdout_is_bounded_through_the_cli \
@@ -152,6 +159,13 @@ jobs:
             hijacked_git_environment_does_not_redirect_the_cli \
             missing_toolchain_is_unsupported_and_never_publishable ; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
+            # Windows only creates a file symlink with SeCreateSymbolicLinkPrivilege:
+            # the test prints SKIP and the gate is not claimed there. The Linux job
+            # runs it for real, and the cross-platform junction escapes are covered
+            # by the isolation tests.
+            if [ "$gate" = "a_symlinked_journal_is_never_written_through" ] && [ "${RUNNER_OS}" = "Windows" ]; then
               continue
             fi
             if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
@@ -265,10 +279,11 @@ jobs:
         with:
           name: flow-test-output-${{ matrix.os }}
           path: test-output.txt
-          if-no-files-found: warn
+          # Missing evidence must fail the job, not disappear behind a warning.
+          if-no-files-found: error
 
-  # The polyglot demo is the "a reader can reproduce it" gate: three real
-  # toolchains, offline, with a green run, a real publication, and a red edit that
+  # The polyglot demo is the "a reader can reproduce it" gate: three offline
+  # fixtures plus a green run, a real publication, and a red edit that
   # must be refused. It is a separate job so a fixture failure is unambiguous.
   polyglot:
     name: polyglot ${{ matrix.os }}
@@ -284,7 +299,7 @@ jobs:
       # infers it from the ref name, and a SHA has none.
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
-          toolchain: stable
+          toolchain: 1.95.0
           components: rustfmt, clippy
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -294,8 +309,8 @@ jobs:
           python-version: "3.12"
 
       # The TypeScript fixture declares `tsc --noEmit`. The compiler is a pinned
-      # one-time prerequisite, not a runtime dependency: without it the required
-      # obligation fails closed instead of skipping.
+      # one-time prerequisite (it needs the network), not a runtime dependency:
+      # without it the required obligation fails closed instead of skipping.
       - name: TypeScript compiler (polyglot TypeScript fixture)
         run: npm install -g typescript@5.8.2
 

@@ -28,6 +28,9 @@ use std::path::{Path, PathBuf};
 use crate::gitcli::Git;
 use crate::json::{self, Json};
 use crate::paths;
+// One validator for every "is this a Git object id" question in the crate: a
+// second copy is a rule that can drift away from the trust boundary.
+use crate::paths::is_object_id;
 use crate::sha256::sha256_hex;
 use crate::state::{self, SCHEMA_CANDIDATE, SCHEMA_PROPOSAL};
 
@@ -343,10 +346,6 @@ fn ident(value: &str, what: &str) -> Result<String, Json> {
         ));
     }
     Ok(trimmed.to_string())
-}
-
-fn is_object_id(value: &str) -> bool {
-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 /// Parse `git diff-tree -r -z --raw --no-renames` output.

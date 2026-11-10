@@ -159,6 +159,23 @@ fn symlink_file(target: &Path, link: &Path) -> std::io::Result<()> {
         std::os::unix::fs::symlink(target, link)
     }
 }
+
+/// A gate must not turn "the host could not create the fixture" into a green
+/// `... ok`. On Unix a symlink needs no privilege, so the failure is fatal; on
+/// Windows it needs `SeCreateSymbolicLinkPrivilege`, so the test says so loudly
+/// and the CI job does not claim that gate on Windows.
+#[cfg(unix)]
+fn link_unavailable(gate: &str, error: &std::io::Error) -> bool {
+    panic!("{gate} is a required gate and must run: cannot create a symlink ({error})")
+}
+
+#[cfg(windows)]
+fn link_unavailable(gate: &str, error: &std::io::Error) -> bool {
+    println!(
+        "SKIP {gate}: this host cannot create a file symlink without SeCreateSymbolicLinkPrivilege ({error})"
+    );
+    true
+}
 // ------------------------------------------------------------------- tests
 #[test]
 fn init_creates_state_and_refuses_second_call() {
@@ -1165,10 +1182,11 @@ fn a_symlinked_journal_is_never_written_through() {
     fs::write(&outside, "outside content\n").unwrap();
     let journal = repo.path.join(".flow").join("journal.jsonl");
     let _ = fs::remove_file(&journal);
-    if crate::symlink_file(&outside, &journal).is_err() {
-        println!("SKIP a_symlinked_journal_is_never_written_through: this host cannot create a symlink without extra privilege");
-        let _ = fs::remove_file(&outside);
-        return;
+    if let Err(e) = crate::symlink_file(&outside, &journal) {
+        if link_unavailable("a_symlinked_journal_is_never_written_through", &e) {
+            let _ = fs::remove_file(&outside);
+            return;
+        }
     }
 
     let (code, out) = flow(&repo.path, &["publish"]);
@@ -1536,4 +1554,65 @@ fn a_cmd_shim_on_path_is_found_by_a_bare_program_name() {
         "a .cmd shim on PATH must be executable by bare name: {out}"
     );
     assert_eq!(status_of(&out), "PASSED");
+}
+
+/// A boolean flag is a token, not a `key=value` pair. `--dry-run=true` used to
+/// pass validation and then be ignored by `has_flag`, so an operator who asked
+/// for a plan got a real publication: this is the regression that keeps "usage
+/// error" ahead of "mutate the ref".
+#[test]
+fn a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    write_config(
+        &repo.path,
+        r#"{"id":"git","program":"git","args":["--version"],"required":true,"timeout_s":30}"#,
+    );
+    fs::write(repo.path.join("p.txt"), "publishable\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    flow(&repo.path, &["run"]);
+    let head_before = git(&repo.path, &["rev-parse", "HEAD"]);
+    let journal_path = repo.path.join(".flow").join("journal.jsonl");
+    let journal_before = fs::read_to_string(&journal_path).unwrap_or_default();
+
+    for spelling in ["--dry-run=true", "--dry-run=false", "--json=1"] {
+        let (code, out) = flow(&repo.path, &["publish", spelling]);
+        assert_eq!(code, 2, "{spelling} must be a usage error, got {out}");
+        assert_eq!(status_of(&out), "ERROR", "{spelling} must refuse: {out}");
+        assert!(
+            out.get("error")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .contains("takes no value"),
+            "{spelling} must name the real problem: {out}"
+        );
+        assert_eq!(
+            git(&repo.path, &["rev-parse", "HEAD"]),
+            head_before,
+            "{spelling} must never move the ref"
+        );
+        assert_eq!(
+            fs::read_to_string(&journal_path).unwrap_or_default(),
+            journal_before,
+            "{spelling} must not append an intent to the journal"
+        );
+    }
+}
+
+/// A timeout that cannot be applied must not be dropped silently: the receipt
+/// would then prove a deadline the run never used.
+#[test]
+fn a_timeout_that_cannot_be_applied_is_a_usage_error() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    for bad in ["0", "abc"] {
+        let (code, out) = flow(&repo.path, &["run", "--timeout", bad]);
+        assert_eq!(code, 2, "`--timeout {bad}` must be a usage error: {out}");
+        assert!(
+            out.get("error")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .contains("--timeout"),
+            "the refusal must name the flag: {out}"
+        );
+    }
 }
