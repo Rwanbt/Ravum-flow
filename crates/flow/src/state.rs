@@ -752,6 +752,25 @@ mod tests {
     }
 
     #[test]
+    fn an_unreadable_journal_is_an_error_not_an_empty_journal() {
+        // A journal path that exists but cannot be read (here: a directory left
+        // by a hostile clone or a crashed tool) is not an empty journal. Treating
+        // it as empty would append a record and silently drop the history.
+        let root = temp_root("journal-unreadable");
+        fs::create_dir_all(root.join(".flow")).unwrap();
+        fs::create_dir(root.join(".flow").join("journal.jsonl")).unwrap();
+        let record = json::parse(r#"{"schema":"flow-journal/1","event":"record"}"#).unwrap();
+        let reason = append_journal(&root, &record)
+            .expect_err("a directory where the journal should be cannot be read");
+        assert!(reason.contains("cannot read journal"), "{reason}");
+        assert!(
+            !reason.contains("cannot rename"),
+            "the refusal must name the read, not the later write: {reason}"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn an_obligation_missing_its_program_is_refused_not_dropped() {
         let torn =
             json::parse(r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":""}]}"#)

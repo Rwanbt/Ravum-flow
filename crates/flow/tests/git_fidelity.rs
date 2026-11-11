@@ -588,3 +588,127 @@ fn a_symlink_entry_checked_out_as_a_regular_file_is_refused() {
         "an unfaithful checkout must never produce a receipt"
     );
 }
+
+// ------------------------------------------- type fidelity at the checkout gate
+
+/// A tree that names a gitlink must be refused **for that reason**. A checkout
+/// never materialises submodule content, so without the explicit gitlink gate the
+/// refusal surfaces later as "the checkout is missing N tree entries", which
+/// names the symptom and hides the cause.
+#[test]
+fn a_tree_with_a_gitlink_is_refused_with_its_own_reason() {
+    let (repo, _) = prepared_repo("gitlink");
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    git(
+        &repo.path,
+        &[
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            &format!("160000,{head},sub"),
+        ],
+    );
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "a gitlink cannot be certified: {out}");
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(code_of(&out), "UNSUPPORTED_CHECKOUT", "{out}");
+    assert!(
+        reason_of(&out).contains("is a gitlink"),
+        "the refusal must name the gitlink, not a missing entry: {}",
+        reason_of(&out)
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a gitlink tree must not gain a receipt"
+    );
+}
+
+/// Control test for the symlink type guard: a symlink that the checkout really
+/// materialises as a symlink is certifiable. Without it, a gate that refused
+/// every symlink would still pass `a_symlink_entry_checked_out_as_a_regular_file_is_refused`.
+#[cfg(unix)]
+#[test]
+fn a_symlink_entry_checked_out_as_a_symlink_is_certified() {
+    use std::os::unix::fs::symlink;
+    let (repo, _) = prepared_repo("symlink-as-link");
+    symlink("a.txt", repo.path.join("link")).unwrap();
+    git(&repo.path, &["add", "link"]);
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(
+        code, 0,
+        "a faithfully materialised symlink is certifiable: {out}"
+    );
+    assert_eq!(status_of(&out), "PASSED", "{out}");
+    assert!(
+        receipt_file(&repo.path, &tree).exists(),
+        "a PASSED run must write the receipt for {tree}"
+    );
+}
+
+/// A hook that turns a declared **regular file** into a symlink. The path still
+/// exists, so the presence check is satisfied; only the type guard can see that
+/// the obligations would read something the tree does not declare, and the
+/// refusal must say *that*, not report a mode or content mismatch later.
+#[cfg(unix)]
+#[test]
+fn a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason() {
+    let repo = new_repo("hook-symlink-for-file");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    install_tracked_hook(&repo, "rm -f a.txt && ln -s nowhere a.txt\n");
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(code_of(&out), "UNSUPPORTED_CHECKOUT", "{out}");
+    assert!(
+        reason_of(&out).contains("was not checked out as a regular file"),
+        "the refusal must name the type mismatch: {}",
+        reason_of(&out)
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "an unfaithful checkout must never produce a receipt"
+    );
+}
+
+/// A hook that **removes** the executable bit from a file the tree declares
+/// executable. The bytes are identical, so only the mode proof can see it — and
+/// the proof must not skip the one mode it exists to check.
+#[cfg(unix)]
+#[test]
+fn a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused() {
+    let repo = new_repo("hook-chmod-off");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    fs::write(repo.path.join("script.sh"), "#!/bin/sh\nexit 0\n").unwrap();
+    git(&repo.path, &["add", "script.sh"]);
+    // The bit is forced through the index, as the tree is what declares it.
+    git(
+        &repo.path,
+        &["update-index", "--chmod=+x", "--", "script.sh"],
+    );
+    install_tracked_hook(&repo, "chmod -x script.sh\n");
+    let tree = git(&repo.path, &["write-tree"]);
+
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED", "{out}");
+    assert_eq!(code_of(&out), "UNSUPPORTED_CHECKOUT", "{out}");
+    assert!(
+        reason_of(&out).contains("non-executable"),
+        "the refusal must name the lost executable bit: {}",
+        reason_of(&out)
+    );
+    assert!(
+        !receipt_file(&repo.path, &tree).exists(),
+        "a checkout whose mode changed must never produce a receipt"
+    );
+}

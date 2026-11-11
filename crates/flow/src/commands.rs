@@ -785,6 +785,16 @@ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
 fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
     let expected = ls_tree_entries(git, tree)?;
 
+    // A gitlink is refused for what it is, **before** the presence check: a
+    // checkout never materialises submodule content, so a gitlink entry would
+    // otherwise be reported as "the checkout is missing 1 of N entries", which
+    // names the symptom and hides the cause. The refusal is still a refusal.
+    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == "160000") {
+        return Err(format!(
+            "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+        ));
+    }
+
     // Two paths differing only by case cannot both exist on a case-insensitive
     // filesystem: the checkout silently keeps one of them.
     let mut folded: BTreeMap<String, usize> = BTreeMap::new();
@@ -863,11 +873,6 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
             "120000" if !meta.file_type().is_symlink() => {
                 return Err(format!(
                     "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
-                ));
-            }
-            "160000" => {
-                return Err(format!(
-                    "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
                 ));
             }
             "100644" | "100755" if !meta.is_file() => {
@@ -2801,6 +2806,104 @@ mod tests {
                 "a link to a directory must be collected as a file entry: {files:?}"
             );
         }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut() {
+        // The receipt's log preview is the operator's evidence of *what the
+        // obligation printed*. It must be the first `limit` characters, with an
+        // ellipsis only when something was cut: a preview that is empty, that
+        // marks a text of exactly the limit, or that forgets the marks, all hide
+        // output the operator needs to judge a failure.
+        let exact = "é".repeat(400);
+        assert_eq!(
+            preview(&exact, 400),
+            exact,
+            "the limit itself is kept whole"
+        );
+        assert_eq!(preview("short", 400), "short", "a short text is not marked");
+
+        let longer = "é".repeat(401);
+        let cut = preview(&longer, 400);
+        assert_eq!(
+            cut.chars().count(),
+            401,
+            "400 kept characters and one ellipsis"
+        );
+        assert_eq!(cut.chars().next_back(), Some('…'));
+        assert_eq!(cut.chars().take(400).collect::<String>(), exact);
+    }
+
+    #[test]
+    fn cat_file_batch_accepts_a_total_of_exactly_the_content_budget() {
+        // 64 MiB is the documented ceiling for the retained comparison. A total
+        // exactly at the ceiling must be compared, not refused: `>` and `>=` (or
+        // `==`) differ only here, and no ordinary fixture reaches it.
+        const CHUNK: usize = 32 * 1024 * 1024;
+        let wanted = regular(&[("aaaa", "a.bin"), ("bbbb", "b.bin")]);
+        let mut bytes = Vec::with_capacity(2 * (CHUNK + 32));
+        for (oid, _) in &wanted {
+            bytes.extend_from_slice(oid.as_bytes());
+            bytes.extend_from_slice(format!(" blob {CHUNK}\n").as_bytes());
+            bytes.extend(std::iter::repeat_n(b'x', CHUNK));
+            bytes.push(b'\n');
+        }
+        let blobs = parse_cat_file_batch("t", &wanted, &bytes)
+            .expect("exactly 64 MiB is the ceiling, not a refusal");
+        assert_eq!(blobs.len(), 2);
+        assert_eq!(blobs[0].len(), CHUNK);
+    }
+
+    #[test]
+    fn a_checkout_with_exactly_the_entry_budget_is_compared_not_refused() {
+        // 20 000 regular files is the documented ceiling of the byte comparison.
+        // The references all name one real blob, so the accepted answer also
+        // proves the comparison still reads and matches the checkout.
+        const ENTRIES: usize = 20_000;
+        let root = std::env::temp_dir().join(format!(
+            "flow-content-budget-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("scratch")).unwrap();
+        let init = std::process::Command::new("git")
+            .arg("init")
+            .arg("-q")
+            .arg(&root)
+            .status()
+            .expect("git runs");
+        assert!(init.success());
+        fs::write(root.join("a.txt"), "alpha\n").unwrap();
+        let oid = String::from_utf8(
+            std::process::Command::new("git")
+                .arg("-C")
+                .arg(&root)
+                .args(["hash-object", "-w", "a.txt"])
+                .output()
+                .expect("git runs")
+                .stdout,
+        )
+        .unwrap()
+        .trim()
+        .to_string();
+        fs::write(root.join("scratch").join("a.txt"), "alpha\n").unwrap();
+        let git = Git::new(&root);
+        let expected: Vec<(String, String, String, u64)> = (0..ENTRIES)
+            .map(|_| ("100644".to_string(), oid.clone(), "a.txt".to_string(), 6))
+            .collect();
+        verify_checkout_content(
+            &git,
+            &root.join("scratch"),
+            "t",
+            &expected,
+            "during checkout",
+        )
+        .expect("exactly 20 000 regular files is the ceiling, not a refusal");
         let _ = fs::remove_dir_all(&root);
     }
 

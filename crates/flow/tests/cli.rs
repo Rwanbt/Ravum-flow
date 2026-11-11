@@ -247,6 +247,25 @@ fn run_passing_obligation_binds_the_index_tree() {
         .and_then(Json::as_str)
         .map(|s| s.len() == 64)
         .unwrap_or(false));
+    // The receipt shows the obligation's own output: a preview that is empty or
+    // that truncates without a mark would hide the evidence an operator needs.
+    let obligations = out
+        .get("obligations")
+        .and_then(Json::as_arr)
+        .expect("the receipt lists the executed obligations");
+    assert_eq!(obligations.len(), 1, "{out}");
+    let preview_text = obligations[0]
+        .get("stdout_preview")
+        .and_then(Json::as_str)
+        .expect("the receipt carries the obligation's stdout preview");
+    assert!(
+        preview_text.starts_with("git version "),
+        "the preview must show the obligation's own stdout: {preview_text:?}"
+    );
+    assert!(
+        preview_text.chars().count() <= 401,
+        "the preview keeps the documented 400 characters plus an ellipsis: {preview_text:?}"
+    );
 }
 
 #[test]
@@ -1721,4 +1740,92 @@ fn a_timeout_that_cannot_be_applied_is_a_usage_error() {
             "the refusal must name the flag: {out}"
         );
     }
+}
+
+/// `explain` lists the journal records **of the explained tree**. A record that
+/// names another tree must not be attributed to this one: an operator reading
+/// "this is the history of the tree I am shipping" must not be shown someone
+/// else's outcome.
+#[test]
+fn explain_lists_only_the_journal_records_of_the_explained_tree() {
+    let (repo, tree, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let (code, published) = flow(&repo.path, &["publish"]);
+    assert_eq!(
+        code, 0,
+        "the fixture needs a real publication so the journal names the tree: {published}"
+    );
+
+    let journal = journal_file(&repo.path);
+    let mut text = fs::read_to_string(&journal).unwrap();
+    text.push_str("{\"schema\":\"flow-journal/1\",\"event\":\"outcome\",\"id\":\"foreign\",\"status\":\"PUBLISHED\",\"tree\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"at\":\"2026-11-09T00:00:00Z\"}\n");
+    fs::write(&journal, &text).unwrap();
+
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    let related = explain
+        .get("journal")
+        .and_then(Json::as_arr)
+        .expect("explain lists the journal records of the tree");
+    assert!(
+        related
+            .iter()
+            .any(|record| record.get("tree").and_then(Json::as_str) == Some(tree.as_str())),
+        "the tree's own records must be listed: {explain}"
+    );
+    assert!(
+        !related
+            .iter()
+            .any(|record| record.get("tree").and_then(Json::as_str)
+                == Some("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")),
+        "a record of another tree must not be attributed to this one: {explain}"
+    );
+}
+
+/// On Unix the link count of a state file is visible, so a hard-linked adoption
+/// record is refused outright: the atomic rename would replace the link, but an
+/// outside writer holding the other name would keep writing to an inode Flow no
+/// longer controls. The refusal is the guard's contract, not an incidental
+/// outcome of the rename.
+#[cfg(unix)]
+#[test]
+fn a_hardlinked_adoption_record_is_refused_on_unix() {
+    let repo = new_repo();
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    write_config(&repo.path, GREEN); // approve writes .flow/adopted.json
+    let adopted = repo.path.join(".flow").join("adopted.json");
+    assert!(
+        adopted.is_file(),
+        "the fixture needs the adoption record: {adopted:?}"
+    );
+    let outside = std::env::temp_dir().join(format!(
+        "flow-hardlink-adoption-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)
+    ));
+    fs::write(&outside, "outside\n").unwrap();
+    fs::remove_file(&adopted).unwrap();
+    fs::hard_link(&outside, &adopted).unwrap();
+
+    let (code, out) = flow(&repo.path, &["approve"]);
+    assert_eq!(
+        code, 1,
+        "a hard-linked state file must be refused, not written through: {out}"
+    );
+    assert_eq!(status_of(&out), "ERROR");
+    let error = out.get("error").and_then(Json::as_str).unwrap_or("<none>");
+    assert!(
+        error.contains("hard links"),
+        "the refusal must name the hard link: {error}"
+    );
+    assert_eq!(
+        fs::read_to_string(&outside).unwrap(),
+        "outside\n",
+        "the outside file must keep its bytes"
+    );
+    let _ = fs::remove_file(&outside);
 }

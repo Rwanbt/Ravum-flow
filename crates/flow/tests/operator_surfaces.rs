@@ -1263,3 +1263,87 @@ fn init_adopt_policy_on_an_empty_flow_directory_still_refuses() {
     );
     assert!(!repo.path.join(".flow/adopted.json").exists());
 }
+
+// ------------------------------------------- operator counters and boundaries
+
+/// An intent no outcome can be attributed to is *pending*: `status` must count it
+/// rather than report a quiet zero. Counting, not membership — one outcome may
+/// never close two intents.
+#[test]
+fn status_counts_an_intent_with_no_outcome_as_pending() {
+    let repo = new_repo("pending-intent");
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    let journal = repo.path.join(".flow/journal.jsonl");
+    let mut text = fs::read_to_string(&journal).unwrap();
+    text.push_str(
+        "{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"open-1\",\"ref\":\"refs/heads/main\"}\n",
+    );
+    fs::write(&journal, &text).unwrap();
+
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("pending_intents").and_then(Json::as_num),
+        Some(1.0),
+        "one intent without an outcome is one pending intent: {out}"
+    );
+    assert_eq!(
+        fs::read_to_string(&journal).unwrap(),
+        text,
+        "status may not rewrite the journal it only reads"
+    );
+}
+
+/// Two outcomes close two intents that share an id: nothing is pending, so
+/// recovery must say `RECONCILED` rather than manufacture a conflict. The
+/// duplicate-id conflict exists only while an outcome is missing.
+#[test]
+fn a_duplicate_intent_that_is_fully_closed_is_not_reported_as_pending() {
+    let repo = new_repo("reconcile-closed-twins");
+    assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    let journal = repo.path.join(".flow/journal.jsonl");
+    let mut text = fs::read_to_string(&journal).unwrap();
+    for _ in 0..2 {
+        text.push_str("{\"schema\":\"flow-journal/1\",\"event\":\"intent\",\"id\":\"closed\",\"ref\":\"refs/heads/main\"}\n");
+    }
+    for _ in 0..2 {
+        text.push_str("{\"schema\":\"flow-journal/1\",\"event\":\"outcome\",\"id\":\"closed\",\"status\":\"PUBLISHED\"}\n");
+    }
+    fs::write(&journal, &text).unwrap();
+
+    let (code, out) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code, 0, "a fully closed pair needs no human: {out}");
+    assert_eq!(status_of(&out), "RECONCILED");
+    assert_eq!(
+        out.get("resolved")
+            .and_then(Json::as_arr)
+            .map(<[Json]>::len),
+        Some(0),
+        "two outcomes close two intents: {out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(false)
+    );
+}
+
+/// The ref-name length check is a cheap pre-filter, not the Git validity gate: a
+/// ref of exactly the documented 1 024-character limit must reach the receipt
+/// gate (and be refused there), not be reported as an unusable name.
+#[test]
+fn a_ref_of_exactly_the_documented_limit_reaches_the_receipt_gate() {
+    let repo = new_repo("publish-ref-limit");
+    write_config(&repo.path, REQUIRED_GIT_VERSION);
+    assert_eq!(flow(&repo.path, &["init", "--adopt-policy"]).0, 0);
+
+    let reference = format!("refs/heads/{}", "a".repeat(1024 - "refs/heads/".len()));
+    assert_eq!(reference.chars().count(), 1024);
+    let (code, out) = flow(&repo.path, &["publish", "--ref", &reference]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        code_of(&out),
+        "NO_RECEIPT",
+        "the limit itself is not an unusable name: {out}"
+    );
+}
