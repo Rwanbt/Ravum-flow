@@ -1,0 +1,1442 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace verify_checkout_fidelity -> Result<(), String> with Ok(())\n@@ -778,119 +778,17 @@\n /// not the verified tree while the receipt claims the tree was checked, which is\n /// a false `PASSED` with no tampering involved.\n ///\n /// This is a statement about the checkout **at the moment it is checked**: a hook\n /// (or an obligation) can change it afterwards. `verify_checkout_unchanged` runs\n /// the same byte and mode proof again after the last obligation and refuses a run\n /// whose declared files changed meanwhile.\n fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {\n-    let expected = ls_tree_entries(git, tree)?;\n-\n-    // A gitlink is refused for what it is, **before** the presence check: a\n-    // checkout never materialises submodule content, so a gitlink entry would\n-    // otherwise be reported as \"the checkout is missing 1 of N entries\", which\n-    // names the symptom and hides the cause. The refusal is still a refusal.\n-    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == \"160000\") {\n-        return Err(format!(\n-            \"tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified\"\n-        ));\n-    }\n-\n-    // Two paths differing only by case cannot both exist on a case-insensitive\n-    // filesystem: the checkout silently keeps one of them.\n-    let mut folded: BTreeMap<String, usize> = BTreeMap::new();\n-    for (_, _, path, _) in &expected {\n-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;\n-    }\n-    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) {\n-        return Err(format!(\n-            \"tree {tree} holds {count} paths that differ only by case (for example {name:?}): this host cannot represent them faithfully, so the obligations would not see the verified tree\"\n-        ));\n-    }\n-\n-    // Everything the tree names must actually exist on disk, and nothing else may\n-    // be present. `git worktree add` runs the repository's `post-checkout` hook\n-    // (including one reached through `core.hooksPath` pointing at a directory the\n-    // tree itself ships), so the checkout can gain files and directories after it\n-    // was written. An extra path is not cosmetic: a toolchain file, a\n-    // `.cargo/config.toml`, an empty cache directory or a test found by a glob\n-    // changes what an obligation sees without touching a byte the tree declares.\n-    let mut actual_files: Vec<String> = Vec::new();\n-    let mut actual_dirs: Vec<String> = Vec::new();\n-    collect_entries(scratch, scratch, &mut actual_files, &mut actual_dirs)?;\n-    let present: BTreeSet<&str> = actual_files.iter().map(String::as_str).collect();\n-    let mut missing: Vec<&str> = expected\n-        .iter()\n-        .map(|(_, _, path, _)| path.as_str())\n-        .filter(|path| !present.contains(path))\n-        .collect();\n-    if !missing.is_empty() {\n-        missing.sort_unstable();\n-        return Err(format!(\n-            \"the checkout is missing {} of {} tree entries (for example {:?}): the obligations would not see the verified tree\",\n-            missing.len(),\n-            expected.len(),\n-            &missing[..missing.len().min(3)]\n-        ));\n-    }\n-    let declared: BTreeSet<&str> = expected\n-        .iter()\n-        .map(|(_, _, path, _)| path.as_str())\n-        .collect();\n-    let mut unexpected: Vec<&str> = present\n-        .iter()\n-        .copied()\n-        .filter(|path| !declared.contains(path))\n-        .collect();\n-    if !unexpected.is_empty() {\n-        unexpected.sort_unstable();\n-        return Err(format!(\n-            \"the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree\",\n-            unexpected.len(),\n-            &unexpected[..unexpected.len().min(3)]\n-        ));\n-    }\n-    let declared_dirs = ls_tree_dirs(git, tree)?;\n-    let mut unexpected_dirs: Vec<&str> = actual_dirs\n-        .iter()\n-        .map(String::as_str)\n-        .filter(|dir| !declared_dirs.contains(*dir))\n-        .collect();\n-    if !unexpected_dirs.is_empty() {\n-        unexpected_dirs.sort_unstable();\n-        return Err(format!(\n-            \"the checkout holds {} directory(ies) the tree does not declare (for example {:?}): a hook or the host created them, and an empty directory can change what an obligation discovers\",\n-            unexpected_dirs.len(),\n-            &unexpected_dirs[..unexpected_dirs.len().min(3)]\n-        ));\n-    }\n-\n-    // And each entry must have the type the tree declares.\n-    for (mode, _, path, _) in &expected {\n-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n-        let meta = fs::symlink_metadata(&full)\n-            .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-        match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n-                return Err(format!(\n-                    \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n-                ));\n-            }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n-                return Err(format!(\n-                    \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n-                ));\n-            }\n-            _ => {}\n-        }\n-    }\n-\n-    verify_checkout_modes(scratch, tree, &expected)?;\n-    verify_checkout_content(git, scratch, tree, &expected, \"during checkout\")\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The tree's entries: `(mode, blob oid, path, size)`, from one bounded\n /// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit\n /// reason instead of being lossily folded into `U+FFFD` (two different paths would\n /// then look like a case collision, which is a misleading diagnosis).\n fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {\n     // The listing comes from the source repository: the checkout deliberately\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:786:5: replace verify_checkout_fidelity -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 78,
+        "line": 888
+      },
+      "start": {
+        "column": 5,
+        "line": 786
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n+            \"120000\" if true /* ~ changed by cargo-mutants ~ */ => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n+            \"120000\" if false /* ~ changed by cargo-mutants ~ */ => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.is_file() with true in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n+            \"100644\" | \"100755\" if true /* ~ changed by cargo-mutants ~ */ => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with true in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.is_file() with false in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n+            \"100644\" | \"100755\" if false /* ~ changed by cargo-mutants ~ */ => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with false in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n+            \"120000\" if  /* ~ changed by cargo-mutants ~ */meta.file_type().is_symlink() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:873:25: delete ! in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // survival-probe\n+            \"100644\" | \"100755\" if  /* ~ changed by cargo-mutants ~ */meta.is_file() => { // survival-probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:878:36: delete ! in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace verify_checkout_content -> Result<(), String> with Ok(())\n@@ -1063,59 +1063,17 @@\n /// obligations ran`) so a refusal says what changed and when.\n fn verify_checkout_content(\n     git: &Git,\n     scratch: &Path,\n     tree: &str,\n     expected: &[(String, String, String, u64)],\n     stage: &str,\n ) -> Result<(), String> {\n-    /// Beyond this entry count the comparison is refused, not skipped.\n-    const CONTENT_ENTRIES: usize = 20_000;\n-\n-    let regular: Vec<(&str, &str)> = expected\n-        .iter()\n-        .filter(|(mode, oid, _, _)| (mode == \"100644\" || mode == \"100755\") && !oid.is_empty())\n-        .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))\n-        .collect();\n-    if regular.is_empty() {\n-        return Ok(());\n-    }\n-    if regular.len() > CONTENT_ENTRIES { // survival-probe\n-        return Err(format!(\n-            \"tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified\",\n-            regular.len()\n-        ));\n-    }\n-    let mut request = String::new();\n-    for (oid, _) in &regular {\n-        request.push_str(oid);\n-        request.push('\\n');\n-    }\n-    let out = git.run_bounded(&[\"cat-file\", \"--batch\"], Some(request.as_bytes()), None)?;\n-    if out.status != 0 {\n-        return Err(format!(\n-            \"cannot read the tree content for {tree}: {}\",\n-            out.stderr.trim()\n-        ));\n-    }\n-    let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;\n-    for ((oid, path), blob) in regular.iter().zip(blobs) {\n-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n-        let disk = fs::read(&full).map_err(|e| format!(\"cannot read {path:?} {stage}: {e}\"))?;\n-        if disk != blob {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree\",\n-                disk.len(),\n-                blob.len(),\n-                short(oid)\n-            ));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Parse one bounded `git cat-file --batch` answer: exactly one blob per\n /// requested oid, in request order.\n ///\n /// Git's machine output is treated as untrusted input here: a missing newline, a\n /// non-blob object, an unparsable size, a truncated body, an entry count or byte\n /// total above the fidelity budget, or an arithmetic overflow is **refused**, not\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_content",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1114
+        },
+        "start": {
+          "column": 1,
+          "line": 1045
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1071:5: replace verify_checkout_content -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 1113
+      },
+      "start": {
+        "column": 5,
+        "line": 1071
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in verify_checkout_content\n@@ -1074,17 +1074,17 @@\n     let regular: Vec<(&str, &str)> = expected\n         .iter()\n         .filter(|(mode, oid, _, _)| (mode == \"100644\" || mode == \"100755\") && !oid.is_empty())\n         .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))\n         .collect();\n     if regular.is_empty() {\n         return Ok(());\n     }\n-    if regular.len() > CONTENT_ENTRIES { // survival-probe\n+    if regular.len() == /* ~ changed by cargo-mutants ~ */ CONTENT_ENTRIES { // survival-probe\n         return Err(format!(\n             \"tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified\",\n             regular.len()\n         ));\n     }\n     let mut request = String::new();\n     for (oid, _) in &regular {\n         request.push_str(oid);\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_content",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1114
+        },
+        "start": {
+          "column": 1,
+          "line": 1045
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1082:22: replace > with == in verify_checkout_content",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 1082
+      },
+      "start": {
+        "column": 22,
+        "line": 1082
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in verify_checkout_content\n@@ -1074,17 +1074,17 @@\n     let regular: Vec<(&str, &str)> = expected\n         .iter()\n         .filter(|(mode, oid, _, _)| (mode == \"100644\" || mode == \"100755\") && !oid.is_empty())\n         .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))\n         .collect();\n     if regular.is_empty() {\n         return Ok(());\n     }\n-    if regular.len() > CONTENT_ENTRIES { // survival-probe\n+    if regular.len() < /* ~ changed by cargo-mutants ~ */ CONTENT_ENTRIES { // survival-probe\n         return Err(format!(\n             \"tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified\",\n             regular.len()\n         ));\n     }\n     let mut request = String::new();\n     for (oid, _) in &regular {\n         request.push_str(oid);\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_content",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1114
+        },
+        "start": {
+          "column": 1,
+          "line": 1045
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1082:22: replace > with < in verify_checkout_content",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 1082
+      },
+      "start": {
+        "column": 22,
+        "line": 1082
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in verify_checkout_content\n@@ -1074,17 +1074,17 @@\n     let regular: Vec<(&str, &str)> = expected\n         .iter()\n         .filter(|(mode, oid, _, _)| (mode == \"100644\" || mode == \"100755\") && !oid.is_empty())\n         .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))\n         .collect();\n     if regular.is_empty() {\n         return Ok(());\n     }\n-    if regular.len() > CONTENT_ENTRIES { // survival-probe\n+    if regular.len() >= /* ~ changed by cargo-mutants ~ */ CONTENT_ENTRIES { // survival-probe\n         return Err(format!(\n             \"tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified\",\n             regular.len()\n         ));\n     }\n     let mut request = String::new();\n     for (oid, _) in &regular {\n         request.push_str(oid);\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_content",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1114
+        },
+        "start": {
+          "column": 1,
+          "line": 1045
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1082:22: replace > with >= in verify_checkout_content",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 1082
+      },
+      "start": {
+        "column": 22,
+        "line": 1082
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])\n@@ -1122,60 +1122,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])",
+    "package": "flow",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1173
+      },
+      "start": {
+        "column": 5,
+        "line": 1130
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])\n@@ -1122,60 +1122,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(Vec::new())]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(Vec::new())])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1173
+      },
+      "start": {
+        "column": 5,
+        "line": 1130
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])\n@@ -1122,60 +1122,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(vec![0])]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(vec![0])])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1173
+      },
+      "start": {
+        "column": 5,
+        "line": 1130
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])\n@@ -1122,60 +1122,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(vec![1])]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(vec![1])])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1173
+      },
+      "start": {
+        "column": 5,
+        "line": 1130
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace += with -= in parse_cat_file_batch\n@@ -1156,17 +1156,17 @@\n             .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n         let start = header_end + 1;\n         let end = start\n             .checked_add(size)\n             .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n         let blob = bytes\n             .get(start..end)\n             .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n+        total -= /* ~ changed by cargo-mutants ~ */ size;\n         if total > CONTENT_BUDGET { // survival-probe\n             return Err(format!(\n                 \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n             ));\n         }\n         blobs.push(blob);\n         position = end + 1;\n     }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1164:15: replace += with -= in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 1164
+      },
+      "start": {
+        "column": 15,
+        "line": 1164
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace += with *= in parse_cat_file_batch\n@@ -1156,17 +1156,17 @@\n             .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n         let start = header_end + 1;\n         let end = start\n             .checked_add(size)\n             .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n         let blob = bytes\n             .get(start..end)\n             .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n+        total *= /* ~ changed by cargo-mutants ~ */ size;\n         if total > CONTENT_BUDGET { // survival-probe\n             return Err(format!(\n                 \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n             ));\n         }\n         blobs.push(blob);\n         position = end + 1;\n     }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1164:15: replace += with *= in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 1164
+      },
+      "start": {
+        "column": 15,
+        "line": 1164
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in parse_cat_file_batch\n@@ -1157,17 +1157,17 @@\n         let start = header_end + 1;\n         let end = start\n             .checked_add(size)\n             .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n         let blob = bytes\n             .get(start..end)\n             .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n         total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n+        if total == /* ~ changed by cargo-mutants ~ */ CONTENT_BUDGET { // survival-probe\n             return Err(format!(\n                 \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n             ));\n         }\n         blobs.push(blob);\n         position = end + 1;\n     }\n     Ok(blobs)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1165:18: replace > with == in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1165
+      },
+      "start": {
+        "column": 18,
+        "line": 1165
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in parse_cat_file_batch\n@@ -1157,17 +1157,17 @@\n         let start = header_end + 1;\n         let end = start\n             .checked_add(size)\n             .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n         let blob = bytes\n             .get(start..end)\n             .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n         total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n+        if total < /* ~ changed by cargo-mutants ~ */ CONTENT_BUDGET { // survival-probe\n             return Err(format!(\n                 \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n             ));\n         }\n         blobs.push(blob);\n         position = end + 1;\n     }\n     Ok(blobs)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1165:18: replace > with < in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1165
+      },
+      "start": {
+        "column": 18,
+        "line": 1165
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in parse_cat_file_batch\n@@ -1157,17 +1157,17 @@\n         let start = header_end + 1;\n         let end = start\n             .checked_add(size)\n             .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n         let blob = bytes\n             .get(start..end)\n             .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n         total += size;\n-        if total > CONTENT_BUDGET { // survival-probe\n+        if total >= /* ~ changed by cargo-mutants ~ */ CONTENT_BUDGET { // survival-probe\n             return Err(format!(\n                 \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n             ));\n         }\n         blobs.push(blob);\n         position = end + 1;\n     }\n     Ok(blobs)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1174
+        },
+        "start": {
+          "column": 1,
+          "line": 1116
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1165:18: replace > with >= in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 1165
+      },
+      "start": {
+        "column": 18,
+        "line": 1165
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace preview -> String with String::new()\n@@ -1527,21 +1527,17 @@\n             \"receipt_path\".into(),\n             Json::str(path.to_string_lossy().to_string()),\n         ));\n     }\n     Ok(out)\n }\n \n fn preview(text: &str, limit: usize) -> String { // survival-probe\n-    let mut out: String = text.chars().take(limit).collect();\n-    if text.chars().count() > limit { // survival-probe\n-        out.push('…');\n-    }\n-    out\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------- publish\n pub fn cmd_publish(\n     root: &Path,\n     reference: Option<String>,\n     expected_old: Option<String>,\n     message: Option<String>,\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "preview",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1540
+        },
+        "start": {
+          "column": 1,
+          "line": 1534
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1535:5: replace preview -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 1539
+      },
+      "start": {
+        "column": 5,
+        "line": 1535
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace preview -> String with \"xyzzy\".into()\n@@ -1527,21 +1527,17 @@\n             \"receipt_path\".into(),\n             Json::str(path.to_string_lossy().to_string()),\n         ));\n     }\n     Ok(out)\n }\n \n fn preview(text: &str, limit: usize) -> String { // survival-probe\n-    let mut out: String = text.chars().take(limit).collect();\n-    if text.chars().count() > limit { // survival-probe\n-        out.push('…');\n-    }\n-    out\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n // ---------------------------------------------------------------- publish\n pub fn cmd_publish(\n     root: &Path,\n     reference: Option<String>,\n     expected_old: Option<String>,\n     message: Option<String>,\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "preview",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1540
+        },
+        "start": {
+          "column": 1,
+          "line": 1534
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1535:5: replace preview -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 1539
+      },
+      "start": {
+        "column": 5,
+        "line": 1535
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in preview\n@@ -1528,17 +1528,17 @@\n             Json::str(path.to_string_lossy().to_string()),\n         ));\n     }\n     Ok(out)\n }\n \n fn preview(text: &str, limit: usize) -> String { // survival-probe\n     let mut out: String = text.chars().take(limit).collect();\n-    if text.chars().count() > limit { // survival-probe\n+    if text.chars().count() == /* ~ changed by cargo-mutants ~ */ limit { // survival-probe\n         out.push('…');\n     }\n     out\n }\n \n // ---------------------------------------------------------------- publish\n pub fn cmd_publish(\n     root: &Path,\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "preview",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1540
+        },
+        "start": {
+          "column": 1,
+          "line": 1534
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1536:29: replace > with == in preview",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 1536
+      },
+      "start": {
+        "column": 29,
+        "line": 1536
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in preview\n@@ -1528,17 +1528,17 @@\n             Json::str(path.to_string_lossy().to_string()),\n         ));\n     }\n     Ok(out)\n }\n \n fn preview(text: &str, limit: usize) -> String { // survival-probe\n     let mut out: String = text.chars().take(limit).collect();\n-    if text.chars().count() > limit { // survival-probe\n+    if text.chars().count() < /* ~ changed by cargo-mutants ~ */ limit { // survival-probe\n         out.push('…');\n     }\n     out\n }\n \n // ---------------------------------------------------------------- publish\n pub fn cmd_publish(\n     root: &Path,\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "preview",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1540
+        },
+        "start": {
+          "column": 1,
+          "line": 1534
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1536:29: replace > with < in preview",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 1536
+      },
+      "start": {
+        "column": 29,
+        "line": 1536
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in preview\n@@ -1528,17 +1528,17 @@\n             Json::str(path.to_string_lossy().to_string()),\n         ));\n     }\n     Ok(out)\n }\n \n fn preview(text: &str, limit: usize) -> String { // survival-probe\n     let mut out: String = text.chars().take(limit).collect();\n-    if text.chars().count() > limit { // survival-probe\n+    if text.chars().count() >= /* ~ changed by cargo-mutants ~ */ limit { // survival-probe\n         out.push('…');\n     }\n     out\n }\n \n // ---------------------------------------------------------------- publish\n pub fn cmd_publish(\n     root: &Path,\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "preview",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1540
+        },
+        "start": {
+          "column": 1,
+          "line": 1534
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1536:29: replace > with >= in preview",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 1536
+      },
+      "start": {
+        "column": 29,
+        "line": 1536
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_publish -> Result<Json, String> with Ok(Default::default())\n@@ -1543,512 +1543,17 @@\n pub fn cmd_publish(\n     root: &Path,\n     reference: Option<String>,\n     expected_old: Option<String>,\n     message: Option<String>,\n     candidate: Option<String>,\n     dry_run: bool,\n ) -> Result<Json, String> {\n-    let config = state::load_config(root)?;\n-    if config.disabled {\n-        return Ok(refused_code(\n-            \"DISABLED\",\n-            \"Flow is disabled in this repository\",\n-        ));\n-    }\n-    if let Err(reason) = validate_obligations(&config.obligations) {\n-        return Ok(refused_code(\"INVALID_POLICY\", reason));\n-    }\n-    if let Some(refusal) = adoption_gate(root, &config)? {\n-        return Ok(refusal);\n-    }\n-    let git = Git::new(root);\n-    let candidate_record = match candidate.as_deref() {\n-        None => None,\n-        Some(id) => match crate::proposal::Candidate::load(root, id)? {\n-            Some(record) => Some(record),\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_CANDIDATE\",\n-                    format!(\"no candidate {id:?} in .flow/candidates/\"),\n-                ))\n-            }\n-        },\n-    };\n-\n-    // Publish to a branch only. `HEAD`, a tag or a remote ref is either\n-    // ambiguous or the wrong object to move for \"this tree is verified\".\n-    let reference = match reference {\n-        Some(r) => {\n-            if !r.starts_with(\"refs/heads/\") {\n-                return Ok(refused_code(\n-                    \"REF_NOT_ALLOWED\",\n-                    format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n-                ));\n-            }\n-            r\n-        }\n-        None => current_ref(&git)?,\n-    };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n-        return Ok(refused_code(\n-            \"REF_NOT_ALLOWED\",\n-            format!(\"--ref {reference:?} is not a usable ref name\"),\n-        ));\n-    }\n-    if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n-        return Ok(refused_code(\n-            \"REF_NOT_ALLOWED\",\n-            format!(\"--ref {reference:?} is not a valid ref name (git check-ref-format)\"),\n-        ));\n-    }\n-    // A symbolic ref would move its target while this command reports the name\n-    // the operator passed: they would believe the commit landed on `alias` when\n-    // it landed on something else. Refuse rather than report a misleading name.\n-    let symref = git.run(&[\"symbolic-ref\", \"-q\", &reference])?;\n-    if symref.status == 0 {\n-        return Ok(refused_code(\n-            \"REF_IS_SYMREF\",\n-            format!(\n-                \"--ref {reference:?} is a symbolic ref to {:?}: publish to the real branch ref\",\n-                symref.stdout.trim()\n-            ),\n-        ));\n-    }\n-\n-    let _lock = match crate::lock::acquire_lock(root, \"publish\") {\n-        Ok(guard) => guard,\n-        Err(e) => return Ok(lock_refusal(root, e)),\n-    };\n-\n-    // Publish exactly the tree that `run` verified: the candidate's tree when\n-    // `--candidate` is given, the index tree otherwise.\n-    let tree = match &candidate_record {\n-        Some(record) => record.tree_oid.clone(),\n-        None => git.write_tree()?,\n-    };\n-    if candidate_record.is_some() {\n-        let present =\n-            git.run_bounded(&[\"cat-file\", \"-e\", &format!(\"{tree}^{{tree}}\")], None, None)?;\n-        if present.status != 0 {\n-            return Ok(refused_code(\n-                \"CANDIDATE_TREE_MISSING\",\n-                format!(\"candidate tree {tree} is no longer in the object store: nothing coherent can be published\"),\n-            ));\n-        }\n-    }\n-    let receipt = match Receipt::load(root, &tree)? {\n-        Some(r) => r,\n-        None => {\n-            return Ok(refused_code(\n-                \"NO_RECEIPT\",\n-                format!(\"no complete receipt for tree {tree}: run `flow run` on this exact index tree first (a selective run never produces one)\"),\n-            ))\n-        }\n-    };\n-\n-    // 1. the receipt must be written by this version, unaltered.\n-    if receipt.schema != state::SCHEMA_RECEIPT {\n-        return Ok(refused_code(\n-            \"RECEIPT_SCHEMA_STALE\",\n-            format!(\n-                \"receipt schema {:?} is not {}: re-run `flow run`\",\n-                receipt.schema,\n-                state::SCHEMA_RECEIPT\n-            ),\n-        ));\n-    }\n-    if let Err(e) = state::verify_receipt_integrity(&receipt.json) {\n-        return Ok(refused_code(\"RECEIPT_INTEGRITY\", e));\n-    }\n-    // 2. it must name this tree, and cover the whole declared policy.\n-    if receipt.tree_oid != tree {\n-        return Ok(refused_code(\n-            \"TREE_MISMATCH\",\n-            format!(\n-                \"receipt integrity error: file for {tree} names tree {:?}\",\n-                receipt.tree_oid\n-            ),\n-        ));\n-    }\n-    if receipt.scope_mode != \"complete\" {\n-        return Ok(refused_code(\n-            \"SCOPE_INCOMPLETE\",\n-            format!(\n-                \"receipt scope is {:?}: a selective run is diagnostic and never publishable\",\n-                receipt.scope_mode\n-            ),\n-        ));\n-    }\n-    if !receipt.missing_required.is_empty() {\n-        return Ok(refused_code(\n-            \"MISSING_REQUIRED\",\n-            format!(\n-                \"receipt does not cover required obligations {:?}\",\n-                receipt.missing_required\n-            ),\n-        ));\n-    }\n-    // 3. the policy must still be the policy the receipt proves. This is\n-    //    recomputed from the current configuration, never read from the receipt.\n-    let policy = effective_policy(&config, &config.obligations);\n-    let expected_digest = policy_digest(&policy);\n-    if receipt.policy_digest != expected_digest {\n-        return Ok(refused_code(\n-            \"STALE_POLICY\",\n-            format!(\n-                \"the receipt proves policy {} but the current policy is {}: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides\",\n-                short(&receipt.policy_digest),\n-                short(&expected_digest)\n-            ),\n-        ));\n-    }\n-    if receipt.policy_version != config.policy_version {\n-        return Ok(refused_code(\n-            \"POLICY_VERSION_MISMATCH\",\n-            format!(\n-                \"receipt policy_version {:?} != current {:?}\",\n-                receipt.policy_version, config.policy_version\n-            ),\n-        ));\n-    }\n-    if receipt.execution_boundary != config.execution_boundary {\n-        return Ok(refused_code(\n-            \"EXECUTION_BOUNDARY_MISMATCH\",\n-            format!(\n-                \"receipt execution_boundary {:?} != current {:?}\",\n-                receipt.execution_boundary, config.execution_boundary\n-            ),\n-        ));\n-    }\n-    // The context covers the toolchain and platform the run actually used; a Git\n-    // upgrade between run and publish changes it, and the receipt is then no\n-    // longer a statement about the tool that would publish.\n-    let expected_context = build_context_id(&git, &tree, &policy);\n-    if receipt.context_id != expected_context {\n-        return Ok(refused_code(\n-            \"CONTEXT_MISMATCH\",\n-            format!(\n-                \"the receipt context is {} but this environment now computes {}: the toolchain or platform changed since the run\",\n-                short(&receipt.context_id),\n-                short(&expected_context)\n-            ),\n-        ));\n-    }\n-    // 4. every currently required obligation must be present *and* passed. The\n-    //    global status alone is not enough: a missing entry is not a pass.\n-    for ob in config.obligations.iter().filter(|o| o.required) {\n-        match receipt\n-            .obligations\n-            .iter()\n-            .find(|x| x.get(\"id\").and_then(Json::as_str) == Some(ob.id.as_str()))\n-        {\n-            None => {\n-                return Ok(refused_code(\n-                    \"MISSING_REQUIRED\",\n-                    format!(\"required obligation {:?} is absent from the receipt\", ob.id),\n-                ))\n-            }\n-            Some(entry) if entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") => {\n-                return Ok(refused_code(\n-                    \"REQUIRED_NOT_PASSED\",\n-                    format!(\n-                        \"required obligation {:?} has status {:?}\",\n-                        ob.id,\n-                        entry\n-                            .get(\"status\")\n-                            .and_then(Json::as_str)\n-                            .unwrap_or(\"UNKNOWN\")\n-                    ),\n-                ))\n-            }\n-            Some(_) => {}\n-        }\n-    }\n-    if receipt.status != \"PASSED\" {\n-        return Ok(refused_code(\n-            \"STATUS_NOT_PASSED\",\n-            format!(\n-                \"receipt status is {}: a non-PASSED receipt is never publishable\",\n-                receipt.status\n-            ),\n-        ));\n-    }\n-    // 5. the verification commit must still describe the same tree, when the\n-    //    object still exists (it may have been pruned; absence is not a failure).\n-    if !receipt.commit_oid.is_empty() {\n-        if let Ok(t) = git.capture(&[\"rev-parse\", &format!(\"{}^{{tree}}\", receipt.commit_oid)]) {\n-            if t != tree {\n-                return Ok(refused_code(\n-                    \"RECEIPT_COMMIT_MISMATCH\",\n-                    format!(\n-                        \"receipt commit {} carries tree {t}, not the verified {tree}\",\n-                        receipt.commit_oid\n-                    ),\n-                ));\n-            }\n-        }\n-    }\n-\n-    let old = match expected_old {\n-        Some(o) => o,\n-        None => match git.show_ref(&reference)? {\n-            Some(o) => o,\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_REF\",\n-                    format!(\"cannot resolve {reference}\"),\n-                ))\n-            }\n-        },\n-    };\n-    let current = git.show_ref(&reference)?;\n-    if current.as_deref() != Some(old.as_str()) {\n-        return Ok(refused_code(\n-            \"STALE_REF\",\n-            format!(\"stale expected old OID: ref is {current:?}, expected {old}\"),\n-        ));\n-    }\n-    // Publishing a tree the ref already carries would only add an empty commit.\n-    if let Ok(current_tree) = git.capture(&[\"rev-parse\", &format!(\"{old}^{{tree}}\")]) {\n-        if current_tree == tree {\n-            return Ok(refused_code(\n-                \"ALREADY_PUBLISHED\",\n-                format!(\"{reference} already points at a commit whose tree is {tree}: nothing to publish\"),\n-            ));\n-        }\n-    }\n-\n-    // A candidate is a statement about \"base + these proposals\". Publishing it on\n-    // top of a different commit would silently claim a merge Flow never made.\n-    if let Some(record) = &candidate_record {\n-        if record.base_commit != old {\n-            return Ok(refused_code(\n-                \"BASE_MISMATCH\",\n-                format!(\n-                    \"candidate {} was assembled on base {} but this publication would land on {}: re-assemble on the new base and re-run, or pass the matching --expected-old\",\n-                    record.candidate_id, record.base_commit, old\n-                ),\n-            ));\n-        }\n-    }\n-    if dry_run {\n-        // Everything above is the same preflight a real publication performs.\n-        // Nothing below this point has happened yet: no commit object, no ref\n-        // movement, no journal line.\n-        return Ok(Json::obj(vec![\n-            (\"status\", Json::str(\"PLAN\")),\n-            (\"schema\", Json::str(state::SCHEMA_PLAN)),\n-            (\"dry_run\", Json::Bool(true)),\n-            (\"ref\", Json::str(reference)),\n-            (\"old\", Json::str(old)),\n-            (\"tree\", Json::str(tree.clone())),\n-            (\n-                \"candidate_id\",\n-                match &candidate_record {\n-                    Some(record) => Json::str(record.candidate_id.clone()),\n-                    None => Json::Null,\n-                },\n-            ),\n-            (\"context_id\", Json::str(receipt.context_id.clone())),\n-            (\"policy_digest\", Json::str(receipt.policy_digest.clone())),\n-            (\"policy_version\", Json::str(receipt.policy_version.clone())),\n-            (\n-                \"execution_boundary\",\n-                Json::str(receipt.execution_boundary.clone()),\n-            ),\n-            (\n-                \"obligations\",\n-                Json::Arr(\n-                    receipt\n-                        .obligations\n-                        .iter()\n-                        .filter_map(|o| o.get(\"id\").and_then(Json::as_str).map(Json::str))\n-                        .collect(),\n-                ),\n-            ),\n-            (\n-                \"changes\",\n-                match &candidate_record {\n-                    Some(record) => {\n-                        Json::Arr(record.changes.iter().map(|c| c.to_json()).collect())\n-                    }\n-                    None => Json::Arr(Vec::new()),\n-                },\n-            ),\n-            (\n-                \"journal\",\n-                Json::str(state::journal_path(root).to_string_lossy().to_string()),\n-            ),\n-            (\n-                \"note\",\n-                Json::str(\"plan only: no commit was created, no ref was moved, no journal record was appended\"),\n-            ),\n-        ]));\n-    }\n-    let message = message.unwrap_or_else(|| format!(\"flow: publish verified tree {tree}\"));\n-    let commit = git.commit_tree(&tree, &old, &message)?;\n-    // The commit we are about to publish must carry exactly the qualified tree.\n-    let prepared_tree = git.capture(&[\"rev-parse\", &format!(\"{commit}^{{tree}}\")])?;\n-    if prepared_tree != tree {\n-        return Ok(refused_code(\n-            \"COMMIT_TREE_MISMATCH\",\n-            format!(\n-                \"prepared commit {commit} carries tree {prepared_tree}, not the verified {tree}\"\n-            ),\n-        ));\n-    }\n-    let id = format!(\n-        \"{}-{}-{}\",\n-        state::iso8601_now(),\n-        &commit[..12.min(commit.len())],\n-        state::unique_suffix()\n-    );\n-    if crash_point(\"before-intent\") {\n-        std::process::exit(89);\n-    }\n-    state::append_journal(\n-        root,\n-        &Json::obj(vec![\n-            (\"event\", Json::str(\"intent\")),\n-            (\"id\", Json::str(id.clone())),\n-            (\"ref\", Json::str(reference.clone())),\n-            (\"old\", Json::str(old.clone())),\n-            (\"new\", Json::str(commit.clone())),\n-            (\"tree\", Json::str(tree.clone())),\n-            (\"at\", Json::str(state::iso8601_now())),\n-        ]),\n-    )?;\n-    if crash_point(\"after-intent\") {\n-        std::process::exit(89);\n-    }\n-    let recheck = git.show_ref(&reference)?;\n-    if recheck.as_deref() != Some(old.as_str()) {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(\"REFUSED_STALE\")),\n-                (\"observed\", Json::str(recheck.unwrap_or_default())),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"REF_MOVED\",\n-            \"ref moved between intent and CAS: nothing was published\",\n-        ));\n-    }\n-    let res = git.update_ref(&reference, &commit, &old)?;\n-    if res.status != 0 {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(\"REFUSED\")),\n-                (\"stderr\", Json::str(gitcli::redact(res.stderr.trim()))),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"UPDATE_REF_REFUSED\",\n-            format!(\"git update-ref refused: {}\", res.stderr.trim()),\n-        ));\n-    }\n-    if crash_point(\"after-ref\") {\n-        std::process::exit(89);\n-    }\n-    // Post-CAS observation: the ref must now carry exactly the prepared commit.\n-    // Anything else is an outcome Flow did not plan, so it is reported as needing\n-    // reconciliation rather than as a success.\n-    let observed = git.show_ref(&reference)?;\n-    if observed.as_deref() != Some(commit.as_str()) {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                (\"observed\", Json::str(observed.unwrap_or_default())),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"NEEDS_RECONCILIATION\",\n-            format!(\"update-ref reported success but {reference} does not carry {commit}: inspect with `flow reconcile`\"),\n-        ));\n-    }\n-    state::append_journal(\n-        root,\n-        &Json::obj(vec![\n-            (\"event\", Json::str(\"outcome\")),\n-            (\"id\", Json::str(id)),\n-            (\"status\", Json::str(\"PUBLISHED\")),\n-            (\"commit\", Json::str(commit.clone())),\n-            (\"at\", Json::str(state::iso8601_now())),\n-        ]),\n-    )?;\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(\"PUBLISHED\")),\n-        (\n-            \"candidate_id\",\n-            match &candidate_record {\n-                Some(record) => Json::str(record.candidate_id.clone()),\n-                None => Json::Null,\n-            },\n-        ),\n-        (\"ref\", Json::str(reference)),\n-        (\"old\", Json::str(old)),\n-        (\"commit\", Json::str(commit)),\n-        (\"tree\", Json::str(tree)),\n-        (\"context_id\", Json::str(receipt.context_id.clone())),\n-        (\"policy_digest\", Json::str(receipt.policy_digest.clone())),\n-        (\"policy_version\", Json::str(receipt.policy_version.clone())),\n-        (\n-            \"execution_boundary\",\n-            Json::str(receipt.execution_boundary.clone()),\n-        ),\n-        (\"receipt_logs\", Json::Num(receipt.logs.len() as f64)),\n-        (\"receipt_started_at\", Json::str(receipt.started_at.clone())),\n-        (\n-            \"receipt_finished_at\",\n-            Json::str(receipt.finished_at.clone()),\n-        ),\n-        (\"receipt_commit\", Json::str(receipt.commit_oid.clone())),\n-        (\n-            \"obligations\",\n-            Json::Arr(\n-                receipt\n-                    .obligations\n-                    .iter()\n-                    .filter_map(|o| {\n-                        o.get(\"id\")\n-                            .and_then(Json::as_str)\n-                            .map(|id| Json::str(id.to_string()))\n-                    })\n-                    .collect(),\n-            ),\n-        ),\n-        (\n-            \"worktree_diff\",\n-            Json::Arr(\n-                receipt\n-                    .worktree_diff\n-                    .iter()\n-                    .map(|p| Json::str(p.clone()))\n-                    .collect(),\n-            ),\n-        ),\n-        (\n-            \"note\",\n-            Json::str(\"only refs were moved; the working tree was not modified and may now differ\"),\n-        ),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // -------------------------------------------------------------- reconcile\n /// Count journal records by `id` for one event kind.\n /// A lock refusal carries its own code: a held lock and an unattributable one\n /// have different remedies, and the second must never look like \"try again\".\n fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {\n     match err {\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1551:5: replace cmd_publish -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2046
+      },
+      "start": {
+        "column": 5,
+        "line": 1551
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace || with && in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n+    if reference.len() > 1024 || reference.contains('\\0') && /* ~ changed by cargo-mutants ~ */ reference.contains(' ') { // survival-probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:59: replace || with && in cmd_publish",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 1592
+      },
+      "start": {
+        "column": 59,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace || with && in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n+    if reference.len() > 1024 && /* ~ changed by cargo-mutants ~ */ reference.contains('\\0') || reference.contains(' ') { // survival-probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:31: replace || with && in cmd_publish",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 1592
+      },
+      "start": {
+        "column": 31,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n+    if reference.len() == /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with == in cmd_publish",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n+    if reference.len() < /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with < in cmd_publish",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n+    if reference.len() >= /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // survival-probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with >= in cmd_publish",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![])\n@@ -2097,40 +2097,17 @@\n }\n \n /// Intents that no outcome can be attributed to.\n ///\n /// Counting, not set membership: an intent is closed only when the journal holds\n /// at least as many outcomes as intents for that id. One outcome must never\n /// close two intents.\n fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {\n-    let records = state::read_journal(root)?;\n-    let outcomes = count_by_id(&records, \"outcome\");\n-    let mut seen: BTreeMap<String, usize> = BTreeMap::new();\n-    let mut pending = Vec::new();\n-    for record in records {\n-        if record.get(\"event\").and_then(Json::as_str) != Some(\"intent\") {\n-            continue;\n-        }\n-        let id = record\n-            .get(\"id\")\n-            .and_then(Json::as_str)\n-            .unwrap_or(\"\")\n-            .to_string();\n-        let position = {\n-            let slot = seen.entry(id.clone()).or_insert(0);\n-            let position = *slot;\n-            *slot += 1; // survival-probe\n-            position\n-        };\n-        if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n-            pending.push(record);\n-        }\n-    }\n-    Ok(pending)\n+    Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The explicit state of \"we could not even read the journal\".\n fn journal_failure(root: &Path, err: state::JournalError) -> Json {\n     let (status, code) = match &err {\n         state::JournalError::Io(_) => (state::STATE_UNKNOWN_OUTCOME, \"JOURNAL_UNREADABLE\"),\n         state::JournalError::Corrupt(_) => (state::STATE_CORRUPT_JOURNAL, \"JOURNAL_CORRUPT\"),\n     };\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "pending_intents",
+      "return_type": "-> Result<Vec<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2129
+        },
+        "start": {
+          "column": 1,
+          "line": 2099
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:2105:5: replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![])",
+    "package": "flow",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 2128
+      },
+      "start": {
+        "column": 5,
+        "line": 2105
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![Default::default()])\n@@ -2097,40 +2097,17 @@\n }\n \n /// Intents that no outcome can be attributed to.\n ///\n /// Counting, not set membership: an intent is closed only when the journal holds\n /// at least as many outcomes as intents for that id. One outcome must never\n /// close two intents.\n fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {\n-    let records = state::read_journal(root)?;\n-    let outcomes = count_by_id(&records, \"outcome\");\n-    let mut seen: BTreeMap<String, usize> = BTreeMap::new();\n-    let mut pending = Vec::new();\n-    for record in records {\n-        if record.get(\"event\").and_then(Json::as_str) != Some(\"intent\") {\n-            continue;\n-        }\n-        let id = record\n-            .get(\"id\")\n-            .and_then(Json::as_str)\n-            .unwrap_or(\"\")\n-            .to_string();\n-        let position = {\n-            let slot = seen.entry(id.clone()).or_insert(0);\n-            let position = *slot;\n-            *slot += 1; // survival-probe\n-            position\n-        };\n-        if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n-            pending.push(record);\n-        }\n-    }\n-    Ok(pending)\n+    Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The explicit state of \"we could not even read the journal\".\n fn journal_failure(root: &Path, err: state::JournalError) -> Json {\n     let (status, code) = match &err {\n         state::JournalError::Io(_) => (state::STATE_UNKNOWN_OUTCOME, \"JOURNAL_UNREADABLE\"),\n         state::JournalError::Corrupt(_) => (state::STATE_CORRUPT_JOURNAL, \"JOURNAL_CORRUPT\"),\n     };\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "pending_intents",
+      "return_type": "-> Result<Vec<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2129
+        },
+        "start": {
+          "column": 1,
+          "line": 2099
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:2105:5: replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![Default::default()])",
+    "package": "flow",
+    "replacement": "Ok(vec![Default::default()])",
+    "span": {
+      "end": {
+        "column": 16,
+        "line": 2128
+      },
+      "start": {
+        "column": 5,
+        "line": 2105
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace += with -= in pending_intents\n@@ -2113,17 +2113,17 @@\n         let id = record\n             .get(\"id\")\n             .and_then(Json::as_str)\n             .unwrap_or(\"\")\n             .to_string();\n         let position = {\n             let slot = seen.entry(id.clone()).or_insert(0);\n             let position = *slot;\n-            *slot += 1; // survival-probe\n+            *slot -= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n             position\n         };\n         if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n             pending.push(record);\n         }\n     }\n     Ok(pending)\n }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "pending_intents",
+      "return_type": "-> Result<Vec<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2129
+        },
+        "start": {
+          "column": 1,
+          "line": 2099
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2121:19: replace += with -= in pending_intents",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 2121
+      },
+      "start": {
+        "column": 19,
+        "line": 2121
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace += with *= in pending_intents\n@@ -2113,17 +2113,17 @@\n         let id = record\n             .get(\"id\")\n             .and_then(Json::as_str)\n             .unwrap_or(\"\")\n             .to_string();\n         let position = {\n             let slot = seen.entry(id.clone()).or_insert(0);\n             let position = *slot;\n-            *slot += 1; // survival-probe\n+            *slot *= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n             position\n         };\n         if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n             pending.push(record);\n         }\n     }\n     Ok(pending)\n }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "pending_intents",
+      "return_type": "-> Result<Vec<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2129
+        },
+        "start": {
+          "column": 1,
+          "line": 2099
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2121:19: replace += with *= in pending_intents",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 2121
+      },
+      "start": {
+        "column": 19,
+        "line": 2121
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace >= with < in pending_intents\n@@ -2116,17 +2116,17 @@\n             .unwrap_or(\"\")\n             .to_string();\n         let position = {\n             let slot = seen.entry(id.clone()).or_insert(0);\n             let position = *slot;\n             *slot += 1; // survival-probe\n             position\n         };\n-        if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n+        if position < /* ~ changed by cargo-mutants ~ */ outcomes.get(&id).copied().unwrap_or(0) { // survival-probe\n             pending.push(record);\n         }\n     }\n     Ok(pending)\n }\n \n /// The explicit state of \"we could not even read the journal\".\n fn journal_failure(root: &Path, err: state::JournalError) -> Json {\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "pending_intents",
+      "return_type": "-> Result<Vec<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2129
+        },
+        "start": {
+          "column": 1,
+          "line": 2099
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2124:21: replace >= with < in pending_intents",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 2124
+      },
+      "start": {
+        "column": 21,
+        "line": 2124
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_reconcile -> Result<Json, String> with Ok(Default::default())\n@@ -2150,144 +2150,17 @@\n             Json::str(\n                 \"recovery refuses to guess: the journal was not rewritten and no ref was moved\",\n             ),\n         ),\n     ])\n }\n \n pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {\n-    let git = Git::new(root);\n-    let _lock = match crate::lock::acquire_lock(root, \"reconcile\") {\n-        Ok(guard) => guard,\n-        Err(e) => return Ok(lock_refusal(root, e)),\n-    };\n-    let records = match state::read_journal(root) {\n-        Ok(records) => records,\n-        Err(e) => return Ok(journal_failure(root, e)),\n-    };\n-\n-    let occurrences = count_by_id(&records, \"intent\");\n-    let outcome_counts = count_by_id(&records, \"outcome\");\n-\n-    let mut resolved: Vec<Json> = Vec::new();\n-    let mut needs_human = false;\n-    for intent in &records {\n-        if intent.get(\"event\").and_then(Json::as_str) != Some(\"intent\") {\n-            continue;\n-        }\n-        let id = intent\n-            .get(\"id\")\n-            .and_then(Json::as_str)\n-            .unwrap_or(\"\")\n-            .to_string();\n-        let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n-        let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n-        // A shared id cannot be attributed to one intent. Checking `done` first\n-        // would let one duplicate's outcome silently close the other, which is\n-        // exactly how an unresolved publication can be reported as reconciled.\n-        if intents_for_id > 1 {\n-            if intents_for_id > outcomes_for_id { // survival-probe\n-                needs_human = true;\n-                resolved.push(Json::obj(vec![\n-                    (\"id\", Json::str(id)),\n-                    (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                    (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n-                ]));\n-            }\n-            continue;\n-        }\n-        if outcomes_for_id > 0 {\n-            continue;\n-        }\n-        let field = |k: &str| {\n-            intent\n-                .get(k)\n-                .and_then(Json::as_str)\n-                .unwrap_or(\"\")\n-                .to_string()\n-        };\n-        let (reference, old, new) = (field(\"ref\"), field(\"old\"), field(\"new\"));\n-        if reference.is_empty() || old.is_empty() || new.is_empty() {\n-            needs_human = true;\n-            resolved.push(Json::obj(vec![\n-                (\"id\", Json::str(id)),\n-                (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                (\"reason\", Json::str(\"INCOMPLETE_INTENT\")),\n-            ]));\n-            continue;\n-        }\n-        let observed = match git.show_ref(&reference) {\n-            Ok(Some(oid)) => oid,\n-            Ok(None) => {\n-                needs_human = true;\n-                resolved.push(Json::obj(vec![\n-                    (\"id\", Json::str(id)),\n-                    (\"ref\", Json::str(reference)),\n-                    (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                    (\"reason\", Json::str(\"REF_ABSENT\")),\n-                ]));\n-                continue;\n-            }\n-            Err(e) => {\n-                needs_human = true;\n-                resolved.push(Json::obj(vec![\n-                    (\"id\", Json::str(id)),\n-                    (\"ref\", Json::str(reference)),\n-                    (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                    (\"reason\", Json::str(format!(\"REF_UNREADABLE: {e}\"))),\n-                ]));\n-                continue;\n-            }\n-        };\n-        let resolution = if observed == new {\n-            \"PUBLISHED\"\n-        } else if observed == old {\n-            \"NOT_PUBLISHED\"\n-        } else {\n-            state::STATE_NEEDS_RECONCILIATION\n-        };\n-        // Only a decisive observation is recorded. An ambiguous one stays open\n-        // so it is re-examined instead of being closed by a guess.\n-        if resolution != state::STATE_NEEDS_RECONCILIATION {\n-            state::append_journal(\n-                root,\n-                &Json::obj(vec![\n-                    (\"event\", Json::str(\"outcome\")),\n-                    (\"id\", Json::str(id.clone())),\n-                    (\"status\", Json::str(format!(\"RECONCILED_{resolution}\"))),\n-                    (\"observed\", Json::str(observed.clone())),\n-                    (\"at\", Json::str(state::iso8601_now())),\n-                ]),\n-            )?;\n-        } else {\n-            needs_human = true;\n-        }\n-        resolved.push(Json::obj(vec![\n-            (\"id\", Json::str(id)),\n-            (\"ref\", Json::str(reference)),\n-            (\"observed\", Json::str(observed)),\n-            (\"resolution\", Json::str(resolution)),\n-        ]));\n-    }\n-\n-    let status = if needs_human {\n-        state::STATE_NEEDS_RECONCILIATION\n-    } else {\n-        \"RECONCILED\"\n-    };\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(status)),\n-        (\"resolved\", Json::Arr(resolved)),\n-        (\"manual_required\", Json::Bool(needs_human)),\n-        (\n-            \"note\",\n-            Json::str(\"reconciliation never moves a ref: it only records what is observable\"),\n-        ),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // ----------------------------------------------------------------- explain\n pub fn cmd_explain(\n     root: &Path,\n     tree: Option<String>,\n     candidate: Option<String>,\n ) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:2158:5: replace cmd_reconcile -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2285
+      },
+      "start": {
+        "column": 5,
+        "line": 2158
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in cmd_reconcile\n@@ -2179,17 +2179,17 @@\n             .and_then(Json::as_str)\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n-        if intents_for_id > 1 {\n+        if intents_for_id == /* ~ changed by cargo-mutants ~ */ 1 {\n             if intents_for_id > outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2187:27: replace > with == in cmd_reconcile",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 2187
+      },
+      "start": {
+        "column": 27,
+        "line": 2187
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in cmd_reconcile\n@@ -2179,17 +2179,17 @@\n             .and_then(Json::as_str)\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n-        if intents_for_id > 1 {\n+        if intents_for_id < /* ~ changed by cargo-mutants ~ */ 1 {\n             if intents_for_id > outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2187:27: replace > with < in cmd_reconcile",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 2187
+      },
+      "start": {
+        "column": 27,
+        "line": 2187
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in cmd_reconcile\n@@ -2179,17 +2179,17 @@\n             .and_then(Json::as_str)\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n-        if intents_for_id > 1 {\n+        if intents_for_id >= /* ~ changed by cargo-mutants ~ */ 1 {\n             if intents_for_id > outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2187:27: replace > with >= in cmd_reconcile",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 2187
+      },
+      "start": {
+        "column": 27,
+        "line": 2187
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in cmd_reconcile\n@@ -2180,17 +2180,17 @@\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n         if intents_for_id > 1 {\n-            if intents_for_id > outcomes_for_id { // survival-probe\n+            if intents_for_id == /* ~ changed by cargo-mutants ~ */ outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n             continue;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2188:31: replace > with == in cmd_reconcile",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 2188
+      },
+      "start": {
+        "column": 31,
+        "line": 2188
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in cmd_reconcile\n@@ -2180,17 +2180,17 @@\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n         if intents_for_id > 1 {\n-            if intents_for_id > outcomes_for_id { // survival-probe\n+            if intents_for_id < /* ~ changed by cargo-mutants ~ */ outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n             continue;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2188:31: replace > with < in cmd_reconcile",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 2188
+      },
+      "start": {
+        "column": 31,
+        "line": 2188
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in cmd_reconcile\n@@ -2180,17 +2180,17 @@\n             .unwrap_or(\"\")\n             .to_string();\n         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);\n         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);\n         // A shared id cannot be attributed to one intent. Checking `done` first\n         // would let one duplicate's outcome silently close the other, which is\n         // exactly how an unresolved publication can be reported as reconciled.\n         if intents_for_id > 1 {\n-            if intents_for_id > outcomes_for_id { // survival-probe\n+            if intents_for_id >= /* ~ changed by cargo-mutants ~ */ outcomes_for_id { // survival-probe\n                 needs_human = true;\n                 resolved.push(Json::obj(vec![\n                     (\"id\", Json::str(id)),\n                     (\"resolution\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n                     (\"reason\", Json::str(\"DUPLICATE_INTENT_ID\")),\n                 ]));\n             }\n             continue;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_reconcile",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2286
+        },
+        "start": {
+          "column": 1,
+          "line": 2157
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2188:31: replace > with >= in cmd_reconcile",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 2188
+      },
+      "start": {
+        "column": 31,
+        "line": 2188
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_explain -> Result<Json, String> with Ok(Default::default())\n@@ -2286,128 +2286,17 @@\n }\n \n // ----------------------------------------------------------------- explain\n pub fn cmd_explain(\n     root: &Path,\n     tree: Option<String>,\n     candidate: Option<String>,\n ) -> Result<Json, String> {\n-    let git = Git::new(root);\n-    let candidate_record = match candidate.as_deref() {\n-        None => None,\n-        Some(id) => match crate::proposal::Candidate::load(root, id)? {\n-            Some(record) => Some(record),\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_CANDIDATE\",\n-                    format!(\"no candidate {id:?} in .flow/candidates/\"),\n-                ))\n-            }\n-        },\n-    };\n-    let tree = match (&tree, &candidate_record) {\n-        (Some(t), _) => t.clone(),\n-        (None, Some(record)) => record.tree_oid.clone(),\n-        (None, None) => git.head_tree()?,\n-    };\n-    let receipt = Receipt::load(root, &tree)?;\n-    let records = state::read_journal(root)?;\n-    let related: Vec<Json> = records\n-        .iter()\n-        .filter(|r| r.get(\"tree\").and_then(Json::as_str) == Some(tree.as_str())) // survival-probe\n-        .cloned()\n-        .collect();\n-    // Proposals are attributed to a candidate, so explain can name who proposed\n-    // what without the caller having to correlate ids by hand.\n-    let proposals = match &candidate_record {\n-        None => Json::Arr(Vec::new()),\n-        Some(record) => Json::Arr(\n-            record\n-                .proposals\n-                .iter()\n-                .filter_map(|id| crate::proposal::Proposal::load(root, id).ok().flatten())\n-                .map(|proposal| {\n-                    Json::obj(vec![\n-                        (\"proposal_id\", Json::str(proposal.proposal_id)),\n-                        (\"agent_id\", Json::str(proposal.agent_id)),\n-                        (\"task_id\", Json::str(proposal.task_id)),\n-                        (\"base_commit\", Json::str(proposal.base_commit)),\n-                        (\"tree_oid\", Json::str(proposal.tree_oid)),\n-                    ])\n-                })\n-                .collect(),\n-        ),\n-    };\n-    // A receipt is evidence only if its content still matches its digest and the\n-    // logs it names are present. Inspection must say so explicitly: displaying a\n-    // tampered receipt as `PASSED` is the false green Flow refuses at publication.\n-    let (receipt_json, receipt_trust, receipt_display, evidence_complete, missing_logs) =\n-        match &receipt {\n-            None => (\n-                Json::Null,\n-                \"NO_RECEIPT\",\n-                Json::Null,\n-                false,\n-                Vec::<String>::new(),\n-            ),\n-            Some(r) => {\n-                let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();\n-                let missing: Vec<String> = r\n-                    .logs\n-                    .iter()\n-                    .filter(|rel| !root.join(rel.as_str()).is_file())\n-                    .cloned()\n-                    .collect();\n-                let display = if integrity_ok {\n-                    Json::str(r.status.clone())\n-                } else {\n-                    Json::str(\"RECEIPT_INTEGRITY_INVALID\")\n-                };\n-                (\n-                    r.json.clone(),\n-                    if integrity_ok {\n-                        \"INTEGRITY_OK\"\n-                    } else {\n-                        \"RECEIPT_INTEGRITY_INVALID\"\n-                    },\n-                    display,\n-                    integrity_ok && missing.is_empty(),\n-                    missing,\n-                )\n-            }\n-        };\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(\"EXPLAIN\")),\n-        (\"tree\", Json::str(tree)),\n-        (\n-            \"candidate_id\",\n-            match &candidate_record {\n-                Some(record) => Json::str(record.candidate_id.clone()),\n-                None => Json::Null,\n-            },\n-        ),\n-        (\n-            \"candidate\",\n-            match &candidate_record {\n-                Some(record) => record.json.clone(),\n-                None => Json::Null,\n-            },\n-        ),\n-        (\"proposals\", proposals),\n-        (\"receipt\", receipt_json),\n-        (\"receipt_trust\", Json::str(receipt_trust)),\n-        (\"receipt_status_display\", receipt_display),\n-        (\"evidence_complete\", Json::Bool(evidence_complete)),\n-        (\n-            \"missing_logs\",\n-            Json::Arr(missing_logs.into_iter().map(Json::str).collect()),\n-        ),\n-        (\"journal\", Json::Arr(related)),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // --------------------------------------------------------------- disable\n pub fn cmd_set_disabled(root: &Path, disabled: bool) -> Result<Json, String> {\n     let mut config = state::load_config(root)?;\n     config.disabled = disabled;\n     state::save_config(root, &config)?;\n     Ok(Json::obj(vec![\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_explain",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2406
+        },
+        "start": {
+          "column": 1,
+          "line": 2289
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:2294:5: replace cmd_explain -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2405
+      },
+      "start": {
+        "column": 5,
+        "line": 2294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace == with != in cmd_explain\n@@ -2308,17 +2308,17 @@\n         (Some(t), _) => t.clone(),\n         (None, Some(record)) => record.tree_oid.clone(),\n         (None, None) => git.head_tree()?,\n     };\n     let receipt = Receipt::load(root, &tree)?;\n     let records = state::read_journal(root)?;\n     let related: Vec<Json> = records\n         .iter()\n-        .filter(|r| r.get(\"tree\").and_then(Json::as_str) == Some(tree.as_str())) // survival-probe\n+        .filter(|r| r.get(\"tree\").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(tree.as_str())) // survival-probe\n         .cloned()\n         .collect();\n     // Proposals are attributed to a candidate, so explain can name who proposed\n     // what without the caller having to correlate ids by hand.\n     let proposals = match &candidate_record {\n         None => Json::Arr(Vec::new()),\n         Some(record) => Json::Arr(\n             record\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_explain",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2406
+        },
+        "start": {
+          "column": 1,
+          "line": 2289
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:2316:58: replace == with != in cmd_explain",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 2316
+      },
+      "start": {
+        "column": 58,
+        "line": 2316
+      }
+    }
+  }
+]

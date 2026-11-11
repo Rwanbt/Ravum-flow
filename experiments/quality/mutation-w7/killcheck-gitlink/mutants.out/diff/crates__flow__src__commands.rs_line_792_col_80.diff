@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in verify_checkout_fidelity
+@@ -784,17 +784,17 @@
+ /// whose declared files changed meanwhile.
+ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
+     let expected = ls_tree_entries(git, tree)?;
+ 
+     // A gitlink is refused for what it is, **before** the presence check: a
+     // checkout never materialises submodule content, so a gitlink entry would
+     // otherwise be reported as "the checkout is missing 1 of N entries", which
+     // names the symptom and hides the cause. The refusal is still a refusal.
+-    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == "160000") { // survival-probe
++    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode != /* ~ changed by cargo-mutants ~ */ "160000") { // survival-probe
+         return Err(format!(
+             "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+         ));
+     }
+ 
+     // Two paths differing only by case cannot both exist on a case-insensitive
+     // filesystem: the checkout silently keeps one of them.
+     let mut folded: BTreeMap<String, usize> = BTreeMap::new();

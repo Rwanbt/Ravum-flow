@@ -1,0 +1,130 @@
+[
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace append_journal -> Result<(), String> with Ok(())\n@@ -380,44 +380,17 @@\n         dir.sync_all()\n             .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n     }\n     Ok(())\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n-    let mut tagged = record.clone();\n-    if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") {\n-            pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n-        }\n-    }\n-    let path = journal_path(root);\n-    if let Some(parent) = path.parent() {\n-        fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n-    }\n-    guard_below_flow(&path)?;\n-    // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n-    // A rename replaces the directory entry, so a *hard link* to an outside file\n-    // can no longer be written through — the case the `nlink > 1` check cannot see\n-    // on Windows. It also makes every append atomic: a torn line is impossible.\n-    // The cost is O(journal size) per append, which is bounded in practice and\n-    // documented; the alternative is a write primitive with worse failure modes.\n-    let mut content = match fs::read(&path) {\n-        Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // survival-probe\n-        Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n-    };\n-    // `tagged`, not `record`: the schema stamp is what lets a future reader\n-    // refuse a record it does not understand.\n-    let mut line = tagged.to_string();\n-    line.push('\\n');\n-    content.extend_from_slice(line.as_bytes());\n-    write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n /// Read every journal record.\n ///\n /// A missing journal is an empty journal (a fresh repository). Anything else\n /// that prevents a faithful read is an error — never silently an empty set.\n pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {\n     let path = journal_path(root);\n     if !path.exists() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:388:5: replace append_journal -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 91,
+        "line": 415
+      },
+      "start": {
+        "column": 5,
+        "line": 388
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal\n@@ -399,17 +399,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // survival-probe\n+        Err(e) if true /* ~ changed by cargo-mutants ~ */ => Vec::new(), // survival-probe\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/state.rs:407:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 407
+      },
+      "start": {
+        "column": 19,
+        "line": 407
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal\n@@ -399,17 +399,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // survival-probe\n+        Err(e) if false /* ~ changed by cargo-mutants ~ */ => Vec::new(), // survival-probe\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/state.rs:407:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 407
+      },
+      "start": {
+        "column": 19,
+        "line": 407
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace == with != in append_journal\n@@ -399,17 +399,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // survival-probe\n+        Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::NotFound => Vec::new(), // survival-probe\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:407:28: replace == with != in append_journal",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 407
+      },
+      "start": {
+        "column": 28,
+        "line": 407
+      }
+    }
+  }
+]

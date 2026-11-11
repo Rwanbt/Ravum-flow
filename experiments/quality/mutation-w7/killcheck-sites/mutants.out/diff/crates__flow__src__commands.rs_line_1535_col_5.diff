@@ -1,0 +1,25 @@
+--- crates/flow/src/commands.rs
++++ replace preview -> String with String::new()
+@@ -1527,21 +1527,17 @@
+             "receipt_path".into(),
+             Json::str(path.to_string_lossy().to_string()),
+         ));
+     }
+     Ok(out)
+ }
+ 
+ fn preview(text: &str, limit: usize) -> String { // survival-probe
+-    let mut out: String = text.chars().take(limit).collect();
+-    if text.chars().count() > limit { // survival-probe
+-        out.push('…');
+-    }
+-    out
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ---------------------------------------------------------------- publish
+ pub fn cmd_publish(
+     root: &Path,
+     reference: Option<String>,
+     expected_old: Option<String>,
+     message: Option<String>,

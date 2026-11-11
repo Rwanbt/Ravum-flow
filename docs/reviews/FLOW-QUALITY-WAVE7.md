@@ -208,6 +208,14 @@ pwsh -File experiments/quality/mutation-w7/killcheck.ps1 \
 pwsh -File experiments/quality/mutation-w7/killcheck.ps1 \
   -Repo <pinned-worktree> -Module state -Lines 407 -OutDir experiments/quality/mutation-w7
 
+# Evidence layout (the tool writes to the same directory on every run, so the runs were split):
+#   killcheck-sites/mutants.out   45 mutants (11 sites) : 39 caught / 2 missed / 4 unviable
+#   killcheck-gitlink/mutants.out  2 mutants (line 792) : 2 caught
+#   killcheck-state/mutants.out    4 mutants (line 407) : 4 caught
+# The console log of the 45-mutant run was overwritten when the gitlink run reused the same
+# output directory; its outcomes.json, mutants.json, caught/missed/unviable lists and per-mutant
+# diffs are preserved under killcheck-sites/.
+
 # Linux measurement of the fifteen cfg(unix) sites and the two type guards: see
 # experiments/quality/mutation-w7-linux/REPORT.md (§2 for the exact commands)
 ```
