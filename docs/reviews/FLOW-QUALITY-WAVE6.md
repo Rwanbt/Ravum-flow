@@ -104,6 +104,13 @@ Two findings are worth recording because they change what the campaign numbers m
   the whole `cargo test` invocation, so the per-mutant budget expires before the failing test is
   reported. Re-run with a libtest filter on the watchdog test, each is caught in about ten seconds.
 
+- **The new containment test found a real product defect on Linux.** `a_timed_out_obligation_kills_the_descendants_it_started`
+  failed on the Ubuntu job (run `42950415768`): `kill_tree`'s POSIX branch passed `-<pgid>` to `sh`'s
+  `kill`, and dash parses that as an option ("Illegal option -9"), so the group was never signalled
+  and only the direct child died. The fix passes the operand after `--` (verified with dash directly:
+  without `--` the kill fails, with it the group dies), and the CHANGELOG records it under *Fixed*.
+  This is why the wave exists: the test is worth more than the number it adds.
+
 After the killchecks the scoped rates are 94.4 % (`state`), 88.4 % (`gitcli`), 100 % (`main`) and
 90.3 % (`commands`) — still **lower bounds for each module**, because the 42 residual sites below
 are not all equivalent: some are host-gated, some are boundaries the fixtures do not reach, and some

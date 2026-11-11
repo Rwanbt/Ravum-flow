@@ -214,7 +214,7 @@ jobs:
             a_stream_below_the_retention_budget_is_kept_whole_and_not_flagged \
             porcelain_status_reports_a_dirty_file_instead_of_an_empty_answer \
             a_timed_out_obligation_kills_the_descendants_it_started \
-            a_bare_double_dash_is_skipped_and_the_walk_terminates \
+            tests::a_bare_double_dash_is_skipped_and_the_walk_terminates \
             gitcli::tests::the_git_surface_reports_what_git_answers \
             gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name \
             commands::tests::arbitrary_ls_tree_answers_are_parsed_or_refused_and_never_panic \

@@ -693,14 +693,18 @@ pub fn kill_tree(pid: u32) {
     }
     #[cfg(not(windows))]
     {
-        // `-s KILL` avoids the `-9`/`-9 -pgid` option ambiguity; the operands
-        // are quoted positional arguments, never interpreted by the shell.
+        // `-s KILL` avoids the `-9`/`-9 -pgid` option ambiguity, but the group id
+        // still starts with `-`: without an explicit `--`, dash parses `-1234` as
+        // an option ("Illegal option -9") and the group is never signalled — only
+        // the direct child died, and a descendant of a timed-out obligation could
+        // outlive the containment. `--` makes the operand unambiguous in dash and
+        // bash alike.
         let group = format!("-{pid}");
         let direct = pid.to_string();
         let _ = Command::new("sh")
             .args([
                 "-c",
-                "kill -s KILL \"$1\" 2>/dev/null || kill -s KILL \"$2\" 2>/dev/null",
+                "kill -s KILL -- \"$1\" 2>/dev/null || kill -s KILL \"$2\" 2>/dev/null",
                 "flow-kill-tree",
                 &group,
                 &direct,

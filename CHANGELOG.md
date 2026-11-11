@@ -72,6 +72,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   worktree changes; the run now refuses to certify.
 - `save_receipt` built a file name from an unvalidated `tree_oid`; it now requires a 40/64 hex object
   id, like `Receipt::load`.
+- A timed-out obligation's **process group** is now actually killed on POSIX. `sh`'s `kill` parsed
+  `-<pgid>` as an option (dash answers "Illegal option -9") and the failure was silenced, so only
+  the direct child died and a descendant of a killed obligation could outlive the containment. The
+  operand is now passed after `--`; the new containment test fails without the fix (wave 6).
 
 ### Tests and evidence (wave 4, 2026-11-10 — tests only)
 - New `tests/operator_surfaces.rs` (30 tests) pins the operator-facing contracts: `init` shows a
