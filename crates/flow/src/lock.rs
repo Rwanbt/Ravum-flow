@@ -435,6 +435,45 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
     }
 
+    #[test]
+    fn a_state_directory_that_is_a_file_is_an_io_error() {
+        // The state directory is created before the first lock attempt. If the
+        // path exists as a file, `create_dir_all` fails and the failure has to be
+        // reported as an IO refusal: a panic here would take down every command
+        // that takes the lock.
+        let root = std::env::temp_dir().join(format!("flow-lock-as-file-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join(".flow"), "not a directory").unwrap();
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Io(m)) => assert!(m.contains("cannot create .flow"), "{m}"),
+            other => panic!("a file where the state directory belongs is an IO error: {other:?}"),
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn inspect_attributes_a_lock_to_a_dead_pid() {
+        // `flow status` prints this attribution. A reaped child has a PID that no
+        // live process holds, so the probe must answer "dead" instead of leaving
+        // an operator with a stale lock they cannot interpret.
+        let root = temp_flow_dir("dead");
+        let mut child = spawn_idle_child();
+        let pid = child.id();
+        child.kill().ok();
+        let _ = child.wait();
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {pid} 0 deadbeef publish\n"),
+        )
+        .unwrap();
+        let info = inspect(&root);
+        assert!(info.present);
+        assert_eq!(info.pid, Some(pid));
+        assert_eq!(info.attribution, "dead", "{info:?}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
     // The tests below pin the invariants a mutation run found unprotected: the
     // nonce only has to be unique, but nothing observed it; the liveness probe was
     // never exercised for a foreign or a dead PID; and the acquire budget was

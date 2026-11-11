@@ -56,3 +56,11 @@ dist/
 /experiments/quality/mutation-w8-linux/**/mutants.out.old/
 /experiments/quality/stability-w8/*.log
 
+# wave-9 mutation/stability evidence: same rule as waves 6-8. The wave-9 campaigns pin a
+# worktree at HEAD, probe one line per target mutant and commit the outcomes; the per-mutant
+# logs and the interrupted-run copies are regenerable and not evidence.
+/experiments/quality/mutation-w9-win/**/log/
+/experiments/quality/mutation-w9-win/**/debug.log
+/experiments/quality/mutation-w9-win/**/mutants.out.old/
+/experiments/quality/stability-w9/*.log
+

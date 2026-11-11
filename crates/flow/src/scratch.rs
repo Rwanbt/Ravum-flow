@@ -948,4 +948,61 @@ mod tests {
         );
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
     }
+
+    #[test]
+    fn a_scratch_base_that_is_a_file_is_refused_before_anything_is_created() {
+        // The base is canonicalised before the creation loop, so a file can never
+        // become a scratch parent: the refusal names the path, and nothing is
+        // created, adopted or removed. This also pins that the guard runs before
+        // the uniqueness loop rather than after a failed `create_dir`.
+        let repo = unit_root("base-file-repo");
+        let elsewhere = unit_root("base-file-out");
+        let base = elsewhere.join("base-is-a-file");
+        fs::write(&base, "not a directory").unwrap();
+        let git = Git::new(&repo);
+        let err = materialise_in(&base, &git, "abcd", &repo)
+            .expect_err("a file is not a usable scratch base");
+        assert!(err.contains("not a directory"), "{err}");
+        assert_eq!(
+            fs::read_dir(&elsewhere).unwrap().count(),
+            1,
+            "a refused base must not gain a scratch directory"
+        );
+        remove_tree_bounded(&repo, Instant::now() + CLEANUP_BUDGET);
+        remove_tree_bounded(&elsewhere, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[test]
+    fn detach_git_link_refuses_a_tree_without_a_git_link() {
+        // `git worktree add` always creates the link; a tree without it means the
+        // command silently did something else, so the materialisation must fail
+        // closed rather than hand back a directory that still reaches the shared
+        // Git directory.
+        let root = unit_root("detach-missing");
+        let dir = root.join("tree");
+        fs::create_dir(&dir).unwrap();
+        let err = detach_git_link(&dir).expect_err("a tree without a .git link is refused");
+        assert!(err.contains("did not create a .git link"), "{err}");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn detach_git_link_clears_a_read_only_git_file() {
+        // Windows refuses to unlink a read-only file. The `.git` link is written
+        // by another process, so its attributes are not ours to assume; the
+        // removal has to clear the bit and retry once instead of failing and
+        // leaving the scratch directory attached.
+        let root = unit_root("detach-readonly");
+        let dir = root.join("tree");
+        fs::create_dir(&dir).unwrap();
+        let link = dir.join(".git");
+        fs::write(&link, "gitdir: ../.git/worktrees/scratch\n").unwrap();
+        let mut permissions = fs::metadata(&link).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&link, permissions).unwrap();
+        detach_git_link(&dir).expect("a read-only .git file must be cleared and removed");
+        assert!(!link.exists(), "the link must be gone");
+        remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+    }
 }

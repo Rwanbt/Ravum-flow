@@ -1,0 +1,204 @@
+
+== D:\App\Ravum-flow\crates\flow\src\scratch.rs  lines 92.91% (577/621)  branches 74.00% (74/100)
+-- uncovered lines: 163,164,165,166,167,181,182,186,187,188,189,190,203,204,205,219,220,221,222,223,293,295,297,320,336,337,393,514,603,604,605,606,762,770,771,797,798,799,828,829,830,904,912,913
+-- uncovered branch lines (20):
+   162: 1/2 branch points untaken
+          158             Ok(()) => {
+          159                 created = Some((display, canonical));
+          160                 break;
+          161             }
+      >>  162             Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+          163             Err(e) => {
+          164                 return Err(format!(
+          165                     "cannot create scratch directory {}: {e}",
+          166                     display.display()
+   180: 1/2 branch points untaken
+          176     };
+          177 
+          178     // A path we just created must be a real directory at the identity we
+          179     // recorded; anything else (redirect, race) is a refusal, not a cleanup.
+      >>  180     if let Err(reason) = verify_created_dir(&path, &canonical) {
+          181         let _ = fs::remove_dir(&path);
+          182         return Err(reason);
+          183     }
+          184 
+   185: 1/2 branch points untaken
+          181         let _ = fs::remove_dir(&path);
+          182         return Err(reason);
+          183     }
+          184 
+      >>  185     let Some(path_str) = path.to_str() else {
+          186         abandon(&path, &repo_root);
+          187         return Err(format!(
+          188             "refusing scratch directory {}: path is not valid UTF-8",
+          189             path.display()
+   218: 1/2 branch points untaken
+          214     let marker = format!(
+          215         "{NAME_PREFIX}\ncommit {commit}\npid {}\n",
+          216         std::process::id()
+          217     );
+      >>  218     if let Err(e) = fs::write(path.join(OWNED_MARKER), marker) {
+          219         abandon(&path, &repo_root);
+          220         return Err(format!(
+          221             "cannot mark scratch directory {} as owned: {e}",
+          222             path.display()
+   314: 1/2 branch points untaken
+          310 fn detach_git_link(dir: &Path) -> Result<(), String> {
+          311     let link = dir.join(".git");
+          312     let meta = match fs::symlink_metadata(&link) {
+          313         Ok(meta) => meta,
+      >>  314         Err(e) if e.kind() == io::ErrorKind::NotFound => {
+          315             return Err(format!(
+          316                 "refusing scratch directory {}: `git worktree add` did not create a .git link",
+          317                 dir.display()
+          318             ))
+   334: 1/2 branch points untaken
+          330             "refusing {}: .git is not a regular file",
+          331             link.display()
+          332         ));
+          333     }
+      >>  334     if fs::remove_file(&link).is_err() {
+          335         // Windows refuses to unlink a read-only file; clear the bit, retry once.
+          336         make_writable(&link);
+          337         fs::remove_file(&link).map_err(|e| format!("cannot remove {}: {e}", link.display()))?;
+          338     }
+   375: 1/4 branch points untaken
+          371 fn remove_tree_bounded(root: &Path, deadline: Instant) {
+          372     let mut stack: Vec<(PathBuf, bool)> = vec![(root.to_path_buf(), false)];
+          373     let mut processed = 0usize;
+          374     while let Some((path, children_pushed)) = stack.pop() {
+      >>  375         if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {
+          376             break;
+          377         }
+          378         if children_pushed {
+          379             make_writable(&path);
+   389: 1/2 branch points untaken
+          385             continue;
+          386         };
+          387         if meta.is_dir() {
+          388             stack.push((path.clone(), true));
+      >>  389             if let Ok(entries) = fs::read_dir(&path) {
+          390                 for entry in entries.flatten() {
+          391                     stack.push((entry.path(), false));
+          392                 }
+          393             }
+   511: 1/2 branch points untaken
+          507             .args(["/C", "mklink", "/J"])
+          508             .arg(link)
+          509             .arg(target)
+          510             .output()?;
+      >>  511         if out.status.success() {
+          512             Ok(())
+          513         } else {
+          514             Err(std::io::Error::other("mklink /J failed"))
+          515         }
+   602: 1/2 branch points untaken
+          598         let outside = unit_root("redirect-marker-out");
+          599         fs::write(outside.join(OWNED_MARKER), "owned\n").unwrap();
+          600         fs::write(outside.join("keep.txt"), "keep").unwrap();
+          601         let link = root.join("tree");
+      >>  602         if let Err(e) = make_dir_link(&outside, &link) {
+          603             eprintln!("SKIP a redirect that carries the marker: cannot create a link ({e})");
+          604             remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+          605             remove_tree_bounded(&outside, Instant::now() + CLEANUP_BUDGET);
+          606             return;
+   761: 1/2 branch points untaken
+          757         let mut refused = None;
+          758         for _ in 0..8 {
+          759             let seq = next_sequence();
+          760             let candidate = candidate_path(&base, seq + 1);
+      >>  761             if fs::create_dir(&candidate).is_err() {
+          762                 continue;
+          763             }
+          764             match materialise_in(&base, &git, "abcd", &candidate) {
+          765                 Err(reason) if reason.contains("inside the repository") => {
+   765: 1/2 branch points untaken
+          761             if fs::create_dir(&candidate).is_err() {
+          762                 continue;
+          763             }
+          764             match materialise_in(&base, &git, "abcd", &candidate) {
+      >>  765                 Err(reason) if reason.contains("inside the repository") => {
+          766                     assert!(candidate.is_dir(), "the refused candidate is left alone");
+          767                     refused = Some(reason);
+          768                     break;
+          769                 }
+   770: 2/2 branch points untaken
+          766                     assert!(candidate.is_dir(), "the refused candidate is left alone");
+          767                     refused = Some(reason);
+          768                     break;
+          769                 }
+      >>  770                 Err(reason) if reason.contains("cannot materialise") => continue,
+          771                 other => panic!("expected an inside-the-repository refusal, got {other:?}"),
+          772             }
+          773         }
+          774         let reason = refused.expect("the candidate-inside guard must refuse within 8 attempts");
+   796: 1/2 branch points untaken
+          792         let root = unit_root("verify-redirect");
+          793         let target = root.join("target");
+          794         fs::create_dir(&target).unwrap();
+          795         let link = root.join("link");
+      >>  796         if let Err(e) = make_dir_link(&target, &link) {
+          797             eprintln!("SKIP verify_created_dir refuses a redirect: cannot create a link ({e})");
+          798             remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+          799             return;
+          800         }
+   807: 3/4 branch points untaken
+          803         fs::create_dir(&recorded_elsewhere).unwrap();
+          804         let reason = verify_created_dir(&link, &fs::canonicalize(&recorded_elsewhere).unwrap())
+          805             .expect_err("a redirect to another identity is refused");
+          806         assert!(
+      >>  807             reason.contains("symlink/reparse point") || reason.contains("resolves to"),
+          808             "{reason}"
+          809         );
+          810         // Even when the recorded identity is the link's own target, a link is not
+          811         // a directory Flow created, so the answer must never be a silent `Ok`
+   827: 1/2 branch points untaken
+          823         let target = root.join("target");
+          824         fs::create_dir(&target).unwrap();
+          825         let linked = root.join("linked-git");
+          826         fs::create_dir(&linked).unwrap();
+      >>  827         if let Err(e) = make_dir_link(&target, &linked.join(".git")) {
+          828             eprintln!("SKIP detach_git_link refuses a link: cannot create a link ({e})");
+          829             remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
+          830             return;
+          831         }
+   834: 3/4 branch points untaken
+          830             return;
+          831         }
+          832         let reason = detach_git_link(&linked).expect_err("a .git link is not a worktree link");
+          833         assert!(
+      >>  834             reason.contains("symlink/reparse point") || reason.contains("not a regular file"),
+          835             "{reason}"
+          836         );
+          837 
+          838         #[cfg(windows)]
+   903: 1/2 branch points untaken
+          899             let seq = next_sequence();
+          900             // Occupy exactly the 128 names the next `materialise_in` will try: the
+          901             // bound must fail closed instead of looping forever.
+          902             for offset in 1..=MAX_ATTEMPTS {
+      >>  903                 if let Err(e) = fs::create_dir(candidate_path(&base, seq + offset)) {
+          904                     assert_eq!(e.kind(), io::ErrorKind::AlreadyExists, "{e}");
+          905                 }
+          906             }
+          907             match materialise_in(&base, &git, "abcd", &repo) {
+   908: 1/2 branch points untaken
+          904                     assert_eq!(e.kind(), io::ErrorKind::AlreadyExists, "{e}");
+          905                 }
+          906             }
+          907             match materialise_in(&base, &git, "abcd", &repo) {
+      >>  908                 Err(reason) if reason.contains("after 128 attempts") => {
+          909                     refused = Some(reason);
+          910                     break;
+          911                 }
+          912                 Err(reason) if reason.contains("cannot materialise") => continue,
+   912: 2/2 branch points untaken
+          908                 Err(reason) if reason.contains("after 128 attempts") => {
+          909                     refused = Some(reason);
+          910                     break;
+          911                 }
+      >>  912                 Err(reason) if reason.contains("cannot materialise") => continue,
+          913                 other => panic!("expected the retry budget to be exhausted, got {other:?}"),
+          914             }
+          915         }
+          916         let reason = refused.expect("the retry budget must be exhausted within 8 attempts");
