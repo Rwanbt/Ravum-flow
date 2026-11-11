@@ -1,0 +1,194 @@
+[
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -273,17 +273,17 @@\n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n-            index += 1;\n+            index *= /* ~ changed by cargo-mutants ~ */ 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:281:19: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 281
+      },
+      "start": {
+        "column": 19,
+        "line": 281
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -292,17 +292,17 @@\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n                         Some(value) if value.starts_with(\"--\") => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n-                    index += 2;\n+                    index *= /* ~ changed by cargo-mutants ~ */ 2;\n                     continue;\n                 }\n             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n                 || bool_flags(command).contains(&name.as_str())\n             {\n                 // A boolean flag is a token, not a `key=value` pair. Accepting\n                 // `--dry-run=true` here and then matching only the exact token in\n                 // `has_flag` would run a real publication for an operator who\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:300:27: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 300
+      },
+      "start": {
+        "column": 27,
+        "line": 300
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -321,17 +321,17 @@\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n         } else if command != \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n-        index += 1;\n+        index *= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:329:15: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 329
+      },
+      "start": {
+        "column": 15,
+        "line": 329
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in flag_value\n@@ -335,17 +335,17 @@\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n-        index += 1;\n+        index *= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:343:15: replace += with *= in flag_value",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 343
+      },
+      "start": {
+        "column": 15,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -352,17 +352,17 @@\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n-            index += 2; // w8probe\n+            index *= /* ~ changed by cargo-mutants ~ */ 2; // w8probe\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:360:19: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 360
+      },
+      "start": {
+        "column": 19,
+        "line": 360
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -364,17 +364,17 @@\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n             }\n         }\n         let _ = matched;\n-        index += 1; // w8probe\n+        index *= /* ~ changed by cargo-mutants ~ */ 1; // w8probe\n     }\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:372:15: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 372
+      },
+      "start": {
+        "column": 15,
+        "line": 372
+      }
+    }
+  }
+]

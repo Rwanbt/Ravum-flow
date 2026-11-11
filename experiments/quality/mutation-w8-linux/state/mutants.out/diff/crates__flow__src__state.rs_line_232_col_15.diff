@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace != with == in load_adoption
+@@ -224,17 +224,17 @@
+     let path = adoption_path(root);
+     if !path.exists() {
+         return Ok(None);
+     }
+     let text =
+         fs::read_to_string(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+     let value = json::parse(&text)?;
+     let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-    if schema != SCHEMA_ADOPTION {
++    if schema == /* ~ changed by cargo-mutants ~ */ SCHEMA_ADOPTION {
+         return Err(format!(
+             "unsupported adoption schema {schema:?} in {}: refusing to guess what was approved",
+             path.display()
+         ));
+     }
+     let get = |key: &str| {
+         value
+             .get(key)

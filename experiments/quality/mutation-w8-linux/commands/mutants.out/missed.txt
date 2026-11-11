@@ -1,0 +1,8 @@
+crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(None)
+crates/flow/src/commands.rs:223:27: replace match guard adoption.policy_digest != digest with false in adoption_gate
+crates/flow/src/commands.rs:357:26: replace && with || in cmd_doctor
+crates/flow/src/commands.rs:357:39: replace != with == in cmd_doctor
+crates/flow/src/commands.rs:1592:31: replace || with && in cmd_publish
+crates/flow/src/commands.rs:1751:28: replace match guard entry.get("status").and_then(Json::as_str) != Some("PASSED") with false in cmd_publish
+crates/flow/src/commands.rs:1778:8: delete ! in cmd_publish
+crates/flow/src/commands.rs:1824:31: replace != with == in cmd_publish

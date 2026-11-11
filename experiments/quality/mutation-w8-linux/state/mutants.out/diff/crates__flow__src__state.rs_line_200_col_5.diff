@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace proposals_dir -> PathBuf with Default::default()
+@@ -192,17 +192,17 @@
+     flow_dir(root).join("receipts")
+ }
+ 
+ pub fn logs_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("logs")
+ }
+ 
+ pub fn proposals_dir(root: &Path) -> PathBuf {
+-    flow_dir(root).join("proposals")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn candidates_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("candidates")
+ }
+ 
+ pub fn adoption_path(root: &Path) -> PathBuf {
+     flow_dir(root).join("adopted.json")

@@ -153,10 +153,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - The 15 `#[cfg(unix)]`/`#[cfg(not(windows))]` sites wave 6 could only record as "not compiled here"
   were measured on Linux: 12/15 caught on the wave-6 head, and after the two new tests the two real
   gaps are caught too (`commands.rs:1005:41`, `state.rs:340:43`) — 14/15, the two guard mutants of
-  `commands.rs:873`/`878` measuring 6/6 caught in a separate Unix-only run. The only survivor,
-  `state.rs:377` (directory fsync), is unobservable without a crash-consistency harness and is
-  documented as such, never as equivalent. One raw "caught" was a flake in an unrelated `scratch`
-  test and is reported as missed after a single-mutant rerun.
+  `commands.rs:873`/`878` measuring 6/6 caught in a separate Unix-only run. The only survivor at that
+  head, `state.rs:377` (directory fsync), is unobservable in-process without a crash-consistency
+  harness; wave 8 pinned the rule and killed it (see below). One raw "caught" was a flake in an
+  unrelated `scratch` test and is reported as missed after a single-mutant rerun.
 - One new test was **red on Linux** at its first committed head and is fixed: `git add -A` in
   `install_tracked_hook` re-staged the `0644` worktree file over the forced `100755` index mode, so
   the tree declared a non-executable file and the test passed vacuously (`308bf6a`). The Windows job
@@ -172,6 +172,46 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   read and `materialise_in` can no longer turn the collision they build into an unrelated Git failure.
   This is a test-stability fix (the Linux mutation campaign had serialised test threads to work
   around it); the guards under test are unchanged.
+
+### Tests and evidence (wave 8, 2026-11-11 — the module rates on Linux, and the last survivors)
+- **No product behaviour changed.** The only product edit is an extraction with identical semantics:
+  the empty-parent skip of the post-rename directory `fsync` is now the named
+  `state::parent_to_flush` (Unix-only). The value is that the predicate is testable, so the mutation
+  survivor wave 7 could not kill (`state.rs:377`, `delete !`) is now killed: with the mutant a bare
+  relative name yields `Some("")` instead of `None` and the write would fail on `File::open("")`. The
+  *crash* behaviour is still not tested and is not claimed.
+- **Per-module mutation rates on Linux** (the four modules wave 6 measured on Windows, same scoped
+  suites, baseline 469/0/0): `state` 134/140 (95.7 %), `commands` 237/245 (96.7 %),
+  `gitcli` 73/88 (83.0 %), `main` 62/66 measured (93.9 %, **partial**: 3 `collect_values` hang mutants
+  `NOT_RUN`); 601 mutants in total, 93.9 % of the 539 tested-applicable before adjudication and 97.0 %
+  after it. Every survivor was re-run with the full suite and classified: 8 host-gated
+  `#[cfg(windows)]` mutants, 8 timing/zombie/non-serialised boundaries, 1 Linux short-circuit whose
+  kill is measured on Windows, and **five real test gaps**, all closed here (below). Module rates are
+  lower bounds for the selected suites — no whole-crate rate is claimed.
+- **Three real gaps found by the `state` campaign, closed**: the journal schema stamp is now asserted
+  on a schema-less object and once per stored line (`390`), the `iso8601_now` date is recomputed from
+  the same epoch second instead of only lower-bounding the year — which the `/`→`%` mutant defeated
+  for most of the UTC day (`661`), and the directory-to-flush rule above (`377`). Killcheck at the
+  wave-8 head: 3/3 and 7/7 mutants caught, 0 missed.
+- **One real gap found by the `commands` campaign, closed**: `cmd_doctor`'s `longpaths` check was only
+  ever exercised with `core.longpaths=true`, so on Linux the `&&`→`||` mutant turned it into a warning
+  unnoticed. The doctor test now sets `core.longpaths=false` and asserts `WARN` on Windows and `OK`
+  elsewhere. Killcheck: `commands.rs:357` 1 caught / 1 missed (the `!=`→`==` shape is Linux-equivalent
+  by the `cfg!(windows)` short-circuit and is caught on Windows by the same assertion) and
+  `gitcli.rs:354` 2/2 caught.
+- **Two real gaps found by the `gitcli` campaign, closed**: the secret boundary only proved the
+  negative half (an unlisted variable is not inherited, which an empty allowlist also satisfies), so
+  the allowlist exit test now proves that an allowlisted variable survives the filter and that the
+  filter keeps nothing off the allowlist.
+- **One new test** (Unix-only) and **four assertion groups added to existing tests**: 468 executed on
+  Windows, 470 on Linux, 0 ignored, confirmed by CI on `3b1e33e`; the Linux floor is raised to 470 and
+  the new gate is not claimed on Windows. Product-only coverage re-measured on the same head:
+  **95.88 % lines / 93.56 % branches** (4402/4591, 799/854), above the 95/90 gate with no waiver.
+- **The Windows stability campaign found a failure and it is reported, not smoothed**: 8 full-suite
+  runs, 7 green, 1 red. The red run lost four `proposals.rs` tests to Windows resource exhaustion
+  (`ERROR_NO_SYSTEM_RESOURCES`, `ERROR_COMMITMENT_LIMIT` from a failed `git` spawn) while the Linux
+  campaign was running concurrently on a 16 GB host; the same tree passed 468/0/0 four minutes later
+  and `proposals` passed 23/23 alone. Recorded in `experiments/quality/stability-w8/NOTES.md`.
 
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a

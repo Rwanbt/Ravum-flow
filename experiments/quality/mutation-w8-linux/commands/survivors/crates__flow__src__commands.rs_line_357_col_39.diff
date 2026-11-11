@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_doctor
+@@ -349,17 +349,17 @@
+     );
+ 
+     let longpaths = git
+         .run(&["config", "--get", "core.longpaths"])
+         .map(|o| o.stdout.trim().to_string())
+         .unwrap_or_default();
+     push(
+         "longpaths",
+-        if cfg!(windows) && longpaths != "true" {
++        if cfg!(windows) && longpaths == /* ~ changed by cargo-mutants ~ */ "true" {
+             "WARN"
+         } else {
+             "OK"
+         },
+         format!("core.longpaths={longpaths:?}"),
+     );
+ 
+     let ignorecase = git

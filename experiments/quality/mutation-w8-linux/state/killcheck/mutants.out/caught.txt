@@ -1,0 +1,7 @@
+crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:388:5: replace append_journal -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:390:12: delete ! in append_journal
+crates/flow/src/state.rs:657:5: replace iso8601_now -> String with String::new()
+crates/flow/src/state.rs:657:5: replace iso8601_now -> String with "xyzzy".into()
+crates/flow/src/state.rs:661:22: replace / with * in iso8601_now

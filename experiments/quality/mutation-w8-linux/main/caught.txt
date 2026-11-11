@@ -1,0 +1,54 @@
+crates/flow/src/main.rs:149:44: replace match guard seconds >= 1 with true in dispatch
+crates/flow/src/main.rs:149:44: replace match guard seconds >= 1 with false in dispatch
+crates/flow/src/main.rs:149:52: replace >= with < in dispatch
+crates/flow/src/main.rs:224:25: replace && with || in dispatch
+crates/flow/src/main.rs:223:32: replace == with != in dispatch
+crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(Vec::new())
+crates/flow/src/main.rs:224:72: replace == with != in dispatch
+crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(vec![""])
+crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(vec!["xyzzy"])
+crates/flow/src/main.rs:246:9: delete match arm "publish" in value_flags
+crates/flow/src/main.rs:245:9: delete match arm "run" in value_flags
+crates/flow/src/main.rs:247:9: delete match arm "propose" in value_flags
+crates/flow/src/main.rs:248:9: delete match arm "assemble" in value_flags
+crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(Vec::new())
+crates/flow/src/main.rs:249:9: delete match arm "explain" in value_flags
+crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(vec![""])
+crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(vec!["xyzzy"])
+crates/flow/src/main.rs:267:9: delete match arm "init" in bool_flags
+crates/flow/src/main.rs:268:9: delete match arm "publish" in bool_flags
+crates/flow/src/main.rs:278:17: replace < with == in validate_flags
+crates/flow/src/main.rs:278:17: replace < with > in validate_flags
+crates/flow/src/main.rs:278:17: replace < with <= in validate_flags
+crates/flow/src/main.rs:280:16: replace == with != in validate_flags
+crates/flow/src/main.rs:281:19: replace += with -= in validate_flags
+crates/flow/src/main.rs:293:40: replace match guard value.starts_with("--") with true in validate_flags
+crates/flow/src/main.rs:293:40: replace match guard value.starts_with("--") with false in validate_flags
+crates/flow/src/main.rs:291:42: replace + with - in validate_flags
+crates/flow/src/main.rs:291:42: replace + with * in validate_flags
+crates/flow/src/main.rs:300:27: replace += with -= in validate_flags
+crates/flow/src/main.rs:300:27: replace += with *= in validate_flags
+crates/flow/src/main.rs:304:17: replace || with && in validate_flags
+crates/flow/src/main.rs:324:27: replace != with == in validate_flags
+crates/flow/src/main.rs:329:15: replace += with -= in validate_flags
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with None
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some(String::new())
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some("xyzzy".into())
+crates/flow/src/main.rs:336:17: replace < with == in flag_value
+crates/flow/src/main.rs:336:17: replace < with > in flag_value
+crates/flow/src/main.rs:336:17: replace < with <= in flag_value
+crates/flow/src/main.rs:337:24: replace == with != in flag_value
+crates/flow/src/main.rs:338:35: replace + with - in flag_value
+crates/flow/src/main.rs:338:35: replace + with * in flag_value
+crates/flow/src/main.rs:343:15: replace += with -= in flag_value
+crates/flow/src/main.rs:343:15: replace += with *= in flag_value
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with None
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![])
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec!["xyzzy".into()])
+crates/flow/src/main.rs:354:17: replace < with == in collect_values
+crates/flow/src/main.rs:354:17: replace < with > in collect_values
+crates/flow/src/main.rs:354:17: replace < with <= in collect_values
+crates/flow/src/main.rs:357:49: replace + with - in collect_values
+crates/flow/src/main.rs:357:49: replace + with * in collect_values
+crates/flow/src/main.rs:360:19: replace += with -= in collect_values

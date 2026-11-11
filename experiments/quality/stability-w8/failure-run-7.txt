@@ -1,0 +1,556 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.33s
+     Running unittests src\main.rs (target\debug\deps\flow-f08fa124e7eded54.exe)
+
+running 132 tests
+test commands::tests::a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut ... ok
+test commands::tests::cat_file_batch_reads_the_blobs_in_request_order ... ok
+test commands::tests::cat_file_batch_refuses_truncation_non_blobs_and_bad_sizes ... ok
+test commands::tests::content_proofs_skip_when_no_regular_file_is_declared ... ok
+test commands::tests::tree_dirs_are_parsed_and_refused_the_same_way ... ok
+test commands::tests::cat_file_batch_accepts_an_ordinary_total_below_the_content_budget ... ok
+test commands::tests::tree_entries_are_parsed_with_size_and_normalised_separators ... ok
+test commands::tests::tree_entries_refuse_every_unreadable_shape ... ok
+test gitcli::tests::a_hyphenated_token_is_redacted_whole ... ok
+test commands::tests::cat_file_batch_never_panics_when_the_answer_ends_exactly_between_entries ... ok
+test gitcli::tests::a_relative_index_override_is_refused_before_git_is_spawned ... ok
+test gitcli::tests::a_permanent_read_error_ends_the_capture_instead_of_spinning ... ok
+test gitcli::tests::a_short_secret_value_and_a_bare_shape_are_not_mistaken_for_secrets ... ok
+test gitcli::tests::env_allowlist_is_sorted_and_unique ... ok
+test gitcli::tests::read_capped_at_keeps_small_streams_intact ... ok
+test gitcli::tests::read_capped_at_flags_a_stream_that_ends_inside_the_last_chunk ... ok
+test gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension ... ok
+test gitcli::tests::read_capped_at_retries_after_an_interrupted_read ... ok
+test gitcli::tests::redacts_an_access_key_environment_value ... ok
+test gitcli::tests::redacts_secret_env_value ... ok
+test gitcli::tests::redacts_aws_shaped_access_key_ids ... ok
+test commands::tests::arbitrary_ls_tree_answers_are_parsed_or_refused_and_never_panic ... ok
+test gitcli::tests::redacts_token_shape ... ok
+test gitcli::tests::scrub_list_covers_every_documented_redirect ... ok
+test commands::tests::arbitrary_cat_file_answers_are_parsed_or_refused_and_never_panic ... ok
+test gitcli::tests::the_retained_stream_budgets_are_large_enough_for_ordinary_answers ... ok
+test gitcli::tests::read_capped_at_retains_at_most_the_cap_and_flags_truncation ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test commands::tests::content_proofs_refuse_a_tree_above_the_entry_budget ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test lock::tests::a_lock_error_renders_its_message ... ok
+test lock::tests::a_guard_whose_file_vanished_is_dropped_without_panicking ... ok
+test lock::tests::a_guard_never_removes_a_successors_lock ... ok
+test lock::tests::a_lock_path_that_cannot_hold_a_record_is_unattributable_not_stolen ... ok
+test commands::tests::collecting_the_checkout_refuses_an_unreadable_directory_and_never_follows_a_link ... ok
+test commands::tests::program_on_path_finds_a_real_program_and_refuses_a_missing_name ... ok
+test lock::tests::acquires_and_releases ... ok
+test gitcli::tests::missing_program_is_unsupported_not_failed_green ... ok
+test gitcli::tests::capture_names_the_exit_code_and_stderr_of_a_failing_git ... ok
+test lock::tests::nonces_are_unique_and_file_safe ... ok
+test paths::tests::accepts_ordinary_paths ... ok
+test paths::tests::a_path_without_a_name_cannot_be_resolved ... ok
+test paths::tests::canonical_within_returns_the_resolved_path ... ok
+test lock::tests::a_record_that_disappears_while_waiting_is_not_attributed ... ok
+test paths::tests::each_refusal_names_its_own_reason ... ok
+test paths::tests::identifiers_are_exactly_sized_hex ... ok
+test paths::tests::every_absolute_and_traversal_shape_is_refused ... ok
+test lock::tests::a_record_written_after_the_first_read_is_still_attributed ... ok
+test paths::tests::length_limits_are_exact ... ok
+test paths::tests::lexical_boundary ... ok
+test paths::tests::rejects_traversal_and_absolute ... ok
+test paths::tests::rejects_windows_hazards ... ok
+test proposal::tests::a_temporary_index_is_removed_when_dropped ... ok
+test proposal::tests::apply_failures_are_classified_by_their_cause ... ok
+test proposal::tests::arbitrary_tree_listings_and_raw_diffs_are_parsed_or_refused_and_never_panic ... ok
+test proposal::tests::identities_are_bounded_at_128_characters ... ok
+test paths::tests::canonical_within_refuses_a_link_that_leaves_the_root ... ok
+test proposal::tests::proposals_on_different_paths_never_conflict ... ok
+test proposal::tests::raw_diffs_are_parsed_and_truncated_answers_are_refused ... ok
+test commands::tests::listing_a_tree_that_git_cannot_read_is_a_refusal ... ok
+test proposal::tests::symlink_targets_that_leave_the_tree_are_refused ... ok
+test proposal::tests::tree_listings_are_parsed_and_every_unsafe_entry_is_refused ... ok
+test proposal::tests::two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits ... ok
+test proposal::tests::identities_follow_the_bound_and_the_charset_on_random_input ... ok
+test proposal::tests::symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe ... ok
+test paths::tests::the_windows_link_helper_reports_failure_instead_of_claiming_success ... ok
+test proposal::tests::validate_path_refuses_metadata_state_gitlinks_and_escaping_symlinks ... ok
+test scratch::tests::bounded_removal_is_idempotent_and_never_follows_links ... ok
+test scratch::tests::bounded_removal_stops_at_its_deadline_and_tolerates_a_missing_path ... ok
+test scratch::tests::candidate_names_are_unique_per_sequence ... ok
+test scratch::tests::canonical_dir_refuses_a_path_that_is_not_a_directory ... ok
+test scratch::tests::cleanup_clears_a_read_only_file_before_removing_it ... ok
+test scratch::tests::cleanup_leaves_a_directory_it_did_not_mark_as_owned ... ok
+test scratch::tests::an_owned_directory_that_resolves_elsewhere_is_not_claimed ... ok
+test proposal::tests::an_unreadable_diff_or_tree_listing_is_a_named_refusal ... ok
+test scratch::tests::cleanup_removes_a_directory_it_created_and_marked ... ok
+test scratch::tests::a_vanished_scratch_directory_is_never_claimed ... ok
+test scratch::tests::a_redirect_that_carries_the_marker_is_never_traversed ... ok
+test scratch::tests::detach_git_link_refuses_anything_but_the_worktree_link ... ok
+test lock::tests::a_live_owner_is_never_displaced_even_when_old ... ok
+test scratch::tests::materialise_refuses_a_non_object_id_before_touching_the_filesystem ... ok
+test scratch::tests::refuses_non_object_ids ... ok
+test scratch::tests::verify_created_dir_refuses_a_missing_path_and_a_file ... ok
+test scratch::tests::verify_created_dir_refuses_a_recorded_identity_that_differs ... ok
+test lock::tests::liveness_is_answered_for_live_and_dead_pids ... ok
+test scratch::tests::within_is_component_wise ... ok
+test state::tests::a_config_whose_obligations_are_not_a_list_keeps_the_declared_defaults ... ok
+test lock::tests::an_empty_record_is_never_attributed_however_long_we_wait ... ok
+test state::tests::a_journal_error_names_its_kind_and_never_looks_like_empty_state ... ok
+test scratch::tests::detach_git_link_refuses_a_link_and_clears_a_read_only_file ... ok
+test state::tests::a_receipt_helper_tolerates_a_non_object_without_panicking ... ok
+test state::tests::a_receipt_can_only_be_stored_under_an_object_id_and_a_known_slot ... ok
+test lock::tests::an_unparseable_lock_is_refused_not_stolen ... ok
+test scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions ... ok
+test state::tests::an_obligation_missing_its_program_is_refused_not_dropped ... ok
+test state::tests::a_journal_append_keeps_a_record_schema_and_a_missing_journal_is_empty ... ok
+test state::tests::civil_dates ... ok
+test state::tests::civil_dates_exercise_the_era_and_century_corrections ... ok
+test scratch::tests::verify_created_dir_refuses_a_redirect_and_a_different_identity ... ok
+test state::tests::iso8601_now_has_the_shape_and_the_current_year ... ok
+test state::tests::rejects_unknown_schema ... ok
+test state::tests::string_list_reads_only_the_string_entries_of_an_array ... ok
+test state::tests::the_civil_calendar_handles_days_before_the_epoch ... ok
+test state::tests::the_clock_helpers_return_epoch_values_not_constants ... ok
+test state::tests::an_unreadable_journal_is_an_error_not_an_empty_journal ... ok
+test state::tests::config_round_trip ... ok
+test tests::a_stray_positional_argument_is_a_usage_error_except_for_the_list_subcommand ... ok
+test tests::a_value_flag_accepts_both_spellings_and_refuses_a_missing_value ... ok
+test scratch::tests::materialise_refuses_a_base_or_a_candidate_inside_the_repository ... ok
+test tests::exit_codes_separate_usage_from_a_policy_refusal ... ok
+test tests::repeated_and_inline_values_keep_their_order ... ok
+test tests::a_bare_double_dash_is_skipped_and_the_walk_terminates ... ok
+test state::tests::an_adoption_record_from_another_schema_is_not_reinterpreted ... ok
+test state::tests::a_reparse_point_below_flow_is_never_written_through ... ok
+test state::tests::a_write_outside_the_flow_directory_is_not_guarded_and_still_atomic ... ok
+test scratch::tests::cleanup_never_traverses_a_redirect_that_replaced_the_scratch ... ok
+test commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_content_budget ... ok
+test commands::tests::cat_file_batch_refuses_an_overflowing_size_and_the_byte_budget ... ok
+test scratch::tests::cleanup_leaves_a_path_that_is_no_longer_the_scratch_directory ... ok
+test gitcli::tests::the_git_surface_reports_what_git_answers ... ok
+test commands::tests::tree_entries_exactly_at_the_fidelity_budget_are_accepted_not_refused ... ok
+test commands::tests::tree_entries_above_the_fidelity_budget_are_refused_not_truncated ... ok
+test lock::tests::a_live_foreign_owner_is_waited_for_then_reported_held ... ok
+test commands::tests::a_checkout_with_exactly_the_entry_budget_is_compared_not_refused ... ok
+
+test result: ok. 132 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 15.57s
+
+     Running tests\bounds.rs (target\debug\deps\bounds-9cba1d6e4b2638cd.exe)
+
+running 40 tests
+test flood_child_probe ... ok
+test gitcli::tests::env_allowlist_is_sorted_and_unique ... ok
+test gitcli::tests::a_relative_index_override_is_refused_before_git_is_spawned ... ok
+test gitcli::tests::a_hyphenated_token_is_redacted_whole ... ok
+test gitcli::tests::read_capped_at_keeps_small_streams_intact ... ok
+test gitcli::tests::redacts_an_access_key_environment_value ... ok
+test gitcli::tests::a_short_secret_value_and_a_bare_shape_are_not_mistaken_for_secrets ... ok
+test gitcli::tests::read_capped_at_flags_a_stream_that_ends_inside_the_last_chunk ... ok
+test gitcli::tests::a_permanent_read_error_ends_the_capture_instead_of_spinning ... ok
+test gitcli::tests::read_capped_at_retries_after_an_interrupted_read ... ok
+test gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension ... ok
+test gitcli::tests::redacts_secret_env_value ... ok
+test gitcli::tests::redacts_aws_shaped_access_key_ids ... ok
+test gitcli::tests::scrub_list_covers_every_documented_redirect ... ok
+test gitcli::tests::redacts_token_shape ... ok
+test gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name ... ok
+test gitcli::tests::the_retained_stream_budgets_are_large_enough_for_ordinary_answers ... ok
+test index_probe_child ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test gitcli::tests::read_capped_at_retains_at_most_the_cap_and_flags_truncation ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test gitcli::tests::missing_program_is_unsupported_not_failed_green ... ok
+test gitcli::tests::capture_names_the_exit_code_and_stderr_of_a_failing_git ... ok
+test gitcli::tests::the_git_surface_reports_what_git_answers ... ok
+test run_bounded_feeds_stdin_to_git ... ok
+test run_bounded_refuses_more_than_64_mib ... ok
+test run_bounded_ignores_ambient_index_and_honours_the_explicit_one ... ok
+test blocking_post_checkout_makes_run_refuse_the_scratch ... ok
+test obligation_stdout_is_bounded_through_the_cli ... ok
+test missing_toolchain_is_unsupported_and_never_publishable ... ok
+test hijacked_git_environment_does_not_redirect_the_cli ... ok
+test blocking_reference_transaction_aborts_publish_without_moving_the_ref ... ok
+test nonblocking_hooks_are_dispatched_by_run_and_publish ... ok
+
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.86s
+
+     Running tests\cli.rs (target\debug\deps\cli-462cf20c65d7e27d.exe)
+
+running 62 tests
+test a_non_finite_number_in_local_state_is_refused_not_printed ... ok
+test disable_blocks_run_and_publish ... ok
+test doctor_is_read_only_and_reports_guarantees ... ok
+test a_timeout_that_cannot_be_applied_is_a_usage_error ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test a_boolean_flag_a_command_does_not_implement_is_a_usage_error ... ok
+test doctor_exits_nonzero_when_a_guarantee_is_broken ... ok
+test a_converted_checkout_is_refused_not_certified ... ok
+test dirty_and_untracked_files_are_preserved_byte_for_byte ... ok
+test init_creates_state_and_refuses_second_call ... ok
+test a_cmd_shim_on_path_is_found_by_a_bare_program_name ... ok
+test obligation_ids_that_differ_only_by_case_are_refused ... ok
+test a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation ... ok
+test explain_refuses_a_path_instead_of_a_tree_id ... ok
+test a_symlinked_journal_is_never_written_through ... ok
+test crash_after_intent_is_not_published_and_reconciles ... ok
+test crash_before_intent_leaves_no_pending_intent ... ok
+test a_hardlinked_journal_is_not_written_through ... ok
+test crash_after_ref_is_observed_as_published ... ok
+test p0a_duplicate_or_unknown_obligation_ids_are_refused ... ok
+test explain_lists_only_the_journal_records_of_the_explained_tree ... ok
+test obligation_timeout_is_timeout_not_pass ... ok
+test p0a_an_optional_failing_obligation_does_not_mask_a_green_required_set ... ok
+test p0a_case_colliding_tree_is_refused_not_certified ... ok
+test p0b_an_ambiguous_config_is_refused_not_guessed ... ok
+test p0a_symlink_rewritten_as_a_file_is_refused ... ok
+test p0a_full_run_with_one_failing_required_obligation_is_never_publishable ... ok
+test p0a_selective_run_never_yields_a_publishable_receipt ... ok
+test explain_reports_missing_logs_as_incomplete_evidence ... ok
+test p0b_a_tampered_receipt_is_not_publishable ... ok
+test p0b_a_timeout_override_is_never_publishable ... ok
+test p0b_changing_the_policy_version_makes_the_receipt_stale ... ok
+test p0b_adding_a_required_obligation_makes_the_receipt_stale ... ok
+test publish_without_receipt_is_refused ... ok
+test p0c_duplicate_intent_id_requires_a_human ... ok
+test p0b_changing_a_timeout_makes_the_receipt_stale ... ok
+test p0b_explicit_ref_must_name_a_branch ... ok
+test p0c_one_outcome_cannot_close_two_intents ... ok
+test p0c_status_refuses_to_guess_on_a_corrupt_journal ... ok
+test run_without_obligations_is_unknown_never_passed ... ok
+test p0c_corrupt_journal_is_not_reported_as_reconciled ... ok
+test status_reports_policy_provenance ... ok
+test unsafe_obligation_id_is_refused ... ok
+test p1_a_symbolic_ref_is_never_a_publication_target ... ok
+test p0c_reconcile_is_idempotent ... ok
+test p0c_ref_moved_elsewhere_needs_reconciliation ... ok
+test run_passing_obligation_binds_the_index_tree ... ok
+test publish_with_stale_expected_old_is_refused ... ok
+test run_failing_obligation_is_failed_and_publish_refuses ... ok
+test status_counts_tracked_changes_and_untracked_files_separately ... ok
+test publish_moves_the_ref_with_cas_and_records_the_journal ... ok
+test unknown_and_valueless_options_are_usage_errors ... ok
+test status_and_explain_qualify_a_tampered_receipt ... ok
+test two_concurrent_publishes_publish_at_most_once ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.35s
+
+     Running tests\concurrency.rs (target\debug\deps\concurrency-34aa21ad2f35c8f9.exe)
+
+running 14 tests
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test reconcile_is_serialized_and_never_duplicates_outcomes ... ok
+test an_unparseable_lock_is_refused_and_preserved ... ok
+test a_dead_owners_lock_is_recovered ... ok
+test a_live_old_lock_is_never_stolen ... ok
+test eight_concurrent_publishes_publish_at_most_once ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.93s
+
+     Running tests\crash_run.rs (target\debug\deps\crash_run-5de46c9f58e7bade.exe)
+
+running 11 tests
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test slow_probe_child ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::round_trip ... ok
+test a_run_killed_during_verification_leaves_no_proof_and_recovers ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.99s
+
+     Running tests\error_paths.rs (target\debug\deps\error_paths-6a19fd945d1779a2.exe)
+
+running 41 tests
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test commands_that_need_a_repository_fail_outside_one ... ok
+test assemble_without_a_proposal_is_refused ... ok
+test proposals_show_refuses_an_unknown_or_malformed_id ... ok
+test propose_refuses_a_base_that_is_not_a_commit_in_this_repository ... ok
+test propose_admits_a_patch_between_one_mebibyte_and_the_declared_bound ... ok
+test propose_refuses_a_patch_above_the_admission_bound_before_reading_it ... ok
+test assemble_refuses_when_a_recorded_patch_vanished ... ok
+test propose_refuses_a_gitlink ... ok
+test propose_accepts_a_symlink_target_exactly_at_the_read_bound ... ok
+test proposals_list_refuses_a_corrupt_record_instead_of_hiding_it ... ok
+test propose_accepts_a_patch_exactly_at_the_admission_bound ... ok
+test assemble_refuses_a_candidate_tree_whose_paths_collide_only_by_case ... ok
+test assemble_refuses_two_different_modes_for_the_same_path ... ok
+test propose_refuses_a_patch_that_changes_nothing ... ok
+test assemble_refuses_a_candidate_record_whose_proposal_list_changed ... ok
+test assemble_refuses_to_overwrite_an_immutable_candidate ... ok
+test assemble_refuses_to_reinterpret_a_candidate_record_from_another_schema ... ok
+test proposals_list_sorts_and_ignores_files_that_are_not_records ... ok
+test assemble_refuses_a_delete_and_a_modify_of_the_same_path ... ok
+test propose_refuses_an_unreadable_patch_or_a_directory ... ok
+test propose_refuses_a_symlink_target_above_the_read_bound ... ok
+test propose_refuses_a_tree_whose_paths_collide_only_by_case ... ok
+test assemble_reports_a_patch_that_does_not_apply_without_writing_a_candidate ... ok
+test propose_without_an_explicit_key_is_idempotent_on_the_same_bytes ... ok
+test propose_refuses_invalid_identity_without_recording_anything ... ok
+test run_refuses_a_scratch_base_the_host_redirected_into_the_repository ... ok
+test usage_and_version_contracts_do_not_touch_the_repository ... ok
+test run_refuses_a_scratch_whose_git_link_a_hook_removed ... ok
+test propose_refuses_a_symlink_that_escapes_the_tree ... ok
+test publish_refuses_refs_that_are_not_real_branch_refs ... ok
+test publish_refuses_a_second_publication_of_the_same_tree ... ok
+test publish_refuses_every_tampered_receipt_field_with_its_named_check ... ok
+
+test result: ok. 41 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.26s
+
+     Running tests\git_fidelity.rs (target\debug\deps\git_fidelity-4e42e81313853283.exe)
+
+running 23 tests
+test delayed_write_probe ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test smudge_probe_child ... ok
+test a_core_attributes_file_conversion_is_refused_not_certified ... ok
+test a_local_smudge_filter_is_refused_not_certified ... ok
+test a_tree_with_a_gitlink_is_refused_with_its_own_reason ... ok
+test a_local_info_attributes_conversion_is_refused_not_certified ... ok
+test a_symlink_entry_checked_out_as_a_regular_file_is_refused ... ok
+test a_hook_file_named_like_a_scratch_marker_is_refused_not_certified ... ok
+test a_hook_that_rewrites_a_file_is_refused_not_certified ... ok
+test a_hook_that_creates_an_empty_directory_is_refused_not_certified ... ok
+test a_hook_that_adds_a_file_is_refused_not_certified ... ok
+test a_hook_that_deletes_a_file_is_refused_not_certified ... ok
+test a_faithful_checkout_is_still_certified ... ok
+test a_delayed_write_during_the_obligations_is_refused ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.57s
+
+     Running tests\isolation.rs (target\debug\deps\isolation-4145af0264a7ff48.exe)
+
+running 62 tests
+test flood_child_probe ... ok
+test git_env_probe_child ... ok
+test gitcli::tests::a_relative_index_override_is_refused_before_git_is_spawned ... ok
+test descendant_child_probe ... ok
+test gitcli::tests::read_capped_at_keeps_small_streams_intact ... ok
+test gitcli::tests::read_capped_at_flags_a_stream_that_ends_inside_the_last_chunk ... ok
+test gitcli::tests::env_allowlist_is_sorted_and_unique ... ok
+test gitcli::tests::a_hyphenated_token_is_redacted_whole ... ok
+test gitcli::tests::a_permanent_read_error_ends_the_capture_instead_of_spinning ... ok
+test gitcli::tests::a_short_secret_value_and_a_bare_shape_are_not_mistaken_for_secrets ... ok
+test gitcli::tests::read_capped_at_retries_after_an_interrupted_read ... ok
+test gitcli::tests::redacts_an_access_key_environment_value ... ok
+test gitcli::tests::redacts_aws_shaped_access_key_ids ... ok
+test gitcli::tests::redacts_secret_env_value ... ok
+test gitcli::tests::scrub_list_covers_every_documented_redirect ... ok
+test gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name ... ok
+test gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension ... ok
+test gitcli::tests::redacts_token_shape ... ok
+test gitcli::tests::the_retained_stream_budgets_are_large_enough_for_ordinary_answers ... ok
+test grandchild_child_probe ... ok
+test scratch::tests::candidate_names_are_unique_per_sequence ... ok
+test scratch::tests::canonical_dir_refuses_a_path_that_is_not_a_directory ... ok
+test gitcli::tests::read_capped_at_retains_at_most_the_cap_and_flags_truncation ... ok
+test scratch::tests::cleanup_clears_a_read_only_file_before_removing_it ... ok
+test scratch::tests::bounded_removal_stops_at_its_deadline_and_tolerates_a_missing_path ... ok
+test scratch::tests::bounded_removal_is_idempotent_and_never_follows_links ... ok
+test scratch::tests::cleanup_leaves_a_directory_it_did_not_mark_as_owned ... ok
+test scratch::tests::cleanup_removes_a_directory_it_created_and_marked ... ok
+test scratch::tests::detach_git_link_refuses_anything_but_the_worktree_link ... ok
+test a_stream_below_the_retention_budget_is_kept_whole_and_not_flagged ... ok
+test scratch::tests::materialise_refuses_a_non_object_id_before_touching_the_filesystem ... ok
+test scratch::tests::refuses_non_object_ids ... ok
+test scratch::tests::verify_created_dir_refuses_a_missing_path_and_a_file ... ok
+test scratch::tests::verify_created_dir_refuses_a_recorded_identity_that_differs ... ok
+test obligation_output_is_bounded_and_drained ... ok
+test scratch::tests::within_is_component_wise ... ok
+test gitcli::tests::capture_names_the_exit_code_and_stderr_of_a_failing_git ... ok
+test gitcli::tests::missing_program_is_unsupported_not_failed_green ... ok
+test scratch::tests::detach_git_link_refuses_a_link_and_clears_a_read_only_file ... ok
+test scratch::tests::verify_created_dir_refuses_a_redirect_and_a_different_identity ... ok
+test scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions ... ok
+test scratch::tests::materialise_refuses_a_base_or_a_candidate_inside_the_repository ... ok
+test scratch::tests::a_vanished_scratch_directory_is_never_claimed ... ok
+test small_stream_child_probe ... ok
+test scratch::tests::an_owned_directory_that_resolves_elsewhere_is_not_claimed ... ok
+test timeout_child_probe ... ok
+test scratch::tests::a_redirect_that_carries_the_marker_is_never_traversed ... ok
+test scratch::tests::cleanup_never_traverses_a_redirect_that_replaced_the_scratch ... ok
+test scratch::tests::cleanup_leaves_a_path_that_is_no_longer_the_scratch_directory ... ok
+test gitcli::tests::the_git_surface_reports_what_git_answers ... ok
+test porcelain_status_reports_a_dirty_file_instead_of_an_empty_answer ... ok
+test scratch_reports_a_commit_it_cannot_materialise ... ok
+test timeout_kills_the_child_and_returns_in_bounded_time ... ok
+test scratch_materialises_head_outside_repo_and_cleans_up ... ok
+test git_ignores_hijacked_repository_environment ... ok
+test surviving_grandchild_does_not_hang_the_runner ... ok
+test scratch_never_deletes_a_preexisting_path ... ok
+test scratch_never_follows_or_deletes_a_preexisting_candidate_link ... ok
+test scratch_refuses_a_base_that_redirects_into_the_repository ... ok
+test scratch_refuses_non_object_ids ... ok
+test a_timed_out_obligation_kills_the_descendants_it_started ... ok
+test scratch_refuses_paths_inside_the_repository ... ok
+
+test result: ok. 62 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.32s
+
+     Running tests\operator_surfaces.rs (target\debug\deps\operator_surfaces-3afa94c7ea28c02a.exe)
+
+running 47 tests
+test init_adopt_policy_on_an_empty_flow_directory_still_refuses ... ok
+test a_duplicate_intent_that_is_fully_closed_is_not_reported_as_pending ... ok
+test approve_refuses_a_policy_that_proves_nothing_or_has_duplicate_ids ... ok
+test explain_reports_an_unknown_candidate ... ok
+test a_value_flag_without_a_value_is_a_usage_error_before_any_mutation ... ok
+test a_ref_of_exactly_the_documented_limit_reaches_the_receipt_gate ... ok
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test a_double_dash_is_accepted_as_a_separator ... ok
+test doctor_reports_toolchains_that_are_not_on_the_path ... ok
+test init_discloses_an_optional_obligation_as_optional ... ok
+test doctor_reports_a_policy_that_changed_since_it_was_approved ... ok
+test doctor_reports_a_disabled_policy_and_publish_refuses_by_name ... ok
+test doctor_reads_hooks_from_an_absolute_hooks_path ... ok
+test init_refuses_a_committed_policy_that_could_never_prove_anything ... ok
+test init_force_preserves_the_journal_and_rewrites_only_the_approval ... ok
+test init_refuses_a_committed_config_it_cannot_use_instead_of_adopting_a_default ... ok
+test proposals_on_a_repository_without_flow_state_is_an_empty_list ... ok
+test doctor_and_status_answer_when_a_state_directory_is_missing ... ok
+test doctor_discloses_hooks_attribute_sources_case_folding_and_a_live_lock ... ok
+test proposals_show_reports_an_unknown_id_and_list_accepts_a_positional_subcommand ... ok
+test doctor_reports_a_policy_that_was_never_adopted_and_a_lock_it_cannot_parse ... ok
+test init_shows_a_committed_policy_and_adopts_nothing_until_told_to ... ok
+test doctor_reports_corrupt_local_state_as_a_failed_guarantee ... ok
+test assembling_the_same_proposals_twice_reuses_the_candidate ... ok
+test publish_refuses_an_unusable_ref_name_before_taking_the_lock ... ok
+test reconcile_diagnoses_a_shared_intent_id_instead_of_closing_both ... ok
+test publish_refuses_a_detached_head_without_an_explicit_ref ... ok
+test publish_refuses_a_lock_it_cannot_attribute_instead_of_stealing_it ... ok
+test publish_reports_an_unknown_candidate_and_an_inline_flag_form ... ok
+test reconcile_refuses_an_intent_that_does_not_name_its_publication ... ok
+test status_counts_an_intent_with_no_outcome_as_pending ... ok
+test status_reports_no_policy_on_a_repository_that_was_never_initialised ... ok
+test status_and_reconcile_skip_blank_journal_lines_without_inventing_intents ... ok
+test status_reports_a_corrupt_receipt_file_as_absent_evidence ... ok
+test status_reports_an_adoption_record_it_cannot_read ... ok
+test reconcile_records_only_a_decisive_observation ... ok
+test status_ignores_a_receipt_path_it_cannot_read ... ok
+test reconcile_refuses_an_unattributable_lock_and_reports_a_vanished_ref ... ok
+test publish_reports_a_candidate_whose_tree_left_the_object_store ... ok
+
+test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.09s
+
+     Running tests\proposals.rs (target\debug\deps\proposals-216fa6dfa83e4010.exe)
+
+running 23 tests
+test json::tests::a_non_finite_number_is_refused_not_printed_as_inf ... ok
+test json::tests::escapes_and_multi_byte_utf8_survive_the_round_trip ... ok
+test json::tests::pretty_printing_nests_indentation_per_level ... ok
+test json::tests::an_accessor_never_panics_on_another_shape ... ok
+test json::tests::rejects_duplicate_keys ... ok
+test json::tests::the_parser_refuses_shapes_json_does_not_allow ... ok
+test json::tests::rejects_trailing_data ... ok
+test json::tests::the_writer_emits_every_shape_as_text_that_parses_back ... ok
+test json::tests::round_trip ... ok
+test m9_a_hostile_cloned_repository_cannot_execute_or_escape ... ok
+test binary_and_mode_changes_survive_the_cycle ... FAILED
+test m1_two_disjoint_agents_publish_exactly_the_verified_tree ... FAILED
+test m7_a_replacement_agent_resumes_from_the_immutable_artefacts ... FAILED
+test m10_a_record_from_another_schema_is_refused ... ok
+test m3_stale_base_is_refused_and_a_rebased_proposal_succeeds ... FAILED
+test proposals_outside_the_trusted_surface_are_refused ... ok
+test admission_is_idempotent_and_immutable ... ok
+test m8_proposals_on_different_bases_are_refused_with_both_bases ... ok
+test publishing_a_candidate_requires_a_verified_receipt ... ok
+test publish_dry_run_plans_without_mutating_anything ... ok
+test m6_user_files_and_index_are_preserved_through_the_whole_cycle ... ok
+test assembly_reports_order_and_stays_deterministic ... ok
+test m2_three_agents_collision_is_diagnosed_and_resolved_explicitly ... ok
+
+failures:
+
+---- binary_and_mode_changes_survive_the_cycle stdout ----
+
+thread 'binary_and_mode_changes_survive_the_cycle' (28368) panicked at crates\flow\tests\proposals.rs:855:5:
+assertion `left == right` failed: binary/mode proposal: {"status":"REFUSED","code":"PATCH_REFUSED","reason":"the patch does not apply to base 48314bd7a21a572835b978664f41686c66f3a7c5 in a temporary index: error launching git: Ressources syst�me insuffisantes pour terminer le service demand�."}
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- m1_two_disjoint_agents_publish_exactly_the_verified_tree stdout ----
+
+thread 'm1_two_disjoint_agents_publish_exactly_the_verified_tree' (31244) panicked at crates\flow\tests\proposals.rs:371:5:
+assertion `left == right` failed: proposal A: {"status":"ERROR","error":"cannot write the proposal tree: error launching git: Le fichier de pagination est insuffisant pour terminer cette op�ration."}
+  left: 1
+ right: 0
+
+---- m7_a_replacement_agent_resumes_from_the_immutable_artefacts stdout ----
+
+thread 'm7_a_replacement_agent_resumes_from_the_immutable_artefacts' (20124) panicked at crates\flow\tests\proposals.rs:906:5:
+assertion `left == right` failed: {"status":"REFUSED","code":"CONFLICT","reason":"APPLY_REFUSED: proposal c09f5dc9701ab21bf82ae94ea2194354 (agent-a / T1) does not apply on top of the earlier proposals: "}
+  left: 1
+ right: 0
+
+---- m3_stale_base_is_refused_and_a_rebased_proposal_succeeds stdout ----
+
+thread 'm3_stale_base_is_refused_and_a_rebased_proposal_succeeds' (34980) panicked at crates\flow\tests\proposals.rs:563:5:
+assertion `left == right` failed: candidate verifies on its base: {"status":"ERROR","error":"not inside a Git work tree"}
+  left: 1
+ right: 0
+
+
+error: test failed, to rerun pass `--test proposals`
+failures:
+    binary_and_mode_changes_survive_the_cycle
+    m1_two_disjoint_agents_publish_exactly_the_verified_tree
+    m3_stale_base_is_refused_and_a_rebased_proposal_succeeds
+    m7_a_replacement_agent_resumes_from_the_immutable_artefacts
+
+test result: FAILED. 19 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 26.81s
+
+

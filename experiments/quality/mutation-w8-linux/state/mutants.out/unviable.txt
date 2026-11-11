@@ -1,0 +1,15 @@
+crates/flow/src/state.rs:89:9: replace Config::to_json -> Json with Default::default()
+crates/flow/src/state.rs:224:5: replace load_adoption -> Result<Option<Adoption>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:261:67: replace + with - in save_adoption
+crates/flow/src/state.rs:261:67: replace + with * in save_adoption
+crates/flow/src/state.rs:269:5: replace load_config -> Result<Config, String> with Ok(Default::default())
+crates/flow/src/state.rs:276:5: replace save_config -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:280:63: replace + with - in save_config
+crates/flow/src/state.rs:280:63: replace + with * in save_config
+crates/flow/src/state.rs:422:5: replace read_journal -> Result<Vec<Json>, JournalError> with Ok(vec![Default::default()])
+crates/flow/src/state.rs:492:9: replace Receipt::load -> Result<Option<Receipt>, String> with Ok(None)
+crates/flow/src/state.rs:492:9: replace Receipt::load -> Result<Option<Receipt>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:552:5: replace without_field -> Json with Default::default()
+crates/flow/src/state.rs:566:5: replace seal_receipt -> Json with Default::default()
+crates/flow/src/state.rs:648:54: replace + with - in save_receipt
+crates/flow/src/state.rs:648:54: replace + with * in save_receipt

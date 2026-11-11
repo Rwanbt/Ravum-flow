@@ -1,0 +1,18 @@
+crates/flow/src/gitcli.rs:40:9: replace Git::base -> Command with Default::default()
+crates/flow/src/gitcli.rs:69:9: replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:44:9: replace Git::run -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:108:32: replace + with * in Git::run_bounded
+crates/flow/src/gitcli.rs:134:46: replace + with * in Git::run_bounded
+crates/flow/src/gitcli.rs:189:9: replace Git::update_ref -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:318:5: replace git_command -> Command with Default::default()
+crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new()
+crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])
+crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new(Default::default())
+crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from(Default::default())
+crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new()
+crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])
+crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new(Default::default())
+crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from(Default::default())
+crates/flow/src/gitcli.rs:575:5: replace run_obligation -> Outcome with Default::default()
+crates/flow/src/gitcli.rs:640:42: replace + with * in run_obligation
+crates/flow/src/gitcli.rs:666:35: replace + with * in reap_bounded

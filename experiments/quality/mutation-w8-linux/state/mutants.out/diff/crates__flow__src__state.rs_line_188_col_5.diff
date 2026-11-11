@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace journal_path -> PathBuf with Default::default()
+@@ -180,17 +180,17 @@
+     root.join(".flow")
+ }
+ 
+ pub fn config_path(root: &Path) -> PathBuf {
+     flow_dir(root).join("config.json")
+ }
+ 
+ pub fn journal_path(root: &Path) -> PathBuf {
+-    flow_dir(root).join("journal.jsonl")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn receipts_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("receipts")
+ }
+ 
+ pub fn logs_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("logs")

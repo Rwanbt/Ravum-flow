@@ -1,0 +1,24 @@
+--- crates/flow/src/state.rs
++++ replace load_config -> Result<Config, String> with Ok(Default::default())
+@@ -261,20 +261,17 @@
+     write_atomic(&adoption_path(root), &(value.to_string_pretty() + "\n"))
+ }
+ 
+ pub fn receipt_path(root: &Path, tree_oid: &str) -> PathBuf {
+     receipts_dir(root).join(format!("{tree_oid}.json"))
+ }
+ 
+ pub fn load_config(root: &Path) -> Result<Config, String> {
+-    let path = config_path(root);
+-    let text = fs::read_to_string(&path)
+-        .map_err(|e| format!("not initialized: cannot read {}: {e}", path.display()))?;
+-    Config::from_json(&json::parse(&text)?)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn save_config(root: &Path, config: &Config) -> Result<(), String> {
+     let path = config_path(root);
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
+     }
+     write_atomic(&path, &(config.to_json().to_string_pretty() + "\n"))

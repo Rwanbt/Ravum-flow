@@ -892,9 +892,10 @@ mod tests {
         );
         assert_eq!(records[2], Json::Num(1.0));
 
-        // Each object record carries exactly one schema stamp. A record that
-        // already has one must not get a second: two `"schema"` keys in one line
-        // are ambiguous, and the last one would silently win in some readers.
+        // A schema-less object is stamped exactly once (the assertion above pins the
+        // value), and a record that already carries one is not stamped a second time:
+        // two `"schema"` keys in one line are ambiguous, and the last one would
+        // silently win in some readers.
         let mut text = fs::read_to_string(journal_path(&root)).unwrap();
         for line in text.lines().take(2) {
             assert_eq!(

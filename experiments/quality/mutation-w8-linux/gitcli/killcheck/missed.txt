@@ -1,0 +1,15 @@
+crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![]
+crates/flow/src/gitcli.rs:153:36: delete - in Git::run_bounded
+crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:543:21: delete ! in resolve_program_in
+crates/flow/src/gitcli.rs:623:38: replace > with >= in run_obligation
+crates/flow/src/gitcli.rs:640:42: replace + with - in run_obligation
+crates/flow/src/gitcli.rs:666:5: replace reap_bounded with ()
+crates/flow/src/gitcli.rs:666:35: replace + with - in reap_bounded
+crates/flow/src/gitcli.rs:667:26: replace < with == in reap_bounded
+crates/flow/src/gitcli.rs:667:26: replace < with > in reap_bounded
+crates/flow/src/gitcli.rs:667:26: replace < with <= in reap_bounded

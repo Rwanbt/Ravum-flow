@@ -1,0 +1,3 @@
+crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(Some(Default::default()))
+crates/flow/src/commands.rs:237:5: replace cmd_doctor -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:1551:5: replace cmd_publish -> Result<Json, String> with Ok(Default::default())

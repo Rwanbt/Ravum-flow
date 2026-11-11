@@ -1,0 +1,4 @@
+crates/flow/src/gitcli.rs:69:9: replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:575:5: replace run_obligation -> Outcome with Default::default()
+crates/flow/src/gitcli.rs:640:42: replace + with * in run_obligation
+crates/flow/src/gitcli.rs:666:35: replace + with * in reap_bounded

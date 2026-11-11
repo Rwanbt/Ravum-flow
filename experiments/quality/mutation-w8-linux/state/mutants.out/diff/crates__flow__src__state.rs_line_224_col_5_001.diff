@@ -1,0 +1,47 @@
+--- crates/flow/src/state.rs
++++ replace load_adoption -> Result<Option<Adoption>, String> with Ok(Some(Default::default()))
+@@ -216,43 +216,17 @@
+ pub struct Adoption {
+     pub policy_digest: String,
+     pub policy_version: String,
+     pub approved_at: String,
+     pub source: String,
+ }
+ 
+ pub fn load_adoption(root: &Path) -> Result<Option<Adoption>, String> {
+-    let path = adoption_path(root);
+-    if !path.exists() {
+-        return Ok(None);
+-    }
+-    let text =
+-        fs::read_to_string(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+-    let value = json::parse(&text)?;
+-    let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-    if schema != SCHEMA_ADOPTION {
+-        return Err(format!(
+-            "unsupported adoption schema {schema:?} in {}: refusing to guess what was approved",
+-            path.display()
+-        ));
+-    }
+-    let get = |key: &str| {
+-        value
+-            .get(key)
+-            .and_then(Json::as_str)
+-            .unwrap_or("")
+-            .to_string()
+-    };
+-    Ok(Some(Adoption {
+-        policy_digest: get("policy_digest"),
+-        policy_version: get("policy_version"),
+-        approved_at: get("approved_at"),
+-        source: get("source"),
+-    }))
++    Ok(Some(Default::default())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn save_adoption(root: &Path, adoption: &Adoption) -> Result<(), String> {
+     let value = Json::obj(vec![
+         ("schema", Json::str(SCHEMA_ADOPTION)),
+         ("policy_digest", Json::str(adoption.policy_digest.clone())),
+         ("policy_version", Json::str(adoption.policy_version.clone())),
+         ("approved_at", Json::str(adoption.approved_at.clone())),

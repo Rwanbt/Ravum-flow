@@ -1,0 +1,258 @@
+[
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace has_flag -> bool with true\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name) // w8probe\n+    true /* ~ changed by cargo-mutants ~ */ // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:382:5: replace has_flag -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 382
+      },
+      "start": {
+        "column": 5,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace has_flag -> bool with false\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name) // w8probe\n+    false /* ~ changed by cargo-mutants ~ */ // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:382:5: replace has_flag -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 382
+      },
+      "start": {
+        "column": 5,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in has_flag\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name) // w8probe\n+    args.iter().any(|a| a != /* ~ changed by cargo-mutants ~ */ name) // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:382:27: replace == with != in has_flag",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 382
+      },
+      "start": {
+        "column": 27,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace exit_code_for -> u8 with 0\n@@ -381,27 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name) // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n-        return 2;\n-    }\n-    match value.get(\"status\").and_then(Json::as_str) {\n-        Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n-        | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n-        | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n-        | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n-        Some(_) => 1,\n-        None => 1,\n-    }\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty()); // w8probe\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![ // w8probe\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 399
+      },
+      "start": {
+        "column": 5,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace exit_code_for -> u8 with 1\n@@ -381,27 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name) // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n-        return 2;\n-    }\n-    match value.get(\"status\").and_then(Json::as_str) {\n-        Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n-        | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n-        | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n-        | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n-        Some(_) => 1,\n-        None => 1,\n-    }\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty()); // w8probe\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![ // w8probe\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 399
+      },
+      "start": {
+        "column": 5,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in exit_code_for\n@@ -381,17 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name) // w8probe\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") { // w8probe\n+    if value.get(\"code\").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(\"USAGE\") { // w8probe\n         return 2;\n     }\n     match value.get(\"status\").and_then(Json::as_str) {\n         Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n         | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n         | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n         | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n         Some(_) => 1,\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:389:49: replace == with != in exit_code_for",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 389
+      },
+      "start": {
+        "column": 49,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace emit with ()\n@@ -395,17 +395,17 @@\n         | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n         | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n         Some(_) => 1,\n         None => 1,\n     }\n }\n \n fn emit(value: Json) {\n-    println!(\"{}\", value.to_string_pretty()); // w8probe\n+    () /* ~ changed by cargo-mutants ~ */ // w8probe\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![ // w8probe\n         (\"status\", Json::str(\"ERROR\")),\n         (\"error\", Json::str(message)),\n     ]));\n }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "emit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 404
+        },
+        "start": {
+          "column": 1,
+          "line": 402
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:403:5: replace emit with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 403
+      },
+      "start": {
+        "column": 5,
+        "line": 403
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace emit_error with ()\n@@ -399,20 +399,17 @@\n     }\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty()); // w8probe\n }\n \n fn emit_error(message: &str) {\n-    emit(Json::obj(vec![ // w8probe\n-        (\"status\", Json::str(\"ERROR\")),\n-        (\"error\", Json::str(message)),\n-    ]));\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn args(values: &[&str]) -> Vec<String> {\n         values.iter().map(|v| v.to_string()).collect()\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "emit_error",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 411
+        },
+        "start": {
+          "column": 1,
+          "line": 406
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:407:5: replace emit_error with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 410
+      },
+      "start": {
+        "column": 5,
+        "line": 407
+      }
+    }
+  }
+]

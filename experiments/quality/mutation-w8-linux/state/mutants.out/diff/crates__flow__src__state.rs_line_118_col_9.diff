@@ -1,0 +1,78 @@
+--- crates/flow/src/state.rs
++++ replace Config::from_json -> Result<Config, String> with Ok(Default::default())
+@@ -110,74 +110,17 @@
+                 Json::str(self.execution_boundary.clone()),
+             ),
+             ("obligations", Json::Arr(obs)),
+             ("disabled", Json::Bool(self.disabled)),
+         ])
+     }
+ 
+     pub fn from_json(value: &Json) -> Result<Config, String> {
+-        let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-        if schema != SCHEMA_CONFIG {
+-            return Err(format!("unsupported config schema {schema:?}"));
+-        }
+-        let mut obligations = Vec::new();
+-        if let Some(items) = value.get("obligations").and_then(Json::as_arr) {
+-            for item in items {
+-                let id = item
+-                    .get("id")
+-                    .and_then(Json::as_str)
+-                    .unwrap_or("")
+-                    .to_string();
+-                let program = item
+-                    .get("program")
+-                    .and_then(Json::as_str)
+-                    .unwrap_or("")
+-                    .to_string();
+-                if id.is_empty() || program.is_empty() {
+-                    return Err("obligation needs a non-empty id and program".into());
+-                }
+-                let args = item
+-                    .get("args")
+-                    .and_then(Json::as_arr)
+-                    .map(|a| {
+-                        a.iter()
+-                            .filter_map(|v| v.as_str().map(str::to_string))
+-                            .collect()
+-                    })
+-                    .unwrap_or_default();
+-                obligations.push(Obligation {
+-                    id,
+-                    program,
+-                    args,
+-                    required: item.get("required").and_then(Json::as_bool).unwrap_or(true),
+-                    timeout_s: item
+-                        .get("timeout_s")
+-                        .and_then(Json::as_num)
+-                        .unwrap_or(300.0) as u64,
+-                });
+-            }
+-        }
+-        Ok(Config {
+-            policy_version: value
+-                .get("policy_version")
+-                .and_then(Json::as_str)
+-                .unwrap_or(POLICY_VERSION)
+-                .to_string(),
+-            execution_boundary: value
+-                .get("execution_boundary")
+-                .and_then(Json::as_str)
+-                .unwrap_or("local-trusted")
+-                .to_string(),
+-            obligations,
+-            disabled: value
+-                .get("disabled")
+-                .and_then(Json::as_bool)
+-                .unwrap_or(false),
+-        })
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ pub fn flow_dir(root: &Path) -> PathBuf {
+     root.join(".flow")
+ }
+ 
+ pub fn config_path(root: &Path) -> PathBuf {

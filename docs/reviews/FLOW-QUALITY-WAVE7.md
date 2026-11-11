@@ -78,7 +78,10 @@ now killed by name:
   claim but changes nothing observable in-process: `sync_all` reports nothing to the caller, no fsync
   failure is injected, and making the parent disappear between `rename` and `fsync` is a race (the
   rename requires the parent). Killing it needs a crash/power-loss harness or an `LD_PRELOAD`/FUSE
-  shim failing a directory `fsync`. **Not observable here; not claimed equivalent.**
+  shim failing a directory `fsync`. **Not observable here; not claimed equivalent.** Wave 8 closed it
+  without a harness by extracting the rule as `parent_to_flush` and testing the predicate directly
+  (`delete !` now returns `Some("")` instead of `None`, which the test refuses) — see
+  [wave 8](FLOW-QUALITY-WAVE8.md) §2; the site is `state.rs:396` at that head.
 - The 2 collateral mutants were caught in both rounds: 16/17 adjudicated at this head.
 
 The test fixture defect found in this round is part of the record: at the first committed head, the
@@ -180,7 +183,8 @@ real checkout. That keeps the suite's runtime bounded (the whole test file still
   randomised sweep of wave 6 remains the substitute and is labelled as a sweep, never as fuzzing.
 - **S9 confirmatory comparison**: still blocked by `H4`.
 - **`state.rs:377`**: the only mutation survivor left in these modules, unobservable without a
-  crash-consistency harness (§3.2).
+  crash-consistency harness (§3.2). Closed in wave 8 by extracting the rule and pinning the predicate
+  (see [wave 8](FLOW-QUALITY-WAVE8.md) §2); it is no longer an open survivor at the wave-8 head.
 - **Test-harness flake, fixed**: two `scratch` tests predicted the process-global name sequence
   (`next_sequence()`) and assumed the value was still theirs when `materialise_in` read it again. The
   suite runs tests in parallel, so another test can consume a value in between; the collision the

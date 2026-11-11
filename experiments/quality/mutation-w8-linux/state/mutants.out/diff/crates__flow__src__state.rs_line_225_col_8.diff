@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in load_adoption
+@@ -217,17 +217,17 @@
+     pub policy_digest: String,
+     pub policy_version: String,
+     pub approved_at: String,
+     pub source: String,
+ }
+ 
+ pub fn load_adoption(root: &Path) -> Result<Option<Adoption>, String> {
+     let path = adoption_path(root);
+-    if !path.exists() {
++    if  /* ~ changed by cargo-mutants ~ */path.exists() {
+         return Ok(None);
+     }
+     let text =
+         fs::read_to_string(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+     let value = json::parse(&text)?;
+     let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+     if schema != SCHEMA_ADOPTION {
+         return Err(format!(

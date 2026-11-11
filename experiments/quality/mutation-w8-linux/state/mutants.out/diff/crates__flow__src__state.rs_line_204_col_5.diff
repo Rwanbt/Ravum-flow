@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace candidates_dir -> PathBuf with Default::default()
+@@ -196,17 +196,17 @@
+     flow_dir(root).join("logs")
+ }
+ 
+ pub fn proposals_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("proposals")
+ }
+ 
+ pub fn candidates_dir(root: &Path) -> PathBuf {
+-    flow_dir(root).join("candidates")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn adoption_path(root: &Path) -> PathBuf {
+     flow_dir(root).join("adopted.json")
+ }
+ 
+ /// The local approval of a repository policy.
+ ///

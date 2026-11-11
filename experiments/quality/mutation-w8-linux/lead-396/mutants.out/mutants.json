@@ -1,0 +1,98 @@
+[
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace parent_to_flush -> Option<&Path> with None\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // wave8-probe\n+    None /* ~ changed by cargo-mutants ~ */ // wave8-probe\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") {\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 396
+      },
+      "start": {
+        "column": 5,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace parent_to_flush -> Option<&Path> with Some(Box::leak(Box::new(Default::default())))\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // wave8-probe\n+    Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */ // wave8-probe\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") {\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with Some(Box::leak(Box::new(Default::default())))",
+    "package": "flow",
+    "replacement": "Some(Box::leak(Box::new(Default::default())))",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 396
+      },
+      "start": {
+        "column": 5,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in parent_to_flush\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // wave8-probe\n+    path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) // wave8-probe\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") {\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:396:30: delete ! in parent_to_flush",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 396
+      },
+      "start": {
+        "column": 30,
+        "line": 396
+      }
+    }
+  }
+]

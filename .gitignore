@@ -48,3 +48,11 @@ dist/
 /experiments/quality/mutation-w7-linux/**/log/
 /experiments/quality/mutation-w7-linux/**/debug.log
 
+# wave-8 mutation/stability evidence: same rule as waves 6-7 — per-mutant logs and debug traces
+# are regenerable from the committed outcomes (rerun with --iterate); the stability CSV is small
+# and is committed, its per-run failure logs would not be.
+/experiments/quality/mutation-w8-linux/**/log/
+/experiments/quality/mutation-w8-linux/**/debug.log
+/experiments/quality/mutation-w8-linux/**/mutants.out.old/
+/experiments/quality/stability-w8/*.log
+
