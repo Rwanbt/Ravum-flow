@@ -203,9 +203,13 @@ sweep that runs on every build.
   re-measured it on this head: **95.68 % lines (4389/4587), 92.84 % branches (791/852)** — both above
   the gate, with no waiver. None of the new tests is excluded from the product view (test code never
   enters it).
-- CI on the final head (`4fb170c`): push run `42951607307` and PR run `42951614434`, **5/5 jobs each**
-  (test Ubuntu + Windows, polyglot ×2, coverage). The two runs of the previous head failed on real
-  defects — a gate name without its `tests::` prefix and the POSIX containment bug — not on flakes.
+- CI on the final head (`9efdeed`): push run `42952391247` and PR run `42952399676`, **5/5 jobs each**
+  (test Ubuntu + Windows, polyglot ×2, coverage). The two runs of the code head (`1316120`) failed on
+  real defects — a gate name without its `tests::` prefix and the POSIX containment bug — not on
+  flakes; the fix head `4fb170c` was green too.
+- The coverage job measured the gate twice on the way: **95.68 % / 92.84 %** on `4fb170c` and
+  **95.68 % / 92.72 %** on the final head (both 4389/4587 lines, 790–791/852 branches). The branch
+  difference between the two runs is runner-side; both clear the 90 % gate.
 - The count is not the point: five of the new tests exist because a mutant survived without them
   (the retained-stream budget collapse, the straddling last chunk, the interrupt-only retry, the
   hyphenated-token tail, the non-advancing flag walk), and two more because a refusal named the
