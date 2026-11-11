@@ -236,10 +236,12 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   67/69 = 97.1 % with the two timeouts adjudicated by the unit watchdog); **517/542 = 95.4 %** of the
   four modules. No unmeasured host-gated mutant remains in those modules.
 - **Coverage re-measured on the CI toolchain** (`nightly-2026-05-06`, `cargo-llvm-cov 0.9.1`,
-  product-only): **95.87 % lines / 93.29 % branches** (4389/4578, 793/850) at `47af568`, above the
-  95/90 gate with no waiver. The near-flat delta is reported rather than dressed up: the remaining
-  `lock`/`scratch` gaps are one-sided error arms that need fault injection, and `lock.rs:239` is a
-  concurrent-creator race, so its branch coverage varies run to run without a code change.
+  product-only): **95.91 % lines (4403/4591) / 93.68 % branches (800/854)** on the CI (Linux) coverage
+  job at `00f87b7`, above the 95/90 gate with no waiver; the local Windows re-measurement on the same
+  tree was 95.87 % / 93.29 % (4389/4578, 793/850), because the two hosts keep separate counters. The
+  near-flat local delta is reported rather than dressed up: the remaining `lock`/`scratch` gaps are
+  one-sided error arms that need fault injection, and `lock.rs:239` is a concurrent-creator race, so its
+  branch coverage varies run to run without a code change.
 - **Five refusals pinned by tests**: a state directory that is a file, a lock attributed to a dead pid,
   a scratch base that is a file, a `.git` link that `git worktree add` did not create, and a read-only
   `.git` file.

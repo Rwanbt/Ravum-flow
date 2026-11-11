@@ -130,10 +130,14 @@ module-subset rate, not a crate-wide mutation score.
 Measured with `nightly-2026-05-06` + `cargo-llvm-cov 0.9.1`, `--all-targets --branch`,
 `--ignore-filename-regex '[\\/]tests[\\/]'`, product-only view (`analyze_lcov.py --product-only`):
 
-| head | lines | branches | gate |
-|---|---|---|---|
-| `8d21b7b` (before the new tests) | 95.85 % (4388/4578) | 93.41 % (794/850) | pass |
-| `47af568` (after) | 95.87 % (4389/4578) | 93.29 % (793/850) | pass |
+| head | platform | lines | branches | gate |
+|---|---|---|---|---|
+| `8d21b7b` (before the new tests) | Windows, local | 95.85 % (4388/4578) | 93.41 % (794/850) | pass |
+| `47af568` (after the new tests) | Windows, local | 95.87 % (4389/4578) | 93.29 % (793/850) | pass |
+| **`00f87b7` (wave-9 head, authoritative)** | **Linux, CI `coverage` job** | **95.91 % (4403/4591)** | **93.68 % (800/854)** | **pass, no waiver** |
+
+The two hosts keep separate counters (platform-only code exists on each side), so the Windows pair is
+reported for the local reproducibility of the delta and the CI pair is the number this wave claims.
 
 The delta is one line and minus one branch, and that is the honest result: the remaining uncovered
 regions of `lock.rs` and `scratch.rs` are one-sided error arms (`create_dir` failing for a reason other
@@ -158,6 +162,11 @@ concurrent), each run recorded in `windows-stability.csv`:
 This replaces the wave-8 evidence that run 7 entailed. The claim is now "ten consecutive full-suite
 passes on an idle host", which is what the wave-8 checklist item asked for; it is not a claim of
 deterministic absence of flakes under any load.
+
+The CI run on `00f87b7` (`43075751849`, five jobs) is green: `test` on Ubuntu executes **477** tests
+with 0 ignored (floor 470) and the Windows job passes, the two polyglot jobs pass, and the coverage job
+reports 95.91 % / 93.68 %. The floor is left at 470/468 in this wave because the per-platform counts must
+come from the runner, not from a local estimate.
 
 ## 4. What this wave does not close
 
