@@ -85,13 +85,13 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
-          # number that would silently shrink. The wave-5 numbers were measured
-          # (422 on Windows, 419 on Linux, run 42896473842); wave 6 adds 25
-          # cross-platform tests, so both floors rise by 25. That is a lower
-          # bound, not a measured count: this host executes 459, and the next CI
-          # run reports the runner's exact number. 0 ignored on both.
-          minimum=444
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=447; fi
+          # number that would silently shrink. Both numbers are measured, not
+          # projected: 459 on Windows and 456 on Linux in run 42951607307
+          # (2026-11-11, wave 6), 0 ignored. Wave 5 measured 422/419 in run
+          # 42896473842; the 25 cross-platform tests of wave 6 are covered by this
+          # raise, and 11 named gates pin them by name as well.
+          minimum=456
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=459; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1

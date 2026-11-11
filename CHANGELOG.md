@@ -130,9 +130,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `--locked --offline` contract excludes: 2 000–4 000 adversarial and well-formed shapes per parser
   with explicit invariants, a fixed seed, and a check that both the accepted and the refused answer
   are exercised. It is a sweep, not coverage-guided fuzzing, and is never called that.
-- 25 new tests (459 executed on Windows, 0 ignored; the CI floor rises to 447/444 as a lower bound)
-  and 11 new named gates, so a deleted new test fails the build like a deleted old one. No test,
-  gate or security property was removed or weakened, and no waiver is used.
+- 25 new tests (**459 executed on Windows, 456 on Linux, 0 ignored**, measured in run `42951607307`;
+  the CI floor is set to exactly those counts) and 11 new named gates, so a deleted new test fails the
+  build like a deleted old one. No test, gate or security property was removed or weakened, and no
+  waiver is used.
 
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a

@@ -194,15 +194,18 @@ sweep that runs on every build.
   tests (`isolation.rs`: the 8 KiB stream that must not be flagged truncated, the timed-out
   obligation whose descendant must not survive, the porcelain dirty/untracked split; `cli.rs`: the
   status counts and the case-collision refusal that must name the collision).
-- The suite executes **459 tests on this Windows host, 0 ignored** (422 at the wave-5 head). The CI
-  floor rises to **447 / 444** — the previous measured floors plus the 25 cross-platform tests. That
-  is a lower bound, not a measured runner count; the next CI run reports the real number and the
-  follow-up tightens it.
+- The suite executes **459 tests on Windows and 456 on Linux, 0 ignored** (422/419 at the wave-5
+  head) — both numbers measured in run `42951607307`. The CI floor is set to exactly those counts, so
+  deleting a test fails the build even if no named gate is touched.
 - **11 new named blocking gates** pin the new tests by name, so deleting or renaming one fails the
   build exactly like a wave-5 gate.
-- The coverage gate is unchanged at **95 % lines / 90 % branches product-only** and is re-measured
-  by the `coverage` job on this head; none of the new tests is excluded from the product view (test
-  code never enters it).
+- The coverage gate is unchanged at **95 % lines / 90 % branches product-only** and the `coverage` job
+  re-measured it on this head: **95.68 % lines (4389/4587), 92.84 % branches (791/852)** — both above
+  the gate, with no waiver. None of the new tests is excluded from the product view (test code never
+  enters it).
+- CI on the final head (`4fb170c`): push run `42951607307` and PR run `42951614434`, **5/5 jobs each**
+  (test Ubuntu + Windows, polyglot ×2, coverage). The two runs of the previous head failed on real
+  defects — a gate name without its `tests::` prefix and the POSIX containment bug — not on flakes.
 - The count is not the point: five of the new tests exist because a mutant survived without them
   (the retained-stream budget collapse, the straddling last chunk, the interrupt-only retry, the
   hyphenated-token tail, the non-advancing flag walk), and two more because a refusal named the
