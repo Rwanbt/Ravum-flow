@@ -157,14 +157,19 @@ real checkout. That keeps the suite's runtime bounded (the whole test file still
 - **13 new test functions** (9 cross-platform, 4 `#[cfg(unix)]`): 3 unit tests in `commands.rs`,
   1 unit test in `state.rs`, 3 operator-surface tests, 4 checkout-fidelity tests, 2 CLI tests, and one
   assertion added to the existing `run_passing_obligation_binds_the_index_tree`.
-- **468 executed on Windows, 469 on Linux, 0 ignored**, both measured at `308bf6a` locally; the CI
-  floor is raised to exactly those counts (`minimum=469`, Windows `468`). Wave 6 measured 459/456.
+- **468 executed on Windows, 469 on Linux, 0 ignored**, measured locally at `308bf6a` and confirmed
+  by CI on the same head (run `43011382354`: `executed_passed=469`/`468`, `ignored=0`); the CI floor is
+  raised to exactly those counts (`minimum=469`, Windows `468`). Wave 6 measured 459/456.
 - **13 new named blocking gates**; the 4 Unix-only ones are not claimed on Windows (the workflow skips
   them there, as it already does for the other Unix-only gates), so a gate is never a false green.
 - No test, gate or security property was removed or weakened; no waiver is used. The only product
   change is the gitlink refusal message/order (§5).
-- The coverage gate is unchanged (**95 % lines / 90 % branches, product-only**) and is re-measured by
-  the `coverage` job on this head; the new tests do not enter the product view.
+- The coverage gate is unchanged (**95 % lines / 90 % branches, product-only**) and the `coverage` job
+  re-measured it on this head: **95.88 % lines (4399/4588), 93.56 % branches (799/854)**, both above
+  the gate with no waiver, and above the wave-6 measurement (95.68 / 92.72). The new tests do not
+  appear in the product view (test code is excluded by construction).
+- CI on the head `6b520e5`: push run `43011382354` and PR run `43011392851`, **5/5 jobs each** (test
+  Ubuntu + Windows, polyglot ×2, coverage).
 
 ## 8. What is still not run, and the limits
 
@@ -174,6 +179,13 @@ real checkout. That keeps the suite's runtime bounded (the whole test file still
 - **S9 confirmatory comparison**: still blocked by `H4`.
 - **`state.rs:377`**: the only mutation survivor left in these modules, unobservable without a
   crash-consistency harness (§3.2).
+- **Test-harness flake, fixed**: two `scratch` tests predicted the process-global name sequence
+  (`next_sequence()`) and assumed the value was still theirs when `materialise_in` read it again. The
+  suite runs tests in parallel, so another test can consume a value in between; the collision the
+  test builds then becomes an ordinary missing object and the test fails with an unrelated Git error.
+  Both tests now retry with a fresh value within a bounded number of attempts and still fail if the
+  guard under test is removed. The Linux campaign had worked around it with `RUST_TEST_THREADS=1`
+  before the fix.
 - **Linux module rates**: this is a second measurement of the same 15 sites plus the two type guards,
   not a module-wide Linux mutation campaign; per-module Linux rates remain `NOT_RUN`.
 - Product decisions unchanged: sandbox `H3`, receipt signing (`PRF-01`), retention (`PRF-02/08`),

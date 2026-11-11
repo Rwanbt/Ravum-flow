@@ -163,7 +163,14 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   could not see it because the test is `#[cfg(unix)]`.
 - **13 new tests (468 executed on Windows, 469 on Linux, 0 ignored; the CI floor is raised to exactly
   those counts) and 13 new named gates** (4 Unix-only, not claimed on Windows). No test, gate or
-  security property was removed or weakened.
+  security property was removed or weakened. CI on the resulting head: push run `43011382354` and PR
+  run `43011392851`, 5/5 jobs each; product-only coverage re-measured at **95.88 % lines / 93.56 %
+  branches** (4399/4588, 799/854), above the 95/90 gate with no waiver.
+- Two `scratch` unit tests no longer predict the process-global name sequence: they retry with a fresh
+  value within a bounded number of attempts, so a parallel test that consumes a value between the
+  read and `materialise_in` can no longer turn the collision they build into an unrelated Git failure.
+  This is a test-stability fix (the Linux mutation campaign had serialised test threads to work
+  around it); the guards under test are unchanged.
 
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
