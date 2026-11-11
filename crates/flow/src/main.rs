@@ -418,6 +418,20 @@ mod tests {
         values.iter().map(|v| v.to_string()).collect()
     }
 
+    /// Run a walk under a watchdog. A walk whose index stops advancing loops
+    /// forever, and a hung test binary is reported by the mutation campaign as
+    /// a timeout rather than as a failure, so the hang has to become a fast and
+    /// attributable failure instead of a suite-wide stall.
+    fn watched<T: Send + 'static>(seconds: u64, walk: impl FnOnce() -> T + Send + 'static) -> T {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = sender.send(walk());
+        });
+        receiver
+            .recv_timeout(std::time::Duration::from_secs(seconds))
+            .expect("the walk must terminate")
+    }
+
     #[test]
     fn a_value_flag_accepts_both_spellings_and_refuses_a_missing_value() {
         assert_eq!(
@@ -503,21 +517,50 @@ mod tests {
 
     #[test]
     fn repeated_and_inline_values_keep_their_order() {
-        let collected = collect_values(
-            &args(&[
-                "--proposal",
-                "a",
-                "--proposal=b",
-                "--other",
-                "x",
-                "--proposal",
-                "c",
-            ]),
-            &["--proposal"],
-        )
+        // A collector walk that stops advancing pushes the same value forever, so
+        // the timeout is deliberately short: it bounds the growth a mutant can
+        // cause before the watchdog fires.
+        let collected = watched(2, || {
+            collect_values(
+                &args(&[
+                    "--proposal",
+                    "a",
+                    "--proposal=b",
+                    "--other",
+                    "x",
+                    "--proposal",
+                    "c",
+                ]),
+                &["--proposal"],
+            )
+        })
         .expect("values are collected");
         assert_eq!(collected, vec!["a", "b", "c"]);
         assert_eq!(collect_values(&args(&[]), &["--proposal"]), None);
+    }
+
+    #[test]
+    fn a_value_walk_that_stops_advancing_is_caught() {
+        // `collect_values` advances by two after a value flag and by one
+        // otherwise (`+= 2` and `+= 1`). Both advances are load-bearing: `*= 2`
+        // leaves the index at zero from any starting point, and `-= 1` cycles
+        // between two indices in debug. The arguments below keep the hang
+        // allocation-free (no value follows the flag, and the stray token
+        // matches no name), so the watchdog pays a spin, never a growing vector.
+        let flag = ["--proposal"];
+        let stray = ["stray"];
+        assert_eq!(
+            watched(10, move || {
+                collect_values(&args(&flag), &["--proposal"])
+            }),
+            None
+        );
+        assert_eq!(
+            watched(10, move || {
+                collect_values(&args(&stray), &["--proposal"])
+            }),
+            None
+        );
     }
 
     #[test]

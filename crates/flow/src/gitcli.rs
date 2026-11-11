@@ -1144,4 +1144,39 @@ mod tests {
         assert!(resolve_program_in("tool", None, None).is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn resolve_program_reads_the_process_environment() {
+        // `resolve_program` is the only Windows surface that reads PATH and
+        // PATHEXT from the real process environment; the resolution *rules* are
+        // pinned through `resolve_program_in`, but the wrapper that connects
+        // them to the spawner was never exercised. Both mutants of the wrapper
+        // (`-> None`, `-> Some(Default::default())`) survived the whole unit
+        // suite, which means a `.cmd`/`.bat` shim installed by npm, npx or
+        // gradle could become invisible while the wrapper was broken. These
+        // assertions are what make the two halves one function.
+        let found = resolve_program("cmd").expect(
+            "cmd.exe is a system tool reachable through PATH; None here means the wrapper resolved nothing",
+        );
+        assert!(
+            found.is_file(),
+            "{} must be a real file the spawner can execute",
+            found.display()
+        );
+        assert_eq!(
+            found
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .map(str::to_ascii_lowercase),
+            Some("cmd".to_string())
+        );
+        // A name that matches nothing must stay unresolved so the caller keeps
+        // the declared name and reports UNSUPPORTED instead of spawning a
+        // placeholder.
+        assert!(
+            resolve_program("flow-no-such-tool-9c1f").is_none(),
+            "an unresolvable name must not become a path"
+        );
+    }
 }
