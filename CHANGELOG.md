@@ -76,6 +76,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `-<pgid>` as an option (dash answers "Illegal option -9") and the failure was silenced, so only
   the direct child died and a descendant of a killed obligation could outlive the containment. The
   operand is now passed after `--`; the new containment test fails without the fix (wave 6).
+- A tree naming a **gitlink** was refused as "the checkout is missing N tree entries": the presence
+  check ran before the type check, so the operator read the symptom, not the cause. The gitlink is now
+  refused first, with its own reason (submodule content is not materialised), and the dead `160000`
+  match arm is removed (wave 7). The behaviour is a refusal in both versions.
 
 ### Tests and evidence (wave 4, 2026-11-10 — tests only)
 - New `tests/operator_surfaces.rs` (30 tests) pins the operator-facing contracts: `init` shows a
@@ -134,6 +138,32 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   the CI floor is set to exactly those counts) and 11 new named gates, so a deleted new test fails the
   build like a deleted old one. No test, gate or security property was removed or weakened, and no
   waiver is used.
+
+### Tests and evidence (wave 7, 2026-11-11 — the last assertion gaps and the Unix sites on Linux)
+- The 13 operator-surface assertion gaps wave 6 listed are closed by tests, not by waivers: the
+  receipt's `stdout_preview`/`stderr_preview` (exactly 400 characters, ellipsis only when cut), the
+  pending-intent counter and its `>=` boundary, a duplicate intent fully closed by two outcomes,
+  `explain`'s per-tree journal filter, the two checkout type guards (a symlink materialised as a
+  symlink; a file replaced by a symlink named by its own reason), the gitlink refusal, the journal's
+  unreadable-file arm, and the two Unix-only gaps the Linux measurement found (a declared-`100755`
+  script whose bit a hook removed; a hard-linked state file refused by name).
+- The three documented boundaries now have fixtures: exactly 20 000 regular files are compared (not
+  refused), a batch of exactly 64 MiB is accepted, and a ref of exactly 1 024 characters reaches the
+  receipt gate instead of the cheap length refusal.
+- The 15 `#[cfg(unix)]`/`#[cfg(not(windows))]` sites wave 6 could only record as "not compiled here"
+  were measured on Linux: 12/15 caught on the wave-6 head, and after the two new tests the two real
+  gaps are caught too (`commands.rs:1005:41`, `state.rs:340:43`) — 14/15, the two guard mutants of
+  `commands.rs:873`/`878` measuring 6/6 caught in a separate Unix-only run. The only survivor,
+  `state.rs:377` (directory fsync), is unobservable without a crash-consistency harness and is
+  documented as such, never as equivalent. One raw "caught" was a flake in an unrelated `scratch`
+  test and is reported as missed after a single-mutant rerun.
+- One new test was **red on Linux** at its first committed head and is fixed: `git add -A` in
+  `install_tracked_hook` re-staged the `0644` worktree file over the forced `100755` index mode, so
+  the tree declared a non-executable file and the test passed vacuously (`308bf6a`). The Windows job
+  could not see it because the test is `#[cfg(unix)]`.
+- **13 new tests (468 executed on Windows, 469 on Linux, 0 ignored; the CI floor is raised to exactly
+  those counts) and 13 new named gates** (4 Unix-only, not claimed on Windows). No test, gate or
+  security property was removed or weakened.
 
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a

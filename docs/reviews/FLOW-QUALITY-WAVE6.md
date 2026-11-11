@@ -125,7 +125,9 @@ given; otherwise it is listed as a **gap** with the assertion that would close i
 and 377 (the Unix hardlink and directory-fsync arms), `gitcli` 563 (the non-Windows
 `resolve_program` stub), `commands` 996, 1000 ×3, 1006 ×3, 1007 ×2 (the executable-bit proof). The
 mutated line is not built on Windows, so the mutant is "missed" by construction. They are not
-counted as killed, and Linux mutation remains `NOT_RUN` (`H4`).
+counted as killed. **[Wave 7](FLOW-QUALITY-WAVE7.md) §3 measured all 15 on Linux**: 12/15 caught on
+this head, then 14/15 once the two real gaps were closed, plus 6/6 on the two checkout type guards;
+module-wide Linux mutation rates remain `NOT_RUN`.
 
 **Host-equivalent, with the proof (11).** `state:323` (`is_symlink() || reparse`): on this host a
 directory link reports both bits true (junction probe), so `&&` refuses exactly the same paths; the
@@ -178,9 +180,10 @@ sweep that runs on every build.
 
 ## 7. What is still not run
 
-- **Linux mutation**: still a Windows-host measurement. A 2-core runner would need its own budget
-  decision (`H4`), and five `state` mutants plus one `gitcli` mutant are `#[cfg(unix)]` code that
-  this host does not compile at all (they are listed as *not compiled here*, never as killed).
+- **Linux mutation**: the 15 `#[cfg(unix)]` sites are no longer a Windows-host measurement — they
+  were measured on Linux in [wave 7](FLOW-QUALITY-WAVE7.md) §3 (12/15 caught on this head, 14/15 once
+  the two real gaps were closed, 6/6 on the two checkout type guards). Module-wide Linux mutation
+  rates remain `NOT_RUN`; the directory-fsync mutant stays unobservable without a crash harness.
 - **macOS**: not measured.
 - **`cargo-fuzz`**: not added, by contract; §6 is the substitute and is labelled as a sweep.
 - **S9 confirmatory comparison**: still blocked by `H4`.

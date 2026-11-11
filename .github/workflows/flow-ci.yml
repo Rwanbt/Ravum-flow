@@ -86,12 +86,12 @@ jobs:
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
           # number that would silently shrink. Both numbers are measured, not
-          # projected: 459 on Windows and 456 on Linux in run 42951607307
-          # (2026-11-11, wave 6), 0 ignored. Wave 5 measured 422/419 in run
-          # 42896473842; the 25 cross-platform tests of wave 6 are covered by this
-          # raise, and 11 named gates pin them by name as well.
-          minimum=456
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=459; fi
+          # projected: **468 on Windows and 469 on Linux** (2026-11-11, wave 7,
+          # local runs at 308bf6a), 0 ignored. Wave 6 measured 459/456 in run
+          # 42951607307; wave 7 adds 13 tests (4 of them Unix-only) and 13 named
+          # gates, so both floors move with it.
+          minimum=469
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=468; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -222,6 +222,19 @@ jobs:
             proposal::tests::arbitrary_tree_listings_and_raw_diffs_are_parsed_or_refused_and_never_panic \
             proposal::tests::identities_follow_the_bound_and_the_charset_on_random_input \
             proposal::tests::symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe \
+            commands::tests::a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut \
+            commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_content_budget \
+            commands::tests::a_checkout_with_exactly_the_entry_budget_is_compared_not_refused \
+            state::tests::an_unreadable_journal_is_an_error_not_an_empty_journal \
+            status_counts_an_intent_with_no_outcome_as_pending \
+            a_duplicate_intent_that_is_fully_closed_is_not_reported_as_pending \
+            a_ref_of_exactly_the_documented_limit_reaches_the_receipt_gate \
+            a_tree_with_a_gitlink_is_refused_with_its_own_reason \
+            explain_lists_only_the_journal_records_of_the_explained_tree \
+            a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused \
+            a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason \
+            a_symlink_entry_checked_out_as_a_symlink_is_certified \
+            a_hardlinked_adoption_record_is_refused_on_unix \
             gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
               continue
@@ -247,6 +260,15 @@ jobs:
             # by the isolation tests.
             if [ "$gate" = "a_symlinked_journal_is_never_written_through" ] && [ "${RUNNER_OS}" = "Windows" ]; then
               continue
+            fi
+            # Four wave-7 gates pin Unix-only code (`#[cfg(unix)]`): Windows does
+            # not compile the executable-bit proof, the link count or a real file
+            # symlink. Claiming those gates on Windows would be a false green; the
+            # Linux job runs each of them for real.
+            if [ "${RUNNER_OS}" = "Windows" ]; then
+              case "$gate" in
+                a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused|a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason|a_symlink_entry_checked_out_as_a_symlink_is_certified|a_hardlinked_adoption_record_is_refused_on_unix) continue ;;
+              esac
             fi
             if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
               echo "::error::required gate '$gate' did not run or did not pass"

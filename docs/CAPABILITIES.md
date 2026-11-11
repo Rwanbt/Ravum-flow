@@ -60,8 +60,8 @@ When a row names a test, `cargo test --locked --test <file> <name>` reproduces i
 | Linux (x86_64-unknown-linux-gnu) build, test and install smoke | `DEMONSTRATED` | CI `test ubuntu-latest`; local WSL run of the full suite | built on a different host than the artefact provenance records — see the packaging report |
 | Reproducible build, per host and toolchain | `DEMONSTRATED` | CI "reproducible build (Windows, two clean archives)" on every Windows run | **cross-host identity is not claimed**; Linux reproducibility not claimed |
 | macOS | `NOT_AVAILABLE` | `NOT_TESTED_MACOS` in the gate report | no artefact, no claim |
-| Coverage | `DEMONSTRATED` (measurement), below the candidate gate | `experiments/quality/coverage/` summaries, cargo-llvm-cov | 90 %/85 % not met; the gap is published, not hidden |
-| Mutation score | `DEMONSTRATED` on a bounded module subset | `experiments/quality/mutation-*/` | whole-crate mutation `NOT_RUN`; 85 % not met |
+| Coverage | `DEMONSTRATED` (product-only measurement) | `experiments/quality/coverage/` summaries, cargo-llvm-cov | 95.68 % lines / 92.72 % branches measured on the candidate head, above the 95/90 gate; test code never enters the product view |
+| Mutation score | `DEMONSTRATED` on a bounded module subset (Windows), plus a Linux measurement of the 15 Unix-gated sites and the 2 checkout type guards | `experiments/quality/mutation-*/`, `experiments/quality/mutation-w7-linux/` | whole-crate mutation `NOT_RUN`; one survivor (`state.rs:377`, directory fsync) is unobservable without a crash harness, documented in the wave-7 report |
 | Productivity benefit over plain Git / worktrees | `SPECIFIED_ONLY` | `docs/BENCHMARK_S9.md` protocol; exploratory `n=5` pilot | no confirmatory campaign; treat as `UNPROVEN` |
 | Adversarial campaign | `DEMONSTRATED` (v2 head) | `experiments/mvp-qa/results*.json`, `FLOW-PRODUCTION-ADVERSARIAL*.md` | 3 scenarios `NOT_RUN`; a scenario that cannot reach its target is never counted as a pass |
 

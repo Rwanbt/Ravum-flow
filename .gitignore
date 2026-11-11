@@ -39,3 +39,12 @@ dist/
 /experiments/quality/mutation-w6/**/debug.log
 /experiments/quality/mutation-w6/**/mutants.out.old/
 /experiments/quality/mutation-w6/**/baseline.log
+
+# wave-7 mutation evidence: same rule as wave 6 — per-mutant logs are regenerable from the
+# committed outcomes, and an interrupted run's mutants.out.old is not evidence.
+/experiments/quality/mutation-w7/**/log/
+/experiments/quality/mutation-w7/**/debug.log
+/experiments/quality/mutation-w7/**/mutants.out.old/
+/experiments/quality/mutation-w7-linux/**/log/
+/experiments/quality/mutation-w7-linux/**/debug.log
+
