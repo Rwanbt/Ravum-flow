@@ -374,13 +374,26 @@ pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
     // guess about. Windows exposes no directory fsync, so the claim there is
     // "file fsynced before the rename" and the README says so.
     #[cfg(not(windows))]
-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+    if let Some(parent) = parent_to_flush(path) {
         let dir = File::open(parent)
             .map_err(|e| format!("cannot open {} for fsync: {e}", parent.display()))?;
         dir.sync_all()
             .map_err(|e| format!("cannot fsync {}: {e}", parent.display()))?;
     }
     Ok(())
+}
+
+/// The directory entry a rename must flush, or `None` when there is none to flush.
+///
+/// `Path::parent` returns `Some("")` for a bare relative name (`"journal.jsonl"`):
+/// that is the process working directory, which cannot be opened as `""`. Every
+/// target the product writes is built from the workspace root and carries a real
+/// parent, so a bare name is skipped instead of turning the write into a failed
+/// `File::open("")`. Pinning the rule in one named place keeps the skip a decision
+/// rather than an accident of string emptiness.
+#[cfg(not(windows))]
+fn parent_to_flush(path: &Path) -> Option<&Path> {
+    path.parent().filter(|p| !p.as_os_str().is_empty())
 }
 
 pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
@@ -727,6 +740,27 @@ mod tests {
     // is never reinterpreted, a file name is never taken from a record without a
     // check, and a failure is reported rather than swallowed. They live here
     // because these are private helpers of the durable-state module.
+
+    #[cfg(not(windows))]
+    #[test]
+    fn only_a_real_parent_directory_is_flushed_after_the_rename() {
+        // Every target the product writes is rooted in the workspace, so the
+        // parent is a real directory and its entry is the one the rename must
+        // make durable.
+        assert_eq!(
+            parent_to_flush(Path::new(".flow/journal.jsonl")),
+            Some(Path::new(".flow"))
+        );
+        assert_eq!(
+            parent_to_flush(Path::new("/srv/flow/.flow/journal.jsonl")),
+            Some(Path::new("/srv/flow/.flow"))
+        );
+        // A bare relative name has an empty parent: it denotes the process
+        // working directory, which `File::open("")` cannot reach. The flush is
+        // skipped there, and the write must not fail because of the empty string.
+        assert_eq!(parent_to_flush(Path::new("journal.jsonl")), None);
+        assert_eq!(parent_to_flush(Path::new("/")), None);
+    }
 
     fn temp_root(tag: &str) -> PathBuf {
         let root = std::env::temp_dir().join(format!("flow-state-{}-{tag}", std::process::id()));
