@@ -685,6 +685,9 @@ fn reconcile_diagnoses_a_shared_intent_id_instead_of_closing_both() {
 fn doctor_and_status_answer_when_a_state_directory_is_missing() {
     let repo = new_repo("missing-dirs");
     assert_eq!(flow(&repo.path, &["init"]).0, 0);
+    // Deterministic on both hosts: an unset value would inherit whatever the
+    // machine's global config says about long paths.
+    git(&repo.path, &["config", "core.longpaths", "false"]);
 
     // No hooks directory: the disclosure is "no hook installed", not a failure.
     fs::remove_dir_all(repo.path.join(".git/hooks")).unwrap();
@@ -692,6 +695,13 @@ fn doctor_and_status_answer_when_a_state_directory_is_missing() {
     assert_eq!(code, 0, "{out}");
     assert_eq!(check_status(&out, "hooks"), "OK");
     assert!(check_detail(&out, "hooks").contains("no hook installed"));
+    // core.longpaths is a Windows-only warning: with it explicitly false, Windows
+    // warns and every other platform reports OK. Both branches are asserted so the
+    // check cannot become a constant on either host.
+    #[cfg(windows)]
+    assert_eq!(check_status(&out, "longpaths"), "WARN");
+    #[cfg(not(windows))]
+    assert_eq!(check_status(&out, "longpaths"), "OK");
 
     // No receipts directory: nothing is shown as the latest evidence.
     fs::remove_dir_all(repo.path.join(".flow/receipts")).unwrap();
