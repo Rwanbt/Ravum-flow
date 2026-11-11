@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_reconcile
+@@ -2228,17 +2228,17 @@
+                     ("id", Json::str(id)),
+                     ("ref", Json::str(reference)),
+                     ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                     ("reason", Json::str(format!("REF_UNREADABLE: {e}"))),
+                 ]));
+                 continue;
+             }
+         };
+-        let resolution = if observed == new {
++        let resolution = if observed != /* ~ changed by cargo-mutants ~ */ new {
+             "PUBLISHED"
+         } else if observed == old {
+             "NOT_PUBLISHED"
+         } else {
+             state::STATE_NEEDS_RECONCILIATION
+         };
+         // Only a decisive observation is recorded. An ambiguous one stays open
+         // so it is re-examined instead of being closed by a guess.

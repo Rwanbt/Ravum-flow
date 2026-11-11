@@ -1,0 +1,25 @@
+--- crates/flow/src/commands.rs
++++ delete match arm "160000" in verify_checkout_fidelity
+@@ -860,21 +860,17 @@
+         let meta = fs::symlink_metadata(&full)
+             .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+         match mode.as_str() {
+             "120000" if !meta.file_type().is_symlink() => { // survival-probe
+                 return Err(format!(
+                     "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
+                 ));
+             }
+-            "160000" => { // survival-probe
+-                return Err(format!(
+-                    "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+-                ));
+-            }
++             /* ~ changed by cargo-mutants ~ */
+             "100644" | "100755" if !meta.is_file() => { // survival-probe
+                 return Err(format!(
+                     "tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file"
+                 ));
+             }
+             _ => {}
+         }
+     }

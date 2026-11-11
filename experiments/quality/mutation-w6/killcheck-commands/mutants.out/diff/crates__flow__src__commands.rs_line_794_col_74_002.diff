@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace > with >= in verify_checkout_fidelity
+@@ -786,17 +786,17 @@
+     let expected = ls_tree_entries(git, tree)?;
+ 
+     // Two paths differing only by case cannot both exist on a case-insensitive
+     // filesystem: the checkout silently keeps one of them.
+     let mut folded: BTreeMap<String, usize> = BTreeMap::new();
+     for (_, _, path, _) in &expected {
+         *folded.entry(path.to_lowercase()).or_insert(0) += 1; // survival-probe
+     }
+-    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) { // survival-probe
++    if let Some((name, count)) = folded.iter().find(|(_, count)| **count >= /* ~ changed by cargo-mutants ~ */ 1) { // survival-probe
+         return Err(format!(
+             "tree {tree} holds {count} paths that differ only by case (for example {name:?}): this host cannot represent them faithfully, so the obligations would not see the verified tree"
+         ));
+     }
+ 
+     // Everything the tree names must actually exist on disk, and nothing else may
+     // be present. `git worktree add` runs the repository's `post-checkout` hook
+     // (including one reached through `core.hooksPath` pointing at a directory the

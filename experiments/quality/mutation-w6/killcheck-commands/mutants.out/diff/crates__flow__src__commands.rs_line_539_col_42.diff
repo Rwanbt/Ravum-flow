@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_status
+@@ -531,17 +531,17 @@
+     let git = Git::new(root);
+     let head = git.head_oid().unwrap_or_default();
+     let tree = git.head_tree().unwrap_or_default();
+     let branch = git
+         .run(&["symbolic-ref", "--short", "-q", "HEAD"])
+         .map(|o| o.stdout.trim().to_string())
+         .unwrap_or_default();
+     let status = git.status_porcelain()?;
+-    let dirty = status.iter().filter(|l| !l.starts_with("??")).count(); // survival-probe
++    let dirty = status.iter().filter(|l|  /* ~ changed by cargo-mutants ~ */l.starts_with("??")).count(); // survival-probe
+     let untracked = status.iter().filter(|l| l.starts_with("??")).count();
+     let config = state::load_config(root).ok();
+     let disabled = config.as_ref().map(|c| c.disabled).unwrap_or(false);
+     let obligations = config.as_ref().map(|c| c.obligations.len()).unwrap_or(0);
+ 
+     let mut latest = Json::Null;
+     if let Ok(entries) = fs::read_dir(state::receipts_dir(root)) {
+         let mut files: Vec<PathBuf> = entries

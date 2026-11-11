@@ -1,0 +1,63 @@
+--- crates/flow/src/commands.rs
++++ replace verify_checkout_content -> Result<(), String> with Ok(())
+@@ -1058,59 +1058,17 @@
+ /// obligations ran`) so a refusal says what changed and when.
+ fn verify_checkout_content(
+     git: &Git,
+     scratch: &Path,
+     tree: &str,
+     expected: &[(String, String, String, u64)],
+     stage: &str,
+ ) -> Result<(), String> {
+-    /// Beyond this entry count the comparison is refused, not skipped.
+-    const CONTENT_ENTRIES: usize = 20_000;
+-
+-    let regular: Vec<(&str, &str)> = expected
+-        .iter()
+-        .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
+-        .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))
+-        .collect();
+-    if regular.is_empty() {
+-        return Ok(());
+-    }
+-    if regular.len() > CONTENT_ENTRIES { // survival-probe
+-        return Err(format!(
+-            "tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",
+-            regular.len()
+-        ));
+-    }
+-    let mut request = String::new();
+-    for (oid, _) in &regular {
+-        request.push_str(oid);
+-        request.push('\n');
+-    }
+-    let out = git.run_bounded(&["cat-file", "--batch"], Some(request.as_bytes()), None)?;
+-    if out.status != 0 {
+-        return Err(format!(
+-            "cannot read the tree content for {tree}: {}",
+-            out.stderr.trim()
+-        ));
+-    }
+-    let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;
+-    for ((oid, path), blob) in regular.iter().zip(blobs) {
+-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+-        let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
+-        if disk != blob {
+-            return Err(format!(
+-                "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+-                disk.len(),
+-                blob.len(),
+-                short(oid)
+-            ));
+-        }
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Parse one bounded `git cat-file --batch` answer: exactly one blob per
+ /// requested oid, in request order.
+ ///
+ /// Git's machine output is treated as untrusted input here: a missing newline, a
+ /// non-blob object, an unparsable size, a truncated body, an entry count or byte
+ /// total above the fidelity budget, or an arithmetic overflow is **refused**, not

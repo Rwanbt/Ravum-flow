@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace > with == in run_obligation
+@@ -615,17 +615,17 @@
+     let err_rx = spawn_reader(stderr_pipe);
+ 
+     let deadline = Duration::from_secs(ob.timeout_s.max(1));
+     let mut timed_out = false;
+     let exit = loop {
+         match child.try_wait() {
+             Ok(Some(status)) => break status.code(),
+             Ok(None) => {
+-                if started.elapsed() > deadline { // survival-probe
++                if started.elapsed() == /* ~ changed by cargo-mutants ~ */ deadline { // survival-probe
+                     timed_out = true;
+                     kill_tree(child.id());
+                     let _ = child.kill();
+                     reap_bounded(&mut child);
+                     break None;
+                 }
+                 std::thread::sleep(POLL_INTERVAL);
+             }

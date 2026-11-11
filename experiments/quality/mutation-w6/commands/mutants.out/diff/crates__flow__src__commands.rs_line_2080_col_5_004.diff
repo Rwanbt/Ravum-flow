@@ -1,0 +1,32 @@
+--- crates/flow/src/commands.rs
++++ replace count_by_id -> BTreeMap<String, usize> with BTreeMap::from_iter([("xyzzy".into(), 1)])
+@@ -2072,28 +2072,17 @@
+ fn crash_point(name: &str) -> bool {
+     if !cfg!(debug_assertions) {
+         return false;
+     }
+     std::env::var("FLOW_TEST_CRASH").as_deref() == Ok(name)
+ }
+ 
+ fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
+-    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+-    for record in records {
+-        if record.get("event").and_then(Json::as_str) == Some(event) {
+-            let id = record
+-                .get("id")
+-                .and_then(Json::as_str)
+-                .unwrap_or("")
+-                .to_string();
+-            *counts.entry(id).or_insert(0) += 1;
+-        }
+-    }
+-    counts
++    BTreeMap::from_iter([("xyzzy".into(), 1)]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Intents that no outcome can be attributed to.
+ ///
+ /// Counting, not set membership: an intent is closed only when the journal holds
+ /// at least as many outcomes as intents for that id. One outcome must never
+ /// close two intents.
+ fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {

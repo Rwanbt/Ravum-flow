@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace >= with < in pending_intents
+@@ -2111,17 +2111,17 @@
+             .unwrap_or("")
+             .to_string();
+         let position = {
+             let slot = seen.entry(id.clone()).or_insert(0);
+             let position = *slot;
+             *slot += 1;
+             position
+         };
+-        if position >= outcomes.get(&id).copied().unwrap_or(0) {
++        if position < /* ~ changed by cargo-mutants ~ */ outcomes.get(&id).copied().unwrap_or(0) {
+             pending.push(record);
+         }
+     }
+     Ok(pending)
+ }
+ 
+ /// The explicit state of "we could not even read the journal".
+ fn journal_failure(root: &Path, err: state::JournalError) -> Json {

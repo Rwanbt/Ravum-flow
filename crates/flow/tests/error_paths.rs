@@ -874,6 +874,10 @@ fn usage_and_version_contracts_do_not_touch_the_repository() {
     assert_eq!(status_of(&version), "VERSION");
     assert!(field(&version, "tool").starts_with("flow "));
     assert!(
+        field(&version, "git").starts_with("git version "),
+        "version reports the Git answer it actually got, not an empty or invented one: {version}"
+    );
+    assert!(
         field(&version, "schemas").contains("flow-receipt/2"),
         "version publishes every schema: {version}"
     );

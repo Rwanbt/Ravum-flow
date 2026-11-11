@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1929,17 +1929,17 @@
+             ]),
+         )?;
+         return Ok(refused_code(
+             "REF_MOVED",
+             "ref moved between intent and CAS: nothing was published",
+         ));
+     }
+     let res = git.update_ref(&reference, &commit, &old)?;
+-    if res.status != 0 {
++    if res.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         state::append_journal(
+             root,
+             &Json::obj(vec![
+                 ("event", Json::str("outcome")),
+                 ("id", Json::str(id)),
+                 ("status", Json::str("REFUSED")),
+                 ("stderr", Json::str(gitcli::redact(res.stderr.trim()))),
+                 ("at", Json::str(state::iso8601_now())),

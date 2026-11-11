@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_run
+@@ -1417,17 +1417,17 @@
+     let required_ids: Vec<String> = effective
+         .iter()
+         .filter(|o| o.required)
+         .map(|o| o.id.clone())
+         .collect();
+     let selected_ids: Vec<String> = selected.iter().map(|o| o.id.clone()).collect();
+     let missing_required: Vec<String> = required_ids
+         .iter()
+-        .filter(|id| !selected_ids.contains(id))
++        .filter(|id|  /* ~ changed by cargo-mutants ~ */selected_ids.contains(id))
+         .cloned()
+         .collect();
+ 
+     let status = if scope_mode == "selected" {
+         "PARTIAL"
+     } else if !missing_required.is_empty() {
+         "INCOMPLETE"
+     } else if failed {

@@ -85,12 +85,13 @@ jobs:
           # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
-          # number that would silently shrink. Both numbers are measured, not
-          # projected: 422 on Windows and 419 on Linux in run 42896473842
-          # (2026-11-10, wave 5), 0 ignored.
-
-          minimum=419
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=422; fi
+          # number that would silently shrink. The wave-5 numbers were measured
+          # (422 on Windows, 419 on Linux, run 42896473842); wave 6 adds 25
+          # cross-platform tests, so both floors rise by 25. That is a lower
+          # bound, not a measured count: this host executes 459, and the next CI
+          # run reports the runner's exact number. 0 ignored on both.
+          minimum=444
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=447; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -210,6 +211,17 @@ jobs:
             proposal::tests::identities_are_bounded_at_128_characters \
             proposal::tests::a_temporary_index_is_removed_when_dropped \
             scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions \
+            a_stream_below_the_retention_budget_is_kept_whole_and_not_flagged \
+            porcelain_status_reports_a_dirty_file_instead_of_an_empty_answer \
+            a_timed_out_obligation_kills_the_descendants_it_started \
+            a_bare_double_dash_is_skipped_and_the_walk_terminates \
+            gitcli::tests::the_git_surface_reports_what_git_answers \
+            gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name \
+            commands::tests::arbitrary_ls_tree_answers_are_parsed_or_refused_and_never_panic \
+            commands::tests::arbitrary_cat_file_answers_are_parsed_or_refused_and_never_panic \
+            proposal::tests::arbitrary_tree_listings_and_raw_diffs_are_parsed_or_refused_and_never_panic \
+            proposal::tests::identities_follow_the_bound_and_the_charset_on_random_input \
+            proposal::tests::symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe \
             gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
               continue

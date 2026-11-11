@@ -1,0 +1,194 @@
+[
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace validate_flags -> Result<(), String> with Ok(())\n@@ -268,72 +268,17 @@\n         \"publish\" => &[\"--dry-run\"],\n         _ => &[],\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n-    let takes_value = value_flags(command);\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if arg == \"--\" {\n-            index += 1; // survival-probe\n-            continue;\n-        }\n-        if let Some(body) = arg.strip_prefix(\"--\") {\n-            let (name, inline_value) = match body.split_once('=') {\n-                Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n-                None => (format!(\"--{body}\"), None),\n-            };\n-            if takes_value.contains(&name.as_str()) {\n-                if inline_value.is_none() {\n-                    match args.get(index + 1) {\n-                        None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n-                        Some(value) if value.starts_with(\"--\") => {\n-                            return Err(format!(\n-                                \"`{name}` needs a value, found the flag {value:?} instead\"\n-                            ))\n-                        }\n-                        Some(_) => {}\n-                    }\n-                    index += 2;\n-                    continue;\n-                }\n-            } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n-                || bool_flags(command).contains(&name.as_str())\n-            {\n-                // A boolean flag is a token, not a `key=value` pair. Accepting\n-                // `--dry-run=true` here and then matching only the exact token in\n-                // `has_flag` would run a real publication for an operator who\n-                // asked for a plan, so the shape is refused rather than guessed.\n-                if let Some(value) = inline_value {\n-                    return Err(format!(\n-                        \"`{name}` takes no value (found {value:?}); write `{name}` on its own\"\n-                    ));\n-                }\n-            } else if matches!(name.as_str(), \"--dry-run\" | \"--force\" | \"--adopt-policy\") {\n-                return Err(format!(\n-                    \"`{name}` is not implemented by `flow {command}` (see `flow help`); an option that would be ignored is a usage error\"\n-                ));\n-            } else {\n-                return Err(format!(\n-                    \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n-                ));\n-            }\n-        } else if command != \"proposals\" {\n-            return Err(format!(\n-                \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n-            ));\n-        }\n-        index += 1; // survival-probe\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:276:5: replace validate_flags -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 331
+      },
+      "start": {
+        "column": 5,
+        "line": 276
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in validate_flags\n@@ -272,17 +272,17 @@\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n-        if arg == \"--\" {\n+        if arg != /* ~ changed by cargo-mutants ~ */ \"--\" {\n             index += 1; // survival-probe\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:280:16: replace == with != in validate_flags",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 280
+      },
+      "start": {
+        "column": 16,
+        "line": 280
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in validate_flags\n@@ -273,17 +273,17 @@\n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n-            index += 1; // survival-probe\n+            index -= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:281:19: replace += with -= in validate_flags",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 281
+      },
+      "start": {
+        "column": 19,
+        "line": 281
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -273,17 +273,17 @@\n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n-            index += 1; // survival-probe\n+            index *= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:281:19: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 281
+      },
+      "start": {
+        "column": 19,
+        "line": 281
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in validate_flags\n@@ -321,17 +321,17 @@\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n         } else if command != \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n-        index += 1; // survival-probe\n+        index -= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:329:15: replace += with -= in validate_flags",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 329
+      },
+      "start": {
+        "column": 15,
+        "line": 329
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -321,17 +321,17 @@\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n         } else if command != \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n-        index += 1; // survival-probe\n+        index *= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:329:15: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 329
+      },
+      "start": {
+        "column": 15,
+        "line": 329
+      }
+    }
+  }
+]

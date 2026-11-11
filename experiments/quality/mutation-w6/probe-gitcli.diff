@@ -1,0 +1,57 @@
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index 2516946..2c299ae 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -134 +134 @@ impl Git {
+-        let reader_deadline = Instant::now() + READER_GRACE;
++        let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
+@@ -153 +153 @@ impl Git {
+-            status: exit.unwrap_or(-1),
++            status: exit.unwrap_or(-1), // survival-probe
+@@ -177 +177 @@ impl Git {
+-        self.capture(&["rev-parse", "HEAD^{tree}"])
++        self.capture(&["rev-parse", "HEAD^{tree}"]) // survival-probe
+@@ -201 +201 @@ impl Git {
+-    pub fn status_porcelain(&self) -> Result<Vec<String>, String> {
++    pub fn status_porcelain(&self) -> Result<Vec<String>, String> { // survival-probe
+@@ -206 +206 @@ impl Git {
+-    pub fn version(&self) -> String {
++    pub fn version(&self) -> String { // survival-probe
+@@ -331,2 +331,2 @@ fn redirecting_env_name(upper: &str) -> bool {
+-        || upper.starts_with("GIT_CONFIG_KEY_")
+-        || upper.starts_with("GIT_CONFIG_VALUE_")
++        || upper.starts_with("GIT_CONFIG_KEY_") // survival-probe
++        || upper.starts_with("GIT_CONFIG_VALUE_") // survival-probe
+@@ -396 +396 @@ pub struct Outcome {
+-pub const MAX_STREAM_BYTES: usize = 1024 * 1024;
++pub const MAX_STREAM_BYTES: usize = 1024 * 1024; // survival-probe
+@@ -425 +425 @@ struct Captured {
+-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;
++pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024; // survival-probe
+@@ -449 +449 @@ fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
+-                if take < n {
++                if take < n { // survival-probe
+@@ -453 +453 @@ fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
+-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
++            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue, // survival-probe
+@@ -523 +523 @@ fn resolve_program(program: &str) -> Option<PathBuf> {
+-    resolve_program_in(
++    resolve_program_in( // survival-probe
+@@ -570 +570 @@ fn resolve_program_in(
+-fn resolve_program(_program: &str) -> Option<PathBuf> {
++fn resolve_program(_program: &str) -> Option<PathBuf> { // survival-probe
+@@ -623 +623 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+-                if started.elapsed() > deadline {
++                if started.elapsed() > deadline { // survival-probe
+@@ -640 +640 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+-    let reader_deadline = Instant::now() + READER_GRACE;
++    let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
+@@ -666 +666 @@ fn reap_bounded(child: &mut Child) {
+-    let deadline = Instant::now() + REAP_GRACE;
++    let deadline = Instant::now() + REAP_GRACE; // survival-probe
+@@ -687 +687 @@ pub fn kill_tree(pid: u32) {
+-    {
++    { // survival-probe
+@@ -758 +758 @@ pub fn redact(text: &str) -> String {
+-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
++                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-') // survival-probe

@@ -1,0 +1,40 @@
+--- crates/flow/src/commands.rs
++++ replace effective_policy -> Json with Default::default()
+@@ -690,36 +690,17 @@
+         ("required", Json::Bool(o.required)),
+         ("timeout_s", Json::Num(o.timeout_s as f64)),
+     ])
+ }
+ 
+ /// The effective verification policy: every input that changes what a `PASSED`
+ /// means. Anything that can silently weaken the gate belongs here.
+ fn effective_policy(config: &Config, obligations: &[Obligation]) -> Json {
+-    Json::obj(vec![
+-        ("policy_version", Json::str(config.policy_version.clone())),
+-        (
+-            "execution_boundary",
+-            Json::str(config.execution_boundary.clone()),
+-        ),
+-        (
+-            "obligations",
+-            Json::Arr(obligations.iter().map(obligation_json).collect()),
+-        ),
+-        (
+-            "obligation_env",
+-            Json::Arr(
+-                gitcli::env_allowlist()
+-                    .iter()
+-                    .map(|n| Json::str(*n))
+-                    .collect(),
+-            ),
+-        ),
+-    ])
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn policy_digest(policy: &Json) -> String {
+     sha256::sha256_hex(policy.to_string().as_bytes())
+ }
+ 
+ fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
+     let context = Json::obj(vec![

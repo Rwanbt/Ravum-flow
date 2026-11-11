@@ -321,6 +321,17 @@ fn git_command(root: &Path) -> Command {
     cmd
 }
 
+/// True when this variable name could redirect Git or its helpers. The
+/// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject
+/// arbitrary configuration from the environment, so a prefix check is required in
+/// addition to the fixed list. Kept as a pure predicate so the rule can be pinned
+/// directly instead of only through a spawned process.
+fn redirecting_env_name(upper: &str) -> bool {
+    SCRUBBED_GIT_ENV.contains(&upper)
+        || upper.starts_with("GIT_CONFIG_KEY_")
+        || upper.starts_with("GIT_CONFIG_VALUE_")
+}
+
 /// Remove every environment variable that could redirect Git, then set the
 /// non-interactive, deterministic defaults. Host variables are inspected with
 /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are
@@ -328,10 +339,7 @@ fn git_command(root: &Path) -> Command {
 fn scrub_env(cmd: &mut Command) {
     for (name, _) in std::env::vars_os() {
         let upper = name.to_string_lossy().to_ascii_uppercase();
-        let redirects = SCRUBBED_GIT_ENV.contains(&upper.as_str())
-            || upper.starts_with("GIT_CONFIG_KEY_")
-            || upper.starts_with("GIT_CONFIG_VALUE_");
-        if redirects {
+        if redirecting_env_name(&upper) {
             cmd.env_remove(&name);
         }
     }
@@ -854,6 +862,132 @@ mod tests {
                 "{name} must be scrubbed from Git invocations"
             );
         }
+    }
+
+    #[test]
+    fn the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name() {
+        // `GIT_CONFIG_KEY_<n>`/`GIT_CONFIG_VALUE_<n>` are the documented way to
+        // inject arbitrary configuration, so the rule has to be a prefix rule: a
+        // `&&` between the two prefixes would let both families through.
+        for name in [
+            "GIT_CONFIG_KEY_0",
+            "GIT_CONFIG_KEY_9",
+            "GIT_CONFIG_VALUE_0",
+            "GIT_CONFIG_VALUE_12",
+            "GIT_DIR",
+            "GIT_WORK_TREE",
+            "GIT_INDEX_FILE",
+        ] {
+            assert!(redirecting_env_name(name), "{name} must be scrubbed");
+        }
+        for name in ["PATH", "HOME", "TEMP", "SystemRoot", "GIT_AUTHOR_NAME"] {
+            assert!(!redirecting_env_name(name), "{name} must be kept");
+        }
+        // Host spellings are normalised before the rule is applied.
+        assert!(redirecting_env_name(
+            &"git_config_key_0".to_ascii_uppercase()
+        ));
+    }
+
+    #[test]
+    fn the_git_surface_reports_what_git_answers() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-gitcli-surface-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let git = Git::new(&root);
+        assert_eq!(git.run(&["init", "-q"]).expect("git init runs").status, 0);
+        std::fs::write(root.join("a.txt"), "alpha\n").unwrap();
+        assert_eq!(git.run(&["add", "a.txt"]).expect("git add runs").status, 0);
+        let commit = git
+            .run(&[
+                "-c",
+                "user.name=Flow Test",
+                "-c",
+                "user.email=flow@example.invalid",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "seed",
+            ])
+            .expect("git commit runs");
+        assert_eq!(commit.status, 0, "{}", commit.stderr);
+
+        let tree = git.head_tree().expect("HEAD is a commit with a tree");
+        assert_eq!(tree.len(), 40, "a tree id is 40 hex characters: {tree:?}");
+        assert!(tree.chars().all(|c| c.is_ascii_hexdigit()), "{tree:?}");
+        assert_eq!(
+            tree,
+            git.write_tree().expect("the index tree"),
+            "an unmodified index names the HEAD tree, so neither answer may be invented"
+        );
+
+        let version = git.version();
+        assert!(
+            version.starts_with("git version "),
+            "the Git answer is reported, not an empty or invented string: {version:?}"
+        );
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_retained_stream_budgets_are_large_enough_for_ordinary_answers() {
+        // `64 + 1024 + 1024` is a collapse of `64 * 1024 * 1024`, not a budget: a
+        // normal `ls-tree -r` on a small tree already exceeds it. `black_box` keeps
+        // the check a runtime assertion so a collapsed constant fails the test
+        // instead of failing the build (an unviable mutant is not a killed one).
+        assert!(std::hint::black_box(MAX_STREAM_BYTES) >= 1024 * 1024);
+        assert!(std::hint::black_box(MAX_GIT_STREAM_BYTES) >= 8 * 1024 * 1024);
+    }
+
+    #[test]
+    fn read_capped_at_flags_a_stream_that_ends_inside_the_last_chunk() {
+        // The last read straddles the cap and then the stream ends, so the
+        // `take < n` branch is the only place that can flag the truncation.
+        let captured = read_capped_at(std::io::Cursor::new(vec![b'x'; 14]), 10);
+        assert_eq!(captured.bytes.len(), 10);
+        assert!(captured.truncated);
+    }
+
+    struct AlwaysBroken;
+
+    impl std::io::Read for AlwaysBroken {
+        fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
+            Err(std::io::Error::other("permanent read error"))
+        }
+    }
+
+    #[test]
+    fn a_permanent_read_error_ends_the_capture_instead_of_spinning() {
+        // Only `Interrupted` is retried; a watch dog turns "every error looks
+        // interruptible" from a hung reader thread into a failure.
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = sender.send(read_capped_at(AlwaysBroken, 16));
+        });
+        let captured = receiver
+            .recv_timeout(std::time::Duration::from_secs(10))
+            .expect("a permanent error must not be retried forever");
+        assert!(captured.bytes.is_empty());
+        assert!(!captured.truncated);
+    }
+
+    #[test]
+    fn a_hyphenated_token_is_redacted_whole() {
+        // `-` belongs to the token alphabet, so a token ends at whitespace, not at
+        // its first hyphen; a partial replacement would leave the tail on disk.
+        let out = redact("token ghp_abc-def end");
+        assert!(!out.contains("def"), "the hyphenated tail leaked: {out}");
+        assert!(out.contains("[REDACTED]"), "{out}");
+        assert!(out.ends_with(" end"), "{out}");
     }
 
     #[test]

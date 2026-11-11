@@ -981,4 +981,78 @@ mod tests {
         let _ = fs::remove_dir_all(&root);
         let _ = fs::remove_dir_all(&outside);
     }
+
+    #[test]
+    fn the_clock_helpers_return_epoch_values_not_constants() {
+        // 2023-11-14 in seconds: any later build passes, a constant 0/1 does not.
+        assert!(
+            unix_now() > 1_700_000_000,
+            "unix_now must be epoch seconds, got {}",
+            unix_now()
+        );
+        assert!(
+            unique_suffix() > 1_700_000_000_000_000_000,
+            "unique_suffix must be epoch nanoseconds"
+        );
+    }
+
+    #[test]
+    fn iso8601_now_has_the_shape_and_the_current_year() {
+        let now = iso8601_now();
+        assert_eq!(now.len(), 20, "a UTC timestamp is 20 characters: {now}");
+        assert!(now.ends_with('Z'), "{now}");
+        assert_eq!(&now[4..5], "-", "{now}");
+        assert_eq!(&now[7..8], "-", "{now}");
+        assert_eq!(&now[10..11], "T", "{now}");
+        assert_eq!(&now[13..14], ":", "{now}");
+        assert_eq!(&now[16..17], ":", "{now}");
+        let year: i64 = now[..4].parse().expect("four-digit year");
+        assert!(year >= 2024, "the year must be current: {now}");
+        let hour: u32 = now[11..13].parse().expect("hour");
+        assert!(hour < 24, "{now}");
+        let minute: u32 = now[14..16].parse().expect("minute");
+        assert!(minute < 60, "{now}");
+        let second: u32 = now[17..19].parse().expect("second");
+        assert!(second < 60, "{now}");
+
+        // The date and the time of day must both come from the same epoch second:
+        // a wrong remainder (`%` replaced by `/`) keeps the shape and the year and
+        // only moves the clock, so the shape alone is not a proof.
+        let secs = unix_now();
+        let got = u64::from(hour) * 3600 + u64::from(minute) * 60 + u64::from(second);
+        let want = secs % 86_400;
+        let delta = got.abs_diff(want);
+        assert!(
+            delta <= 2 || delta >= 86_398,
+            "the clock time must match the epoch second ({got} vs {want}): {now}"
+        );
+    }
+
+    #[test]
+    fn civil_dates_exercise_the_era_and_century_corrections() {
+        assert_eq!(civil_from_days(0), (1970, 1, 1));
+        assert_eq!(civil_from_days(20_000), (2024, 10, 4));
+        assert_eq!(civil_from_days(11_016), (2000, 2, 29));
+        // Day 59 is 1970-03-01; the century correction moves it to an impossible
+        // 1970-02-29 when either operator is mutated, which a single date cannot see.
+        assert_eq!(civil_from_days(59), (1970, 3, 1));
+        // Beyond one century the `doe / 36_524` correction is non-zero, which is
+        // where the mutated arithmetic differs.
+        assert_eq!(civil_from_days(100_000), (2243, 10, 17));
+        assert_eq!(civil_from_days(-1), (1969, 12, 31));
+        assert_eq!(civil_from_days(-719_469), (0, 2, 29));
+    }
+
+    #[test]
+    fn string_list_reads_only_the_string_entries_of_an_array() {
+        let value =
+            json::parse(r#"{"logs":["a","b"],"mixed":["a",1],"scalar":"x"}"#).expect("json");
+        assert_eq!(
+            string_list(&value, "logs"),
+            vec!["a".to_string(), "b".to_string()]
+        );
+        assert_eq!(string_list(&value, "mixed"), vec!["a".to_string()]);
+        assert!(string_list(&value, "scalar").is_empty());
+        assert!(string_list(&value, "absent").is_empty());
+    }
 }

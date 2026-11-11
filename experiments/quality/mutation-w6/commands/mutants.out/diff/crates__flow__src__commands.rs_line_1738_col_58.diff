@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_publish
+@@ -1730,17 +1730,17 @@
+         ));
+     }
+     // 4. every currently required obligation must be present *and* passed. The
+     //    global status alone is not enough: a missing entry is not a pass.
+     for ob in config.obligations.iter().filter(|o| o.required) {
+         match receipt
+             .obligations
+             .iter()
+-            .find(|x| x.get("id").and_then(Json::as_str) == Some(ob.id.as_str()))
++            .find(|x| x.get("id").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(ob.id.as_str()))
+         {
+             None => {
+                 return Ok(refused_code(
+                     "MISSING_REQUIRED",
+                     format!("required obligation {:?} is absent from the receipt", ob.id),
+                 ))
+             }
+             Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => {

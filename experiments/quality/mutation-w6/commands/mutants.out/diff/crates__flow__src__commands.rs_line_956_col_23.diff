@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in ls_tree_dirs
+@@ -948,17 +948,17 @@
+     Ok(expected)
+ }
+ 
+ /// The directories the tree declares (`ls-tree -r -d`), so an **empty** directory
+ /// created by a hook is visible: Git does not represent empty directories, but an
+ /// obligation that discovers directories can still see one.
+ fn ls_tree_dirs(git: &Git, tree: &str) -> Result<BTreeSet<String>, String> {
+     let listing = git.run(&["ls-tree", "-r", "-d", "-z", tree])?;
+-    if listing.status != 0 {
++    if listing.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot list the directories of tree {tree}: {}",
+             listing.stderr.trim()
+         ));
+     }
+     parse_tree_dirs(tree, &listing.stdout_bytes)
+ }
+ 

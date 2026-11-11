@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in current_ref
+@@ -38,17 +38,17 @@
+ }
+ 
+ fn short(digest: &str) -> String {
+     digest.chars().take(12).collect()
+ }
+ 
+ fn current_ref(git: &Git) -> Result<String, String> {
+     let out = git.run(&["symbolic-ref", "-q", "HEAD"])?;
+-    if out.status != 0 {
++    if out.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err("detached HEAD: pass --ref explicitly".into());
+     }
+     Ok(out.stdout.trim().to_string())
+ }
+ 
+ // ------------------------------------------------------------------- init
+ pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, String> {
+     let git = Git::new(root);

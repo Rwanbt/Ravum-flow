@@ -1,0 +1,1154 @@
+[
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with String::new()\n@@ -649,32 +649,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64;\n-    let rem = secs % 86_400; // survival-probe\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 672
+      },
+      "start": {
+        "column": 5,
+        "line": 657
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with \"xyzzy\".into()\n@@ -649,32 +649,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64;\n-    let rem = secs % 86_400; // survival-probe\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 672
+      },
+      "start": {
+        "column": 5,
+        "line": 657
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in iso8601_now\n@@ -653,17 +653,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64;\n+    let days = (secs % /* ~ changed by cargo-mutants ~ */ 86_400) as i64;\n     let rem = secs % 86_400; // survival-probe\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:661:22: replace / with % in iso8601_now",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 661
+      },
+      "start": {
+        "column": 22,
+        "line": 661
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in iso8601_now\n@@ -653,17 +653,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64;\n+    let days = (secs * /* ~ changed by cargo-mutants ~ */ 86_400) as i64;\n     let rem = secs % 86_400; // survival-probe\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:661:22: replace / with * in iso8601_now",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 661
+      },
+      "start": {
+        "column": 22,
+        "line": 661
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace % with / in iso8601_now\n@@ -654,17 +654,17 @@\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n     let days = (secs / 86_400) as i64;\n-    let rem = secs % 86_400; // survival-probe\n+    let rem = secs / /* ~ changed by cargo-mutants ~ */ 86_400; // survival-probe\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n         (rem % 3600) / 60,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:662:20: replace % with / in iso8601_now",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 662
+      },
+      "start": {
+        "column": 20,
+        "line": 662
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace % with + in iso8601_now\n@@ -654,17 +654,17 @@\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n     let days = (secs / 86_400) as i64;\n-    let rem = secs % 86_400; // survival-probe\n+    let rem = secs + /* ~ changed by cargo-mutants ~ */ 86_400; // survival-probe\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n         (rem % 3600) / 60,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:662:20: replace % with + in iso8601_now",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 662
+      },
+      "start": {
+        "column": 20,
+        "line": 662
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (0, 0, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (0, 0, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 0)",
+    "package": "flow",
+    "replacement": "(0, 0, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (0, 0, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (0, 0, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 1)",
+    "package": "flow",
+    "replacement": "(0, 0, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (0, 1, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (0, 1, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 0)",
+    "package": "flow",
+    "replacement": "(0, 1, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (0, 1, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (0, 1, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 1)",
+    "package": "flow",
+    "replacement": "(0, 1, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (1, 0, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (1, 0, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 0)",
+    "package": "flow",
+    "replacement": "(1, 0, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (1, 0, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (1, 0, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 1)",
+    "package": "flow",
+    "replacement": "(1, 0, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (1, 1, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (1, 1, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 0)",
+    "package": "flow",
+    "replacement": "(1, 1, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (1, 1, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (1, 1, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 1)",
+    "package": "flow",
+    "replacement": "(1, 1, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (-1, 0, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (-1, 0, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 0)",
+    "package": "flow",
+    "replacement": "(-1, 0, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (-1, 0, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (-1, 0, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 1)",
+    "package": "flow",
+    "replacement": "(-1, 0, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (-1, 1, 0)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (-1, 1, 0) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 0)",
+    "package": "flow",
+    "replacement": "(-1, 1, 0)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace civil_from_days -> (i64, u32, u32) with (-1, 1, 1)\n@@ -669,26 +669,17 @@\n         rem / 3600,\n         (rem % 3600) / 60,\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n-    let z = days + 719_468;\n-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n-    let y = yoe as i64 + era * 400;\n-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n-    let mp = (5 * doy + 2) / 153;\n-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n-    (if m <= 2 { y + 1 } else { y }, m, d)\n+    (-1, 1, 1) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn civil_dates() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 1)",
+    "package": "flow",
+    "replacement": "(-1, 1, 1)",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 686
+      },
+      "start": {
+        "column": 5,
+        "line": 677
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with + in civil_from_days\n@@ -671,17 +671,17 @@\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n+    let doe = (z + /* ~ changed by cargo-mutants ~ */ era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:679:18: replace - with + in civil_from_days",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 679
+      },
+      "start": {
+        "column": 18,
+        "line": 679
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with / in civil_from_days\n@@ -671,17 +671,17 @@\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n+    let doe = (z / /* ~ changed by cargo-mutants ~ */ era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:679:18: replace - with / in civil_from_days",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 679
+      },
+      "start": {
+        "column": 18,
+        "line": 679
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace * with + in civil_from_days\n@@ -671,17 +671,17 @@\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n+    let doe = (z - era + /* ~ changed by cargo-mutants ~ */ 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:679:24: replace * with + in civil_from_days",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 679
+      },
+      "start": {
+        "column": 24,
+        "line": 679
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace * with / in civil_from_days\n@@ -671,17 +671,17 @@\n         rem % 60\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n-    let doe = (z - era * 146_097) as u64;\n+    let doe = (z - era / /* ~ changed by cargo-mutants ~ */ 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:679:24: replace * with / in civil_from_days",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 679
+      },
+      "start": {
+        "column": 24,
+        "line": 679
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) % /* ~ changed by cargo-mutants ~ */ 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:65: replace / with % in civil_from_days",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 680
+      },
+      "start": {
+        "column": 65,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) * /* ~ changed by cargo-mutants ~ */ 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:65: replace / with * in civil_from_days",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 680
+      },
+      "start": {
+        "column": 65,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with + in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 + /* ~ changed by cargo-mutants ~ */ doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:48: replace - with + in civil_from_days",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 680
+      },
+      "start": {
+        "column": 48,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with / in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 / /* ~ changed by cargo-mutants ~ */ doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:48: replace - with / in civil_from_days",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 680
+      },
+      "start": {
+        "column": 48,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace + with - in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 - /* ~ changed by cargo-mutants ~ */ doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:33: replace + with - in civil_from_days",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 680
+      },
+      "start": {
+        "column": 33,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace + with * in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 * /* ~ changed by cargo-mutants ~ */ doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:33: replace + with * in civil_from_days",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 680
+      },
+      "start": {
+        "column": 33,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with + in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe + /* ~ changed by cargo-mutants ~ */ doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:20: replace - with + in civil_from_days",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 680
+      },
+      "start": {
+        "column": 20,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace - with / in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe / /* ~ changed by cargo-mutants ~ */ doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:20: replace - with / in civil_from_days",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 680
+      },
+      "start": {
+        "column": 20,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe % /* ~ changed by cargo-mutants ~ */ 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:26: replace / with % in civil_from_days",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 680
+      },
+      "start": {
+        "column": 26,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe * /* ~ changed by cargo-mutants ~ */ 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:26: replace / with * in civil_from_days",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 680
+      },
+      "start": {
+        "column": 26,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe % /* ~ changed by cargo-mutants ~ */ 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:39: replace / with % in civil_from_days",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 680
+      },
+      "start": {
+        "column": 39,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe * /* ~ changed by cargo-mutants ~ */ 36_524 - doe / 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:39: replace / with * in civil_from_days",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 680
+      },
+      "start": {
+        "column": 39,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe % /* ~ changed by cargo-mutants ~ */ 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:54: replace / with % in civil_from_days",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 680
+      },
+      "start": {
+        "column": 54,
+        "line": 680
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in civil_from_days\n@@ -672,17 +672,17 @@\n     )\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe\n+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe * /* ~ changed by cargo-mutants ~ */ 146_096) / 365; // survival-probe\n     let y = yoe as i64 + era * 400;\n     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);\n     let mp = (5 * doy + 2) / 153;\n     let d = (doy - (153 * mp + 2) / 5 + 1) as u32;\n     let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;\n     (if m <= 2 { y + 1 } else { y }, m, d)\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "civil_from_days",
+      "return_type": "-> (i64, u32, u32)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 687
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:680:54: replace / with * in civil_from_days",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 680
+      },
+      "start": {
+        "column": 54,
+        "line": 680
+      }
+    }
+  }
+]

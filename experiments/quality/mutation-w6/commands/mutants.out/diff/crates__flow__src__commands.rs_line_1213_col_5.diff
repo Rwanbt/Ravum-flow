@@ -1,0 +1,334 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_run -> Result<Json, String> with Ok(Default::default())
+@@ -1205,330 +1205,17 @@
+     Ok(())
+ }
+ pub fn cmd_run(
+     root: &Path,
+     only: Option<Vec<String>>,
+     timeout_override: Option<u64>,
+     candidate: Option<String>,
+ ) -> Result<Json, String> {
+-    let config = state::load_config(root)?;
+-    if config.disabled {
+-        return Ok(refused_code(
+-            "DISABLED",
+-            "Flow is disabled in this repository (`flow enable` to re-enable)",
+-        ));
+-    }
+-    if config.obligations.is_empty() {
+-        return Ok(Json::obj(vec![
+-            ("status", Json::str("UNKNOWN")),
+-            (
+-                "reason",
+-                Json::str("no obligation declared: verification scope is undefined, nothing is publishable"),
+-            ),
+-        ]));
+-    }
+-    // The effective policy includes any --timeout override: the receipt must
+-    // prove the deadline that was actually applied, not the configured one.
+-    let mut effective: Vec<Obligation> = config.obligations.clone();
+-    if let Some(t) = timeout_override {
+-        for ob in &mut effective {
+-            ob.timeout_s = t;
+-        }
+-    }
+-    if let Err(reason) = validate_obligations(&effective) {
+-        return Ok(refused_code("INVALID_POLICY", reason));
+-    }
+-    if let Some(refusal) = adoption_gate(root, &config)? {
+-        return Ok(refusal);
+-    }
+-    // The tree to verify is either the immutable candidate tree or the index.
+-    let candidate_record = match candidate.as_deref() {
+-        None => None,
+-        Some(id) => match crate::proposal::Candidate::load(root, id)? {
+-            Some(record) => Some(record),
+-            None => {
+-                return Ok(refused_code(
+-                    "UNKNOWN_CANDIDATE",
+-                    format!("no candidate {id:?} in .flow/candidates/ (see `flow proposals list` after `flow assemble`)"),
+-                ))
+-            }
+-        },
+-    };
+-
+-    let selection: Option<Vec<Obligation>> = match &only {
+-        None => None,
+-        Some(ids) => {
+-            let mut seen: BTreeSet<&str> = BTreeSet::new();
+-            for id in ids {
+-                if !seen.insert(id.as_str()) {
+-                    return Ok(refused_code(
+-                        "DUPLICATE_OBLIGATION_ID",
+-                        format!(
+-                            "obligation {id:?} is requested more than once: a selection is a set"
+-                        ),
+-                    ));
+-                }
+-                if !effective.iter().any(|o| &o.id == id) {
+-                    return Ok(refused_code(
+-                        "UNKNOWN_OBLIGATION_ID",
+-                        format!("obligation {id:?} is not declared in .flow/config.json"),
+-                    ));
+-                }
+-            }
+-            Some(
+-                effective
+-                    .iter()
+-                    .filter(|o| ids.contains(&o.id))
+-                    .cloned()
+-                    .collect(),
+-            )
+-        }
+-    };
+-    // A selection is diagnostic only: it cannot prove the whole policy, so it
+-    // is reported as PARTIAL and is never written to the complete receipt slot.
+-    let scope_mode = if selection.is_some() {
+-        "selected"
+-    } else {
+-        "complete"
+-    };
+-    let selected: Vec<Obligation> = selection.unwrap_or_else(|| effective.clone());
+-
+-    let git = Git::new(root);
+-    let tree = match &candidate_record {
+-        Some(record) => record.tree_oid.clone(),
+-        None => git.write_tree()?,
+-    };
+-    // A candidate tree must still be in the object store: a pruned candidate is
+-    // not verifiable, and verifying something else while naming it would be a
+-    // false receipt.
+-    if candidate_record.is_some() {
+-        let present =
+-            git.run_bounded(&["cat-file", "-e", &format!("{tree}^{{tree}}")], None, None)?;
+-        if present.status != 0 {
+-            return Ok(refused_code(
+-                "CANDIDATE_TREE_MISSING",
+-                format!("candidate tree {tree} is no longer in the object store: re-run `flow assemble`"),
+-            ));
+-        }
+-    }
+-    let started_at = state::iso8601_now();
+-
+-    // Materialise the exact tree in a directory Flow owns and knows it created:
+-    // the `.git` link is removed so an obligation cannot reach the shared gitdir.
+-    // `Scratch` cleans up in `Drop`, including on the error paths below.
+-    // A candidate is verified on its own base, so the verification commit's
+-    // parent is the base the candidate was assembled from — not today's HEAD.
+-    let parent = match &candidate_record {
+-        Some(record) => record.base_commit.clone(),
+-        None => git.head_oid()?,
+-    };
+-    let commit = git.commit_tree(&tree, &parent, &format!("flow verify {tree}"))?;
+-    let scratch = match crate::scratch::materialise(&git, &commit, root) {
+-        Ok(scratch) => scratch,
+-        Err(reason) => return Ok(refused_code("SCRATCH_REFUSED", reason)),
+-    };
+-    // A checkout that does not reproduce the tree exactly is not the tree.
+-    if let Err(reason) = verify_checkout_fidelity(&git, scratch.path(), &tree) {
+-        return Ok(refused_code("UNSUPPORTED_CHECKOUT", reason));
+-    }
+-
+-    let policy = effective_policy(&config, &effective);
+-    let policy_digest = policy_digest(&policy);
+-    let context_id = build_context_id(&git, &tree, &policy);
+-    let log_dir = state::logs_dir(root).join(&tree);
+-    let mut outcomes = Vec::new();
+-    let mut logs = Vec::new();
+-    let mut failed = false;
+-    let mut timed_out = false;
+-    let mut unsupported = false;
+-    for ob in &selected {
+-        let outcome = gitcli::run_obligation(ob, scratch.path());
+-        let stdout_clean = gitcli::redact(&outcome.stdout);
+-        let stderr_clean = gitcli::redact(&outcome.stderr);
+-        let stdout_rel = format!(".flow/logs/{tree}/{}.stdout.log", outcome.id);
+-        let stderr_rel = format!(".flow/logs/{tree}/{}.stderr.log", outcome.id);
+-        fs::create_dir_all(&log_dir).map_err(|e| format!("cannot create log dir: {e}"))?;
+-        let _ = crate::paths::canonical_within(root, &log_dir)?;
+-        state::write_atomic(
+-            &log_dir.join(format!("{}.stdout.log", outcome.id)),
+-            &stdout_clean,
+-        )?;
+-        state::write_atomic(
+-            &log_dir.join(format!("{}.stderr.log", outcome.id)),
+-            &stderr_clean,
+-        )?;
+-        logs.push(stdout_rel);
+-        logs.push(stderr_rel);
+-        if ob.required {
+-            // A status outside this list is an unknown outcome: never a pass.
+-            match outcome.status {
+-                "PASSED" => {}
+-                "FAILED" => failed = true,
+-                "TIMEOUT" => timed_out = true,
+-                _ => unsupported = true,
+-            }
+-        }
+-        outcomes.push(Json::obj(vec![
+-            ("id", Json::str(ob.id.clone())),
+-            ("status", Json::str(outcome.status)),
+-            ("required", Json::Bool(ob.required)),
+-            (
+-                "exit",
+-                outcome
+-                    .exit
+-                    .map(|c| Json::Num(c as f64))
+-                    .unwrap_or(Json::Null),
+-            ),
+-            ("duration_ms", Json::Num(outcome.duration_ms as f64)),
+-            ("timed_out", Json::Bool(outcome.timed_out)),
+-            // A truncated log is incomplete evidence: say so in the receipt
+-            // rather than presenting a clipped stream as the whole output.
+-            ("stdout_truncated", Json::Bool(outcome.stdout_truncated)),
+-            ("stderr_truncated", Json::Bool(outcome.stderr_truncated)),
+-            ("stdout_preview", Json::str(preview(&stdout_clean, 400))),
+-            ("stderr_preview", Json::str(preview(&stderr_clean, 400))),
+-        ]));
+-    }
+-
+-    // The pre-check proved the checkout before the first obligation; this proves a
+-    // declared file was not changed while they ran (a `post-checkout` hook can
+-    // spawn a delayed writer, and an obligation can rewrite its own input). Extra
+-    // files are allowed here: obligations legitimately write build outputs.
+-    if let Err(reason) = verify_checkout_unchanged(&git, scratch.path(), &tree) {
+-        return Ok(refused_code("CHECKOUT_MUTATED_DURING_RUN", reason));
+-    }
+-
+-    let worktree_diff = git
+-        .capture(&["diff", "--name-only", &tree])
+-        // An empty list on a failed diff would be a receipt claiming "no worktree
+-        // differences" the check never observed, so the run refuses to certify.
+-        .map_err(|e| {
+-            format!("cannot record the worktree diff against {tree} (a receipt with an empty diff would be a false claim): {e}")
+-        })?
+-        .lines()
+-        .filter(|l| !l.trim().is_empty())
+-        .map(str::to_string)
+-        .collect::<Vec<_>>();
+-
+-    // The scratch directory is removed by `Scratch::drop`, which runs on every
+-    // path out of this function, including the `?` above.
+-    drop(scratch);
+-
+-    let declared_ids: Vec<String> = effective.iter().map(|o| o.id.clone()).collect();
+-    let required_ids: Vec<String> = effective
+-        .iter()
+-        .filter(|o| o.required)
+-        .map(|o| o.id.clone())
+-        .collect();
+-    let selected_ids: Vec<String> = selected.iter().map(|o| o.id.clone()).collect();
+-    let missing_required: Vec<String> = required_ids
+-        .iter()
+-        .filter(|id| !selected_ids.contains(id))
+-        .cloned()
+-        .collect();
+-
+-    let status = if scope_mode == "selected" {
+-        "PARTIAL"
+-    } else if !missing_required.is_empty() {
+-        "INCOMPLETE"
+-    } else if failed {
+-        "FAILED"
+-    } else if timed_out {
+-        "TIMEOUT"
+-    } else if unsupported {
+-        "UNSUPPORTED"
+-    } else {
+-        "PASSED"
+-    };
+-
+-    let scope = Json::obj(vec![
+-        ("mode", Json::str(scope_mode)),
+-        (
+-            "declared",
+-            Json::Arr(declared_ids.iter().map(|s| Json::str(s.clone())).collect()),
+-        ),
+-        (
+-            "required",
+-            Json::Arr(required_ids.iter().map(|s| Json::str(s.clone())).collect()),
+-        ),
+-        (
+-            "selected",
+-            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),
+-        ),
+-        (
+-            "executed",
+-            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),
+-        ),
+-        (
+-            "missing_required",
+-            Json::Arr(
+-                missing_required
+-                    .iter()
+-                    .map(|s| Json::str(s.clone()))
+-                    .collect(),
+-            ),
+-        ),
+-    ]);
+-
+-    let receipt = state::seal_receipt(&Json::obj(vec![
+-        ("schema", Json::str(state::SCHEMA_RECEIPT)),
+-        ("tree_oid", Json::str(tree.clone())),
+-        ("commit_oid", Json::str(commit)),
+-        ("parent_oid", Json::str(parent)),
+-        ("context_id", Json::str(context_id)),
+-        ("policy_digest", Json::str(policy_digest)),
+-        ("policy", policy),
+-        ("policy_version", Json::str(config.policy_version.clone())),
+-        (
+-            "execution_boundary",
+-            Json::str(config.execution_boundary.clone()),
+-        ),
+-        ("status", Json::str(status)),
+-        (
+-            "candidate_id",
+-            match &candidate_record {
+-                Some(record) => Json::str(record.candidate_id.clone()),
+-                None => Json::Null,
+-            },
+-        ),
+-        ("verification_scope", scope),
+-        ("started_at", Json::str(started_at)),
+-        ("finished_at", Json::str(state::iso8601_now())),
+-        ("obligations", Json::Arr(outcomes)),
+-        (
+-            "logs",
+-            Json::Arr(logs.iter().map(|l| Json::str(l.clone())).collect()),
+-        ),
+-        (
+-            "worktree_diff",
+-            Json::Arr(worktree_diff.iter().map(|p| Json::str(p.clone())).collect()),
+-        ),
+-        // Evidence of the post-run proof: the declared files were still the tree's
+-        // when the last obligation finished (a run whose checkout changed is
+-        // refused before a receipt is written, so this field is always OK here).
+-        ("checkout_recheck", Json::str("OK")),
+-        (
+-            "scope_note",
+-            Json::str(if scope_mode == "selected" {
+-                "diagnostic run: only the selected obligations were executed, so this receipt proves nothing about the rest of the policy and is never publishable"
+-            } else {
+-                "verified for the declared obligations only; undeclared inputs are not covered"
+-            }),
+-        ),
+-    ]));
+-    let path = state::save_receipt(root, &receipt)?;
+-    let mut out = receipt.clone();
+-    if let Json::Obj(pairs) = &mut out {
+-        pairs.push((
+-            "receipt_path".into(),
+-            Json::str(path.to_string_lossy().to_string()),
+-        ));
+-    }
+-    Ok(out)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn preview(text: &str, limit: usize) -> String {
+     let mut out: String = text.chars().take(limit).collect();
+     if text.chars().count() > limit {
+         out.push('…');
+     }
+     out

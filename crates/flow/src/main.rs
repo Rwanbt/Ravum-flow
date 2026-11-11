@@ -437,6 +437,71 @@ mod tests {
     }
 
     #[test]
+    fn a_bare_double_dash_is_skipped_and_the_walk_terminates() {
+        // The `--` branch advances the index by one. Without that advance the walk
+        // never ends, so a watchdog turns "the suite hangs" into a failure: the
+        // validator must return, and the flags after `--` must still be checked
+        // (an option ignored after a separator is the defect this file refuses).
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let value = validate_flags("init", &args(&["--", "--json", "--force"]));
+            let _ = sender.send(value);
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        let value = finished.expect("the flag validator must terminate");
+        value.expect("`--` plus implemented flags is accepted");
+
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let value = validate_flags("init", &args(&["--", "--not-a-flag"]));
+            let _ = sender.send(value);
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        let refused = finished
+            .expect("the flag validator must terminate")
+            .expect_err("an unknown option after `--` is still a usage error");
+        assert!(refused.contains("unknown option"), "{refused}");
+
+        // A value flag advances the walk by two (flag and value). A walk that
+        // advances by anything else loops forever, so this case has its own
+        // watchdog.
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let value = validate_flags("publish", &args(&["--ref", "main", "--dry-run"]));
+            let _ = sender.send(value);
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        finished
+            .expect("the flag validator must terminate on a value flag")
+            .expect("a value flag followed by a boolean flag is accepted");
+
+        // A positional argument is legal only for `proposals`, and it still has to
+        // advance the walk.
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let value = validate_flags("proposals", &args(&["show", "p-1"]));
+            let _ = sender.send(value);
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        finished
+            .expect("the flag validator must terminate on a positional argument")
+            .expect("`proposals show <id>` is a valid invocation");
+
+        // `flag_value` walks the same list; a walk that stops advancing would hang
+        // every command that reads an option.
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let value = flag_value(&args(&["a", "--ref", "main", "b"]), "--ref");
+            let _ = sender.send(value);
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        assert_eq!(
+            finished.expect("flag_value must terminate"),
+            Some("main".to_string())
+        );
+    }
+
+    #[test]
     fn repeated_and_inline_values_keep_their_order() {
         let collected = collect_values(
             &args(&[

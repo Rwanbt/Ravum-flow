@@ -1,0 +1,25 @@
+--- crates/flow/src/gitcli.rs
++++ replace resolve_program -> Option<PathBuf> with None
+@@ -507,21 +507,17 @@
+ //
+ // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim
+ // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow
+ // resolves it the way a shell would and only then spawns it. When nothing
+ // matches, the caller keeps the declared name so the failure is reported as
+ // UNSUPPORTED with the name the policy asked for.
+ #[cfg(windows)]
+ fn resolve_program(program: &str) -> Option<PathBuf> {
+-    resolve_program_in(
+-        program,
+-        std::env::var_os("PATH"),
+-        std::env::var("PATHEXT").ok(),
+-    )
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The testable half of [`resolve_program`]: the search locations are arguments
+ /// so the resolution rules can be pinned without mutating the process
+ /// environment (which other tests read).
+ #[cfg(windows)]
+ fn resolve_program_in(
+     program: &str,

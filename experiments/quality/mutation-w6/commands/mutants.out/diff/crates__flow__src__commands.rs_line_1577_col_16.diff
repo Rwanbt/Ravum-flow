@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_publish
+@@ -1569,17 +1569,17 @@
+             }
+         },
+     };
+ 
+     // Publish to a branch only. `HEAD`, a tag or a remote ref is either
+     // ambiguous or the wrong object to move for "this tree is verified".
+     let reference = match reference {
+         Some(r) => {
+-            if !r.starts_with("refs/heads/") {
++            if  /* ~ changed by cargo-mutants ~ */r.starts_with("refs/heads/") {
+                 return Ok(refused_code(
+                     "REF_NOT_ALLOWED",
+                     format!("--ref {r:?} must be a full branch ref under refs/heads/"),
+                 ));
+             }
+             r
+         }
+         None => current_ref(&git)?,

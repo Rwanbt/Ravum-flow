@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ delete - in Git::run_bounded
+@@ -145,17 +145,17 @@
+             ));
+         }
+         if stderr.truncated {
+             return Err(format!(
+                 "GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stderr; refusing to parse a truncated answer"
+             ));
+         }
+         Ok(Output {
+-            status: exit.unwrap_or(-1), // survival-probe
++            status: exit.unwrap_or( /* ~ changed by cargo-mutants ~ */1), // survival-probe
+             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),
+             stdout_bytes: stdout.bytes,
+             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),
+         })
+     }
+ 
+     pub fn capture(&self, args: &[&str]) -> Result<String, String> {
+         let out = self.run(args)?;

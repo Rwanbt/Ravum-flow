@@ -1,0 +1,25 @@
+--- crates/flow/src/state.rs
++++ replace without_field -> Json with Default::default()
+@@ -544,21 +544,17 @@
+             worktree_diff: string_list(&value, "worktree_diff"),
+             json: value,
+         }))
+     }
+ }
+ 
+ /// Remove one top-level field, keeping every other pair in order.
+ fn without_field(value: &Json, key: &str) -> Json {
+-    let mut out = value.clone();
+-    if let Json::Obj(pairs) = &mut out {
+-        pairs.retain(|(k, _)| k != key);
+-    }
+-    out
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Bind a receipt to its own content.
+ ///
+ /// This detects accidental corruption and casual editing of a receipt on disk.
+ /// It is **not** a signature and **not** protection against an attacker who can
+ /// rewrite both the config and the receipt: that would require a key the Flow
+ /// process does not have. The honest boundary is documented in the report.

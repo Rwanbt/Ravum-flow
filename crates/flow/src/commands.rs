@@ -2531,6 +2531,32 @@ mod tests {
     }
 
     #[test]
+    fn program_on_path_finds_a_real_program_and_refuses_a_missing_name() {
+        // `doctor` reports a toolchain as missing only if it is really missing: a
+        // resolver that answers "absent" for everything would make every report
+        // say UNSUPPORTED while a resolver that answers "present" would certify a
+        // toolchain the host cannot run.
+        assert!(program_on_path("git"), "git is on PATH in this suite");
+        assert!(
+            !program_on_path("definitely-not-a-program-flow-9f3"),
+            "a name that cannot exist must not be reported as present"
+        );
+    }
+
+    #[test]
+    fn tree_entries_exactly_at_the_fidelity_budget_are_accepted_not_refused() {
+        // The budget is a ceiling, not a threshold: `>` and `>=` differ exactly
+        // here, and refusing a tree at the documented bound would make the limit
+        // smaller than the documentation says.
+        let mut listing = Vec::new();
+        for index in 0..200_000u32 {
+            listing.extend(entry("100644", "aaaa", 0, &format!("f{index}")));
+        }
+        let entries = parse_tree_entries("t", &listing).expect("exactly the budget is valid");
+        assert_eq!(entries.len(), 200_000);
+    }
+
+    #[test]
     fn tree_entries_above_the_fidelity_budget_are_refused_not_truncated() {
         let mut listing = Vec::new();
         for index in 0..200_001u32 {
@@ -2576,6 +2602,25 @@ mod tests {
         assert_eq!(blobs.len(), 2);
         assert_eq!(blobs[0], b"abc");
         assert!(blobs[1].is_empty());
+    }
+
+    #[test]
+    fn cat_file_batch_accepts_an_ordinary_total_below_the_content_budget() {
+        // The budget is 64 MiB, not `64 + 1024 * 1024` and not `64 * 1024 + 1024`:
+        // an ordinary batch of two 600 KiB blobs must be accepted, so either
+        // collapsed constant turns this into a refusal.
+        let wanted = regular(&[("aaaa", "a.bin"), ("bbbb", "b.bin")]);
+        let blob = vec![b'x'; 600 * 1024];
+        let mut bytes = Vec::new();
+        for (oid, _) in &wanted {
+            bytes.extend_from_slice(oid.as_bytes());
+            bytes.extend_from_slice(format!(" blob {}\n", blob.len()).as_bytes());
+            bytes.extend_from_slice(&blob);
+            bytes.push(b'\n');
+        }
+        let blobs = parse_cat_file_batch("t", &wanted, &bytes).expect("100 KiB is ordinary");
+        assert_eq!(blobs.len(), 2);
+        assert_eq!(blobs[0].len(), blob.len());
     }
 
     #[test]
@@ -2757,5 +2802,142 @@ mod tests {
             );
         }
         let _ = fs::remove_dir_all(&root);
+    }
+
+    // A deterministic, dependency-free generator. The crate is deliberately
+    // zero-dependency and CI runs `--locked --offline`, so no `proptest` or
+    // `arbitrary` may be added just to answer "is it fuzzed?". This is a
+    // randomised sweep on every build, not coverage-guided fuzzing, and it is
+    // never presented as such.
+    struct Rand(u64);
+
+    impl Rand {
+        fn below(&mut self, bound: usize) -> usize {
+            let mut x = self.0;
+            x ^= x >> 12;
+            x ^= x << 25;
+            x ^= x >> 27;
+            self.0 = x;
+            (x.wrapping_mul(0x2545_F491_4F6C_DD1D) % bound as u64) as usize
+        }
+
+        fn bytes(&mut self, max: usize) -> Vec<u8> {
+            const ALPHABET: &[u8] = b"\0\t\n /\\:.-_a0\xff";
+            let len = self.below(max + 1);
+            let mut out = Vec::with_capacity(len);
+            for _ in 0..len {
+                if self.below(4) == 0 {
+                    out.push(self.below(256) as u8);
+                } else {
+                    out.push(ALPHABET[self.below(ALPHABET.len())]);
+                }
+            }
+            out
+        }
+    }
+
+    fn random_path(random: &mut Rand) -> Vec<u8> {
+        const ALPHABET: &[u8] = b"ab/\\\t\xff.";
+        let len = random.below(7);
+        (0..len)
+            .map(|_| ALPHABET[random.below(ALPHABET.len())])
+            .collect()
+    }
+
+    #[test]
+    fn arbitrary_ls_tree_answers_are_parsed_or_refused_and_never_panic() {
+        let mut random = Rand(0x5EED_1234_ABCD_0001);
+        let mut parsed = 0usize;
+        let mut refused = 0usize;
+        for _ in 0..2_000 {
+            let listing = if random.below(2) == 0 {
+                let mut out = Vec::new();
+                for _ in 0..(1 + random.below(3)) {
+                    out.extend_from_slice(b"100644 blob aaaa 0\t");
+                    out.extend_from_slice(&random_path(&mut random));
+                    out.push(0);
+                }
+                out
+            } else {
+                random.bytes(96)
+            };
+            match parse_tree_entries("t", &listing) {
+                Ok(entries) => {
+                    parsed += 1;
+                    for (mode, oid, path, _) in entries {
+                        assert!(!path.is_empty(), "an empty path is skipped, never recorded");
+                        assert!(!path.contains('\\'), "separators are normalised: {path:?}");
+                        let _ = (mode, oid);
+                    }
+                }
+                Err(reason) => {
+                    refused += 1;
+                    assert!(reason.starts_with("tree t"), "{reason}");
+                }
+            }
+            match parse_tree_dirs("t", &listing) {
+                Ok(dirs) => {
+                    for dir in dirs {
+                        assert!(!dir.contains('\\'), "separators are normalised: {dir:?}");
+                    }
+                }
+                Err(reason) => assert!(reason.starts_with("tree t"), "{reason}"),
+            }
+        }
+        assert!(
+            parsed > 100 && refused > 100,
+            "both answers must be exercised, got {parsed} parsed and {refused} refused"
+        );
+    }
+
+    #[test]
+    fn arbitrary_cat_file_answers_are_parsed_or_refused_and_never_panic() {
+        let mut random = Rand(0x5EED_2026_0BAD_F00D);
+        let mut parsed = 0usize;
+        let mut refused = 0usize;
+        for _ in 0..2_000 {
+            let count = 1 + random.below(4);
+            let oids: Vec<String> = (0..count)
+                .map(|index| format!("{:040x}", random.below(1 << 16) + index))
+                .collect();
+            let pairs: Vec<(&str, &str)> = oids.iter().map(|oid| (oid.as_str(), "f")).collect();
+            let mut well_formed = Vec::new();
+            for (oid, _) in &pairs {
+                let body = random.bytes(8);
+                well_formed.extend_from_slice(oid.as_bytes());
+                well_formed.extend_from_slice(b" blob ");
+                well_formed.extend_from_slice(body.len().to_string().as_bytes());
+                well_formed.push(b'\n');
+                well_formed.extend_from_slice(&body);
+                well_formed.push(b'\n');
+            }
+            let bytes = match random.below(3) {
+                0 => random.bytes(96),
+                1 => well_formed[..random.below(well_formed.len() + 1)].to_vec(),
+                _ => well_formed,
+            };
+            match parse_cat_file_batch("t", &pairs, &bytes) {
+                Ok(blobs) => {
+                    parsed += 1;
+                    assert_eq!(blobs.len(), pairs.len(), "one blob per requested oid");
+                }
+                Err(reason) => {
+                    refused += 1;
+                    assert!(!reason.is_empty());
+                }
+            }
+        }
+        assert!(
+            parsed > 100 && refused > 100,
+            "both answers must be exercised, got {parsed} parsed and {refused} refused"
+        );
+
+        // The header that used to overflow the position arithmetic is a refusal,
+        // not a panic (see the historical `checked_add` fix).
+        let wanted: Vec<(&str, &str)> = vec![("aaaa", "a.txt")];
+        let huge = format!("aaaa blob {}\n", usize::MAX);
+        let reason =
+            parse_cat_file_batch("t", &wanted, huge.as_bytes()).expect_err("overflowing size");
+        assert!(reason.contains("overflows a size"), "{reason}");
     }
 }

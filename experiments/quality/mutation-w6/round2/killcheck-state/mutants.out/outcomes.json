@@ -1,0 +1,2421 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 4.6022008,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2283458,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with String::new()",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 657,
+              "column": 5
+            },
+            "end": {
+              "line": 672,
+              "column": 6
+            }
+          },
+          "replacement": "String::new()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_657_col_5.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_657_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3304768,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.5992912,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with \"xyzzy\".into()",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 657,
+              "column": 5
+            },
+            "end": {
+              "line": 672,
+              "column": 6
+            }
+          },
+          "replacement": "\"xyzzy\".into()",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_657_col_5_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_657_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 5.5531313,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3177073999999998,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:661:22: replace / with % in iso8601_now",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 661,
+              "column": 22
+            },
+            "end": {
+              "line": 661,
+              "column": 23
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_661_col_22.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_661_col_22.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3655476,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.5318106,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:661:22: replace / with * in iso8601_now",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 661,
+              "column": 22
+            },
+            "end": {
+              "line": 661,
+              "column": 23
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_661_col_22_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_661_col_22_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.1111538,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.4251796,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:662:20: replace % with / in iso8601_now",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 662,
+              "column": 20
+            },
+            "end": {
+              "line": 662,
+              "column": 21
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_662_col_20.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_662_col_20.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.6148352,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2779392,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:662:20: replace % with + in iso8601_now",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "iso8601_now",
+            "return_type": "-> String",
+            "span": {
+              "start": {
+                "line": 655,
+                "column": 1
+              },
+              "end": {
+                "line": 673,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 662,
+              "column": 20
+            },
+            "end": {
+              "line": 662,
+              "column": 21
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_662_col_20_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_662_col_20_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9081191,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.273796,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(0, 0, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.5160417000000002,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2228589,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(0, 0, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9101688,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.275157,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(0, 1, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_002.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0594811,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2776998,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(0, 1, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_003.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_003.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.958341,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2737077,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(1, 0, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_004.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_004.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.1126234,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2752586,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(1, 0, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_005.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_005.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9091706,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2777145,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(1, 1, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_006.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_006.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0104097,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2231949,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(1, 1, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_007.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_007.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9079996,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2732014,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(-1, 0, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_008.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_008.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.959004,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3241023,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(-1, 0, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_009.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_009.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8573497,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2250749,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 0)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(-1, 1, 0)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_010.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_010.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9605541,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2732829,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 1)",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 677,
+              "column": 5
+            },
+            "end": {
+              "line": 686,
+              "column": 43
+            }
+          },
+          "replacement": "(-1, 1, 1)",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_677_col_5_011.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_677_col_5_011.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9088732,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3257706000000002,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:679:18: replace - with + in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 679,
+              "column": 18
+            },
+            "end": {
+              "line": 679,
+              "column": 19
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_679_col_18.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_679_col_18.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9576262,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3242003,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:679:18: replace - with / in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 679,
+              "column": 18
+            },
+            "end": {
+              "line": 679,
+              "column": 19
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_679_col_18_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_679_col_18_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9597945,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.323328,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:679:24: replace * with + in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 679,
+              "column": 24
+            },
+            "end": {
+              "line": 679,
+              "column": 25
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_679_col_24.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_679_col_24.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.959471,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3237001,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:679:24: replace * with / in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 679,
+              "column": 24
+            },
+            "end": {
+              "line": 679,
+              "column": 25
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_679_col_24_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_679_col_24_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9594748,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2759155,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:65: replace / with % in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 65
+            },
+            "end": {
+              "line": 680,
+              "column": 66
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_65.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_65.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.959663,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2758025,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:65: replace / with * in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 65
+            },
+            "end": {
+              "line": 680,
+              "column": 66
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_65_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_65_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0091107,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3245092,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:48: replace - with + in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 48
+            },
+            "end": {
+              "line": 680,
+              "column": 49
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_48.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_48.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9587638,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2224014,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:48: replace - with / in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 48
+            },
+            "end": {
+              "line": 680,
+              "column": 49
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_48_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_48_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9080386,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2745716,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:33: replace + with - in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 33
+            },
+            "end": {
+              "line": 680,
+              "column": 34
+            }
+          },
+          "replacement": "-",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_33.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_33.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9589115,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2777735,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:33: replace + with * in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 33
+            },
+            "end": {
+              "line": 680,
+              "column": 34
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_33_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_33_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9081963,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2711679,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:20: replace - with + in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 20
+            },
+            "end": {
+              "line": 680,
+              "column": 21
+            }
+          },
+          "replacement": "+",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_20.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_20.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9596523,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2233722,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:20: replace - with / in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 20
+            },
+            "end": {
+              "line": 680,
+              "column": 21
+            }
+          },
+          "replacement": "/",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_20_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_20_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.958084,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2735481,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:26: replace / with % in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 26
+            },
+            "end": {
+              "line": 680,
+              "column": 27
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_26.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_26.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0609013,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2732754,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:26: replace / with * in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 26
+            },
+            "end": {
+              "line": 680,
+              "column": 27
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_26_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_26_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9599777,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3280814,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:39: replace / with % in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 39
+            },
+            "end": {
+              "line": 680,
+              "column": 40
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_39.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_39.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9083984,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2704396,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:39: replace / with * in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 39
+            },
+            "end": {
+              "line": 680,
+              "column": 40
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_39_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_39_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9094239,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2726545,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:54: replace / with % in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 54
+            },
+            "end": {
+              "line": 680,
+              "column": 55
+            }
+          },
+          "replacement": "%",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_54.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_54.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9587158,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2740928,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:680:54: replace / with * in civil_from_days",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "civil_from_days",
+            "return_type": "-> (i64, u32, u32)",
+            "span": {
+              "start": {
+                "line": 675,
+                "column": 1
+              },
+              "end": {
+                "line": 687,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 680,
+              "column": 54
+            },
+            "end": {
+              "line": 680,
+              "column": 55
+            }
+          },
+          "replacement": "*",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_680_col_54_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_680_col_54_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9588705,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2217475,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 36,
+  "missed": 0,
+  "caught": 36,
+  "timeout": 0,
+  "unviable": 0,
+  "success": 0,
+  "start_time": "2026-11-11T02:53:42.4619865Z",
+  "end_time": "2026-11-11T02:55:12.3055324Z",
+  "cargo_mutants_version": "27.1.0"
+}

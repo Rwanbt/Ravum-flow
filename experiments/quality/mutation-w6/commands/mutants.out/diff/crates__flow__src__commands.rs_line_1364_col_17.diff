@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete match arm "PASSED" in cmd_run
+@@ -1356,17 +1356,17 @@
+             &log_dir.join(format!("{}.stderr.log", outcome.id)),
+             &stderr_clean,
+         )?;
+         logs.push(stdout_rel);
+         logs.push(stderr_rel);
+         if ob.required {
+             // A status outside this list is an unknown outcome: never a pass.
+             match outcome.status {
+-                "PASSED" => {}
++                 /* ~ changed by cargo-mutants ~ */
+                 "FAILED" => failed = true,
+                 "TIMEOUT" => timed_out = true,
+                 _ => unsupported = true,
+             }
+         }
+         outcomes.push(Json::obj(vec![
+             ("id", Json::str(ob.id.clone())),
+             ("status", Json::str(outcome.status)),

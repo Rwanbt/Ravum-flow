@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace match guard !meta.is_file() with false in verify_checkout_fidelity
+@@ -865,17 +865,17 @@
+                     "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
+                 ));
+             }
+             "160000" => {
+                 return Err(format!(
+                     "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+                 ));
+             }
+-            "100644" | "100755" if !meta.is_file() => {
++            "100644" | "100755" if false /* ~ changed by cargo-mutants ~ */ => {
+                 return Err(format!(
+                     "tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file"
+                 ));
+             }
+             _ => {}
+         }
+     }
+ 

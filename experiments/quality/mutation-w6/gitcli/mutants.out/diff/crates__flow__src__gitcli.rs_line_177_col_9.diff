@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace Git::head_tree -> Result<String, String> with Ok(String::new())
+@@ -169,17 +169,17 @@
+         Ok(out.stdout.trim().to_string())
+     }
+ 
+     pub fn head_oid(&self) -> Result<String, String> {
+         self.capture(&["rev-parse", "HEAD"])
+     }
+ 
+     pub fn head_tree(&self) -> Result<String, String> {
+-        self.capture(&["rev-parse", "HEAD^{tree}"])
++        Ok(String::new()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn write_tree(&self) -> Result<String, String> {
+         self.capture(&["write-tree"])
+     }
+ 
+     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {
+         self.capture(&["commit-tree", tree, "-p", parent, "-m", message])

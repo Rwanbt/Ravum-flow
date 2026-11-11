@@ -1,0 +1,135 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_init -> Result<Json, String> with Ok(Default::default())
+@@ -46,131 +46,17 @@
+     if out.status != 0 {
+         return Err("detached HEAD: pass --ref explicitly".into());
+     }
+     Ok(out.stdout.trim().to_string())
+ }
+ 
+ // ------------------------------------------------------------------- init
+ pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, String> {
+-    let git = Git::new(root);
+-    let _ = git.version();
+-    let dir = state::flow_dir(root);
+-    // A `.flow/config.json` can arrive with a clone. It is a claim about what
+-    // should run, not a consent to run it: adoption is a separate, explicit act.
+-    let existing_config = state::config_path(root).exists();
+-    if dir.exists() && !force && !(adopt_policy && existing_config) {
+-        return Ok(refused(
+-            ".flow already exists (pass --force to rewrite config, journal is preserved)",
+-        ));
+-    }
+-    let config = if existing_config {
+-        match state::load_config(root) {
+-            Ok(config) => config,
+-            Err(e) => {
+-                return Ok(refused_code(
+-                    "CONFIG_UNREADABLE",
+-                    format!("a .flow/config.json is present but cannot be used: {e}"),
+-                ))
+-            }
+-        }
+-    } else {
+-        Config::default()
+-    };
+-    if let Err(reason) = validate_obligations(&config.obligations) {
+-        if !config.obligations.is_empty() {
+-            return Ok(refused_code("INVALID_POLICY", reason));
+-        }
+-    }
+-    let policy_digest = policy_digest(&effective_policy(&config, &config.obligations));
+-    let adopted_already = state::load_adoption(root)?
+-        .map(|a| a.policy_digest == policy_digest)
+-        .unwrap_or(false);
+-
+-    if existing_config && !adopted_already && !adopt_policy {
+-        // Show exactly what would be executed. Silence is not consent.
+-        let commands: Vec<Json> = config
+-            .obligations
+-            .iter()
+-            .map(|o| {
+-                Json::str(format!(
+-                    "{} {}{}",
+-                    o.program,
+-                    o.args.join(" "),
+-                    if o.required {
+-                        " (required)"
+-                    } else {
+-                        " (optional)"
+-                    }
+-                ))
+-            })
+-            .collect();
+-        let mut value = refused_code(
+-            "POLICY_ADOPTION_REQUIRED",
+-            "this working copy already contains a .flow/config.json that was never approved here. Review it, then run `flow init --adopt-policy` or `flow approve`",
+-        );
+-        if let Json::Obj(pairs) = &mut value {
+-            pairs.push(("policy_digest".into(), Json::str(short(&policy_digest))));
+-            pairs.push(("obligations".into(), Json::Arr(commands)));
+-        }
+-        return Ok(value);
+-    }
+-
+-    fs::create_dir_all(state::receipts_dir(root))
+-        .map_err(|e| format!("cannot create receipts dir: {e}"))?;
+-    fs::create_dir_all(state::logs_dir(root))
+-        .map_err(|e| format!("cannot create logs dir: {e}"))?;
+-    // Never truncate a journal, a receipt or a proposal: `init` is not a reset.
+-    if !state::journal_path(root).exists() {
+-        state::write_atomic(&state::journal_path(root), "")?;
+-    }
+-    // Flow's own state must never become part of the tree it verifies: if it
+-    // did, every policy change would move the tree OID and a receipt could
+-    // never be compared with "the same tree under a different policy".
+-    let gitignore = dir.join(".gitignore");
+-    if !gitignore.exists() {
+-        state::write_atomic(&gitignore, "*\n")?;
+-    }
+-    if !existing_config {
+-        state::save_config(root, &config)?;
+-    }
+-    let source = if adopt_policy {
+-        "init --adopt-policy"
+-    } else {
+-        "init"
+-    };
+-    state::save_adoption(
+-        root,
+-        &state::Adoption {
+-            policy_digest: policy_digest.clone(),
+-            policy_version: config.policy_version.clone(),
+-            approved_at: state::iso8601_now(),
+-            source: source.into(),
+-        },
+-    )?;
+-    Ok(Json::obj(vec![
+-        ("status", Json::str("INITIALIZED")),
+-        ("flow_dir", Json::str(".flow")),
+-        ("policy_version", Json::str(state::POLICY_VERSION)),
+-        ("adopted", Json::Bool(true)),
+-        ("adoption_source", Json::str(source)),
+-        ("policy_digest", Json::str(short(&policy_digest))),
+-        (
+-            "journal_preserved",
+-            Json::Bool(state::journal_path(root).exists()),
+-        ),
+-        (
+-            "note",
+-            Json::str(if config.obligations.is_empty() {
+-                "no obligation declared yet: `flow run` will refuse with UNKNOWN until .flow/config.json lists obligations; .flow/.gitignore keeps Flow state out of the verified tree"
+-            } else {
+-                "the adopted policy declares obligations; `.flow/.gitignore` keeps Flow state out of the verified tree"
+-            }),
+-        ),
+-    ]))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Record local approval of the current `.flow/config.json` policy.
+ pub fn cmd_approve(root: &Path) -> Result<Json, String> {
+     let config = state::load_config(root)?;
+     if let Err(reason) = validate_obligations(&config.obligations) {
+         return Ok(refused_code("INVALID_POLICY", reason));
+     }

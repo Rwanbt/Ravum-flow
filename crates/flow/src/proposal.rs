@@ -1303,4 +1303,196 @@ mod tests {
             "PATH_OPERATION_CONFLICT"
         );
     }
+
+    // A deterministic, dependency-free generator (the same note as in
+    // `commands.rs`): a randomised sweep on every build, not coverage-guided
+    // fuzzing. No dependency is added for it because the crate is deliberately
+    // zero-dependency and CI runs `--locked --offline`.
+    struct Rand(u64);
+
+    impl Rand {
+        fn below(&mut self, bound: usize) -> usize {
+            let mut x = self.0;
+            x ^= x >> 12;
+            x ^= x << 25;
+            x ^= x >> 27;
+            self.0 = x;
+            (x.wrapping_mul(0x2545_F491_4F6C_DD1D) % bound as u64) as usize
+        }
+
+        fn bytes(&mut self, max: usize) -> Vec<u8> {
+            const ALPHABET: &[u8] = b"\0\t\n /\\:.-_a0\xff";
+            let len = self.below(max + 1);
+            let mut out = Vec::with_capacity(len);
+            for _ in 0..len {
+                if self.below(4) == 0 {
+                    out.push(self.below(256) as u8);
+                } else {
+                    out.push(ALPHABET[self.below(ALPHABET.len())]);
+                }
+            }
+            out
+        }
+    }
+
+    fn random_target(random: &mut Rand) -> String {
+        const PIECES: &[&str] = &["a", "b", "/", "\\", ".", "-", "_", " ", ":", ".."];
+        let len = random.below(10);
+        let mut out = String::new();
+        for _ in 0..len {
+            out.push_str(PIECES[random.below(PIECES.len())]);
+        }
+        out
+    }
+
+    #[test]
+    fn arbitrary_tree_listings_and_raw_diffs_are_parsed_or_refused_and_never_panic() {
+        let mut random = Rand(0x5EED_2026_1357_9BDF);
+        let mut parsed = 0usize;
+        let mut refused = 0usize;
+        for _ in 0..2_000 {
+            let listing = if random.below(2) == 0 {
+                let mut out = String::new();
+                for _ in 0..(1 + random.below(3)) {
+                    out.push_str(if random.below(8) == 0 {
+                        "160000 commit aaaa\t"
+                    } else {
+                        "100644 blob aaaa\t"
+                    });
+                    out.push_str(&random_target(&mut random));
+                    out.push('\0');
+                }
+                out
+            } else {
+                String::from_utf8_lossy(&random.bytes(96)).into_owned()
+            };
+            match parse_tree_listing("t", &listing) {
+                Ok(paths) => {
+                    parsed += 1;
+                    for path in paths {
+                        assert!(
+                            crate::paths::validate_relative(&path).is_ok(),
+                            "{path:?} was accepted but is not a safe path"
+                        );
+                    }
+                }
+                Err(reason) => {
+                    refused += 1;
+                    let code = reason.get("code").and_then(Json::as_str);
+                    assert!(
+                        matches!(
+                            code,
+                            Some("TREE_UNREADABLE" | "GITLINK_UNSUPPORTED" | "FORBIDDEN_PATH")
+                        ),
+                        "{reason:?}"
+                    );
+                }
+            }
+            match parse_raw_diff(&String::from_utf8_lossy(&random.bytes(96))) {
+                Ok(changes) => {
+                    parsed += 1;
+                    for change in changes {
+                        assert!(!change.status.is_empty(), "a change without a status");
+                        assert!(!change.path.contains('\\'), "separators are normalised");
+                    }
+                }
+                Err(reason) => {
+                    refused += 1;
+                    assert!(!reason.is_empty());
+                }
+            }
+        }
+        assert!(
+            parsed > 100 && refused > 100,
+            "both answers must be exercised, got {parsed} parsed and {refused} refused"
+        );
+    }
+
+    #[test]
+    fn identities_follow_the_bound_and_the_charset_on_random_input() {
+        const CHARSET: &[char] = &['a', 'Z', '0', '9', '.', '_', '-'];
+        const NOISE: &[char] = &[' ', ':', '/', 'é', '\t'];
+        let mut random = Rand(0x5EED_2026_2468_ACE0);
+        let mut accepted = 0usize;
+        let mut refused = 0usize;
+        for _ in 0..4_000 {
+            let len = random.below(141);
+            let mut value: String = (0..len)
+                .map(|_| CHARSET[random.below(CHARSET.len())])
+                .collect();
+            if random.below(10) < 3 {
+                let at = random.below(len + 1);
+                value.insert(at, NOISE[random.below(NOISE.len())]);
+            }
+            let trimmed = value.trim();
+            let allowed = !trimmed.is_empty()
+                && trimmed.len() <= 128
+                && !trimmed.starts_with('.')
+                && trimmed
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'));
+            match ident(&value, "proposal") {
+                Ok(got) => {
+                    accepted += 1;
+                    assert!(allowed, "{value:?} was accepted but breaks the stated rule");
+                    assert_eq!(got, trimmed, "the identity is the trimmed value");
+                }
+                Err(reason) => {
+                    refused += 1;
+                    assert!(
+                        !allowed,
+                        "{value:?} was refused but satisfies the stated rule"
+                    );
+                    assert_eq!(
+                        reason.get("code").and_then(Json::as_str),
+                        Some("INVALID_IDENTITY")
+                    );
+                }
+            }
+        }
+        assert!(
+            accepted > 100 && refused > 100,
+            "both answers must be exercised, got {accepted} accepted and {refused} refused"
+        );
+    }
+
+    #[test]
+    fn symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe() {
+        let mut random = Rand(0x5EED_2026_0F0F_5EED);
+        for _ in 0..4_000 {
+            let target = random_target(&mut random);
+            let escapes = symlink_target_escapes(&target);
+            // The rule cannot depend on which separator a host's Git happens to
+            // print, so both spellings must answer the same.
+            assert_eq!(
+                escapes,
+                symlink_target_escapes(&target.replace('\\', "/")),
+                "{target:?}"
+            );
+            assert_eq!(
+                escapes,
+                symlink_target_escapes(&target.replace('/', "\\")),
+                "{target:?}"
+            );
+            let absolute = target.starts_with('/')
+                || target.starts_with('\\')
+                || (target.len() >= 2 && target.as_bytes()[1] == b':');
+            let traverses = target.split(['/', '\\']).any(|part| part == "..");
+            assert_eq!(
+                escapes,
+                target.is_empty() || absolute || traverses,
+                "{target:?} does not follow the documented rule"
+            );
+            if !escapes {
+                assert!(
+                    !symlink_target_escapes(&format!("{target}/a")),
+                    "{target:?} plus a plain component must stay safe"
+                );
+                assert!(
+                    !symlink_target_escapes(&format!("d/{target}")),
+                    "{target:?} below a plain directory must stay safe"
+                );
+            }
+        }
+    }
 }

@@ -1,0 +1,31 @@
+--- crates/flow/src/main.rs
++++ replace exit_code_for -> u8 with 1
+@@ -381,27 +381,17 @@
+ fn has_flag(args: &[String], name: &str) -> bool {
+     args.iter().any(|a| a == name)
+ }
+ 
+ fn exit_code_for(value: &Json) -> u8 {
+     // A document that names USAGE is a usage error whatever its status: the
+     // published contract reserves exit 2 for "you called me wrong", and a script
+     // must be able to tell that apart from a policy refusal (exit 1).
+-    if value.get("code").and_then(Json::as_str) == Some("USAGE") {
+-        return 2;
+-    }
+-    match value.get("status").and_then(Json::as_str) {
+-        Some("PASSED") | Some("PUBLISHED") | Some("PLAN") | Some("INITIALIZED")
+-        | Some("APPROVED") | Some("ADMITTED") | Some("ASSEMBLED") | Some("RECORD")
+-        | Some("RECONCILED") | Some("EXPLAIN") | Some("STATUS") | Some("DISABLED")
+-        | Some("ENABLED") | Some("REPORT") => 0,
+-        Some(_) => 1,
+-        None => 1,
+-    }
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn emit(value: Json) {
+     println!("{}", value.to_string_pretty());
+ }
+ 
+ fn emit_error(message: &str) {
+     emit(Json::obj(vec![

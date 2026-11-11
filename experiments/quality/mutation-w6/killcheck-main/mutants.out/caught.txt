@@ -1,0 +1,15 @@
+crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 1
+crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 0
+crates/flow/src/main.rs:83:9: delete match arm "help" | "-h" | "--help" in dispatch
+crates/flow/src/main.rs:87:9: delete match arm "version" | "--version" in dispatch
+crates/flow/src/main.rs:276:5: replace validate_flags -> Result<(), String> with Ok(())
+crates/flow/src/main.rs:280:16: replace == with != in validate_flags
+crates/flow/src/main.rs:281:19: replace += with -= in validate_flags
+crates/flow/src/main.rs:300:27: replace += with -= in validate_flags
+crates/flow/src/main.rs:300:27: replace += with *= in validate_flags
+crates/flow/src/main.rs:329:15: replace += with -= in validate_flags
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with None
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some(String::new())
+crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some("xyzzy".into())
+crates/flow/src/main.rs:343:15: replace += with -= in flag_value
+crates/flow/src/main.rs:343:15: replace += with *= in flag_value

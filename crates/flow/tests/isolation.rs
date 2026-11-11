@@ -111,6 +111,8 @@ const ENV_PROBE_ARG: &str = "FLOW_ISOLATION_ENV_PROBE_CHILD";
 const FLOOD_ARG: &str = "FLOW_ISOLATION_FLOOD_CHILD";
 const TIMEOUT_ARG: &str = "FLOW_ISOLATION_TIMEOUT_CHILD";
 const GRANDCHILD_ARG: &str = "FLOW_ISOLATION_GRANDCHILD_CHILD";
+const SMALL_STREAM_ARG: &str = "FLOW_ISOLATION_SMALL_STREAM_CHILD";
+const DESCENDANT_ARG: &str = "FLOW_ISOLATION_DESCENDANT_CHILD";
 
 fn arg_present(marker: &str) -> bool {
     std::env::args().any(|arg| arg == marker)
@@ -158,6 +160,18 @@ fn flood_child_probe() {
     out.flush().expect("flood flush");
 }
 
+/// Writes an ordinary amount of output (well below the retention cap) and exits.
+#[test]
+fn small_stream_child_probe() {
+    if !arg_present(SMALL_STREAM_ARG) {
+        return;
+    }
+    let stdout = std::io::stdout();
+    let mut out = stdout.lock();
+    out.write_all(&[b'o'; 8 * 1024]).expect("stream write");
+    out.flush().expect("stream flush");
+}
+
 /// Sleeps far longer than the configured timeout; must be killed.
 #[test]
 fn timeout_child_probe() {
@@ -165,6 +179,49 @@ fn timeout_child_probe() {
         return;
     }
     std::thread::sleep(Duration::from_secs(120));
+}
+
+/// Hangs while a descendant is scheduled to write a marker a few seconds later.
+/// The parent test proves that a timed-out obligation kills the descendant too.
+#[test]
+fn descendant_child_probe() {
+    if !arg_present(DESCENDANT_ARG) {
+        return;
+    }
+    let marker = std::env::args()
+        .skip_while(|arg| arg != DESCENDANT_ARG)
+        .nth(1)
+        .map(PathBuf::from)
+        .expect("the marker path follows the probe marker");
+    // Intentionally not waited on: the descendant must outlive the probe so the
+    // parent test can prove the tree kill reaches it.
+    #[allow(clippy::zombie_processes)]
+    let _holder = spawn_delayed_writer(&marker).expect("the descendant spawns");
+    std::thread::sleep(Duration::from_secs(120));
+}
+
+#[cfg(windows)]
+fn spawn_delayed_writer(marker: &Path) -> std::io::Result<std::process::Child> {
+    Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            &format!(
+                "Start-Sleep -Seconds 3; Set-Content -Path '{}' -Value late",
+                marker.display()
+            ),
+        ])
+        .spawn()
+}
+
+#[cfg(unix)]
+fn spawn_delayed_writer(marker: &Path) -> std::io::Result<std::process::Child> {
+    Command::new("sh")
+        .args([
+            "-c",
+            &format!("sleep 3; echo late > '{}'", marker.display()),
+        ])
+        .spawn()
 }
 
 /// Spawns a survivor that inherits this process's stdout/stderr (the obligation
@@ -298,6 +355,25 @@ fn scratch_materialises_head_outside_repo_and_cleans_up() {
         git.status_porcelain().unwrap(),
         Vec::<String>::new(),
         "materialising and dropping must leave the repository unchanged"
+    );
+}
+
+#[test]
+fn porcelain_status_reports_a_dirty_file_instead_of_an_empty_answer() {
+    // An empty vector is the answer for a clean tree; returning it for every tree
+    // would make a receipt claim the worktree was untouched when it was not.
+    let repo = new_repo("porcelain-dirty");
+    let git = Git::new(&repo.path);
+    assert_eq!(
+        git.status_porcelain().expect("a clean tree is reported"),
+        Vec::<String>::new()
+    );
+
+    fs::write(repo.path.join("dirty.txt"), "not committed\n").unwrap();
+    let reported = git.status_porcelain().expect("a dirty tree is reported");
+    assert!(
+        reported.iter().any(|line| line.contains("dirty.txt")),
+        "the untracked file must be named, got {reported:?}"
     );
 }
 
@@ -548,6 +624,30 @@ fn obligation_output_is_bounded_and_drained() {
 }
 
 #[test]
+fn a_stream_below_the_retention_budget_is_kept_whole_and_not_flagged() {
+    // The retention budget exists to bound a pathological stream, not to clip a
+    // normal one: an 8 KiB answer (an ordinary `git ls-tree` on a small tree) must
+    // reach the caller verbatim and must not carry the truncation marker.
+    let obligation = probe_obligation("small", "small_stream_child_probe", SMALL_STREAM_ARG, 20);
+    let outcome = gitcli::run_obligation(&obligation, Path::new("."));
+    assert_eq!(outcome.status, "PASSED", "{outcome:?}");
+    assert!(
+        !outcome.stdout_truncated,
+        "8 KiB is far below the {} byte budget",
+        gitcli::MAX_STREAM_BYTES
+    );
+    assert!(
+        outcome.stdout.len() >= 8 * 1024,
+        "a complete stream must not be clipped, got {} bytes",
+        outcome.stdout.len()
+    );
+    assert!(
+        !outcome.stdout.contains("output truncated"),
+        "a complete stream must not claim truncation"
+    );
+}
+
+#[test]
 fn timeout_kills_the_child_and_returns_in_bounded_time() {
     let obligation = probe_obligation("timeout", "timeout_child_probe", TIMEOUT_ARG, 1);
     let started = Instant::now();
@@ -565,6 +665,46 @@ fn timeout_kills_the_child_and_returns_in_bounded_time() {
         elapsed.as_millis(),
         outcome.status,
         outcome.exit
+    );
+}
+
+#[test]
+fn a_timed_out_obligation_kills_the_descendants_it_started() {
+    // Killing only the direct child leaves a writer behind: the documented
+    // containment claim is that the *tree* is killed (`taskkill /T` on Windows,
+    // the process group on POSIX). The descendant writes ~3 s after it starts, so
+    // a kill that does not reach it is observable, not a timing guess.
+    let marker = std::env::temp_dir().join(format!(
+        "flow-iso-descendant-{}-{}.marker",
+        std::process::id(),
+        next_id()
+    ));
+    let _ = fs::remove_file(&marker);
+    let exe = std::env::current_exe().expect("test executable");
+    let obligation = Obligation {
+        id: "descendant".to_string(),
+        program: exe.to_string_lossy().into_owned(),
+        args: vec![
+            "--exact".to_string(),
+            "descendant_child_probe".to_string(),
+            "--nocapture".to_string(),
+            DESCENDANT_ARG.to_string(),
+            marker.to_string_lossy().into_owned(),
+        ],
+        required: true,
+        timeout_s: 1,
+    };
+    let outcome = gitcli::run_obligation(&obligation, Path::new("."));
+    assert_eq!(outcome.status, "TIMEOUT", "{outcome:?}");
+    assert!(outcome.timed_out);
+
+    std::thread::sleep(Duration::from_secs(6));
+    let left_behind = marker.exists();
+    let _ = fs::remove_file(&marker);
+    assert!(
+        !left_behind,
+        "a timed-out obligation must not leave a descendant writing behind it: {}",
+        marker.display()
     );
 }
 

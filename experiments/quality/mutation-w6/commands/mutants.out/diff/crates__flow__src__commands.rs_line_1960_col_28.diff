@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1952,17 +1952,17 @@
+     }
+     if crash_point("after-ref") {
+         std::process::exit(89);
+     }
+     // Post-CAS observation: the ref must now carry exactly the prepared commit.
+     // Anything else is an outcome Flow did not plan, so it is reported as needing
+     // reconciliation rather than as a success.
+     let observed = git.show_ref(&reference)?;
+-    if observed.as_deref() != Some(commit.as_str()) {
++    if observed.as_deref() == /* ~ changed by cargo-mutants ~ */ Some(commit.as_str()) {
+         state::append_journal(
+             root,
+             &Json::obj(vec![
+                 ("event", Json::str("outcome")),
+                 ("id", Json::str(id)),
+                 ("status", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                 ("observed", Json::str(observed.unwrap_or_default())),
+                 ("at", Json::str(state::iso8601_now())),

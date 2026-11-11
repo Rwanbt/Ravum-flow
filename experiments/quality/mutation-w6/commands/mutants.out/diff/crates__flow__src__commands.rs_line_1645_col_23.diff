@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1637,17 +1637,17 @@
+             return Ok(refused_code(
+                 "NO_RECEIPT",
+                 format!("no complete receipt for tree {tree}: run `flow run` on this exact index tree first (a selective run never produces one)"),
+             ))
+         }
+     };
+ 
+     // 1. the receipt must be written by this version, unaltered.
+-    if receipt.schema != state::SCHEMA_RECEIPT {
++    if receipt.schema == /* ~ changed by cargo-mutants ~ */ state::SCHEMA_RECEIPT {
+         return Ok(refused_code(
+             "RECEIPT_SCHEMA_STALE",
+             format!(
+                 "receipt schema {:?} is not {}: re-run `flow run`",
+                 receipt.schema,
+                 state::SCHEMA_RECEIPT
+             ),
+         ));

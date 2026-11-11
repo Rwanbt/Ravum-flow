@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace + with * in run_obligation
+@@ -632,17 +632,17 @@
+             Err(_) => {
+                 let _ = child.kill();
+                 reap_bounded(&mut child);
+                 break None;
+             }
+         }
+     };
+ 
+-    let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
++    let reader_deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ READER_GRACE; // survival-probe
+     let stdout = finish(receive(&out_rx, reader_deadline));
+     let stderr = finish(receive(&err_rx, reader_deadline));
+ 
+     let status = if timed_out {
+         "TIMEOUT"
+     } else if exit == Some(0) {
+         "PASSED"
+     } else {

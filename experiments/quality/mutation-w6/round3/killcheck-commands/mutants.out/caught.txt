@@ -1,0 +1,9 @@
+crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])
+crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])
+crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])
+crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])
+crates/flow/src/commands.rs:1126:45: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1126:45: replace * with / in parse_cat_file_batch
+crates/flow/src/commands.rs:1126:38: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1126:38: replace * with / in parse_cat_file_batch
+crates/flow/src/commands.rs:1262:20: delete ! in cmd_run

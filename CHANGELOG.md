@@ -110,6 +110,26 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   §5 for the per-module, scoped numbers); each rate is a lower bound for its module, never a
   whole-crate score.
 
+### Tests and evidence (wave 6, 2026-11-11 — remaining modules and a randomised parser sweep)
+- Mutation completed for the four modules wave 5 left `NOT_RUN` (`state`, `gitcli`, `main`,
+  `commands`): 599 mutants, 549 applicable, 462 caught = 84.2 %, with per-module scopes and no
+  whole-crate claim. The campaign ran from a worktree pinned at the wave-5 head; two runs were
+  interrupted by the host and resumed with `--iterate`, and the merge is reported as arithmetic over
+  the tool's own counts, never as a fresh classification.
+- 45 of the 87 reported survivors are caught by targeted `--in-diff` killchecks on a tree that
+  already contains the assertions that close them. The 42 residual sites are classified with proofs:
+  15 are `#[cfg(unix)]`/`#[cfg(not(windows))]` code this host does not compile, 11 are
+  host-equivalent with the reason, 3 are boundaries the fixtures do not reach, and 13 are real
+  operator-surface gaps (listed by name in the report). One campaign survivor (`gitcli:515`) is a
+  false negative, proved with a dependency-free reproduction.
+- A deterministic randomised parser sweep stands in for `cargo-fuzz`, which the zero-dependency,
+  `--locked --offline` contract excludes: 2 000–4 000 adversarial and well-formed shapes per parser
+  with explicit invariants, a fixed seed, and a check that both the accepted and the refused answer
+  are exercised. It is a sweep, not coverage-guided fuzzing, and is never called that.
+- 25 new tests (459 executed on Windows, 0 ignored; the CI floor rises to 447/444 as a lower bound)
+  and 11 new named gates, so a deleted new test fails the build like a deleted old one. No test,
+  gate or security property was removed or weakened, and no waiver is used.
+
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
 signature, the local lock does not fence an external `git` writer, `publish` moves refs only,

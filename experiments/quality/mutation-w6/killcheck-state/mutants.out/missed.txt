@@ -1,0 +1,4 @@
+crates/flow/src/state.rs:662:20: replace % with / in iso8601_now
+crates/flow/src/state.rs:680:48: replace - with / in civil_from_days
+crates/flow/src/state.rs:680:33: replace + with - in civil_from_days
+crates/flow/src/state.rs:680:33: replace + with * in civil_from_days

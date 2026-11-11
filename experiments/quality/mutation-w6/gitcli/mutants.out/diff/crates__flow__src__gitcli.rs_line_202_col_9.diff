@@ -1,0 +1,22 @@
+--- crates/flow/src/gitcli.rs
++++ replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![])
+@@ -194,18 +194,17 @@
+         if out.status == 0 {
+             Ok(Some(out.stdout.trim().to_string()))
+         } else {
+             Ok(None)
+         }
+     }
+ 
+     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {
+-        let out = self.capture(&["status", "--porcelain=v1", "-uall"])?;
+-        Ok(out.lines().map(str::to_string).collect())
++        Ok(vec![]) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn version(&self) -> String {
+         self.run(&["--version"])
+             .map(|o| o.stdout.trim().to_string())
+             .unwrap_or_else(|e| format!("UNKNOWN: {e}"))
+     }
+ }

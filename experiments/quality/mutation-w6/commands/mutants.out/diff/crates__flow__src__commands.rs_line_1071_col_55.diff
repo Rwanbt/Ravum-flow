@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace || with && in verify_checkout_content
+@@ -1063,17 +1063,17 @@
+     expected: &[(String, String, String, u64)],
+     stage: &str,
+ ) -> Result<(), String> {
+     /// Beyond this entry count the comparison is refused, not skipped.
+     const CONTENT_ENTRIES: usize = 20_000;
+ 
+     let regular: Vec<(&str, &str)> = expected
+         .iter()
+-        .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
++        .filter(|(mode, oid, _, _)| (mode == "100644" && /* ~ changed by cargo-mutants ~ */ mode == "100755") && !oid.is_empty())
+         .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))
+         .collect();
+     if regular.is_empty() {
+         return Ok(());
+     }
+     if regular.len() > CONTENT_ENTRIES {
+         return Err(format!(
+             "tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",

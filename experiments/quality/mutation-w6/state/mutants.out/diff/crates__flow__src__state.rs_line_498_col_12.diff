@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in Receipt::load
+@@ -490,17 +490,17 @@
+     pub fn load(root: &Path, tree_oid: &str) -> Result<Option<Receipt>, String> {
+         // The tree id becomes a file name. It must be an object id, never a path.
+         if !crate::paths::is_object_id(tree_oid) {
+             return Err(format!(
+                 "INVALID_TREE_ID: {tree_oid:?} is not a 40- or 64-character hex object id, so it cannot name a receipt"
+             ));
+         }
+         let path = receipt_path(root, tree_oid);
+-        if !path.exists() {
++        if  /* ~ changed by cargo-mutants ~ */path.exists() {
+             return Ok(None);
+         }
+         let text = fs::read_to_string(&path).map_err(|e| format!("cannot read receipt: {e}"))?;
+         let value = json::parse(&text)?;
+         let get = |key: &str| {
+             value
+                 .get(key)
+                 .and_then(Json::as_str)

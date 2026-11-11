@@ -587,6 +587,11 @@ fn p0a_selective_run_never_yields_a_publishable_receipt() {
         !receipt_file(&repo.path, &tree).exists(),
         "a partial execution must not occupy the complete-receipt slot {tree}.json"
     );
+    assert_ne!(
+        out.get("code").and_then(Json::as_str),
+        Some("DUPLICATE_OBLIGATION_ID"),
+        "one id selected once is a valid selection, refused for a partial run: {out}"
+    );
 
     let (code2, out2) = flow(&repo.path, &["publish"]);
     assert_eq!(
@@ -1082,8 +1087,66 @@ fn p0a_case_colliding_tree_is_refused_not_certified() {
         out.get("code").and_then(Json::as_str),
         Some("UNSUPPORTED_CHECKOUT")
     );
+    assert!(
+        out.to_string().contains("differ only by case"),
+        "the refusal must name the case collision, not a generic stat failure: {out}"
+    );
     let (code2, out2) = flow(&repo.path, &["publish"]);
     assert_eq!(code2, 1, "and nothing may be published: {out2}");
+}
+
+#[test]
+fn status_counts_tracked_changes_and_untracked_files_separately() {
+    // The two counts answer different questions ("what changed under version
+    // control" vs "what is not versioned at all"); folding them together makes a
+    // receipt's worktree statement ambiguous.
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    fs::write(repo.path.join("tracked.txt"), "one\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    git(&repo.path, &["commit", "-q", "-m", "seed"]);
+
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("dirty_count").and_then(Json::as_num),
+        Some(0.0),
+        "{out}"
+    );
+    assert_eq!(
+        out.get("untracked_count").and_then(Json::as_num),
+        Some(0.0),
+        "{out}"
+    );
+
+    fs::write(repo.path.join("untracked.txt"), "new\n").unwrap();
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("dirty_count").and_then(Json::as_num),
+        Some(0.0),
+        "an untracked file is not a tracked change: {out}"
+    );
+    assert_eq!(
+        out.get("untracked_count").and_then(Json::as_num),
+        Some(1.0),
+        "{out}"
+    );
+
+    fs::write(repo.path.join("tracked.txt"), "two\n").unwrap();
+    let (code, out) = flow(&repo.path, &["status"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("dirty_count").and_then(Json::as_num),
+        Some(1.0),
+        "{out}"
+    );
+    assert_eq!(
+        out.get("untracked_count").and_then(Json::as_num),
+        Some(1.0),
+        "{out}"
+    );
 }
 
 #[test]

@@ -32,3 +32,10 @@ dist/
 
 # Coverage target used by the documented measurement command (summary-*.txt)
 /wt-quality-target/
+
+# wave-6 mutation evidence: per-mutant test logs and cargo-mutants debug traces are
+# large and regenerable from the committed outcomes (rerun with --iterate).
+/experiments/quality/mutation-w6/**/log/
+/experiments/quality/mutation-w6/**/debug.log
+/experiments/quality/mutation-w6/**/mutants.out.old/
+/experiments/quality/mutation-w6/**/baseline.log

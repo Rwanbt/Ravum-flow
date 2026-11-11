@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace match guard value.starts_with("--") with false in validate_flags
+@@ -285,17 +285,17 @@
+             let (name, inline_value) = match body.split_once('=') {
+                 Some((head, value)) => (format!("--{head}"), Some(value)),
+                 None => (format!("--{body}"), None),
+             };
+             if takes_value.contains(&name.as_str()) {
+                 if inline_value.is_none() {
+                     match args.get(index + 1) {
+                         None => return Err(format!("`{name}` needs a value (flow {command} ...)")),
+-                        Some(value) if value.starts_with("--") => {
++                        Some(value) if false /* ~ changed by cargo-mutants ~ */ => {
+                             return Err(format!(
+                                 "`{name}` needs a value, found the flag {value:?} instead"
+                             ))
+                         }
+                         Some(_) => {}
+                     }
+                     index += 2;
+                     continue;

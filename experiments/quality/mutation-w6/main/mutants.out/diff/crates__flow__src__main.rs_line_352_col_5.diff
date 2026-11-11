@@ -1,0 +1,47 @@
+--- crates/flow/src/main.rs
++++ replace collect_values -> Option<Vec<String>> with None
+@@ -344,43 +344,17 @@
+     }
+     None
+ }
+ 
+ /// Collect every occurrence of any of `names`, in command-line order.
+ /// `--name value` and `--name=value` are both accepted; a repeated flag keeps
+ /// its order, which is the assembly order of a candidate.
+ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+-    let mut out = Vec::new();
+-    let mut index = 0;
+-    while index < args.len() {
+-        let arg = &args[index];
+-        if names.contains(&arg.as_str()) {
+-            if let Some(value) = args.get(index + 1) {
+-                out.push(value.clone());
+-            }
+-            index += 2;
+-            continue;
+-        }
+-        let mut matched = false;
+-        for name in names {
+-            if let Some(value) = arg.strip_prefix(&format!("{name}=")) {
+-                out.push(value.to_string());
+-                matched = true;
+-                break;
+-            }
+-        }
+-        let _ = matched;
+-        index += 1;
+-    }
+-    if out.is_empty() {
+-        None
+-    } else {
+-        Some(out)
+-    }
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn has_flag(args: &[String], name: &str) -> bool {
+     args.iter().any(|a| a == name)
+ }
+ 
+ fn exit_code_for(value: &Json) -> u8 {
+     // A document that names USAGE is a usage error whatever its status: the

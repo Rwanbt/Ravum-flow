@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_status
+@@ -571,17 +571,17 @@
+                             items
+                                 .iter()
+                                 .filter_map(|v| v.as_str().map(str::to_string))
+                                 .collect()
+                         })
+                         .unwrap_or_default();
+                     let missing: Vec<String> = logs
+                         .iter()
+-                        .filter(|rel| !root.join(rel.as_str()).is_file())
++                        .filter(|rel|  /* ~ changed by cargo-mutants ~ */root.join(rel.as_str()).is_file())
+                         .cloned()
+                         .collect();
+                     latest = Json::obj(vec![
+                         (
+                             "tree_oid",
+                             value.get("tree_oid").cloned().unwrap_or(Json::Null),
+                         ),
+                         ("status", displayed_status),

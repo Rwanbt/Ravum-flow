@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_doctor
+@@ -385,17 +385,17 @@
+     }
+     if root.join(".git").join("info").join("attributes").exists() {
+         attribute_sources.push(".git/info/attributes (local, not in the tree)".to_string());
+     }
+     let attributes_file = git
+         .run(&["config", "--get", "core.attributesFile"])
+         .map(|o| o.stdout.trim().to_string())
+         .unwrap_or_default();
+-    if !attributes_file.is_empty() {
++    if  /* ~ changed by cargo-mutants ~ */attributes_file.is_empty() {
+         attribute_sources.push(format!("core.attributesFile={attributes_file}"));
+     }
+     push(
+         "gitattributes",
+         if attribute_sources.is_empty() {
+             "OK"
+         } else {
+             "WARN"

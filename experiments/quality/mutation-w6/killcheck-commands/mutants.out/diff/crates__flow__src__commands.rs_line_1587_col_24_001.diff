@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace > with < in cmd_publish
+@@ -1579,17 +1579,17 @@
+                     "REF_NOT_ALLOWED",
+                     format!("--ref {r:?} must be a full branch ref under refs/heads/"),
+                 ));
+             }
+             r
+         }
+         None => current_ref(&git)?,
+     };
+-    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') { // survival-probe
++    if reference.len() < /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\0') || reference.contains(' ') { // survival-probe
+         return Ok(refused_code(
+             "REF_NOT_ALLOWED",
+             format!("--ref {reference:?} is not a usable ref name"),
+         ));
+     }
+     if git.run(&["check-ref-format", &reference])?.status != 0 {
+         return Ok(refused_code(
+             "REF_NOT_ALLOWED",

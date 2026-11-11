@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace || with && in validate_flags
+@@ -296,17 +296,17 @@
+                             ))
+                         }
+                         Some(_) => {}
+                     }
+                     index += 2;
+                     continue;
+                 }
+             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())
+-                || bool_flags(command).contains(&name.as_str())
++                && /* ~ changed by cargo-mutants ~ */ bool_flags(command).contains(&name.as_str())
+             {
+                 // A boolean flag is a token, not a `key=value` pair. Accepting
+                 // `--dry-run=true` here and then matching only the exact token in
+                 // `has_flag` would run a real publication for an operator who
+                 // asked for a plan, so the shape is refused rather than guessed.
+                 if let Some(value) = inline_value {
+                     return Err(format!(
+                         "`{name}` takes no value (found {value:?}); write `{name}` on its own"

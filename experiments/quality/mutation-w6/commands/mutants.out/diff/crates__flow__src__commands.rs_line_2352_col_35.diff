@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_explain
+@@ -2344,17 +2344,17 @@
+                 false,
+                 Vec::<String>::new(),
+             ),
+             Some(r) => {
+                 let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
+                 let missing: Vec<String> = r
+                     .logs
+                     .iter()
+-                    .filter(|rel| !root.join(rel.as_str()).is_file())
++                    .filter(|rel|  /* ~ changed by cargo-mutants ~ */root.join(rel.as_str()).is_file())
+                     .cloned()
+                     .collect();
+                 let display = if integrity_ok {
+                     Json::str(r.status.clone())
+                 } else {
+                     Json::str("RECEIPT_INTEGRITY_INVALID")
+                 };
+                 (

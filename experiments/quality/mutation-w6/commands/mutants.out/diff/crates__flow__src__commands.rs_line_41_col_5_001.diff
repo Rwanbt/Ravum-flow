@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace short -> String with "xyzzy".into()
+@@ -33,17 +33,17 @@
+     Json::obj(vec![
+         ("status", Json::str("REFUSED")),
+         ("code", Json::str(code)),
+         ("reason", Json::str(why.into())),
+     ])
+ }
+ 
+ fn short(digest: &str) -> String {
+-    digest.chars().take(12).collect()
++    "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn current_ref(git: &Git) -> Result<String, String> {
+     let out = git.run(&["symbolic-ref", "-q", "HEAD"])?;
+     if out.status != 0 {
+         return Err("detached HEAD: pass --ref explicitly".into());
+     }
+     Ok(out.stdout.trim().to_string())

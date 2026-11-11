@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_status
+@@ -554,17 +554,17 @@
+             if let Ok(text) = fs::read_to_string(last) {
+                 if let Ok(value) = json::parse(&text) {
+                     // A receipt whose content does not match its integrity digest
+                     // is not evidence. It is shown for inspection, never as PASSED.
+                     let trust = match state::verify_receipt_integrity(&value) {
+                         Ok(()) => "INTEGRITY_OK",
+                         Err(_) => "RECEIPT_INTEGRITY_INVALID",
+                     };
+-                    let displayed_status = if trust == "INTEGRITY_OK" {
++                    let displayed_status = if trust != /* ~ changed by cargo-mutants ~ */ "INTEGRITY_OK" {
+                         value.get("status").cloned().unwrap_or(Json::Null)
+                     } else {
+                         Json::str("RECEIPT_INTEGRITY_INVALID")
+                     };
+                     let logs: Vec<String> = value
+                         .get("logs")
+                         .and_then(Json::as_arr)
+                         .map(|items| {

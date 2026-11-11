@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_doctor
+@@ -363,17 +363,17 @@
+     );
+ 
+     let ignorecase = git
+         .run(&["config", "--get", "core.ignorecase"])
+         .map(|o| o.stdout.trim().to_string())
+         .unwrap_or_default();
+     push(
+         "case_sensitivity",
+-        if ignorecase == "true" { "WARN" } else { "OK" },
++        if ignorecase != /* ~ changed by cargo-mutants ~ */ "true" { "WARN" } else { "OK" },
+         format!(
+             "core.ignorecase={ignorecase:?}: a case-insensitive worktree cannot hold two paths differing only by case"
+         ),
+     );
+ 
+     // Attribute sources that can rewrite a checkout. They are enumerated here for
+     // disclosure only: `flow run` no longer guesses whether a conversion "can"
+     // apply, it compares every regular file against its blob and refuses a

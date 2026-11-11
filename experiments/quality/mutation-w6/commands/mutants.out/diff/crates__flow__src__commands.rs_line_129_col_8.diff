@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_init
+@@ -121,17 +121,17 @@
+     // Never truncate a journal, a receipt or a proposal: `init` is not a reset.
+     if !state::journal_path(root).exists() {
+         state::write_atomic(&state::journal_path(root), "")?;
+     }
+     // Flow's own state must never become part of the tree it verifies: if it
+     // did, every policy change would move the tree OID and a receipt could
+     // never be compared with "the same tree under a different policy".
+     let gitignore = dir.join(".gitignore");
+-    if !gitignore.exists() {
++    if  /* ~ changed by cargo-mutants ~ */gitignore.exists() {
+         state::write_atomic(&gitignore, "*\n")?;
+     }
+     if !existing_config {
+         state::save_config(root, &config)?;
+     }
+     let source = if adopt_policy {
+         "init --adopt-policy"
+     } else {

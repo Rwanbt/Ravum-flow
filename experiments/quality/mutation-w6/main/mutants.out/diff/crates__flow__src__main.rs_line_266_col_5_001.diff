@@ -1,0 +1,25 @@
+--- crates/flow/src/main.rs
++++ replace bool_flags -> &'static[&'static str] with Vec::leak(vec![""])
+@@ -258,21 +258,17 @@
+ /// Boolean flags that a command actually implements.
+ ///
+ /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`
+ /// would execute the obligations and write a receipt for an operator who asked for
+ /// a plan. That is the same defect class as `publish --dry-run=true` (which the
+ /// second review found and this file already refuses), so an unimplemented
+ /// boolean is a usage error.
+ fn bool_flags(command: &str) -> &'static [&'static str] {
+-    match command {
+-        "init" => &["--force", "--adopt-policy"],
+-        "publish" => &["--dry-run"],
+-        _ => &[],
+-    }
++    Vec::leak(vec![""]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Reject an unknown flag, a value flag without a value, or a stray positional
+ /// argument, before any mutation.
+ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+     let takes_value = value_flags(command);
+     let mut index = 0;
+     while index < args.len() {

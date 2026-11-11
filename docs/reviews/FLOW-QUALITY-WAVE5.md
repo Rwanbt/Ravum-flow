@@ -213,7 +213,9 @@ budget; re-run against `--bins --test isolation` it is caught in seconds.
 `experiments/quality/mutation-w5/run-mutations.ps1` with their scopes; the
 campaign was stopped before `state` rather than leave a partial module that could
 be mistaken for a result. `commands` in particular needs its own budget decision:
-267 mutants × the CLI suites is a multi-hour run on this host.
+267 mutants × the CLI suites is a multi-hour run on this host. **[Wave 6](FLOW-QUALITY-WAVE6.md)
+ran all four from a worktree pinned at this report's head commit; its §3 supersedes this
+paragraph, and its §5 classifies every survivor that remains.**
 
 Limits: mutants that live in a `#[cfg(unix)]` block are "not compiled on this
 host" on Windows, not "killed"; `Default::default()` replacements are unviable by
@@ -230,7 +232,9 @@ names its integration suites.
   dependency and a resolving network step; the crate is intentionally
   zero-dependency and `--locked --offline` in CI. The deterministic parser tests
   above cover the same refusals, including both historical panics, but they are
-  not coverage-guided fuzzing and are not claimed as such.
+  not coverage-guided fuzzing and are not claimed as such. [Wave
+  6](FLOW-QUALITY-WAVE6.md) adds a randomised (not coverage-guided) sweep over the
+  same boundary and keeps the same limit.
 - **macOS**: not measured; the platform-gated tests describe what is expected,
   not what was observed there.
 - **S9 confirmatory comparison**: still blocked by `H4` (human threshold/budget

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_doctor
+@@ -298,17 +298,17 @@
+     let lock = crate::lock::inspect(root);
+     push(
+         "publication_lock",
+         match lock.attribution {
+             "absent" | "dead" => "OK",
+             "live" => "WARN",
+             _ => "FAILED",
+         },
+-        if !lock.present {
++        if  /* ~ changed by cargo-mutants ~ */lock.present {
+             "no lock file".to_string()
+         } else {
+             format!(
+                 "present, owner attribution {}, purpose {:?}{}{}",
+                 lock.attribution,
+                 lock.purpose,
+                 lock.pid.map(|p| format!(", pid {p}")).unwrap_or_default(),
+                 lock.age_s

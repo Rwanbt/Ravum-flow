@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_publish
+@@ -1595,17 +1595,17 @@
+             "REF_NOT_ALLOWED",
+             format!("--ref {reference:?} is not a valid ref name (git check-ref-format)"),
+         ));
+     }
+     // A symbolic ref would move its target while this command reports the name
+     // the operator passed: they would believe the commit landed on `alias` when
+     // it landed on something else. Refuse rather than report a misleading name.
+     let symref = git.run(&["symbolic-ref", "-q", &reference])?;
+-    if symref.status == 0 {
++    if symref.status != /* ~ changed by cargo-mutants ~ */ 0 {
+         return Ok(refused_code(
+             "REF_IS_SYMREF",
+             format!(
+                 "--ref {reference:?} is a symbolic ref to {:?}: publish to the real branch ref",
+                 symref.stdout.trim()
+             ),
+         ));
+     }

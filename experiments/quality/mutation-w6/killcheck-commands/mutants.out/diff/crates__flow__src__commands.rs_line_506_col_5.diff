@@ -1,0 +1,41 @@
+--- crates/flow/src/commands.rs
++++ replace program_on_path -> bool with true
+@@ -498,37 +498,17 @@
+                 Json::str("no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one"),
+                 Json::str("a checkout that cannot reproduce the tree is refused, not repaired"),
+             ]),
+         ),
+     ]))
+ }
+ 
+ fn program_on_path(program: &str) -> bool {
+-    let exts: Vec<String> = if cfg!(windows) { // survival-probe
+-        std::env::var("PATHEXT")
+-            .unwrap_or_else(|_| ".EXE;.CMD;.BAT".into())
+-            .split(';')
+-            .map(|s| s.to_ascii_lowercase())
+-            .collect()
+-    } else {
+-        vec![String::new()]
+-    };
+-    let Some(path) = std::env::var_os("PATH") else {
+-        return false;
+-    };
+-    for dir in std::env::split_paths(&path) {
+-        for ext in &exts {
+-            let candidate = dir.join(format!("{program}{ext}"));
+-            if candidate.is_file() {
+-                return true;
+-            }
+-        }
+-    }
+-    false
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ----------------------------------------------------------------- status
+ pub fn cmd_status(root: &Path) -> Result<Json, String> {
+     let git = Git::new(root);
+     let head = git.head_oid().unwrap_or_default();
+     let tree = git.head_tree().unwrap_or_default();
+     let branch = git

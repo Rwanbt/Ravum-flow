@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace has_flag -> bool with false
+@@ -374,17 +374,17 @@
+     if out.is_empty() {
+         None
+     } else {
+         Some(out)
+     }
+ }
+ 
+ fn has_flag(args: &[String], name: &str) -> bool {
+-    args.iter().any(|a| a == name)
++    false /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn exit_code_for(value: &Json) -> u8 {
+     // A document that names USAGE is a usage error whatever its status: the
+     // published contract reserves exit 2 for "you called me wrong", and a script
+     // must be able to tell that apart from a policy refusal (exit 1).
+     if value.get("code").and_then(Json::as_str) == Some("USAGE") {
+         return 2;

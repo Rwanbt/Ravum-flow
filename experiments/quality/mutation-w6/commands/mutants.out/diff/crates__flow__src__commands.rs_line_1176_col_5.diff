@@ -1,0 +1,50 @@
+--- crates/flow/src/commands.rs
++++ replace collect_entries -> Result<(), String> with Ok(())
+@@ -1168,46 +1168,17 @@
+     Ok(blobs)
+ }
+ fn collect_entries(
+     root: &Path,
+     dir: &Path,
+     files: &mut Vec<String>,
+     dirs: &mut Vec<String>,
+ ) -> Result<(), String> {
+-    let entries = fs::read_dir(dir).map_err(|e| format!("cannot read {}: {e}", dir.display()))?;
+-    for entry in entries.flatten() {
+-        let path = entry.path();
+-        let name = entry.file_name().to_string_lossy().to_string();
+-        // Only Flow's own scratch ownership marker is not part of the verified
+-        // tree. The `.git` link is removed by `materialise` before this check, so a
+-        // `.git` entry here is a file the tree did not declare — a hook that
+-        // recreates it after the unlink must be refused, not ignored. Any other
+-        // root entry, including one whose name merely starts with `.flow-scratch`,
+-        // is an extra file.
+-        if dir == root && name == ".flow-scratch-owned" {
+-            continue;
+-        }
+-        let Ok(meta) = fs::symlink_metadata(&path) else {
+-            continue;
+-        };
+-        if meta.is_dir() && !meta.file_type().is_symlink() {
+-            let rel = path
+-                .strip_prefix(root)
+-                .map_err(|_| format!("{} escaped the checkout", path.display()))?;
+-            dirs.push(rel.to_string_lossy().replace('\\', "/"));
+-            collect_entries(root, &path, files, dirs)?;
+-        } else {
+-            let rel = path
+-                .strip_prefix(root)
+-                .map_err(|_| format!("{} escaped the checkout", path.display()))?;
+-            files.push(rel.to_string_lossy().replace('\\', "/"));
+-        }
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ pub fn cmd_run(
+     root: &Path,
+     only: Option<Vec<String>>,
+     timeout_override: Option<u64>,
+     candidate: Option<String>,
+ ) -> Result<Json, String> {
+     let config = state::load_config(root)?;

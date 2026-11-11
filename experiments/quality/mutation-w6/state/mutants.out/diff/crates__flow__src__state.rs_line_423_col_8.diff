@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in read_journal
+@@ -415,17 +415,17 @@
+     write_atomic_bytes(&path, &content).map_err(|e| format!("cannot append journal: {e}"))
+ }
+ /// Read every journal record.
+ ///
+ /// A missing journal is an empty journal (a fresh repository). Anything else
+ /// that prevents a faithful read is an error — never silently an empty set.
+ pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {
+     let path = journal_path(root);
+-    if !path.exists() {
++    if  /* ~ changed by cargo-mutants ~ */path.exists() {
+         return Ok(Vec::new());
+     }
+     let file =
+         File::open(&path).map_err(|e| JournalError::Io(format!("cannot open journal: {e}")))?;
+     let mut records = Vec::new();
+     for (lineno, line) in BufReader::new(file).lines().enumerate() {
+         let line =
+             line.map_err(|e| JournalError::Io(format!("cannot read line {}: {e}", lineno + 1)))?;

@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace != with == in verify_receipt_integrity
+@@ -574,17 +574,17 @@
+ 
+ pub fn verify_receipt_integrity(value: &Json) -> Result<(), String> {
+     let recorded = value
+         .get("integrity")
+         .and_then(Json::as_str)
+         .ok_or("receipt carries no integrity digest")?;
+     let body = without_field(value, "integrity");
+     let computed = crate::sha256::sha256_hex(body.to_string().as_bytes());
+-    if computed != recorded {
++    if computed == /* ~ changed by cargo-mutants ~ */ recorded {
+         return Err(format!(
+             "receipt content does not match its integrity digest (recorded {recorded}, computed {computed})"
+         ));
+     }
+     Ok(())
+ }
+ 
+ fn string_list(value: &Json, key: &str) -> Vec<String> {

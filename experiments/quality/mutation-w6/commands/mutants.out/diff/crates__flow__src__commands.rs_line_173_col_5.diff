@@ -1,0 +1,60 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_approve -> Result<Json, String> with Ok(Default::default())
+@@ -165,56 +165,17 @@
+                 "the adopted policy declares obligations; `.flow/.gitignore` keeps Flow state out of the verified tree"
+             }),
+         ),
+     ]))
+ }
+ 
+ /// Record local approval of the current `.flow/config.json` policy.
+ pub fn cmd_approve(root: &Path) -> Result<Json, String> {
+-    let config = state::load_config(root)?;
+-    if let Err(reason) = validate_obligations(&config.obligations) {
+-        return Ok(refused_code("INVALID_POLICY", reason));
+-    }
+-    let digest = policy_digest(&effective_policy(&config, &config.obligations));
+-    state::save_adoption(
+-        root,
+-        &state::Adoption {
+-            policy_digest: digest.clone(),
+-            policy_version: config.policy_version.clone(),
+-            approved_at: state::iso8601_now(),
+-            source: "approve".into(),
+-        },
+-    )?;
+-    Ok(Json::obj(vec![
+-        ("status", Json::str("APPROVED")),
+-        ("policy_digest", Json::str(digest)),
+-        ("policy_version", Json::str(config.policy_version.clone())),
+-        (
+-            "obligations",
+-            Json::Arr(
+-                config
+-                    .obligations
+-                    .iter()
+-                    .map(|o| {
+-                        Json::str(format!(
+-                            "{} {}{}",
+-                            o.program,
+-                            o.args.join(" "),
+-                            if o.required { " (required)" } else { " (optional)" }
+-                        ))
+-                    })
+-                    .collect(),
+-            ),
+-        ),
+-        (
+-            "note",
+-            Json::str("this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`"),
+-        ),
+-    ]))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The adoption gate: a policy that this working copy never approved is not run.
+ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+     let digest = policy_digest(&effective_policy(config, &config.obligations));
+     match state::load_adoption(root)? {
+         None => Ok(Some(refused_code(
+             "POLICY_NOT_ADOPTED",

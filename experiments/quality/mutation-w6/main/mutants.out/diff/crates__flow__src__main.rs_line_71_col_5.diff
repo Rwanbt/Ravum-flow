@@ -1,0 +1,23 @@
+--- crates/flow/src/main.rs
++++ replace main -> ExitCode with Default::default()
+@@ -63,19 +63,17 @@
+ Every command prints machine-readable JSON on stdout. `--json` is accepted for
+ compatibility; JSON is already the default.
+ Exit codes: 0 = PASSED/PUBLISHED/PLAN/INITIALIZED/APPROVED/ADMITTED/ASSEMBLED/
+ RECORD/RECONCILED/EXPLAIN/STATUS/DISABLED/ENABLED, 1 = REFUSED/FAILED/UNKNOWN/
+ UNSUPPORTED/NEEDS_RECONCILIATION/ERROR, 2 = usage.
+ ";
+ 
+ fn main() -> ExitCode {
+-    let args: Vec<String> = std::env::args().skip(1).collect();
+-    let code = dispatch(&args);
+-    ExitCode::from(code)
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn dispatch(args: &[String]) -> u8 {
+     let Some(command) = args.first().map(String::as_str) else {
+         print!("{USAGE}");
+         return 2;
+     };
+     let rest = &args[1..];

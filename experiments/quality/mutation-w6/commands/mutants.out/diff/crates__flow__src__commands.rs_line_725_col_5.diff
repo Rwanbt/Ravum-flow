@@ -1,0 +1,29 @@
+--- crates/flow/src/commands.rs
++++ replace build_context_id -> String with String::new()
+@@ -717,25 +717,17 @@
+     ])
+ }
+ 
+ fn policy_digest(policy: &Json) -> String {
+     sha256::sha256_hex(policy.to_string().as_bytes())
+ }
+ 
+ fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
+-    let context = Json::obj(vec![
+-        ("codec", Json::str(state::CONTEXT_CODEC)),
+-        ("tree_oid", Json::str(tree)),
+-        ("policy", policy.clone()),
+-        ("git_version", Json::str(git.version())),
+-        ("os", Json::str(std::env::consts::OS)),
+-        ("arch", Json::str(std::env::consts::ARCH)),
+-    ]);
+-    sha256::sha256_hex(context.to_string().as_bytes())
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Refuse a policy that cannot express a meaningful proof, or whose ids would
+ /// collide as log file names.
+ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
+     let mut seen: BTreeSet<&str> = BTreeSet::new();
+     let mut folded: BTreeMap<String, String> = BTreeMap::new();
+     for ob in obligations {

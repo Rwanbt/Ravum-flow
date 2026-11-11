@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace < with > in collect_values
+@@ -346,17 +346,17 @@
+ }
+ 
+ /// Collect every occurrence of any of `names`, in command-line order.
+ /// `--name value` and `--name=value` are both accepted; a repeated flag keeps
+ /// its order, which is the assembly order of a candidate.
+ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+     let mut out = Vec::new();
+     let mut index = 0;
+-    while index < args.len() {
++    while index > /* ~ changed by cargo-mutants ~ */ args.len() {
+         let arg = &args[index];
+         if names.contains(&arg.as_str()) {
+             if let Some(value) = args.get(index + 1) {
+                 out.push(value.clone());
+             }
+             index += 2;
+             continue;
+         }

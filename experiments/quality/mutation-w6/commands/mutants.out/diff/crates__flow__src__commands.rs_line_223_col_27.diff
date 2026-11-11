@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace match guard adoption.policy_digest != digest with true in adoption_gate
+@@ -215,17 +215,17 @@
+ /// The adoption gate: a policy that this working copy never approved is not run.
+ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+     let digest = policy_digest(&effective_policy(config, &config.obligations));
+     match state::load_adoption(root)? {
+         None => Ok(Some(refused_code(
+             "POLICY_NOT_ADOPTED",
+             "this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy",
+         ))),
+-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code(
++        Some(adoption) if true /* ~ changed by cargo-mutants ~ */ => Ok(Some(refused_code(
+             "POLICY_NOT_APPROVED",
+             format!(
+                 ".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`",
+                 short(&adoption.policy_digest),
+                 short(&digest)
+             ),
+         ))),
+         Some(_) => Ok(None),

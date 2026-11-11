@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in pending_intents
+@@ -2097,17 +2097,17 @@
+ /// at least as many outcomes as intents for that id. One outcome must never
+ /// close two intents.
+ fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
+     let records = state::read_journal(root)?;
+     let outcomes = count_by_id(&records, "outcome");
+     let mut seen: BTreeMap<String, usize> = BTreeMap::new();
+     let mut pending = Vec::new();
+     for record in records {
+-        if record.get("event").and_then(Json::as_str) != Some("intent") {
++        if record.get("event").and_then(Json::as_str) == /* ~ changed by cargo-mutants ~ */ Some("intent") {
+             continue;
+         }
+         let id = record
+             .get("id")
+             .and_then(Json::as_str)
+             .unwrap_or("")
+             .to_string();
+         let position = {

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1767,17 +1767,17 @@
+                 receipt.status
+             ),
+         ));
+     }
+     // 5. the verification commit must still describe the same tree, when the
+     //    object still exists (it may have been pruned; absence is not a failure).
+     if !receipt.commit_oid.is_empty() {
+         if let Ok(t) = git.capture(&["rev-parse", &format!("{}^{{tree}}", receipt.commit_oid)]) {
+-            if t != tree {
++            if t == /* ~ changed by cargo-mutants ~ */ tree {
+                 return Ok(refused_code(
+                     "RECEIPT_COMMIT_MISMATCH",
+                     format!(
+                         "receipt commit {} carries tree {t}, not the verified {tree}",
+                         receipt.commit_oid
+                     ),
+                 ));
+             }

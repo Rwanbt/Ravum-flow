@@ -1,0 +1,22 @@
+diff --git a/crates/flow/src/main.rs b/crates/flow/src/main.rs
+index 503dc23..ee17cca 100644
+--- a/crates/flow/src/main.rs
++++ b/crates/flow/src/main.rs
+@@ -83 +83 @@ fn dispatch(args: &[String]) -> u8 {
+-        "help" | "-h" | "--help" => {
++        "help" | "-h" | "--help" => { // survival-probe
+@@ -87 +87 @@ fn dispatch(args: &[String]) -> u8 {
+-        "version" | "--version" => {
++        "version" | "--version" => { // survival-probe
+@@ -281 +281 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+-            index += 1;
++            index += 1; // survival-probe
+@@ -300 +300 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+-                    index += 2;
++                    index += 2; // survival-probe
+@@ -329 +329 @@ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+-        index += 1;
++        index += 1; // survival-probe
+@@ -343 +343 @@ fn flag_value(args: &[String], name: &str) -> Option<String> {
+-        index += 1;
++        index += 1; // survival-probe

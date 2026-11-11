@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace * with +
+@@ -417,17 +417,17 @@
+     truncated: bool,
+ }
+ 
+ /// Retained Git output per stream before the call fails.
+ ///
+ /// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on
+ /// a big tree) can be large. It is still a bound: past it the answer is refused,
+ /// never clipped.
+-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024; // survival-probe
++pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 + /* ~ changed by cargo-mutants ~ */ 1024; // survival-probe
+ 
+ /// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged
+ /// child from hanging the CLI forever, not to police slow repositories.
+ pub const GIT_TIMEOUT_S: u64 = 300;
+ 
+ /// Read `pipe` to EOF while retaining at most `cap` bytes.
+ ///
+ /// The surplus is still read and discarded: stopping the read would fill the
