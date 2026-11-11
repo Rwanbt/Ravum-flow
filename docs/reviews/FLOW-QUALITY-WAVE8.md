@@ -192,7 +192,9 @@ proof, is in [`experiments/quality/stability-w8/NOTES.md`](../../experiments/qua
   gate with no waiver. The extracted helper adds three covered product lines, so the denominator moved
   by three and the ratio is unchanged.
 - CI on `3b1e33e`: push `43021374347` and PR `43021382769`, **5/5 jobs each** (test Ubuntu + Windows,
-  polyglot ×2, coverage).
+  polyglot ×2, coverage), with `executed_passed=470`/`468` and `ignored=0`. The evidence head
+  `6086706` (evidence, report, CHANGELOG, INDEX, CAPABILITIES — no source change beyond a comment) ran
+  push `43035012844` and PR `43035026047`, also **5/5 green**.
 
 ## 8. What is still not run, and the limits
 
