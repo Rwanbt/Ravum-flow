@@ -832,6 +832,29 @@ mod tests {
             assert!(list.contains(&required), "{required} must stay allowlisted");
         }
         assert_eq!(env_allowlist(), ENV_ALLOWLIST);
+
+        // The allowlist exists for both halves of the rule: a listed variable must
+        // reach the obligation, and an unlisted one must not. `allowed_env` filters
+        // the host environment by name; PATH is allowlisted and is always present
+        // for the process that runs the tests, so it must survive the filter.
+        // Without this, the filter body could be replaced by an empty vector and
+        // every negative test would still pass.
+        let kept = allowed_env();
+        let names: Vec<String> = kept
+            .iter()
+            .map(|(name, _)| name.to_string_lossy().to_string())
+            .collect();
+        assert!(
+            names.iter().any(|name| name.eq_ignore_ascii_case("PATH")),
+            "an allowlisted variable must survive the filter, kept: {names:?}"
+        );
+        // Every kept name is on the allowlist: the filter never widens it.
+        for name in &names {
+            assert!(
+                list.iter().any(|wanted| wanted.eq_ignore_ascii_case(name)),
+                "{name} is not on the allowlist but survived the filter"
+            );
+        }
     }
 
     #[test]
