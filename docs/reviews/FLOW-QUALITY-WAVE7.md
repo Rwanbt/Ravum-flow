@@ -168,8 +168,10 @@ real checkout. That keeps the suite's runtime bounded (the whole test file still
   re-measured it on this head: **95.88 % lines (4399/4588), 93.56 % branches (799/854)**, both above
   the gate with no waiver, and above the wave-6 measurement (95.68 / 92.72). The new tests do not
   appear in the product view (test code is excluded by construction).
-- CI on the head `6b520e5`: push run `43011382354` and PR run `43011392851`, **5/5 jobs each** (test
-  Ubuntu + Windows, polyglot ×2, coverage).
+- CI on the head carrying these sources: the code head `308bf6a` (floor change in `6b520e5`) ran
+  push `43011382354` and PR `43011392851`; the evidence head `6c6a038` ran push `43013333990` and PR
+  `43013345750` — **5/5 jobs each** (test Ubuntu + Windows, polyglot ×2, coverage),
+  `executed_passed=469`/`468`, `ignored=0`.
 
 ## 8. What is still not run, and the limits
 
