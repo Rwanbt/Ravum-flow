@@ -742,18 +742,37 @@ mod tests {
             .expect_err("a scratch base inside the repository is refused");
         assert!(err.contains("inside the repository"), "{err}");
 
-        // The base is outside, but the next candidate name resolves exactly onto
-        // the repository root, so creating it would write inside the repository.
         let base = root.join("base");
         fs::create_dir(&base).unwrap();
         let base = fs::canonicalize(&base).unwrap();
-        let seq = next_sequence();
-        let candidate = candidate_path(&base, seq + 1);
-        fs::create_dir(&candidate).unwrap();
-        let err = materialise_in(&base, &git, "abcd", &candidate)
-            .expect_err("a candidate that resolves inside the repository is refused");
-        assert!(err.contains("inside the repository"), "{err}");
-        assert!(candidate.is_dir(), "the refused candidate is left alone");
+
+        // The base is outside, but the candidate name the next attempt will use
+        // resolves exactly onto the repository root, so creating it would write
+        // inside the repository. The name sequence is process-global and the suite
+        // runs tests in parallel: another test can consume the value between the
+        // read here and the read inside `materialise_in`, which turns the collision
+        // into an ordinary missing object. Retry with a fresh value a bounded
+        // number of times rather than depend on the scheduler; the guard under test
+        // must still refuse, and a missing guard fails every attempt.
+        let mut refused = None;
+        for _ in 0..8 {
+            let seq = next_sequence();
+            let candidate = candidate_path(&base, seq + 1);
+            if fs::create_dir(&candidate).is_err() {
+                continue;
+            }
+            match materialise_in(&base, &git, "abcd", &candidate) {
+                Err(reason) if reason.contains("inside the repository") => {
+                    assert!(candidate.is_dir(), "the refused candidate is left alone");
+                    refused = Some(reason);
+                    break;
+                }
+                Err(reason) if reason.contains("cannot materialise") => continue,
+                other => panic!("expected an inside-the-repository refusal, got {other:?}"),
+            }
+        }
+        let reason = refused.expect("the candidate-inside guard must refuse within 8 attempts");
+        assert!(reason.contains("inside the repository"), "{reason}");
 
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
     }
@@ -870,15 +889,32 @@ mod tests {
         let repo = root.join("repo");
         fs::create_dir(&repo).unwrap();
         let git = Git::new(&repo);
-        let seq = next_sequence();
-        // Occupy exactly the 128 names the next `materialise_in` will try: the
-        // bound must fail closed instead of looping forever.
-        for offset in 1..=MAX_ATTEMPTS {
-            fs::create_dir(candidate_path(&base, seq + offset)).unwrap();
+        // Same shared-sequence caveat as
+        // `materialise_refuses_a_base_or_a_candidate_inside_the_repository`: occupy
+        // the 128 names the *next* attempt will try, but re-read the sequence and
+        // retry when a parallel test consumed a value in between (the attempt then
+        // lands on a free name and fails for another reason).
+        let mut refused = None;
+        for _ in 0..8 {
+            let seq = next_sequence();
+            // Occupy exactly the 128 names the next `materialise_in` will try: the
+            // bound must fail closed instead of looping forever.
+            for offset in 1..=MAX_ATTEMPTS {
+                if let Err(e) = fs::create_dir(candidate_path(&base, seq + offset)) {
+                    assert_eq!(e.kind(), io::ErrorKind::AlreadyExists, "{e}");
+                }
+            }
+            match materialise_in(&base, &git, "abcd", &repo) {
+                Err(reason) if reason.contains("after 128 attempts") => {
+                    refused = Some(reason);
+                    break;
+                }
+                Err(reason) if reason.contains("cannot materialise") => continue,
+                other => panic!("expected the retry budget to be exhausted, got {other:?}"),
+            }
         }
-        let err = materialise_in(&base, &git, "abcd", &repo)
-            .expect_err("128 occupied names must exhaust the retry budget");
-        assert!(err.contains("after 128 attempts"), "{err}");
+        let reason = refused.expect("the retry budget must be exhausted within 8 attempts");
+        assert!(reason.contains("after 128 attempts"), "{reason}");
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
     }
 
