@@ -213,6 +213,44 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   campaign was running concurrently on a 16 GB host; the same tree passed 468/0/0 four minutes later
   and `proposals` passed 23/23 alone. Recorded in `experiments/quality/stability-w8/NOTES.md`.
 
+### Tests and evidence (wave 9, 2026-11-11 — the host-gated mutants and a clean stability baseline)
+- **No product behaviour changed**: wave 9 edits tests, evidence and documentation only.
+- **The eight `#[cfg(windows)]` mutants wave 8 could not execute are measured on Windows**: `state.rs:316`
+  ×3 (reparse attribute mask and comparison) **all caught**, `gitcli.rs:539:5` ×2 and `:543:21` ×1
+  **caught**, and `gitcli.rs:523:5` ×2 **missed** — a real gap, closed in the next bullet. One
+  whole-function collateral (`state.rs:292:5 guard_below_flow -> Ok(())`) was caught too: 9 selected,
+  7 caught, 2 missed, 0 timeout (`experiments/quality/mutation-w9-win/`).
+- **The gap: the Windows program resolver's wrapper was never executed.** Tests drove
+  `resolve_program_in(program, path, pathext)` but never `resolve_program`, the thin wrapper that reads
+  the real `PATH`/`PATHEXT`; with it broken, `.cmd`/`.bat` shims installed by npm/npx/gradle become
+  invisible and a declared tool is reported `UNSUPPORTED` while it is installed. The new test
+  `resolve_program_reads_the_process_environment` resolves `cmd` through the real environment and
+  asserts that an unresolvable name stays `None`; both mutant shapes are killed.
+- **The three `main` `NOT_RUN` mutants are killed.** `collect_values` advances by two after a value flag
+  and by one otherwise; `*= 2` stops the walk and `-= 1` cycles it, which hung the suite. A `watched`
+  helper now bounds the walk, the order test runs under a 2 s watchdog, and a new test drives two
+  allocation-free hangs under a 10 s watchdog. Re-measurement at `8d21b7b`: 10 selected, **10 caught**,
+  0 missed, 0 timeout — the wave-8 `main` row is no longer partial.
+- **Module rates after wave 9** (scoped suites, lower bounds, measured mutants only): `state` 137/140
+  (97.9 %), `commands` 237/245 (96.7 %), `gitcli` 78/88 (88.6 %), `main` 65/69 measured (94.2 %,
+  67/69 = 97.1 % with the two timeouts adjudicated by the unit watchdog); **517/542 = 95.4 %** of the
+  four modules. No unmeasured host-gated mutant remains in those modules.
+- **Coverage re-measured on the CI toolchain** (`nightly-2026-05-06`, `cargo-llvm-cov 0.9.1`,
+  product-only): **95.87 % lines / 93.29 % branches** (4389/4578, 793/850) at `47af568`, above the
+  95/90 gate with no waiver. The near-flat delta is reported rather than dressed up: the remaining
+  `lock`/`scratch` gaps are one-sided error arms that need fault injection, and `lock.rs:239` is a
+  concurrent-creator race, so its branch coverage varies run to run without a code change.
+- **Five refusals pinned by tests**: a state directory that is a file, a lock attributed to a dead pid,
+  a scratch base that is a file, a `.git` link that `git worktree add` did not create, and a read-only
+  `.git` file.
+- **Stability, serialised**: 10 full-suite passes on an idle host alternating the default thread count
+  and `RUST_TEST_THREADS=1` — **480 passed / 0 failed / 0 ignored, exit 0 every run**
+  (`experiments/quality/stability-w9/windows-stability.csv`). This replaces the wave-8 evidence that
+  run 7 entailed; it is not a claim about flakes under arbitrary load.
+- **Follow-up found by the G10 review in the same period**: `dist/PROVENANCE.json` pins `f5bb271`, not
+  the candidate head, and `dist/` is gitignored, so provenance and SBOM are not versioned. Regenerating
+  the artefacts is a build action that needs its own GO; nothing was rebuilt here.
+
 ### Known limitations (unchanged)
 No OS sandbox, no hook execution by Flow, no context-completeness proof, receipt integrity is not a
 signature, the local lock does not fence an external `git` writer, `publish` moves refs only,

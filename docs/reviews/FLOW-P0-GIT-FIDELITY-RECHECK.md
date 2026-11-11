@@ -13,8 +13,11 @@ the verification checkout") — `git diff 7a034ff..f5bb271 -- crates/flow/src` i
 docs only, gates red). Both are kept in the history below.
 · **Harness:** `experiments/verify-p0/{p0_attacks.py, recheck_probes.py, recheck_defeat_probes.py,
 linux_recheck_probe.sh}` + the committed campaign `experiments/mvp-qa/attacks.py`
-· **Results:** `experiments/verify-p0/{results-p0-f5.json, results-p0-f5-a20.json,
-results-recheck-probes-f5.json, results-recheck-defeat-f5.json, results-campaign-f5.json}`
+· **Results:** `experiments/verify-p0/{results-p0-f5-a20.json, results-recheck-probes-f5.json,
+results-recheck-defeat-f5.json}` (summaries, committed) and the verdict table
+`experiments/verify-p0/verdict-tables-f5.md`. The multi-megabyte raw dumps
+(`results-p0-f5.json`, `results-campaign-f5.json`) are regenerable with the commands in §"Reproduce"
+below and are excluded by `.gitignore`; they are not cited as committed evidence.
 
 | Item | Value |
 |---|---|

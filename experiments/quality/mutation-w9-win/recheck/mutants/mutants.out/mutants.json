@@ -1,0 +1,322 @@
+[
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with None\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2; // w9probe\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1; // w9probe\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2; // w9probe\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1; // w9probe\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![])",
+    "package": "flow",
+    "replacement": "Some(vec![])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2; // w9probe\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1; // w9probe\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![String::new()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])",
+    "package": "flow",
+    "replacement": "Some(vec![String::new()])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![\"xyzzy\".into()])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2; // w9probe\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1; // w9probe\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![\"xyzzy\".into()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![\"xyzzy\".into()])",
+    "package": "flow",
+    "replacement": "Some(vec![\"xyzzy\".into()])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in collect_values\n@@ -352,17 +352,17 @@\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n-            index += 2; // w9probe\n+            index -= /* ~ changed by cargo-mutants ~ */ 2; // w9probe\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:360:19: replace += with -= in collect_values",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 360
+      },
+      "start": {
+        "column": 19,
+        "line": 360
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -352,17 +352,17 @@\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n-            index += 2; // w9probe\n+            index *= /* ~ changed by cargo-mutants ~ */ 2; // w9probe\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:360:19: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 360
+      },
+      "start": {
+        "column": 19,
+        "line": 360
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in collect_values\n@@ -364,17 +364,17 @@\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n             }\n         }\n         let _ = matched;\n-        index += 1; // w9probe\n+        index -= /* ~ changed by cargo-mutants ~ */ 1; // w9probe\n     }\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:372:15: replace += with -= in collect_values",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 372
+      },
+      "start": {
+        "column": 15,
+        "line": 372
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -364,17 +364,17 @@\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n             }\n         }\n         let _ = matched;\n-        index += 1; // w9probe\n+        index *= /* ~ changed by cargo-mutants ~ */ 1; // w9probe\n     }\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:372:15: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 372
+      },
+      "start": {
+        "column": 15,
+        "line": 372
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with None\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in( // w9probe\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with Some(Default::default())\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in( // w9probe\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  }
+]

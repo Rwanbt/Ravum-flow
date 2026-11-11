@@ -1,0 +1,20 @@
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index f55a737..2b25ad0 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -523 +523 @@ fn resolve_program(program: &str) -> Option<PathBuf> {
+-    resolve_program_in(
++    resolve_program_in( // w9probe
+@@ -539 +539 @@ fn resolve_program_in(
+-    let path = path?;
++    let path = path?; // w9probe
+@@ -543 +543 @@ fn resolve_program_in(
+-        .filter(|e| !e.is_empty())
++        .filter(|e| !e.is_empty()) // w9probe
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index 6d521a8..c38052d 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -316 +316 @@ fn guard_below_flow(path: &Path) -> Result<(), String> {
+-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
++                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe

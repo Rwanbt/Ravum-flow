@@ -64,3 +64,17 @@ dist/
 /experiments/quality/mutation-w9-win/**/mutants.out.old/
 /experiments/quality/stability-w9/*.log
 
+# P0 adversarial harness outputs. The harness (`.py`, `.rs`, `.sh`), its README, the JSON summaries and
+# the verdict tables are committed; the compiled helper binaries, the Python cache and the multi-megabyte
+# raw dumps are local and regenerable with the commands recorded in
+# docs/reviews/FLOW-P0-GIT-FIDELITY-RECHECK.md, so they are not versioned.
+/experiments/verify-p0/__pycache__/
+/experiments/verify-p0/*.exe
+/experiments/verify-p0/results-p0.json
+/experiments/verify-p0/results-p0-7a.json
+/experiments/verify-p0/results-p0-f5.json
+/experiments/verify-p0/results-p0-recheck.json
+/experiments/verify-p0/results-campaign-7a.json
+/experiments/verify-p0/results-campaign-f5.json
+/experiments/verify-p0/results-campaign-recheck.json
+

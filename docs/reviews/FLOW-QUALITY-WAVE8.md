@@ -221,6 +221,11 @@ proof, is in [`experiments/quality/stability-w8/NOTES.md`](../../experiments/qua
 - Product decisions unchanged: sandbox `H3`, receipt signing (`PRF-01`), retention (`PRF-02/08`),
   external-`git`-writer fence.
 
+**Two of these are closed by wave 9** ([wave 9 report](FLOW-QUALITY-WAVE9.md)): the host-gated mutants
+are measured on Windows (six caught; the two `gitcli.rs:523:5` survivors became a closed test gap) and
+the three `main` `NOT_RUN` hang mutants are killed by a watchdog. The `state` rule test, the seven
+`gitcli` boundaries, the scope caveat and the product decisions stand unchanged.
+
 ## 9. Reproduce
 
 ```bash
