@@ -875,22 +875,39 @@ mod tests {
             ("event", Json::str("note")),
         ]);
         append_journal(&root, &tagged).unwrap();
+        // A record without a schema is stamped with this build's journal schema.
+        append_journal(&root, &Json::obj(vec![("event", Json::str("untagged"))])).unwrap();
         // A record that is not an object cannot be tagged; it is still appended
         // as the caller wrote it rather than being silently rewritten.
         append_journal(&root, &Json::Num(1.0)).unwrap();
         let records = read_journal(&root).unwrap();
-        assert_eq!(records.len(), 2);
+        assert_eq!(records.len(), 3);
         assert_eq!(
             records[0].get("schema").and_then(Json::as_str),
             Some("flow-journal/0")
         );
-        assert_eq!(records[1], Json::Num(1.0));
+        assert_eq!(
+            records[1].get("schema").and_then(Json::as_str),
+            Some(SCHEMA_JOURNAL)
+        );
+        assert_eq!(records[2], Json::Num(1.0));
+
+        // Each object record carries exactly one schema stamp. A record that
+        // already has one must not get a second: two `"schema"` keys in one line
+        // are ambiguous, and the last one would silently win in some readers.
+        let mut text = fs::read_to_string(journal_path(&root)).unwrap();
+        for line in text.lines().take(2) {
+            assert_eq!(
+                line.matches("\"schema\"").count(),
+                1,
+                "a record carries exactly one schema stamp: {line}"
+            );
+        }
 
         // Blank lines are layout, never records.
-        let mut text = fs::read_to_string(journal_path(&root)).unwrap();
         text.push_str("\n \n");
         fs::write(journal_path(&root), &text).unwrap();
-        assert_eq!(read_journal(&root).unwrap().len(), 2);
+        assert_eq!(read_journal(&root).unwrap().len(), 3);
         let _ = fs::remove_dir_all(&root);
     }
 
@@ -1070,7 +1087,9 @@ mod tests {
 
         // The date and the time of day must both come from the same epoch second:
         // a wrong remainder (`%` replaced by `/`) keeps the shape and the year and
-        // only moves the clock, so the shape alone is not a proof.
+        // only moves the clock, while a wrong day count (`/` replaced by `%`) keeps
+        // the clock and moves the date by centuries. Neither is visible in the
+        // shape alone, so both are recomputed from the same `unix_now()`.
         let secs = unix_now();
         let got = u64::from(hour) * 3600 + u64::from(minute) * 60 + u64::from(second);
         let want = secs % 86_400;
@@ -1078,6 +1097,13 @@ mod tests {
         assert!(
             delta <= 2 || delta >= 86_398,
             "the clock time must match the epoch second ({got} vs {want}): {now}"
+        );
+        let (year, month, day) = civil_from_days((secs / 86_400) as i64);
+        let want_date = format!("{year:04}-{month:02}-{day:02}");
+        assert_eq!(
+            &now[..10],
+            want_date,
+            "the date must be the UTC date of the same epoch second: {now}"
         );
     }
 
