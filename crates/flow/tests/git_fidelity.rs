@@ -696,6 +696,15 @@ fn a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused() {
         &["update-index", "--chmod=+x", "--", "script.sh"],
     );
     install_tracked_hook(&repo, "chmod -x script.sh\n");
+    // `install_tracked_hook` stages everything with `git add -A`, which re-stages
+    // `script.sh` from the 0644 worktree file and would reset the index mode to
+    // 100644: the tree would then declare a non-executable file and the hook's
+    // `chmod -x` would be a no-op, making this test pass vacuously. The bit is
+    // forced **after** the hook is staged, so the tree really declares 100755.
+    git(
+        &repo.path,
+        &["update-index", "--chmod=+x", "--", "script.sh"],
+    );
     let tree = git(&repo.path, &["write-tree"]);
 
     let (code, out) = flow(&repo.path, &["run"]);
