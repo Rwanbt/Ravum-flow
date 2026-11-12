@@ -168,11 +168,80 @@ with 0 ignored (floor 470) and the Windows job passes, the two polyglot jobs pas
 reports 95.91 % / 93.68 %. The floor is left at 470/468 in this wave because the per-platform counts must
 come from the runner, not from a local estimate.
 
-## 4. What this wave does not close
+### 3.8 The three `state` survivors, re-measured (no longer "adjudicated, not measured")
 
+Wave 8 closed `377:52`, `390:41` and `661:22` by commits landed *after* its campaign head, so it
+reported them as closed-but-unmeasured. Wave 9 finds the same mutations by description at the current
+source (`recheck-state.sh` lists the mutants, then probes the discovered lines, then reverts them), so
+the check follows the code instead of hard-coded line numbers. Result at `3d0bc4d`, `--in-diff` on one
+file, `--bins`: **12 caught, 0 missed, 1 unviable, 0 timeout**. The three intended targets are
+
+| mutant | location now | outcome |
+|---|---|---|
+| `delete ! in parent_to_flush` (directory flush) | `state.rs:396:30` | **caught** |
+| `replace == with != in append_journal` (schema stamp) | `state.rs:403:41` | **caught** |
+| `replace / with % in iso8601_now` (day count) | `state.rs:674:22` | **caught** |
+
+With the wave-8 Linux pass (134), the wave-9 Windows pass (3 host-gated) and this recheck (3), `state`
+is **140/140 measured caught**, 0 missed. The three measurements are at different heads and are labelled
+as such; none of them is inferred.
+
+### 3.9 The directory flush, observed instead of only pinned
+
+`state:396` was still only *pinned as a rule*: no test could see whether the directory fsync is
+attempted, or whether its failure is surfaced. `experiments/quality/durability-w9/` loads an
+`LD_PRELOAD` shim into the product process; it counts directory fsyncs and can make them fail with
+`EIO`. Three runs of `flow init --force` in disposable repositories:
+
+| run | shim | exit | directory fsyncs observed | result |
+|---|---|---|---|---|
+| control | none | 0 | 0 | baseline |
+| logged | counter only | 0 | **4** | the flush is attempted |
+| injected | counter + `EIO` | **1** | 1 | `ERROR … "cannot fsync …/.flow: Input/output error (os error 5)"` |
+
+So the rule now has an end-to-end observation: the call happens, and its failure reaches the caller as an
+error instead of being swallowed. This is **not** a power-cut proof — a crash harness would still be
+needed to show what survives a lost rename — and it is an experiment, never a gate.
+
+### 3.10 One reproduction entry point
+
+`experiments/quality/reproduce.ps1` and `reproduce.sh` run the gates a reviewer applies, in order, and
+print a scorecard: `fmt`, `clippy -D warnings`, the full suite with its counts, then — on request — the
+product-only coverage gate on the CI toolchain and one mutation module. The fast path was exercised:
+`fmt` PASS, `clippy` PASS, `tests` PASS with **480 passed / 0 failed / 0 ignored**. Exit code is non-zero
+as soon as one requested step fails, so the commands in the reports cannot drift from the claims.
+
+### 3.11 The CI floors and six named gates
+
+The runner's own counts at `00f87b7` were 480 (Windows) and 477 (Linux), so the per-platform floor moves
+from 468/470 to **480/477**, and six wave-9 tests become named gates: the value-collector watchdog, the
+lock dead-PID attribution, the state-directory refusal, the missing `.git` link refusal (all four
+cross-platform), plus the Windows program resolver and the read-only `.git` retry (skipped on Linux with
+the same explicit `case` the earlier Windows-only gates use). CI is **green 5/5 on `b91e21c`**, which is
+the run that validates both the new floor and the new gate list on both platforms.
+
+### 3.12 The five Linux modules are **blocked**, not skipped
+
+The campaign for `json`, `paths`, `lock`, `proposal` and `scratch` was started and is **not** reported:
+it could not produce a valid measurement on this host, for reasons that are measured rather than
+guessed.
+
+- The WSL virtual disk lives on `C:`, which fell from **4.7 GB to 0.3 GB free** while the campaign ran;
+  the distribution then failed three times (`Wsl/Service/E_UNEXPECTED`,
+  `CreateInstance/E_UNEXPECTED`) and had to be terminated. This is the wave-8 failure mode repeating.
+- Moving the mutant copies to `D:` removed the disk pressure but put every build on the 9p mount:
+  mutants then hit the **240 s timeout** (`paths.rs:23:18`, `:23:24`, `:23:39`, `:30:5` are recorded as
+  `TIMEOUT`, which is an artefact of the mount, not a hang). A timeout is not a kill and is not a
+  measurement, so the partial outputs were deleted and only the failure log is kept
+  (`experiments/quality/mutation-w9-linux/blocked/`).
+- The resumable design is in place (`run-linux.sh`, `run-module.sh`, `--iterate`); what is missing is a
+  host with headroom. Unblocking conditions: at least ~20 GB free on `C:` (or the distribution moved to
+  another volume), and the campaign left on ext4 with no other cargo job concurrent.
+
+## 4. What this wave does not close
 1. **The five modules never measured on Linux** (`json`, `paths`, `lock`, `proposal`, `scratch`,
-   ≈401 mutants). Still `NOT_RUN` on Linux; the Windows rates from waves 4–5 stand alone. A WSL2
-   campaign of that size needs a quiet host and roughly an hour.
+   ≈401 mutants) — **attempted and blocked on this host, see §3.12**. No rate is reported; the Windows
+   rates from waves 4–5 stand alone.
 2. **The three `state` survivors closed by `3b1e33e`** (`377:52`, `390:41`, `661:22`) are not
    re-measured by this wave; they are labelled "closed by a later commit", not "measured".
 3. **The ten `gitcli` survivors** (reader-grace race, exact-nanosecond boundary, zombie reaping) still
@@ -182,6 +251,10 @@ come from the runner, not from a local estimate.
    provenance and SBOM are not versioned. Regenerating the artefacts at a publishable SHA and
    versioning the manifest is a build action that needs its own GO.
 5. **macOS, `cargo-fuzz`, S9/H4, the product decisions, and merge/tag/release**: unchanged.
+6. **Not attempted in this wave**: the `gitcli` boundary harness (reader grace, nanosecond equality,
+   zombie reaping), an unscoped whole-suite mutation pass for an upper bound, and extending the
+   randomised deterministic sweeps to the remaining parsers. They are named here so they are not
+   mistaken for done.
 
 ## 5. Evidence index
 
@@ -192,6 +265,12 @@ come from the runner, not from a local estimate.
 - `experiments/quality/coverage/lcov-w9-baseline.info`, `lcov-w9-after.info`, `gaps-lock*.txt`,
   `gaps-scratch.txt` — §3.6.
 - `experiments/quality/stability-w9/windows-stability.csv` — §3.7.
+- `experiments/quality/mutation-w9-linux/state-recheck/` — §3.8 (discovered probes, `caught.txt`).
+- `experiments/quality/durability-w9/` — §3.9 (`fail_dir_fsync.c`, `run-durability.sh`, `run.log`,
+  `fsync-{control,logged,injected}.log`).
+- `experiments/quality/reproduce.ps1`, `reproduce.sh` — §3.10.
+- `experiments/quality/mutation-w9-linux/{run-linux.sh, run-module.sh}` and `blocked/` — §3.12 (the
+  resumable runner and the recorded blocker; no rate is claimed).
 - Tests added: `main::tests::{a_value_walk_that_stops_advancing_is_caught,
   repeated_and_inline_values_keep_their_order}`,
   `gitcli::tests::resolve_program_reads_the_process_environment`,

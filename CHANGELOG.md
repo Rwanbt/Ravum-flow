@@ -249,6 +249,23 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   and `RUST_TEST_THREADS=1` — **480 passed / 0 failed / 0 ignored, exit 0 every run**
   (`experiments/quality/stability-w9/windows-stability.csv`). This replaces the wave-8 evidence that
   run 7 entailed; it is not a claim about flakes under arbitrary load.
+- **The three `state` survivors closed after the wave-8 campaign are now measured, not adjudicated**:
+  `parent_to_flush` (396:30), the journal schema stamp (403:41) and the `iso8601_now` day count (674:22)
+  are **caught** by a probe that finds the mutants by description at the current source. With the wave-8
+  Linux pass and the wave-9 Windows pass, `state` is **140/140 measured caught**.
+- **The directory flush is now observed, not only pinned**: an `LD_PRELOAD` shim counts directory
+  fsyncs and can fail them with `EIO`. `flow init` performs **4** directory fsyncs, and with the
+  injection it exits 1 with `cannot fsync …/.flow: Input/output error` — the failure is surfaced. This
+  is still not a power-cut proof (`experiments/quality/durability-w9/`).
+- **One reproduction entry point**: `experiments/quality/reproduce.ps1` / `.sh` run fmt, clippy, the
+  counted test suite, and on request the coverage gate and one mutation module; the fast path is
+  exercised (480/0/0).
+- **CI floors raised to the measured counts** (480 Windows / 477 Linux) and six wave-9 tests added as
+  named gates; CI green 5/5 on `b91e21c`.
+- **The five Linux modules (`json`, `paths`, `lock`, `proposal`, `scratch`) are blocked, not skipped**:
+  the WSL disk fell from 4.7 GB to 0.3 GB free and the distribution failed three times; moving the
+  mutant copies to `D:` made every build hit the 240 s timeout on the 9p mount. The partial outputs were
+  deleted rather than reported, and the unblocking conditions are recorded in the wave-9 report §3.12.
 - **Follow-up found by the G10 review in the same period**: `dist/PROVENANCE.json` pins `f5bb271`, not
   the candidate head, and `dist/` is gitignored, so provenance and SBOM are not versioned. Regenerating
   the artefacts is a build action that needs its own GO; nothing was rebuilt here.
