@@ -67,8 +67,7 @@ dist/
 # P0 adversarial harness outputs. The harness (`.py`, `.rs`, `.sh`), its README, the JSON summaries and
 # the verdict tables are committed; the compiled helper binaries, the Python cache and the multi-megabyte
 # raw dumps are local and regenerable with the commands recorded in
-# docs/reviews/FLOW-P0-GIT-FIDELITY-RECHECK.md, so they are not versioned.
-/experiments/verify-p0/__pycache__/
+# docs/reviews/FLOW-P0-GIT-FIDELITY-RECHECK.md, so they are not versioned./experiments/verify-p0/__pycache__/
 /experiments/verify-p0/*.exe
 /experiments/verify-p0/results-p0.json
 /experiments/verify-p0/results-p0-7a.json
@@ -77,4 +76,10 @@ dist/
 /experiments/verify-p0/results-campaign-7a.json
 /experiments/verify-p0/results-campaign-f5.json
 /experiments/verify-p0/results-campaign-recheck.json
+
+# Wave-9 durability experiment: the shim is compiled by `run-durability.sh` and the three
+# disposable repositories are created by it, so neither is evidence — only the run log and the
+# fsync call logs are.
+/experiments/quality/durability-w9/repo-*/
+/experiments/quality/durability-w9/*.so
 

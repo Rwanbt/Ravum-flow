@@ -1,0 +1,5 @@
+crates/flow/src/state.rs:396:30: delete ! in parent_to_flush
+crates/flow/src/state.rs:403:12: delete ! in append_journal
+crates/flow/src/state.rs:403:41: replace == with != in append_journal
+crates/flow/src/state.rs:420:28: replace == with != in append_journal
+crates/flow/src/state.rs:674:22: replace / with % in iso8601_now

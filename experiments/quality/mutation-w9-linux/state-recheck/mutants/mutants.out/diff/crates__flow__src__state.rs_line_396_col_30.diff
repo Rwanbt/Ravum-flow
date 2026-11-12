@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in parent_to_flush
+@@ -388,17 +388,17 @@
+ /// `Path::parent` returns `Some("")` for a bare relative name (`"journal.jsonl"`):
+ /// that is the process working directory, which cannot be opened as `""`. Every
+ /// target the product writes is built from the workspace root and carries a real
+ /// parent, so a bare name is skipped instead of turning the write into a failed
+ /// `File::open("")`. Pinning the rule in one named place keeps the skip a decision
+ /// rather than an accident of string emptiness.
+ #[cfg(not(windows))]
+ fn parent_to_flush(path: &Path) -> Option<&Path> {
+-    path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck
++    path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) // w9recheck
+ }
+ 
+ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+     // Every record carries its schema so a future reader can refuse a mismatch.
+     let mut tagged = record.clone();
+     if let Json::Obj(pairs) = &mut tagged {
+         if !pairs.iter().any(|(k, _)| k == "schema") { // w9recheck
+             pairs.insert(0, ("schema".to_string(), Json::str(SCHEMA_JOURNAL)));

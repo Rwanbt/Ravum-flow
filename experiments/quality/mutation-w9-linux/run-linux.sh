@@ -9,12 +9,12 @@
 # so the two platforms are comparable. The scope is part of the result: each rate
 # is a lower bound for its module and is never a whole-crate score.
 #
-# A disposable ext4 clone is pinned at the committed head; every artefact is
-# written straight to /mnt/d so a WSL restart cannot lose it (wave 8 lost /tmp
-# twice). One module at a time, two jobs: the host has 16 GB.
+# `--iterate` makes every module resumable: a WSL session closed under the campaign
+# (observed repeatedly on this host) loses at most the mutants in flight, and
+# re-running this script continues from the outcomes already written.
+#
+# Artefacts go straight to /mnt/d so a WSL restart cannot lose them.
 set -u
-# A non-login shell does not read ~/.profile, so the toolchain was not on PATH and
-# every module exited 127. Make the location explicit instead of relying on login.
 export PATH="$HOME/.cargo/bin:$PATH"
 unset CARGO_TARGET_DIR
 SRC=/mnt/d/App/Ravum-flow
@@ -32,14 +32,16 @@ git checkout -q "$PIN" || { echo "CHECKOUT_FAILED" | tee -a "$OUT/run.log"; exit
 echo "HEAD=$(git rev-parse HEAD) cargo-mutants=$(cargo mutants --version 2>/dev/null)" | tee "$OUT/run.log"
 echo "uname=$(uname -r) nproc=$(nproc)" | tee -a "$OUT/run.log"
 
-cargo test --locked --offline --all-targets > "$OUT/baseline.log" 2>&1
-echo "BASELINE_EXIT=$?" | tee -a "$OUT/run.log"
+if [ ! -f "$OUT/baseline.log" ]; then
+  cargo test --locked --offline --all-targets > "$OUT/baseline.log" 2>&1
+  echo "BASELINE_EXIT=$?" | tee -a "$OUT/run.log"
+fi
 grep -E "^test result" "$OUT/baseline.log" | tail -4 | tee -a "$OUT/run.log"
 
 run() {
   name=$1; file=$2; shift 2
   echo "=== $name start $(date -Is)" | tee -a "$OUT/run.log"
-  cargo mutants --file "$file" --output "$OUT/$name" --jobs 2 --timeout 240 \
+  cargo mutants --file "$file" --output "$OUT/$name" --iterate --jobs 8 --timeout 240 \
     --gitignore true --colors never --no-times -- "$@" > "$OUT/$name.log" 2>&1
   echo "$name exit=$? $(date -Is)" | tee -a "$OUT/run.log"
   grep -E "Found|mutants tested|caught|missed" "$OUT/$name.log" | tail -3 | tee -a "$OUT/run.log"

@@ -1,0 +1,12 @@
+crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with None
+crates/flow/src/state.rs:396:30: delete ! in parent_to_flush
+crates/flow/src/state.rs:401:5: replace append_journal -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:403:12: delete ! in append_journal
+crates/flow/src/state.rs:403:41: replace == with != in append_journal
+crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal
+crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal
+crates/flow/src/state.rs:420:28: replace == with != in append_journal
+crates/flow/src/state.rs:670:5: replace iso8601_now -> String with String::new()
+crates/flow/src/state.rs:670:5: replace iso8601_now -> String with "xyzzy".into()
+crates/flow/src/state.rs:674:22: replace / with % in iso8601_now
+crates/flow/src/state.rs:674:22: replace / with * in iso8601_now

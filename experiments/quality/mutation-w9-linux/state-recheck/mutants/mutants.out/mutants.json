@@ -1,0 +1,418 @@
+[
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace parent_to_flush -> Option<&Path> with None\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n+    None /* ~ changed by cargo-mutants ~ */ // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 396
+      },
+      "start": {
+        "column": 5,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace parent_to_flush -> Option<&Path> with Some(Box::leak(Box::new(Default::default())))\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n+    Some(Box::leak(Box::new(Default::default()))) /* ~ changed by cargo-mutants ~ */ // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with Some(Box::leak(Box::new(Default::default())))",
+    "package": "flow",
+    "replacement": "Some(Box::leak(Box::new(Default::default())))",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 396
+      },
+      "start": {
+        "column": 5,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in parent_to_flush\n@@ -388,17 +388,17 @@\n /// `Path::parent` returns `Some(\"\")` for a bare relative name (`\"journal.jsonl\"`):\n /// that is the process working directory, which cannot be opened as `\"\"`. Every\n /// target the product writes is built from the workspace root and carries a real\n /// parent, so a bare name is skipped instead of turning the write into a failed\n /// `File::open(\"\")`. Pinning the rule in one named place keeps the skip a decision\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n-    path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n+    path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "parent_to_flush",
+      "return_type": "-> Option<&Path>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 397
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:396:30: delete ! in parent_to_flush",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 396
+      },
+      "start": {
+        "column": 30,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace append_journal -> Result<(), String> with Ok(())\n@@ -393,44 +393,17 @@\n /// rather than an accident of string emptiness.\n #[cfg(not(windows))]\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n     path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n-    let mut tagged = record.clone();\n-    if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n-            pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n-        }\n-    }\n-    let path = journal_path(root);\n-    if let Some(parent) = path.parent() {\n-        fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n-    }\n-    guard_below_flow(&path)?;\n-    // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n-    // A rename replaces the directory entry, so a *hard link* to an outside file\n-    // can no longer be written through — the case the `nlink > 1` check cannot see\n-    // on Windows. It also makes every append atomic: a torn line is impossible.\n-    // The cost is O(journal size) per append, which is bounded in practice and\n-    // documented; the alternative is a write primitive with worse failure modes.\n-    let mut content = match fs::read(&path) {\n-        Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // w9recheck\n-        Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n-    };\n-    // `tagged`, not `record`: the schema stamp is what lets a future reader\n-    // refuse a record it does not understand.\n-    let mut line = tagged.to_string();\n-    line.push('\\n');\n-    content.extend_from_slice(line.as_bytes());\n-    write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n /// Read every journal record.\n ///\n /// A missing journal is an empty journal (a fresh repository). Anything else\n /// that prevents a faithful read is an error — never silently an empty set.\n pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {\n     let path = journal_path(root);\n     if !path.exists() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:401:5: replace append_journal -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 91,
+        "line": 428
+      },
+      "start": {
+        "column": 5,
+        "line": 401
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in append_journal\n@@ -395,17 +395,17 @@\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n     path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n+        if  /* ~ changed by cargo-mutants ~ */pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n         }\n     }\n     let path = journal_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n     }\n     guard_below_flow(&path)?;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:403:12: delete ! in append_journal",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 403
+      },
+      "start": {
+        "column": 12,
+        "line": 403
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace == with != in append_journal\n@@ -395,17 +395,17 @@\n fn parent_to_flush(path: &Path) -> Option<&Path> {\n     path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w9recheck\n+        if !pairs.iter().any(|(k, _)| k != /* ~ changed by cargo-mutants ~ */ \"schema\") { // w9recheck\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n         }\n     }\n     let path = journal_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n     }\n     guard_below_flow(&path)?;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:403:41: replace == with != in append_journal",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 403
+      },
+      "start": {
+        "column": 41,
+        "line": 403
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal\n@@ -412,17 +412,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // w9recheck\n+        Err(e) if true /* ~ changed by cargo-mutants ~ */ => Vec::new(), // w9recheck\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 420
+      },
+      "start": {
+        "column": 19,
+        "line": 420
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal\n@@ -412,17 +412,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // w9recheck\n+        Err(e) if false /* ~ changed by cargo-mutants ~ */ => Vec::new(), // w9recheck\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 420
+      },
+      "start": {
+        "column": 19,
+        "line": 420
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace == with != in append_journal\n@@ -412,17 +412,17 @@\n     // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n     // A rename replaces the directory entry, so a *hard link* to an outside file\n     // can no longer be written through — the case the `nlink > 1` check cannot see\n     // on Windows. It also makes every append atomic: a torn line is impossible.\n     // The cost is O(journal size) per append, which is bounded in practice and\n     // documented; the alternative is a write primitive with worse failure modes.\n     let mut content = match fs::read(&path) {\n         Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // w9recheck\n+        Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::NotFound => Vec::new(), // w9recheck\n         Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n     };\n     // `tagged`, not `record`: the schema stamp is what lets a future reader\n     // refuse a record it does not understand.\n     let mut line = tagged.to_string();\n     line.push('\\n');\n     content.extend_from_slice(line.as_bytes());\n     write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 429
+        },
+        "start": {
+          "column": 1,
+          "line": 399
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:420:28: replace == with != in append_journal",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 420
+      },
+      "start": {
+        "column": 28,
+        "line": 420
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with String::new()\n@@ -662,32 +662,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w9recheck\n-    let rem = secs % 86_400;\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 686
+        },
+        "start": {
+          "column": 1,
+          "line": 668
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:670:5: replace iso8601_now -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 685
+      },
+      "start": {
+        "column": 5,
+        "line": 670
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with \"xyzzy\".into()\n@@ -662,32 +662,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w9recheck\n-    let rem = secs % 86_400;\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 686
+        },
+        "start": {
+          "column": 1,
+          "line": 668
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:670:5: replace iso8601_now -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 685
+      },
+      "start": {
+        "column": 5,
+        "line": 670
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in iso8601_now\n@@ -666,17 +666,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w9recheck\n+    let days = (secs % /* ~ changed by cargo-mutants ~ */ 86_400) as i64; // w9recheck\n     let rem = secs % 86_400;\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 686
+        },
+        "start": {
+          "column": 1,
+          "line": 668
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:674:22: replace / with % in iso8601_now",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 674
+      },
+      "start": {
+        "column": 22,
+        "line": 674
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in iso8601_now\n@@ -666,17 +666,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w9recheck\n+    let days = (secs * /* ~ changed by cargo-mutants ~ */ 86_400) as i64; // w9recheck\n     let rem = secs % 86_400;\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 686
+        },
+        "start": {
+          "column": 1,
+          "line": 668
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:674:22: replace / with * in iso8601_now",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 674
+      },
+      "start": {
+        "column": 22,
+        "line": 674
+      }
+    }
+  }
+]
