@@ -86,12 +86,13 @@ jobs:
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
           # number that would silently shrink. Both numbers are measured, not
-          # projected: **468 on Windows and 470 on Linux** (2026-11-11, wave 8,
-          # local runs at the wave-8 head), 0 ignored. Wave 7 measured 468/469 and
-          # wave 8 adds one Unix-only test, so the Linux floor moves to 470 while
-          # the Windows floor stays 468.
-          minimum=470
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=468; fi
+          # projected: **480 on Windows and 477 on Linux** (2026-11-11, wave 9,
+          # the `executed_passed` line of each runner at head `00f87b7`), 0
+          # ignored. Wave 8 measured 468/470; wave 9 adds eight tests (six
+          # cross-platform, one Windows-only, one Windows-only `.git` retry), so
+          # the floors move with the measured counts.
+          minimum=477
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=480; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -236,7 +237,13 @@ jobs:
             a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason \
             a_symlink_entry_checked_out_as_a_symlink_is_certified \
             a_hardlinked_adoption_record_is_refused_on_unix \
-            gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension; do
+            gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension \
+            gitcli::tests::resolve_program_reads_the_process_environment \
+            lock::tests::a_state_directory_that_is_a_file_is_an_io_error \
+            lock::tests::inspect_attributes_a_lock_to_a_dead_pid \
+            scratch::tests::detach_git_link_refuses_a_tree_without_a_git_link \
+            scratch::tests::detach_git_link_clears_a_read_only_git_file \
+            tests::a_value_walk_that_stops_advancing_is_caught; do
             if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
               continue
             fi
@@ -270,6 +277,16 @@ jobs:
             if [ "${RUNNER_OS}" = "Windows" ]; then
               case "$gate" in
                 a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused|a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason|a_symlink_entry_checked_out_as_a_symlink_is_certified|a_hardlinked_adoption_record_is_refused_on_unix|state::tests::only_a_real_parent_directory_is_flushed_after_the_rename) continue ;;
+              esac
+            fi
+            # The wave-9 gates that pin Windows-only code: the program resolver
+            # reads PATH/PATHEXT and the `.git` unlink retry clears a read-only
+            # attribute the way DeleteFileW demands. Neither compiles on Linux, so
+            # claiming the gate there would be a false green; the Linux job keeps
+            # the equivalent paths honest through the junction/redirect tests.
+            if [ "${RUNNER_OS}" != "Windows" ]; then
+              case "$gate" in
+                gitcli::tests::resolve_program_reads_the_process_environment|scratch::tests::detach_git_link_clears_a_read_only_git_file) continue ;;
               esac
             fi
             if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
