@@ -1,5 +1,11 @@
 # Flow production candidate — gate report (G10)
 
+> **Historical record of one head.** This report's counts, coverage, mutation and verdict are bound to
+> `06eb7c3` (2026-11-10) and are **not** the current state. The current verdict, measured on the merged
+> line, is [`FLOW-PRODUCTION-VERDICT-2026-11-13.md`](FLOW-PRODUCTION-VERDICT-2026-11-13.md); every
+> current number is sourced in [`../MEASUREMENTS.md`](../MEASUREMENTS.md). The wave-3 reasoning below is
+> kept unchanged on purpose: a dated record that silently follows the code is not a record.
+
 **Date:** 2026-11-10 (Europe/Paris)
 **Base:** `ea181d4f112df4deef01016a041fcdfdac154264` (MVP 0.1, PR #53)
 **Branch:** `feat/flow-production-candidate` · **PR:** #54 (draft, base `feat/flow-mvp-0.1`)

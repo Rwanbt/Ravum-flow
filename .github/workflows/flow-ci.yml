@@ -95,13 +95,11 @@ jobs:
           # ignored. Wave 8 measured 468/470; wave 9 adds eight tests (six
           # cross-platform, one Windows-only, one Windows-only `.git` retry), so
           # the floors move with the measured counts.
+          # macOS measured 479 executed tests on its first run (same count as Linux:
+          # the Unix-only gates all compile and run there). The floor is exact, not
+          # hedged, because the runner reported it.
           minimum=479
           if [ "${RUNNER_OS}" = "Windows" ]; then minimum=482; fi
-          # macOS is measured for the first time on this branch: the floor is
-          # deliberately conservative until the run reports its own count (a
-          # platform that silently skips half the suite still fails), then it is
-          # tightened to that measured number like the other two.
-          if [ "${RUNNER_OS}" = "macOS" ]; then minimum=455; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -490,7 +488,10 @@ jobs:
         run: RUN_TESTS=0 TEST_LOG=test-output.txt bash scripts/release/build-linux.sh "$GITHUB_SHA"
 
       # Missing provenance must fail the job, not disappear behind a warning.
+      # macOS runs the suite but has no packaging recipe yet: its support is
+      # "tested", not "released", and the support matrix says exactly that.
       - name: keep the release artefact and its provenance
+        if: runner.os != 'macOS'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: flow-release-${{ matrix.os }}

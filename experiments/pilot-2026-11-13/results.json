@@ -1,0 +1,88 @@
+{
+  "schema": "flow-pilot/1",
+  "date": "2026-11-13T20:01:33.9850389+01:00",
+  "host": {
+    "cpus": 16,
+    "os": "Microsoft Windows 10.0.26100"
+  },
+  "flow": {
+    "status": "VERSION",
+    "tool": "flow 0.2.0-rc.1",
+    "policy_version": "FLOW-POLICY-1",
+    "git": "git version 2.51.1.windows.1",
+    "schema": "flow-receipt/2",
+    "schemas": "flow-config/1, flow-receipt/2, flow-journal/1, flow-proposal/1, flow-candidate/1, flow-adoption/1, flow-plan/1, flow-status/1, flow-proposal-list/1"
+  },
+  "scenarios": {
+    "real": {
+      "tracked_files": 2705,
+      "clone_ms": 3154,
+      "init": {
+        "ms": 74,
+        "code": 0
+      },
+      "approve": {
+        "ms": 41,
+        "code": 0
+      },
+      "run": {
+        "obligations": 2,
+        "tree": "e3a34dcb58648800e9fa7944a4a94ac5adbc989d",
+        "ms": 23347,
+        "status": "PASSED",
+        "code": 0
+      },
+      "publish": {
+        "ms": 550,
+        "code_field": null,
+        "status": "PUBLISHED",
+        "code": 0
+      },
+      "two_agents": {
+        "base": "5bfd8f681e04d25ff500de7e135bbdc4a9b08524",
+        "propose_a_ms": 888,
+        "propose_b_ms": 320,
+        "assemble_ms": 739,
+        "candidate": "082f9fe52014cba619c185aae47951da",
+        "candidate_run": {
+          "tree": "d212182b49c68114ac2d3aaefd3aea07f7e52605",
+          "ms": 12519,
+          "status": "PASSED"
+        },
+        "candidate_publish": {
+          "status": "PUBLISHED",
+          "code": 0
+        }
+      },
+      "collision": {
+        "code": 1,
+        "status": "REFUSED",
+        "reason": "proposal c16ffde6f6f8acdc910f49ea3eebc1a8 performs \"A\" on \"docs/pilot-agent-a.md\" while it is also changed by c16ffde6f6f8acdc910f49ea3eebc1a8, 4cc4fcfca9bb7d5f06abf0e97b7baffb: rename/delete/mode/symlink collisions are diagnosed, never merged silently",
+        "field": "PATH_OPERATION_CONFLICT"
+      },
+      "heavy_run": {
+        "tree": "e3a34dcb58648800e9fa7944a4a94ac5adbc989d",
+        "ms": 18807,
+        "status": "PASSED"
+      }
+    },
+    "scale": {
+      "files": 25000,
+      "generate_ms": 29058,
+      "init": {
+        "ms": 95,
+        "code": 0
+      },
+      "run": {
+        "tree": "8ef63a727e0fcbee8f9670c953c320063437a5ea",
+        "ms": 185739,
+        "status": "PASSED",
+        "code": 0
+      },
+      "publish": {
+        "status": "PUBLISHED",
+        "code": 0
+      }
+    }
+  }
+}
