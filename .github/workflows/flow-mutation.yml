@@ -1,0 +1,117 @@
+name: flow mutation
+
+# Mutation was measured by hand in waves 4-9 and never in CI, so a drop in test
+# strength was invisible: a change that weakens an assertion still leaves the
+# suite green. This workflow moves the campaign into CI, per module, where the
+# Linux rates for `json`, `paths`, `lock`, `proposal` and `scratch` were still
+# unmeasured (wave 9 §3.12 was blocked on the author's host, not on the code).
+#
+# First mode is *report*: the job prints and uploads the outcomes and never fails
+# the run, because a threshold must be set from measured numbers, not guessed.
+# The follow-up adds a `--fail-under` comparison per module against
+# `experiments/quality/mutation-baseline.json` once the first full matrix exists.
+
+on:
+  workflow_dispatch:
+    inputs:
+      modules:
+        description: 'JSON array of modules to mutate (default: all, -bins scope)'
+        required: false
+        default: '["paths","lock","proposal","scratch","state","gitcli","commands","main"]'
+  schedule:
+    # Weekly, off-peak: a long campaign that competes with no pull request.
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-mutation-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  mutation:
+    name: mutation ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(github.event.inputs.modules || '["paths","lock","proposal","scratch","state","gitcli","commands","main"]') }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.95.0
+
+      # Not pinned by version on purpose: this job reports, it does not gate yet,
+      # and a pin here would rot silently. The tool is external like
+      # `cargo-llvm-cov`; the crate itself stays dependency-free.
+      - name: install cargo-mutants
+        run: cargo install cargo-mutants --locked
+
+      # A mutant is killed only when a test fails. `--bins` is the unit suite, so
+      # every number this job prints is a lower bound on that suite and never a
+      # crate-wide claim (same scope as waves 8 and 9).
+      - name: mutate ${{ matrix.module }} (report mode)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo mutants \
+            --file "crates/flow/src/${{ matrix.module }}.rs" \
+            --bins \
+            --jobs 4 \
+            --timeout 240 \
+            --gitignore true \
+            --output "mutants-${{ matrix.module }}" 2>&1 | tee "mutants-${{ matrix.module }}.log" || true
+
+      - name: summarise
+        if: always()
+        shell: bash
+        run: |
+          out="mutants-${{ matrix.module }}/mutants.out"
+          module="${{ matrix.module }}"
+          if [ ! -d "$out" ]; then
+            echo "::warning::no mutants.out for $module (the campaign did not run)"
+            exit 0
+          fi
+          caught=$(wc -l < "$out/caught.txt" 2>/dev/null || echo 0)
+          missed=$(wc -l < "$out/missed.txt" 2>/dev/null || echo 0)
+          unviable=$(wc -l < "$out/unviable.txt" 2>/dev/null || echo 0)
+          timeout=$(wc -l < "$out/timeout.txt" 2>/dev/null || echo 0)
+          total=$((caught + missed + unviable + timeout))
+          if [ "$total" -gt 0 ]; then
+            rate=$(awk -v c="$caught" -v t="$total" 'BEGIN { printf "%.1f", 100 * c / t }')
+          else
+            rate="0.0"
+          fi
+          {
+            echo "### mutation — $module"
+            echo ""
+            echo "| caught | missed | unviable | timeout | total | killed |"
+            echo "|---|---|---|---|---|---|"
+            echo "| $caught | $missed | $unviable | $timeout | $total | ${rate}% |"
+            echo ""
+            echo "Scope: \`--bins\`, lower bound on the unit suite. A timeout is not a kill."
+            if [ "$missed" -gt 0 ]; then
+              echo ""
+              echo "<details><summary>missed sites</summary>"
+              echo ""
+              echo '```'
+              head -n 40 "$out/missed.txt"
+              echo '```'
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: keep the mutation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-mutation-${{ matrix.module }}
+          path: mutants-${{ matrix.module }}/mutants.out
+          if-no-files-found: warn
+          retention-days: 30

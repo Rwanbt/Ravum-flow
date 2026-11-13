@@ -40,7 +40,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # macOS is measured, not promised: the job either passes and the platform
+        # is supported, or it fails and the support matrix says so. Nothing here
+        # assumes the Unix-only code path is identical to Linux (`/proc` is Linux,
+        # the process-group kill is POSIX, `sh` is not `bash`).
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       # Pinned to a commit, so the toolchain is named explicitly: the action
@@ -93,6 +97,11 @@ jobs:
           # the floors move with the measured counts.
           minimum=477
           if [ "${RUNNER_OS}" = "Windows" ]; then minimum=480; fi
+          # macOS is measured for the first time on this branch: the floor is
+          # deliberately conservative until the run reports its own count (a
+          # platform that silently skips half the suite still fails), then it is
+          # tightened to that measured number like the other two.
+          if [ "${RUNNER_OS}" = "macOS" ]; then minimum=455; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -390,6 +399,34 @@ jobs:
 
       # A released binary must not honour the test crash hook. This is the only
       # place the behaviour is observable, because `cargo test` uses the debug one.
+      # A regression gate, not a benchmark: the budgets are wide enough that only a
+      # pathological change (a startup wedge, an explosion of per-file Git calls, a
+      # lost fast path) trips them. Performance *claims* stay in docs/BENCHMARK_S9.md.
+      - name: performance smoke (regression, not a benchmark)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin=target/release/flow
+          start=$(date +%s%N)
+          "$bin" version > /dev/null
+          end=$(date +%s%N)
+          ms=$(( (end - start) / 1000000 ))
+          echo "flow version: ${ms} ms (budget 2000)"
+          if [ "$ms" -gt 2000 ]; then
+            echo "::error::flow version took ${ms} ms (budget 2000 ms): startup regressed"
+            exit 1
+          fi
+          start=$(date +%s%N)
+          "$bin" doctor > /dev/null
+          end=$(date +%s%N)
+          ms=$(( (end - start) / 1000000 ))
+          echo "flow doctor: ${ms} ms (budget 5000)"
+          if [ "$ms" -gt 5000 ]; then
+            echo "::error::flow doctor took ${ms} ms (budget 5000 ms): the Git plumbing regressed"
+            exit 1
+          fi
+
       - name: the release binary ignores the test crash hook
         shell: bash
         run: |
