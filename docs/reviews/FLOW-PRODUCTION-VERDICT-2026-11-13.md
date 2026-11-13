@@ -44,10 +44,10 @@ Four more things became true, and none of them is a documentation change:
 |---|---|---|
 | Works on a real repository, not only fixtures | **yes** — 2 705 files verified and published; 25 000 files verified and published | a repository **above 200 000 files** is still refused (a documented limit, not a bug) |
 | Cost of a verification cycle | **measured**: 28 s for 2 705 files with two real obligations; 172 s for 25 000 files with one no-op obligation | no performance claim beyond these points; no regression budget other than the 2 s/5 s tripwires |
-| Installable, verifiable artefact | **partly** — reproducible per host, provenance and SBOM produced by CI | **no tag, no Release, no code signature**, and `dist/` is a local build pinned to an older commit |
+| Installable, verifiable artefact | **yes, unsigned** — `v0.2.0-rc.2` is tagged and published with the CI artefacts of commit `e1022d86` (provenance, SBOM, checksums; reproducible per host) | **no code signature**: SmartScreen warns and there is no distribution trust chain |
 | Safety net when things go wrong | **yes** — durable intent/outcome journal, `reconcile`, non-destructive rules, no `reset --hard`; the crash windows are now also **executed on the release binary** (Linux, three kill points) | retention is opt-in (`flow gc`), not a default; the Windows crash windows are still proved on the debug binary only |
 | Supported platforms | Windows, Linux (tested + artefact), **macOS (tested, no artefact)** | macOS packaging; ARM Linux |
-| Governance around the code | **no** — no branch protection, no required checks, no `CODEOWNERS` | repository administration, out of a code change |
+| Governance around the code | **yes** — the ruleset `protect main and dev` blocks deletion and force-push and requires six checks (Ubuntu, Windows, macOS, polyglot ×2, coverage) | `CODEOWNERS` and a review requirement are still absent |
 
 ### 2.2 Real advantage for collaborative work
 
@@ -101,9 +101,10 @@ What is **not** claimed, and is the honest limit of the "advantage" claim:
 **`PRODUCTION_PARTIAL` on the merged line.** The product is functional on real projects, the
 collaboration cycle is executed end to end, the quality gates are enforced and honest, and the two
 things that blocked an *engineering* verdict (coverage, a usable envelope) are gone. It is not
-`PRODUCTION_CANDIDATE` because the delivery chain is still open — no tag, no Release, no signature,
-no branch protection — and because the productivity advantage, which is the reason Flow exists, is
-still a protocol rather than a measurement.
+`PRODUCTION_CANDIDATE` because the artefacts are **unsigned** and because the productivity advantage,
+which is the reason Flow exists, is still a protocol rather than a measurement. The rest of the
+delivery chain now exists: the line is merged, `main` and `dev` are protected by a ruleset requiring
+the six CI checks, and `v0.2.0-rc.2` is published with the CI artefacts of the tagged commit.
 
 **What would move it:** a tagged, signed release published from the CI artefacts of a protected
 `main`, the mutation matrix run once with a threshold, and one confirmatory S9 campaign with the

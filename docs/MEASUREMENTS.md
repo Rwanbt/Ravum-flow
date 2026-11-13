@@ -112,7 +112,8 @@ workflows stays `UNPROVEN` until `H4` fixes the S9 thresholds ([BENCHMARK_S9.md]
 | `unsafe`, `TODO`/`FIXME`, `#[ignore]` in product code | none (grep-verified) |
 | GitHub Actions | pinned to 40-hex commits; `permissions: contents: read` |
 | GitHub secret scanning / push protection | enabled |
-| Branch protection / required checks | **absent** ([verdict](reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) §3) |
+| Branch protection / required checks | **active** since 2026-11-13: ruleset `protect main and dev`, deletion and force-push blocked, six required checks |
+| Release artefact | **`v0.2.0-rc.2`** published from `e1022d86` with `PROVENANCE.json`, `SBOM.json`, `SHA256SUMS.txt` |
 | Code signing | **none** (`"unsigned": true`) |
 
 ## 9. Maintenance of this table
