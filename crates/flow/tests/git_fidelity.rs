@@ -503,7 +503,14 @@ fn a_tree_path_that_is_not_valid_utf8_is_refused_with_its_own_reason() {
     exclude_flow(&repo.path);
     write_config(&repo.path, GREEN);
     let name = std::ffi::OsString::from_vec(b"bad-\xff-name.txt".to_vec());
-    fs::write(repo.path.join(&name), "content\n").unwrap();
+    // macOS (APFS) refuses a file name that is not valid UTF-8, so the condition
+    // this gate needs cannot be constructed there. The test then proves nothing
+    // and says so, instead of failing on a platform limit it cannot fix; Linux
+    // and the BSDs accept arbitrary bytes.
+    if let Err(e) = fs::write(repo.path.join(&name), "content\n") {
+        eprintln!("skipped: this filesystem cannot create a non-UTF-8 name ({e})");
+        return;
+    }
     git(&repo.path, &["add", "-A"]);
     git(&repo.path, &["commit", "-q", "-m", "non-utf8 path"]);
     let tree = git(&repo.path, &["write-tree"]);

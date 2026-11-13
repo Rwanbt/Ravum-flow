@@ -95,8 +95,8 @@ jobs:
           # ignored. Wave 8 measured 468/470; wave 9 adds eight tests (six
           # cross-platform, one Windows-only, one Windows-only `.git` retry), so
           # the floors move with the measured counts.
-          minimum=477
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=480; fi
+          minimum=479
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=482; fi
           # macOS is measured for the first time on this branch: the floor is
           # deliberately conservative until the run reports its own count (a
           # platform that silently skips half the suite still fails), then it is
@@ -233,8 +233,11 @@ jobs:
             proposal::tests::identities_follow_the_bound_and_the_charset_on_random_input \
             proposal::tests::symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe \
             commands::tests::a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut \
-            commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_content_budget \
-            commands::tests::a_checkout_with_exactly_the_entry_budget_is_compared_not_refused \
+            commands::tests::a_tree_is_compared_in_several_chunks_without_skipping_one \
+            commands::tests::a_single_file_above_the_per_file_budget_is_refused_by_name \
+            commands::tests::a_checkout_at_the_entry_budget_is_compared_and_one_over_is_refused \
+            commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_chunk_budget \
+            commands::tests::cat_file_batch_accepts_an_ordinary_total_below_the_content_budget \
             state::tests::an_unreadable_journal_is_an_error_not_an_empty_journal \
             state::tests::only_a_real_parent_directory_is_flushed_after_the_rename \
             status_counts_an_intent_with_no_outcome_as_pending \
