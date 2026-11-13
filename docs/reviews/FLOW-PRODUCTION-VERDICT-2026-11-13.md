@@ -15,7 +15,7 @@ The old report was bound to `06eb7c3` and listed four reasons for `PARTIAL`. Aga
 | Old reason | State on 2026-11-13 | Evidence |
 |---|---|---|
 | 1. Coverage below the 95/90 gate (`83.19 %/68.64 %`) | **closed** — the gate is met in CI with no waiver | [MEASUREMENTS §2](../MEASUREMENTS.md) |
-| 2. Mutation below the gate, whole-crate run `NOT_RUN`, no Linux run | **armed, not closed** — per-module campaign now runs in CI on Linux; no threshold enforced yet | `.github/workflows/flow-mutation.yml` |
+| 2. Mutation below the gate, whole-crate run `NOT_RUN`, no Linux run | **armed, first module measured** — the per-module campaign runs in CI on Linux (`paths`: **31/31 caught**, 2 min); no threshold enforced yet | [MEASUREMENTS §3](../MEASUREMENTS.md) |
 | 3. `cargo-fuzz` not run | **open** — the zero-dependency seeded sweep is not libFuzzer | [CAPABILITIES](../CAPABILITIES.md) |
 | 4. macOS not tested, productivity unproven | **half closed** — macOS runs the whole suite (479 executed); productivity still `UNPROVEN` | [MEASUREMENTS §1, §5](../MEASUREMENTS.md) |
 
