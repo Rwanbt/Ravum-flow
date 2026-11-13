@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with -= in validate_flags
+@@ -292,17 +292,17 @@
+                         None => return Err(format!("`{name}` needs a value (flow {command} ...)")),
+                         Some(value) if value.starts_with("--") => {
+                             return Err(format!(
+                                 "`{name}` needs a value, found the flag {value:?} instead"
+                             ))
+                         }
+                         Some(_) => {}
+                     }
+-                    index += 2; // survival-probe
++                    index -= /* ~ changed by cargo-mutants ~ */ 2; // survival-probe
+                     continue;
+                 }
+             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())
+                 || bool_flags(command).contains(&name.as_str())
+             {
+                 // A boolean flag is a token, not a `key=value` pair. Accepting
+                 // `--dry-run=true` here and then matching only the exact token in
+                 // `has_flag` would run a real publication for an operator who

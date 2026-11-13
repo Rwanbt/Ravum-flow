@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with -= in flag_value
+@@ -335,17 +335,17 @@
+     let mut index = 0;
+     while index < args.len() {
+         if args[index] == name {
+             return args.get(index + 1).cloned();
+         }
+         if let Some(value) = args[index].strip_prefix(&format!("{name}=")) {
+             return Some(value.to_string());
+         }
+-        index += 1;
++        index -= /* ~ changed by cargo-mutants ~ */ 1;
+     }
+     None
+ }
+ 
+ /// Collect every occurrence of any of `names`, in command-line order.
+ /// `--name value` and `--name=value` are both accepted; a repeated flag keeps
+ /// its order, which is the assembly order of a candidate.
+ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {

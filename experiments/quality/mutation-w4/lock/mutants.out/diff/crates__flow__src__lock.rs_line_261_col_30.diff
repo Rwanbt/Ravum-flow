@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace == with != in acquire_lock
+@@ -253,17 +253,17 @@
+                         return Err(LockError::Unknown(format!(
+                             "lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it",
+                             path.display(),
+                             LOCK_SCHEMA,
+                             path.display()
+                         )))
+                     }
+                 };
+-                if owner.pid == std::process::id() {
++                if owner.pid != /* ~ changed by cargo-mutants ~ */ std::process::id() {
+                     return Err(LockError::Held(format!(
+                         "this process already holds {} for {:?}",
+                         path.display(),
+                         owner.purpose
+                     )));
+                 }
+                 match pid_alive(owner.pid) {
+                     // A live owner is never displaced, whatever the age says.

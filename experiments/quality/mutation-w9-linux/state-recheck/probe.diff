@@ -1,0 +1,16 @@
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index 6d521a8..2407e44 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -396 +396 @@ fn parent_to_flush(path: &Path) -> Option<&Path> {
+-    path.parent().filter(|p| !p.as_os_str().is_empty())
++    path.parent().filter(|p| !p.as_os_str().is_empty()) // w9recheck
+@@ -403 +403 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+-        if !pairs.iter().any(|(k, _)| k == "schema") {
++        if !pairs.iter().any(|(k, _)| k == "schema") { // w9recheck
+@@ -420 +420 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
++        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // w9recheck
+@@ -674 +674 @@ pub fn iso8601_now() -> String {
+-    let days = (secs / 86_400) as i64;
++    let days = (secs / 86_400) as i64; // w9recheck

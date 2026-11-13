@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace && with || in cmd_init
+@@ -80,17 +80,17 @@
+             return Ok(refused_code("INVALID_POLICY", reason));
+         }
+     }
+     let policy_digest = policy_digest(&effective_policy(&config, &config.obligations));
+     let adopted_already = state::load_adoption(root)?
+         .map(|a| a.policy_digest == policy_digest)
+         .unwrap_or(false);
+ 
+-    if existing_config && !adopted_already && !adopt_policy {
++    if existing_config && !adopted_already || /* ~ changed by cargo-mutants ~ */ !adopt_policy {
+         // Show exactly what would be executed. Silence is not consent.
+         let commands: Vec<Json> = config
+             .obligations
+             .iter()
+             .map(|o| {
+                 Json::str(format!(
+                     "{} {}{}",
+                     o.program,

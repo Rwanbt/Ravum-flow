@@ -1,0 +1,47 @@
+--- crates/flow/src/proposal.rs
++++ replace parse_tree_listing -> Result<Vec<String>, Json> with Ok(vec![])
+@@ -515,43 +515,17 @@
+ }
+ 
+ /// Parse one `ls-tree -r -z` answer into the paths of a candidate tree.
+ ///
+ /// This is the parsing half of [`validate_tree`], separated so a hostile or
+ /// corrupted object store can be simulated byte for byte: an entry without a
+ /// tab, a gitlink, or a path Flow cannot represent must be a named refusal.
+ fn parse_tree_listing(tree: &str, listing: &str) -> Result<Vec<String>, Json> {
+-    let mut paths = Vec::new();
+-    for entry in listing.split('\0') {
+-        if entry.trim().is_empty() {
+-            continue;
+-        }
+-        let Some((meta, path)) = entry.split_once('\t') else {
+-            return Err(refusal(
+-                "TREE_UNREADABLE",
+-                format!("unparsable ls-tree entry {entry:?}"),
+-            ));
+-        };
+-        let mode = meta.split_whitespace().next().unwrap_or("");
+-        if mode == "160000" {
+-            return Err(refusal(
+-                "GITLINK_UNSUPPORTED",
+-                format!("tree {tree} contains a gitlink at {path:?}: submodule content is not materialised"),
+-            ));
+-        }
+-        if let Err(reason) = paths::validate_relative(path) {
+-            return Err(refusal(
+-                "FORBIDDEN_PATH",
+-                format!("tree {tree} contains {path:?}, which is not a safe path: {reason}"),
+-            ));
+-        }
+-        paths.push(path.to_string());
+-    }
+-    Ok(paths)
++    Ok(vec![]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // -------------------------------------------------------------- admission
+ 
+ /// Read the patch bytes, bounded.
+ fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {
+     let meta = fs::metadata(path).map_err(|e| {
+         refusal(

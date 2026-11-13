@@ -1,0 +1,36 @@
+crates/flow/src/state.rs:51:9: replace <impl std::fmt::Display for JournalError>::fmt -> std::fmt::Result with Ok(Default::default())
+crates/flow/src/state.rs:60:9: replace <impl From<JournalError> for String>::from -> String with String::new()
+crates/flow/src/state.rs:60:9: replace <impl From<JournalError> for String>::from -> String with "xyzzy".into()
+crates/flow/src/state.rs:119:19: replace != with == in Config::from_json
+crates/flow/src/state.rs:118:9: replace Config::from_json -> Result<Config, String> with Ok(Default::default())
+crates/flow/src/state.rs:180:5: replace flow_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:135:34: replace || with && in Config::from_json
+crates/flow/src/state.rs:184:5: replace config_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:188:5: replace journal_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:196:5: replace logs_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:192:5: replace receipts_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:200:5: replace proposals_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:204:5: replace candidates_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:208:5: replace adoption_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:224:5: replace load_adoption -> Result<Option<Adoption>, String> with Ok(None)
+crates/flow/src/state.rs:232:15: replace != with == in load_adoption
+crates/flow/src/state.rs:225:8: delete ! in load_adoption
+crates/flow/src/state.rs:254:5: replace save_adoption -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:269:5: replace load_config -> Result<Config, String> with Ok(Default::default())
+crates/flow/src/state.rs:276:5: replace save_config -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:265:5: replace receipt_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:294:43: replace == with != in guard_below_flow
+crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow
+crates/flow/src/state.rs:352:5: replace write_atomic -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:388:5: replace append_journal -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:390:12: delete ! in append_journal
+crates/flow/src/state.rs:89:9: replace Config::to_json -> Json with Default::default()
+crates/flow/src/state.rs:224:5: replace load_adoption -> Result<Option<Adoption>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:261:67: replace + with - in save_adoption
+crates/flow/src/state.rs:261:67: replace + with * in save_adoption
+crates/flow/src/state.rs:280:63: replace + with - in save_config
+crates/flow/src/state.rs:280:63: replace + with * in save_config

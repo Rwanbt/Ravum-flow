@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm Some(b',') in Parser<'a>::object
+@@ -229,17 +229,17 @@
+             // Duplicate names are ambiguous: two readers can disagree about
+             // which value wins. Flow refuses them instead of picking one.
+             if pairs.iter().any(|(k, _)| k == &key) {
+                 return Err(format!("duplicate object key {key:?} at {}", self.pos));
+             }
+             pairs.push((key, value));
+             self.ws();
+             match self.peek() {
+-                Some(b',') => self.pos += 1,
++                 /* ~ changed by cargo-mutants ~ */
+                 Some(b'}') => {
+                     self.pos += 1;
+                     break;
+                 }
+                 _ => return Err(format!("expected ',' or '}}' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Obj(pairs))

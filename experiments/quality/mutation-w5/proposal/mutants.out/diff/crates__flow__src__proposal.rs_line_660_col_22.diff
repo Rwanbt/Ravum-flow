@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in admit
+@@ -652,17 +652,17 @@
+         }
+         return Ok(out);
+     }
+ 
+     // Apply to a temporary index only. `read-tree` seeds it from the base tree;
+     // `apply --cached` never reads or writes the worktree.
+     let index = TempIndex::new();
+     let seeded = git.run_bounded(&["read-tree", &base_tree], None, Some(index.path()))?;
+-    if seeded.status != 0 {
++    if seeded.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot seed a temporary index from {base_tree}: {}",
+             seeded.stderr.trim()
+         ));
+     }
+     let applied = git.run_bounded(
+         &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+         Some(&patch),

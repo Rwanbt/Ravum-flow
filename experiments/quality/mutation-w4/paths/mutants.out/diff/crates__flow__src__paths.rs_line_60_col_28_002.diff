@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace > with >= in validate_relative
+@@ -52,17 +52,17 @@
+         if component.is_empty() {
+             return Err("empty path component".into());
+         }
+         if component == "." || component == ".." {
+             return Err(format!(
+                 "path traversal component {component:?} is not allowed"
+             ));
+         }
+-        if component.len() > 255 {
++        if component.len() >= /* ~ changed by cargo-mutants ~ */ 255 {
+             return Err("path component longer than 255 bytes".into());
+         }
+         // Conservative portability rule: a colon is a drive separator or an NTFS
+         // alternate-data-stream marker on Windows. Refusing it everywhere keeps
+         // receipts portable across platforms instead of silently rewriting them.
+         if component.contains(':') {
+             return Err(format!("colon in component {component:?} is not portable"));
+         }

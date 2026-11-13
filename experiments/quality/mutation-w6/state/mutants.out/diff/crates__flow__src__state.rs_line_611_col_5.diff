@@ -1,0 +1,59 @@
+--- crates/flow/src/state.rs
++++ replace save_receipt -> Result<PathBuf, String> with Ok(Default::default())
+@@ -603,55 +603,17 @@
+ /// Where a *partial* (selected) execution is recorded. Deliberately a different
+ /// file from the complete slot so the two can never shadow one another.
+ pub fn partial_receipt_path(root: &Path, tree_oid: &str, context_id: &str) -> PathBuf {
+     let prefix: String = context_id.chars().take(12).collect();
+     receipts_dir(root).join(format!("{tree_oid}.partial.{prefix}.json"))
+ }
+ 
+ pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
+-    let tree = receipt
+-        .get("tree_oid")
+-        .and_then(Json::as_str)
+-        .ok_or("receipt without tree_oid")?;
+-    // The tree id becomes a file name here too: a receipt is loaded from disk as
+-    // well as written, and a hand-edited or foreign one must never choose where
+-    // the next write lands.
+-    if !crate::paths::is_object_id(tree) {
+-        return Err(format!(
+-            "INVALID_TREE_ID: receipt tree_oid {tree:?} is not a 40- or 64-character hex object id"
+-        ));
+-    }
+-    let mode = receipt
+-        .get("verification_scope")
+-        .and_then(|s| s.get("mode"))
+-        .and_then(Json::as_str)
+-        .unwrap_or("");
+-    let path = match mode {
+-        // The complete slot is keyed by tree: a re-run on the same tree replaces
+-        // the previous complete proof, which is the intended behaviour.
+-        "complete" => receipt_path(root, tree),
+-        "selected" => {
+-            let context = receipt
+-                .get("context_id")
+-                .and_then(Json::as_str)
+-                .ok_or("selected receipt without context_id")?;
+-            partial_receipt_path(root, tree, context)
+-        }
+-        other => {
+-            return Err(format!(
+-                "receipt has unknown verification_scope.mode {other:?}: refusing to pick a slot"
+-            ))
+-        }
+-    };
+-    if let Some(parent) = path.parent() {
+-        fs::create_dir_all(parent).map_err(|e| format!("cannot create receipts dir: {e}"))?;
+-    }
+-    write_atomic(&path, &(receipt.to_string_pretty() + "\n"))?;
+-    Ok(path)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its
+ // attribution rules are the whole point, and they live next to their tests.
+ 
+ /// Civil date/time from the Unix epoch, UTC, without a dependency.
+ pub fn iso8601_now() -> String {
+     let secs = SystemTime::now()

@@ -1,0 +1,34 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 764c2be..b291d75 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -996 +996 @@ fn verify_checkout_modes(
+-    #[cfg(unix)]
++    #[cfg(unix)] // w7probe
+@@ -1000 +1000 @@ fn verify_checkout_modes(
+-            if mode != "100644" && mode != "100755" {
++            if mode != "100644" && mode != "100755" { // w7probe
+@@ -1006,2 +1006,2 @@ fn verify_checkout_modes(
+-            let executable = meta.permissions().mode() & 0o111 != 0;
+-            if executable != (mode == "100755") {
++            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe
++            if executable != (mode == "100755") { // w7probe
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index 7175ef1..fbbf6dd 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -570,2 +570,2 @@ fn resolve_program_in(
+-fn resolve_program(_program: &str) -> Option<PathBuf> {
+-    None
++fn resolve_program(_program: &str) -> Option<PathBuf> { // w7probe
++    None // w7probe
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index 9a711b5..4077dfa 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -340 +340 @@ fn guard_below_flow(path: &Path) -> Result<(), String> {
+-        if meta.is_file() && meta.nlink() > 1 {
++        if meta.is_file() && meta.nlink() > 1 { // w7probe
+@@ -377 +377 @@ pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
+-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
++    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w7probe

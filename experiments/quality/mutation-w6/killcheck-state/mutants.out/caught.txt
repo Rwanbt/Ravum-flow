@@ -1,0 +1,39 @@
+crates/flow/src/state.rs:445:5: replace unix_now -> u64 with 0
+crates/flow/src/state.rs:445:5: replace unix_now -> u64 with 1
+crates/flow/src/state.rs:458:5: replace unique_suffix -> u128 with 0
+crates/flow/src/state.rs:458:5: replace unique_suffix -> u128 with 1
+crates/flow/src/state.rs:591:5: replace string_list -> Vec<String> with vec![]
+crates/flow/src/state.rs:591:5: replace string_list -> Vec<String> with vec![String::new()]
+crates/flow/src/state.rs:591:5: replace string_list -> Vec<String> with vec!["xyzzy".into()]
+crates/flow/src/state.rs:657:5: replace iso8601_now -> String with String::new()
+crates/flow/src/state.rs:657:5: replace iso8601_now -> String with "xyzzy".into()
+crates/flow/src/state.rs:661:22: replace / with % in iso8601_now
+crates/flow/src/state.rs:661:22: replace / with * in iso8601_now
+crates/flow/src/state.rs:662:20: replace % with + in iso8601_now
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 1)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 1)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 1)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 1)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 1)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 0)
+crates/flow/src/state.rs:677:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 1)
+crates/flow/src/state.rs:679:18: replace - with + in civil_from_days
+crates/flow/src/state.rs:679:18: replace - with / in civil_from_days
+crates/flow/src/state.rs:679:24: replace * with + in civil_from_days
+crates/flow/src/state.rs:679:24: replace * with / in civil_from_days
+crates/flow/src/state.rs:680:65: replace / with % in civil_from_days
+crates/flow/src/state.rs:680:65: replace / with * in civil_from_days
+crates/flow/src/state.rs:680:48: replace - with + in civil_from_days
+crates/flow/src/state.rs:680:20: replace - with + in civil_from_days
+crates/flow/src/state.rs:680:20: replace - with / in civil_from_days
+crates/flow/src/state.rs:680:26: replace / with % in civil_from_days
+crates/flow/src/state.rs:680:26: replace / with * in civil_from_days
+crates/flow/src/state.rs:680:39: replace / with % in civil_from_days
+crates/flow/src/state.rs:680:39: replace / with * in civil_from_days
+crates/flow/src/state.rs:680:54: replace / with % in civil_from_days
+crates/flow/src/state.rs:680:54: replace / with * in civil_from_days

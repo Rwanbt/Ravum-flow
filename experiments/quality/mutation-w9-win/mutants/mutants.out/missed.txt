@@ -1,0 +1,2 @@
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1792,17 +1792,17 @@
+                 return Ok(refused_code(
+                     "UNKNOWN_REF",
+                     format!("cannot resolve {reference}"),
+                 ))
+             }
+         },
+     };
+     let current = git.show_ref(&reference)?;
+-    if current.as_deref() != Some(old.as_str()) {
++    if current.as_deref() == /* ~ changed by cargo-mutants ~ */ Some(old.as_str()) {
+         return Ok(refused_code(
+             "STALE_REF",
+             format!("stale expected old OID: ref is {current:?}, expected {old}"),
+         ));
+     }
+     // Publishing a tree the ref already carries would only add an empty commit.
+     if let Ok(current_tree) = git.capture(&["rev-parse", &format!("{old}^{{tree}}")]) {
+         if current_tree == tree {

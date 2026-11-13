@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace && with || in validate_relative
+@@ -40,17 +40,17 @@
+     }
+     if path.bytes().any(|b| b < 0x20) {
+         return Err("control character in path".into());
+     }
+     if path.starts_with('/') || path.starts_with('\\') {
+         return Err("absolute path is not allowed".into());
+     }
+     let bytes = path.as_bytes();
+-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
++    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() || /* ~ changed by cargo-mutants ~ */ bytes[1] == b':' {
+         return Err("drive-qualified path is not allowed".into());
+     }
+     for component in path.split(['/', '\\']) {
+         if component.is_empty() {
+             return Err("empty path component".into());
+         }
+         if component == "." || component == ".." {
+             return Err(format!(

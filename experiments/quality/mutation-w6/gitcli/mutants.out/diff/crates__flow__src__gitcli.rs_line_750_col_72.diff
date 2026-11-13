@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace && with || in redact
+@@ -742,17 +742,17 @@
+             out = out.replace(value.as_ref(), "[REDACTED]");
+         }
+     }
+     // Prefixes of token families whose value is recognisable on its own. `AKIA`
+     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.
+     for shape in ["ghp_", "gho_", "ghs_", "github_pat_", "sk-", "AKIA", "ASIA"] {
+         while let Some(idx) = out.find(shape) {
+             let end = out[idx..]
+-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
++                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' || /* ~ changed by cargo-mutants ~ */ c != '-')
+                 .map(|off| idx + off)
+                 .unwrap_or(out.len());
+             if end <= idx + shape.len() {
+                 break;
+             }
+             out.replace_range(idx..end, "[REDACTED]");
+         }
+     }

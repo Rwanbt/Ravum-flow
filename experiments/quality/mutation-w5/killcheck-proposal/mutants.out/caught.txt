@@ -1,0 +1,10 @@
+crates/flow/src/proposal.rs:324:9: replace <impl Drop for TempIndex>::drop with ()
+crates/flow/src/proposal.rs:332:44: replace > with == in ident
+crates/flow/src/proposal.rs:332:27: replace || with && in ident
+crates/flow/src/proposal.rs:332:44: replace > with < in ident
+crates/flow/src/proposal.rs:332:44: replace > with >= in ident
+crates/flow/src/proposal.rs:458:29: replace > with == in validate_path
+crates/flow/src/proposal.rs:458:29: replace > with < in validate_path
+crates/flow/src/proposal.rs:458:29: replace > with >= in validate_path
+crates/flow/src/proposal.rs:562:28: replace > with == in read_patch
+crates/flow/src/proposal.rs:562:28: replace > with >= in read_patch

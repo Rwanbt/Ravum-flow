@@ -1,0 +1,12 @@
+# Deliberately its own workspace root: this fixture is a verification target for
+# Flow, not a member of the Ravum Flow crate workspace. It has no dependencies.
+[workspace]
+
+[package]
+name = "polyglot-rust"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dependency-free polyglot fixture verified by Ravum Flow"
+
+[dependencies]

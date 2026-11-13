@@ -1,0 +1,50 @@
+--- crates/flow/src/proposal.rs
++++ replace parse_raw_diff -> Result<Vec<Change>, String> with Ok(vec![Default::default()])
+@@ -345,46 +345,17 @@
+             format!("{what} {value:?} must contain only ASCII letters, digits, '-', '_' or '.' and must not start with '.'"),
+         ));
+     }
+     Ok(trimmed.to_string())
+ }
+ 
+ /// Parse `git diff-tree -r -z --raw --no-renames` output.
+ fn parse_raw_diff(stdout: &str) -> Result<Vec<Change>, String> {
+-    let mut changes = Vec::new();
+-    let mut parts = stdout.split('\0');
+-    while let Some(meta) = parts.next() {
+-        if meta.trim().is_empty() {
+-            continue;
+-        }
+-        let path = parts
+-            .next()
+-            .ok_or_else(|| "truncated diff-tree output: meta without a path".to_string())?;
+-        if path.is_empty() {
+-            continue;
+-        }
+-        let mut fields = meta.trim_start_matches(':').split(' ');
+-        let old_mode = fields.next().unwrap_or("").to_string();
+-        let new_mode = fields.next().unwrap_or("").to_string();
+-        let _old_oid = fields.next().unwrap_or("").to_string();
+-        let new_oid = fields.next().unwrap_or("").to_string();
+-        let status = fields.next().unwrap_or("").to_string();
+-        if status.is_empty() {
+-            return Err(format!("unparsable diff-tree entry {meta:?}"));
+-        }
+-        changes.push(Change {
+-            status,
+-            path: path.replace('\\', "/"),
+-            old_mode,
+-            new_mode,
+-            new_oid,
+-        });
+-    }
+-    Ok(changes)
++    Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn diff_changes(git: &Git, from_tree: &str, to_tree: &str) -> Result<Vec<Change>, String> {
+     let out = git.run_bounded(
+         &[
+             "diff-tree",
+             "-r",
+             "-z",

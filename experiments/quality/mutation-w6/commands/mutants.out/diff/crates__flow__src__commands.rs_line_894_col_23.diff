@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in ls_tree_entries
+@@ -886,17 +886,17 @@
+ /// The tree's entries: `(mode, blob oid, path, size)`, from one bounded
+ /// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit
+ /// reason instead of being lossily folded into `U+FFFD` (two different paths would
+ /// then look like a case collision, which is a misleading diagnosis).
+ fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {
+     // The listing comes from the source repository: the checkout deliberately
+     // has no `.git`, so it cannot answer for itself.
+     let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
+-    if listing.status != 0 {
++    if listing.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot list tree {tree}: {}",
+             listing.stderr.trim()
+         ));
+     }
+     parse_tree_entries(tree, &listing.stdout_bytes)
+ }
+ 

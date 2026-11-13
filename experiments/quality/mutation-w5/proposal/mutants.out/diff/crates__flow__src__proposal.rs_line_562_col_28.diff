@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace > with == in read_patch
+@@ -554,17 +554,17 @@
+ /// Read the patch bytes, bounded.
+ fn read_patch(path: &Path) -> Result<Vec<u8>, Json> {
+     let meta = fs::metadata(path).map_err(|e| {
+         refusal(
+             "PATCH_UNREADABLE",
+             format!("cannot stat patch {}: {e}", path.display()),
+         )
+     })?;
+-    if meta.len() as usize > MAX_PATCH_BYTES {
++    if meta.len() as usize == /* ~ changed by cargo-mutants ~ */ MAX_PATCH_BYTES {
+         return Err(refusal(
+             "PATCH_TOO_LARGE",
+             format!(
+                 "patch {} is {} bytes, above the {MAX_PATCH_BYTES}-byte admission bound",
+                 path.display(),
+                 meta.len()
+             ),
+         ));

@@ -1,0 +1,110 @@
+{
+  "meta": {
+    "harness": {
+      "version": "2.0",
+      "python": "3.13.7",
+      "platform": "Windows-11-10.0.26100-SP0",
+      "git": "git version 2.51.1.windows.1",
+      "started_at": "2026-11-10T10:56:52Z",
+      "duration_s": 1.6,
+      "run_root": "<removed>"
+    },
+    "flow": {
+      "path": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\debug\\flow.exe",
+      "sha256": "520a6bee56fe133a1dde95e810c9a7f61a43eaa66114307728d618b431fe6eff",
+      "version": {
+        "status": "VERSION",
+        "tool": "flow 0.2.0-rc.1",
+        "policy_version": "FLOW-POLICY-1",
+        "git": "git version 2.51.1.windows.1",
+        "schema": "flow-receipt/2",
+        "schemas": "flow-config/1, flow-receipt/2, flow-journal/1, flow-proposal/1, flow-candidate/1, flow-adoption/1, flow-plan/1, flow-status/1, flow-proposal-list/1"
+      },
+      "release_path": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\release\\flow.exe",
+      "release_sha256": "d86b9fc8de89a96e8c5d333c1728e5df2ab2d66766867d336eadec582ad94d30"
+    },
+    "git": {
+      "repo": "D:\\App\\Ravum-flow",
+      "base_sha": "7a034ffb855ccd020f1abdd46034c7bd2c33d416",
+      "branch": "feat/flow-production-candidate"
+    }
+  },
+  "summary": {
+    "total": 1,
+    "REPRODUCED": 0,
+    "REFUTED": 1,
+    "NOT_RUN": 0,
+    "ERROR": 0,
+    "by_axis": {
+      "fidelity": {
+        "total": 1,
+        "REPRODUCED": 0,
+        "REFUTED": 1,
+        "NOT_RUN": 0,
+        "ERROR": 0
+      }
+    },
+    "reproduced_by_severity": {}
+  },
+  "scenarios": [
+    {
+      "id": "W3-03",
+      "axis": "fidelity",
+      "title": "post-checkout rewrites a file at equal byte length",
+      "severity": "P0",
+      "verdict": "REFUTED",
+      "expected": "a same-length rewrite by post-checkout is refused by the byte comparison (no receipt), not certified",
+      "observed": "refused (UNSUPPORTED_CHECKOUT): tree a559f5dff9910070bc36345caa19ee6bc99ce33e entry \"README.md\" changed during checkout (6 on disk vs 6 in the tree, blob ce013625030b): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or",
+      "notes": "",
+      "evidence": {
+        "approve": {
+          "exit": 0,
+          "status": "APPROVED",
+          "peak_ws_mb": 4.5
+        },
+        "run": {
+          "exit": 1,
+          "status": "REFUSED",
+          "code": "UNSUPPORTED_CHECKOUT",
+          "reason": "tree a559f5dff9910070bc36345caa19ee6bc99ce33e entry \"README.md\" changed during checkout (6 on disk vs 6 in the tree, blob ce013625030b): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+          "peak_ws_mb": 5.2
+        },
+        "tree": "a559f5dff9910070bc36345caa19ee6bc99ce33e",
+        "blob": "hello",
+        "receipt": false
+      },
+      "commands": [
+        {
+          "argv": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\debug\\flow.exe init",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "INITIALIZED",
+            "peak_ws_mb": 4.9
+          }
+        },
+        {
+          "argv": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\debug\\flow.exe approve",
+          "exit": 0,
+          "result": {
+            "exit": 0,
+            "status": "APPROVED",
+            "peak_ws_mb": 4.5
+          }
+        },
+        {
+          "argv": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-7a-target\\debug\\flow.exe run",
+          "exit": 1,
+          "result": {
+            "exit": 1,
+            "status": "REFUSED",
+            "code": "UNSUPPORTED_CHECKOUT",
+            "reason": "tree a559f5dff9910070bc36345caa19ee6bc99ce33e entry \"README.md\" changed during checkout (6 on disk vs 6 in the tree, blob ce013625030b): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+            "peak_ws_mb": 5.2
+          }
+        }
+      ],
+      "duration_ms": 1431
+    }
+  ]
+}

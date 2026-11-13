@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace >= with < in dispatch
+@@ -141,17 +141,17 @@
+                 "status" => commands::cmd_status(&root),
+                 "run" => {
+                     // A timeout that is silently dropped would make the receipt
+                     // prove a deadline that was never applied, so an unparseable
+                     // or zero value is a usage error rather than a default.
+                     let timeout = match flag_value(rest, "--timeout") {
+                         None => None,
+                         Some(raw) => match raw.parse::<u64>() {
+-                            Ok(seconds) if seconds >= 1 => Some(seconds),
++                            Ok(seconds) if seconds < /* ~ changed by cargo-mutants ~ */ 1 => Some(seconds),
+                             _ => {
+                                 emit_error(&format!(
+                                     "`--timeout` needs a whole number of seconds >= 1 (found {raw:?})"
+                                 ));
+                                 return 2;
+                             }
+                         },
+                     };

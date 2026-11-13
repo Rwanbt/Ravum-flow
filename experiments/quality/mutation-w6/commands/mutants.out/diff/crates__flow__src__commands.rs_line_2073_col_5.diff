@@ -1,0 +1,24 @@
+--- crates/flow/src/commands.rs
++++ replace crash_point -> bool with true
+@@ -2065,20 +2065,17 @@
+ 
+ /// Crash-injection point, **debug builds only**.
+ ///
+ /// The test suite needs to interrupt a publication between its durable steps.
+ /// A released binary must not honour an environment variable that can skip the
+ /// outcome record, so the variable is ignored outside `debug_assertions` — and a
+ /// CI step proves it on the release binary.
+ fn crash_point(name: &str) -> bool {
+-    if !cfg!(debug_assertions) {
+-        return false;
+-    }
+-    std::env::var("FLOW_TEST_CRASH").as_deref() == Ok(name)
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
+     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+     for record in records {
+         if record.get("event").and_then(Json::as_str) == Some(event) {
+             let id = record
+                 .get("id")

@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace != with == in validate_flags
+@@ -316,17 +316,17 @@
+                 return Err(format!(
+                     "`{name}` is not implemented by `flow {command}` (see `flow help`); an option that would be ignored is a usage error"
+                 ));
+             } else {
+                 return Err(format!(
+                     "unknown option {name:?} for `flow {command}` (see `flow help`)"
+                 ));
+             }
+-        } else if command != "proposals" {
++        } else if command == /* ~ changed by cargo-mutants ~ */ "proposals" {
+             return Err(format!(
+                 "unexpected argument {arg:?} for `flow {command}` (see `flow help`)"
+             ));
+         }
+         index += 1;
+     }
+     Ok(())
+ }

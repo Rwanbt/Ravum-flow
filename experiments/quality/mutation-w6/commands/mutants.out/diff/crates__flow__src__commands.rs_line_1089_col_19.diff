@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in verify_checkout_content
+@@ -1081,17 +1081,17 @@
+         ));
+     }
+     let mut request = String::new();
+     for (oid, _) in &regular {
+         request.push_str(oid);
+         request.push('\n');
+     }
+     let out = git.run_bounded(&["cat-file", "--batch"], Some(request.as_bytes()), None)?;
+-    if out.status != 0 {
++    if out.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot read the tree content for {tree}: {}",
+             out.stderr.trim()
+         ));
+     }
+     let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;
+     for ((oid, path), blob) in regular.iter().zip(blobs) {
+         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));

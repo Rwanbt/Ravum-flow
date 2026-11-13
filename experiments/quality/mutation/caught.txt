@@ -1,0 +1,30 @@
+crates/flow/src/lock.rs:68:5: replace lock_path -> PathBuf with Default::default()
+crates/flow/src/lock.rs:90:5: replace parse -> Option<Owner> with None
+crates/flow/src/lock.rs:92:15: replace != with == in parse
+crates/flow/src/lock.rs:149:9: replace <impl Drop for LockGuard>::drop with ()
+crates/flow/src/lock.rs:150:57: replace == with != in <impl Drop for LockGuard>::drop
+crates/flow/src/lock.rs:161:5: replace nonce -> String with String::new()
+crates/flow/src/lock.rs:184:5: replace create_lock_file -> std::io::Result<()> with Ok(())
+crates/flow/src/lock.rs:202:5: replace wait_for_record -> Option<Owner> with None
+crates/flow/src/lock.rs:234:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock
+crates/flow/src/lock.rs:234:32: replace == with != in acquire_lock
+crates/flow/src/lock.rs:259:30: replace == with != in acquire_lock
+crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with None
+crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with Some(false)
+crates/flow/src/lock.rs:292:73: replace == with != in acquire_lock
+crates/flow/src/lock.rs:325:8: delete ! in pid_alive
+crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:329:47: replace || with && in pid_alive
+crates/flow/src/paths.rs:20:5: replace validate_relative -> Result<(), String> with Ok(())
+crates/flow/src/paths.rs:23:19: replace > with < in validate_relative
+crates/flow/src/paths.rs:26:31: replace < with == in validate_relative
+crates/flow/src/paths.rs:26:31: replace < with > in validate_relative
+crates/flow/src/paths.rs:26:31: replace < with <= in validate_relative
+crates/flow/src/paths.rs:33:59: replace && with || in validate_relative
+crates/flow/src/paths.rs:33:25: replace && with || in validate_relative
+crates/flow/src/paths.rs:33:71: replace == with != in validate_relative
+crates/flow/src/paths.rs:40:22: replace == with != in validate_relative
+crates/flow/src/paths.rs:40:42: replace == with != in validate_relative
+crates/flow/src/paths.rs:45:28: replace > with < in validate_relative
+crates/flow/src/paths.rs:54:37: replace || with && in validate_relative
+crates/flow/src/paths.rs:86:16: delete ! in canonical_within

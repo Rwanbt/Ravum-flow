@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete match arm "absent" | "dead" in cmd_doctor
+@@ -294,17 +294,17 @@
+             (_, Err(e)) => push("policy_adopted", "FAILED", e),
+         }
+     }
+ 
+     let lock = crate::lock::inspect(root);
+     push(
+         "publication_lock",
+         match lock.attribution {
+-            "absent" | "dead" => "OK",
++             /* ~ changed by cargo-mutants ~ */
+             "live" => "WARN",
+             _ => "FAILED",
+         },
+         if !lock.present {
+             "no lock file".to_string()
+         } else {
+             format!(
+                 "present, owner attribution {}, purpose {:?}{}{}",

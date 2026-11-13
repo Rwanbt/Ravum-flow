@@ -1,0 +1,237 @@
+crates/flow/src/commands.rs:41:5: replace short -> String with String::new()
+crates/flow/src/commands.rs:41:5: replace short -> String with "xyzzy".into()
+crates/flow/src/commands.rs:45:5: replace current_ref -> Result<String, String> with Ok(String::new())
+crates/flow/src/commands.rs:45:5: replace current_ref -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/commands.rs:46:19: replace != with == in current_ref
+crates/flow/src/commands.rs:60:31: replace && with || in cmd_init
+crates/flow/src/commands.rs:60:21: replace && with || in cmd_init
+crates/flow/src/commands.rs:60:24: delete ! in cmd_init
+crates/flow/src/commands.rs:60:34: delete ! in cmd_init
+crates/flow/src/commands.rs:79:12: delete ! in cmd_init
+crates/flow/src/commands.rs:60:49: replace && with || in cmd_init
+crates/flow/src/commands.rs:88:44: replace && with || in cmd_init
+crates/flow/src/commands.rs:85:34: replace == with != in cmd_init
+crates/flow/src/commands.rs:88:24: replace && with || in cmd_init
+crates/flow/src/commands.rs:88:27: delete ! in cmd_init
+crates/flow/src/commands.rs:88:47: delete ! in cmd_init
+crates/flow/src/commands.rs:122:8: delete ! in cmd_init
+crates/flow/src/commands.rs:132:8: delete ! in cmd_init
+crates/flow/src/commands.rs:129:8: delete ! in cmd_init
+crates/flow/src/commands.rs:223:27: replace match guard adoption.policy_digest != digest with true in adoption_gate
+crates/flow/src/commands.rs:223:50: replace != with == in adoption_gate
+crates/flow/src/commands.rs:302:13: delete match arm "absent" | "dead" in cmd_doctor
+crates/flow/src/commands.rs:269:27: replace == with != in cmd_doctor
+crates/flow/src/commands.rs:303:13: delete match arm "live" in cmd_doctor
+crates/flow/src/commands.rs:306:12: delete ! in cmd_doctor
+crates/flow/src/commands.rs:332:16: delete ! in cmd_doctor
+crates/flow/src/commands.rs:371:23: replace == with != in cmd_doctor
+crates/flow/src/commands.rs:506:5: replace program_on_path -> bool with true
+crates/flow/src/commands.rs:393:8: delete ! in cmd_doctor
+crates/flow/src/commands.rs:506:5: replace program_on_path -> bool with false
+crates/flow/src/commands.rs:539:42: delete ! in cmd_status
+crates/flow/src/commands.rs:550:49: replace == with != in cmd_status
+crates/flow/src/commands.rs:562:53: replace == with != in cmd_status
+crates/flow/src/commands.rs:579:39: delete ! in cmd_status
+crates/flow/src/commands.rs:721:5: replace policy_digest -> String with String::new()
+crates/flow/src/commands.rs:721:5: replace policy_digest -> String with "xyzzy".into()
+crates/flow/src/commands.rs:725:5: replace build_context_id -> String with String::new()
+crates/flow/src/commands.rs:725:5: replace build_context_id -> String with "xyzzy".into()
+crates/flow/src/commands.rs:744:12: delete ! in validate_obligations
+crates/flow/src/commands.rs:761:8: delete ! in validate_obligations
+crates/flow/src/commands.rs:792:80: replace == with != in verify_checkout_fidelity
+crates/flow/src/commands.rs:802:57: replace += with -= in verify_checkout_fidelity
+crates/flow/src/commands.rs:802:57: replace += with *= in verify_checkout_fidelity
+crates/flow/src/commands.rs:804:74: replace > with == in verify_checkout_fidelity
+crates/flow/src/commands.rs:804:74: replace > with >= in verify_checkout_fidelity
+crates/flow/src/commands.rs:804:74: replace > with < in verify_checkout_fidelity
+crates/flow/src/commands.rs:824:24: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:826:8: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:842:24: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:844:8: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:858:8: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:856:23: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity
+crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity
+crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with true in verify_checkout_fidelity
+crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with false in verify_checkout_fidelity
+crates/flow/src/commands.rs:873:25: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:878:36: delete ! in verify_checkout_fidelity
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), String::new(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), String::new(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), String::new(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), String::new(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), String::new(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), String::new(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), String::new(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), String::new(), 1)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:898:5: replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:899:23: replace != with == in ls_tree_entries
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), String::new(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), String::new(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), String::new(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), String::new(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), "xyzzy".into(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), String::new(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), String::new(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), String::new(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), String::new(), 1)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), "xyzzy".into(), 0)])
+crates/flow/src/commands.rs:915:5: replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), "xyzzy".into(), "xyzzy".into(), 1)])
+crates/flow/src/commands.rs:920:45: replace == with != in parse_tree_entries
+crates/flow/src/commands.rs:924:60: replace == with != in parse_tree_entries
+crates/flow/src/commands.rs:928:51: replace + with - in parse_tree_entries
+crates/flow/src/commands.rs:928:51: replace + with * in parse_tree_entries
+crates/flow/src/commands.rs:947:23: replace > with == in parse_tree_entries
+crates/flow/src/commands.rs:947:23: replace > with < in parse_tree_entries
+crates/flow/src/commands.rs:947:23: replace > with >= in parse_tree_entries
+crates/flow/src/commands.rs:960:5: replace ls_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::new())
+crates/flow/src/commands.rs:960:5: replace ls_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::from_iter([String::new()]))
+crates/flow/src/commands.rs:960:5: replace ls_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::from_iter(["xyzzy".into()]))
+crates/flow/src/commands.rs:961:23: replace != with == in ls_tree_dirs
+crates/flow/src/commands.rs:973:5: replace parse_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::new())
+crates/flow/src/commands.rs:973:5: replace parse_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::from_iter([String::new()]))
+crates/flow/src/commands.rs:973:5: replace parse_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::from_iter(["xyzzy".into()]))
+crates/flow/src/commands.rs:974:45: replace == with != in parse_tree_dirs
+crates/flow/src/commands.rs:978:60: replace == with != in parse_tree_dirs
+crates/flow/src/commands.rs:981:51: replace + with - in parse_tree_dirs
+crates/flow/src/commands.rs:981:51: replace + with * in parse_tree_dirs
+crates/flow/src/commands.rs:1001:5: replace verify_checkout_modes -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1005:33: replace && with || in verify_checkout_modes
+crates/flow/src/commands.rs:1005:21: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1005:41: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1011:64: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1011:56: replace & with | in verify_checkout_modes
+crates/flow/src/commands.rs:1011:56: replace & with ^ in verify_checkout_modes
+crates/flow/src/commands.rs:1012:27: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1012:36: replace == with != in verify_checkout_modes
+crates/flow/src/commands.rs:1040:5: replace verify_checkout_unchanged -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1071:5: replace verify_checkout_content -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1076:76: replace && with || in verify_checkout_content
+crates/flow/src/commands.rs:1076:55: replace || with && in verify_checkout_content
+crates/flow/src/commands.rs:1076:43: replace == with != in verify_checkout_content
+crates/flow/src/commands.rs:1076:63: replace == with != in verify_checkout_content
+crates/flow/src/commands.rs:1076:79: delete ! in verify_checkout_content
+crates/flow/src/commands.rs:1082:22: replace > with == in verify_checkout_content
+crates/flow/src/commands.rs:1082:22: replace > with < in verify_checkout_content
+crates/flow/src/commands.rs:1082:22: replace > with >= in verify_checkout_content
+crates/flow/src/commands.rs:1094:19: replace != with == in verify_checkout_content
+crates/flow/src/commands.rs:1104:17: replace != with == in verify_checkout_content
+crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])
+crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])
+crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])
+crates/flow/src/commands.rs:1130:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])
+crates/flow/src/commands.rs:1131:45: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1131:45: replace * with / in parse_cat_file_batch
+crates/flow/src/commands.rs:1131:38: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1131:38: replace * with / in parse_cat_file_batch
+crates/flow/src/commands.rs:1140:56: replace == with != in parse_cat_file_batch
+crates/flow/src/commands.rs:1143:35: replace + with - in parse_cat_file_batch
+crates/flow/src/commands.rs:1143:35: replace + with * in parse_cat_file_batch
+crates/flow/src/commands.rs:1148:17: replace != with == in parse_cat_file_batch
+crates/flow/src/commands.rs:1157:32: replace + with - in parse_cat_file_batch
+crates/flow/src/commands.rs:1157:32: replace + with * in parse_cat_file_batch
+crates/flow/src/commands.rs:1164:15: replace += with -= in parse_cat_file_batch
+crates/flow/src/commands.rs:1164:15: replace += with *= in parse_cat_file_batch
+crates/flow/src/commands.rs:1165:18: replace > with == in parse_cat_file_batch
+crates/flow/src/commands.rs:1165:18: replace > with < in parse_cat_file_batch
+crates/flow/src/commands.rs:1165:18: replace > with >= in parse_cat_file_batch
+crates/flow/src/commands.rs:1171:24: replace + with - in parse_cat_file_batch
+crates/flow/src/commands.rs:1171:24: replace + with * in parse_cat_file_batch
+crates/flow/src/commands.rs:1181:5: replace collect_entries -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1191:24: replace && with || in collect_entries
+crates/flow/src/commands.rs:1191:32: replace == with != in collect_entries
+crates/flow/src/commands.rs:1191:16: replace == with != in collect_entries
+crates/flow/src/commands.rs:1197:26: replace && with || in collect_entries
+crates/flow/src/commands.rs:1197:29: delete ! in collect_entries
+crates/flow/src/commands.rs:1267:20: delete ! in cmd_run
+crates/flow/src/commands.rs:1275:20: delete ! in cmd_run
+crates/flow/src/commands.rs:1275:52: replace == with != in cmd_run
+crates/flow/src/commands.rs:1311:27: replace != with == in cmd_run
+crates/flow/src/commands.rs:1369:17: delete match arm "PASSED" in cmd_run
+crates/flow/src/commands.rs:1371:17: delete match arm "TIMEOUT" in cmd_run
+crates/flow/src/commands.rs:1370:17: delete match arm "FAILED" in cmd_run
+crates/flow/src/commands.rs:1430:22: delete ! in cmd_run
+crates/flow/src/commands.rs:1413:21: delete ! in cmd_run
+crates/flow/src/commands.rs:1434:32: replace == with != in cmd_run
+crates/flow/src/commands.rs:1436:15: delete ! in cmd_run
+crates/flow/src/commands.rs:1535:5: replace preview -> String with String::new()
+crates/flow/src/commands.rs:1535:5: replace preview -> String with "xyzzy".into()
+crates/flow/src/commands.rs:1536:29: replace > with == in preview
+crates/flow/src/commands.rs:1536:29: replace > with < in preview
+crates/flow/src/commands.rs:1536:29: replace > with >= in preview
+crates/flow/src/commands.rs:1582:16: delete ! in cmd_publish
+crates/flow/src/commands.rs:1592:59: replace || with && in cmd_publish
+crates/flow/src/commands.rs:1592:24: replace > with < in cmd_publish
+crates/flow/src/commands.rs:1592:24: replace > with == in cmd_publish
+crates/flow/src/commands.rs:1598:59: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1592:24: replace > with >= in cmd_publish
+crates/flow/src/commands.rs:1608:22: replace == with != in cmd_publish
+crates/flow/src/commands.rs:1632:27: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1650:23: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1664:25: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1673:27: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1682:8: delete ! in cmd_publish
+crates/flow/src/commands.rs:1695:30: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1705:31: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1714:35: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1727:27: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1751:28: replace match guard entry.get("status").and_then(Json::as_str) != Some("PASSED") with true in cmd_publish
+crates/flow/src/commands.rs:1743:58: replace == with != in cmd_publish
+crates/flow/src/commands.rs:1751:71: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1767:23: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1780:18: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1805:27: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1813:25: replace == with != in cmd_publish
+crates/flow/src/commands.rs:1892:22: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1925:27: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1942:19: replace != with == in cmd_publish
+crates/flow/src/commands.rs:1965:28: replace != with == in cmd_publish
+crates/flow/src/commands.rs:2078:5: replace crash_point -> bool with true
+crates/flow/src/commands.rs:2078:5: replace crash_point -> bool with false
+crates/flow/src/commands.rs:2078:8: delete ! in crash_point
+crates/flow/src/commands.rs:2081:49: replace == with != in crash_point
+crates/flow/src/commands.rs:2085:5: replace count_by_id -> BTreeMap<String, usize> with BTreeMap::new()
+crates/flow/src/commands.rs:2085:5: replace count_by_id -> BTreeMap<String, usize> with BTreeMap::from_iter([(String::new(), 1)])
+crates/flow/src/commands.rs:2085:5: replace count_by_id -> BTreeMap<String, usize> with BTreeMap::from_iter([(String::new(), 0)])
+crates/flow/src/commands.rs:2085:5: replace count_by_id -> BTreeMap<String, usize> with BTreeMap::from_iter([("xyzzy".into(), 1)])
+crates/flow/src/commands.rs:2085:5: replace count_by_id -> BTreeMap<String, usize> with BTreeMap::from_iter([("xyzzy".into(), 0)])
+crates/flow/src/commands.rs:2087:55: replace == with != in count_by_id
+crates/flow/src/commands.rs:2093:44: replace += with -= in count_by_id
+crates/flow/src/commands.rs:2093:44: replace += with *= in count_by_id
+crates/flow/src/commands.rs:2105:5: replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![])
+crates/flow/src/commands.rs:2110:55: replace != with == in pending_intents
+crates/flow/src/commands.rs:2121:19: replace += with -= in pending_intents
+crates/flow/src/commands.rs:2121:19: replace += with *= in pending_intents
+crates/flow/src/commands.rs:2124:21: replace >= with < in pending_intents
+crates/flow/src/commands.rs:2174:55: replace != with == in cmd_reconcile
+crates/flow/src/commands.rs:2187:27: replace > with == in cmd_reconcile
+crates/flow/src/commands.rs:2187:27: replace > with < in cmd_reconcile
+crates/flow/src/commands.rs:2187:27: replace > with >= in cmd_reconcile
+crates/flow/src/commands.rs:2188:31: replace > with == in cmd_reconcile
+crates/flow/src/commands.rs:2188:31: replace > with < in cmd_reconcile
+crates/flow/src/commands.rs:2188:31: replace > with >= in cmd_reconcile
+crates/flow/src/commands.rs:2198:28: replace > with == in cmd_reconcile
+crates/flow/src/commands.rs:2198:28: replace > with < in cmd_reconcile
+crates/flow/src/commands.rs:2198:28: replace > with >= in cmd_reconcile
+crates/flow/src/commands.rs:2209:51: replace || with && in cmd_reconcile
+crates/flow/src/commands.rs:2209:33: replace || with && in cmd_reconcile
+crates/flow/src/commands.rs:2241:38: replace == with != in cmd_reconcile
+crates/flow/src/commands.rs:2243:28: replace == with != in cmd_reconcile
+crates/flow/src/commands.rs:2250:23: replace != with == in cmd_reconcile
+crates/flow/src/commands.rs:2316:58: replace == with != in cmd_explain
+crates/flow/src/commands.rs:2357:35: delete ! in cmd_explain
+crates/flow/src/commands.rs:2373:34: replace && with || in cmd_explain

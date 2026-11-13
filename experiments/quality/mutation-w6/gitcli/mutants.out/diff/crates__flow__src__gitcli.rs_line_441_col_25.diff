@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace < with > in read_capped_at
+@@ -433,17 +433,17 @@
+             Ok(n) => {
+                 let room = cap.saturating_sub(captured.bytes.len());
+                 if room == 0 {
+                     captured.truncated = true;
+                     continue;
+                 }
+                 let take = n.min(room);
+                 captured.bytes.extend_from_slice(&chunk[..take]);
+-                if take < n {
++                if take > /* ~ changed by cargo-mutants ~ */ n {
+                     captured.truncated = true;
+                 }
+             }
+             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
+             Err(_) => break,
+         }
+     }
+     captured

@@ -1,0 +1,66 @@
+[
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace next_sequence -> u64 with 0\n@@ -228,17 +228,17 @@\n         canonical,\n         repo_root,\n     })\n }\n \n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n-    COUNTER.fetch_add(1, Ordering::Relaxed)\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The path of the `seq`-th candidate under `base` (before collision retries).\n pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {\n     base.join(format!(\"{NAME_PREFIX}-{}-{seq}\", std::process::id()))\n }\n \n /// True for a hexadecimal object id as `git worktree add` will accept it.\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "next_sequence",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 237
+        },
+        "start": {
+          "column": 1,
+          "line": 233
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 236
+      },
+      "start": {
+        "column": 5,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace next_sequence -> u64 with 1\n@@ -228,17 +228,17 @@\n         canonical,\n         repo_root,\n     })\n }\n \n /// The next name sequence value. Exposed to the test crate so the collision\n /// path can be exercised against the exact path the next attempt would use.\n pub(crate) fn next_sequence() -> u64 {\n-    COUNTER.fetch_add(1, Ordering::Relaxed)\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// The path of the `seq`-th candidate under `base` (before collision retries).\n pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {\n     base.join(format!(\"{NAME_PREFIX}-{}-{seq}\", std::process::id()))\n }\n \n /// True for a hexadecimal object id as `git worktree add` will accept it.\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "next_sequence",
+      "return_type": "-> u64",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 237
+        },
+        "start": {
+          "column": 1,
+          "line": 233
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 236
+      },
+      "start": {
+        "column": 5,
+        "line": 236
+      }
+    }
+  }
+]

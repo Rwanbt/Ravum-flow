@@ -1,0 +1,322 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])\n@@ -1117,60 +1117,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET {\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![])",
+    "package": "flow",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1168
+      },
+      "start": {
+        "column": 5,
+        "line": 1125
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])\n@@ -1117,60 +1117,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET {\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(Vec::new())]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(Vec::new())])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1168
+      },
+      "start": {
+        "column": 5,
+        "line": 1125
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])\n@@ -1117,60 +1117,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET {\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(vec![0])]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![0])])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(vec![0])])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1168
+      },
+      "start": {
+        "column": 5,
+        "line": 1125
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])\n@@ -1117,60 +1117,17 @@\n /// guessed. Liveness is the point: every one of those is reachable from a\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n-    /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n-\n-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n-    let mut position = 0usize;\n-    let mut total = 0usize;\n-    for (oid, path) in regular {\n-        let rest = bytes\n-            .get(position..)\n-            .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n-        let Some(offset) = rest.iter().position(|b| *b == b'\\n') else {\n-            return Err(format!(\"truncated cat-file batch before {path:?}\"));\n-        };\n-        let header_end = position + offset;\n-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();\n-        let mut fields = header.split(' ');\n-        let _echo = fields.next();\n-        let kind = fields.next().unwrap_or(\"\");\n-        if kind != \"blob\" {\n-            return Err(format!(\n-                \"tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})\"\n-            ));\n-        }\n-        let size: usize = fields\n-            .next()\n-            .and_then(|v| v.parse().ok())\n-            .ok_or_else(|| format!(\"unparsable cat-file header {header:?}\"))?;\n-        let start = header_end + 1;\n-        let end = start\n-            .checked_add(size)\n-            .ok_or_else(|| format!(\"cat-file header {header:?} overflows a size\"))?;\n-        let blob = bytes\n-            .get(start..end)\n-            .ok_or_else(|| format!(\"truncated cat-file batch in {path:?}\"))?;\n-        total += size;\n-        if total > CONTENT_BUDGET {\n-            return Err(format!(\n-                \"tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare\"\n-            ));\n-        }\n-        blobs.push(blob);\n-        position = end + 1;\n-    }\n-    Ok(blobs)\n+    Ok(vec![Vec::leak(vec![1])]) /* ~ changed by cargo-mutants ~ */\n }\n fn collect_entries(\n     root: &Path,\n     dir: &Path,\n     files: &mut Vec<String>,\n     dirs: &mut Vec<String>,\n ) -> Result<(), String> {\n     let entries = fs::read_dir(dir).map_err(|e| format!(\"cannot read {}: {e}\", dir.display()))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1125:5: replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(vec![1])])",
+    "package": "flow",
+    "replacement": "Ok(vec![Vec::leak(vec![1])])",
+    "span": {
+      "end": {
+        "column": 14,
+        "line": 1168
+      },
+      "start": {
+        "column": 5,
+        "line": 1125
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace * with + in parse_cat_file_batch\n@@ -1118,17 +1118,17 @@\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n     /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n+    const CONTENT_BUDGET: usize = 64 * 1024 + /* ~ changed by cargo-mutants ~ */ 1024; // survival-probe\n \n     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n     let mut position = 0usize;\n     let mut total = 0usize;\n     for (oid, path) in regular {\n         let rest = bytes\n             .get(position..)\n             .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1126:45: replace * with + in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 1126
+      },
+      "start": {
+        "column": 45,
+        "line": 1126
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace * with / in parse_cat_file_batch\n@@ -1118,17 +1118,17 @@\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n     /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n+    const CONTENT_BUDGET: usize = 64 * 1024 / /* ~ changed by cargo-mutants ~ */ 1024; // survival-probe\n \n     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n     let mut position = 0usize;\n     let mut total = 0usize;\n     for (oid, path) in regular {\n         let rest = bytes\n             .get(position..)\n             .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1126:45: replace * with / in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 1126
+      },
+      "start": {
+        "column": 45,
+        "line": 1126
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace * with + in parse_cat_file_batch\n@@ -1118,17 +1118,17 @@\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n     /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n+    const CONTENT_BUDGET: usize = 64 + /* ~ changed by cargo-mutants ~ */ 1024 * 1024; // survival-probe\n \n     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n     let mut position = 0usize;\n     let mut total = 0usize;\n     for (oid, path) in regular {\n         let rest = bytes\n             .get(position..)\n             .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1126:38: replace * with + in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 1126
+      },
+      "start": {
+        "column": 38,
+        "line": 1126
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace * with / in parse_cat_file_batch\n@@ -1118,17 +1118,17 @@\n /// corrupted object store or a Git that answers nonsense, and none of them may\n /// become a panic (a panic is not a refusal and could bypass cleanup).\n fn parse_cat_file_batch<'e, 'b>(\n     tree: &str,\n     regular: &[(&'e str, &'e str)],\n     bytes: &'b [u8],\n ) -> Result<Vec<&'b [u8]>, String> {\n     /// Retained bytes for the whole comparison, before refusing.\n-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe\n+    const CONTENT_BUDGET: usize = 64 / /* ~ changed by cargo-mutants ~ */ 1024 * 1024; // survival-probe\n \n     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());\n     let mut position = 0usize;\n     let mut total = 0usize;\n     for (oid, path) in regular {\n         let rest = bytes\n             .get(position..)\n             .ok_or_else(|| format!(\"truncated cat-file batch before {path:?}\"))?;\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "parse_cat_file_batch",
+      "return_type": "-> Result<Vec<&'b[u8]>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1169
+        },
+        "start": {
+          "column": 1,
+          "line": 1111
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1126:38: replace * with / in parse_cat_file_batch",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 1126
+      },
+      "start": {
+        "column": 38,
+        "line": 1126
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_run -> Result<Json, String> with Ok(Default::default())\n@@ -1205,330 +1205,17 @@\n     Ok(())\n }\n pub fn cmd_run(\n     root: &Path,\n     only: Option<Vec<String>>,\n     timeout_override: Option<u64>,\n     candidate: Option<String>,\n ) -> Result<Json, String> {\n-    let config = state::load_config(root)?;\n-    if config.disabled {\n-        return Ok(refused_code(\n-            \"DISABLED\",\n-            \"Flow is disabled in this repository (`flow enable` to re-enable)\",\n-        ));\n-    }\n-    if config.obligations.is_empty() {\n-        return Ok(Json::obj(vec![\n-            (\"status\", Json::str(\"UNKNOWN\")),\n-            (\n-                \"reason\",\n-                Json::str(\"no obligation declared: verification scope is undefined, nothing is publishable\"),\n-            ),\n-        ]));\n-    }\n-    // The effective policy includes any --timeout override: the receipt must\n-    // prove the deadline that was actually applied, not the configured one.\n-    let mut effective: Vec<Obligation> = config.obligations.clone();\n-    if let Some(t) = timeout_override {\n-        for ob in &mut effective {\n-            ob.timeout_s = t;\n-        }\n-    }\n-    if let Err(reason) = validate_obligations(&effective) {\n-        return Ok(refused_code(\"INVALID_POLICY\", reason));\n-    }\n-    if let Some(refusal) = adoption_gate(root, &config)? {\n-        return Ok(refusal);\n-    }\n-    // The tree to verify is either the immutable candidate tree or the index.\n-    let candidate_record = match candidate.as_deref() {\n-        None => None,\n-        Some(id) => match crate::proposal::Candidate::load(root, id)? {\n-            Some(record) => Some(record),\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_CANDIDATE\",\n-                    format!(\"no candidate {id:?} in .flow/candidates/ (see `flow proposals list` after `flow assemble`)\"),\n-                ))\n-            }\n-        },\n-    };\n-\n-    let selection: Option<Vec<Obligation>> = match &only {\n-        None => None,\n-        Some(ids) => {\n-            let mut seen: BTreeSet<&str> = BTreeSet::new();\n-            for id in ids {\n-                if !seen.insert(id.as_str()) { // survival-probe\n-                    return Ok(refused_code(\n-                        \"DUPLICATE_OBLIGATION_ID\",\n-                        format!(\n-                            \"obligation {id:?} is requested more than once: a selection is a set\"\n-                        ),\n-                    ));\n-                }\n-                if !effective.iter().any(|o| &o.id == id) {\n-                    return Ok(refused_code(\n-                        \"UNKNOWN_OBLIGATION_ID\",\n-                        format!(\"obligation {id:?} is not declared in .flow/config.json\"),\n-                    ));\n-                }\n-            }\n-            Some(\n-                effective\n-                    .iter()\n-                    .filter(|o| ids.contains(&o.id))\n-                    .cloned()\n-                    .collect(),\n-            )\n-        }\n-    };\n-    // A selection is diagnostic only: it cannot prove the whole policy, so it\n-    // is reported as PARTIAL and is never written to the complete receipt slot.\n-    let scope_mode = if selection.is_some() {\n-        \"selected\"\n-    } else {\n-        \"complete\"\n-    };\n-    let selected: Vec<Obligation> = selection.unwrap_or_else(|| effective.clone());\n-\n-    let git = Git::new(root);\n-    let tree = match &candidate_record {\n-        Some(record) => record.tree_oid.clone(),\n-        None => git.write_tree()?,\n-    };\n-    // A candidate tree must still be in the object store: a pruned candidate is\n-    // not verifiable, and verifying something else while naming it would be a\n-    // false receipt.\n-    if candidate_record.is_some() {\n-        let present =\n-            git.run_bounded(&[\"cat-file\", \"-e\", &format!(\"{tree}^{{tree}}\")], None, None)?;\n-        if present.status != 0 {\n-            return Ok(refused_code(\n-                \"CANDIDATE_TREE_MISSING\",\n-                format!(\"candidate tree {tree} is no longer in the object store: re-run `flow assemble`\"),\n-            ));\n-        }\n-    }\n-    let started_at = state::iso8601_now();\n-\n-    // Materialise the exact tree in a directory Flow owns and knows it created:\n-    // the `.git` link is removed so an obligation cannot reach the shared gitdir.\n-    // `Scratch` cleans up in `Drop`, including on the error paths below.\n-    // A candidate is verified on its own base, so the verification commit's\n-    // parent is the base the candidate was assembled from — not today's HEAD.\n-    let parent = match &candidate_record {\n-        Some(record) => record.base_commit.clone(),\n-        None => git.head_oid()?,\n-    };\n-    let commit = git.commit_tree(&tree, &parent, &format!(\"flow verify {tree}\"))?;\n-    let scratch = match crate::scratch::materialise(&git, &commit, root) {\n-        Ok(scratch) => scratch,\n-        Err(reason) => return Ok(refused_code(\"SCRATCH_REFUSED\", reason)),\n-    };\n-    // A checkout that does not reproduce the tree exactly is not the tree.\n-    if let Err(reason) = verify_checkout_fidelity(&git, scratch.path(), &tree) {\n-        return Ok(refused_code(\"UNSUPPORTED_CHECKOUT\", reason));\n-    }\n-\n-    let policy = effective_policy(&config, &effective);\n-    let policy_digest = policy_digest(&policy);\n-    let context_id = build_context_id(&git, &tree, &policy);\n-    let log_dir = state::logs_dir(root).join(&tree);\n-    let mut outcomes = Vec::new();\n-    let mut logs = Vec::new();\n-    let mut failed = false;\n-    let mut timed_out = false;\n-    let mut unsupported = false;\n-    for ob in &selected {\n-        let outcome = gitcli::run_obligation(ob, scratch.path());\n-        let stdout_clean = gitcli::redact(&outcome.stdout);\n-        let stderr_clean = gitcli::redact(&outcome.stderr);\n-        let stdout_rel = format!(\".flow/logs/{tree}/{}.stdout.log\", outcome.id);\n-        let stderr_rel = format!(\".flow/logs/{tree}/{}.stderr.log\", outcome.id);\n-        fs::create_dir_all(&log_dir).map_err(|e| format!(\"cannot create log dir: {e}\"))?;\n-        let _ = crate::paths::canonical_within(root, &log_dir)?;\n-        state::write_atomic(\n-            &log_dir.join(format!(\"{}.stdout.log\", outcome.id)),\n-            &stdout_clean,\n-        )?;\n-        state::write_atomic(\n-            &log_dir.join(format!(\"{}.stderr.log\", outcome.id)),\n-            &stderr_clean,\n-        )?;\n-        logs.push(stdout_rel);\n-        logs.push(stderr_rel);\n-        if ob.required {\n-            // A status outside this list is an unknown outcome: never a pass.\n-            match outcome.status {\n-                \"PASSED\" => {}\n-                \"FAILED\" => failed = true,\n-                \"TIMEOUT\" => timed_out = true,\n-                _ => unsupported = true,\n-            }\n-        }\n-        outcomes.push(Json::obj(vec![\n-            (\"id\", Json::str(ob.id.clone())),\n-            (\"status\", Json::str(outcome.status)),\n-            (\"required\", Json::Bool(ob.required)),\n-            (\n-                \"exit\",\n-                outcome\n-                    .exit\n-                    .map(|c| Json::Num(c as f64))\n-                    .unwrap_or(Json::Null),\n-            ),\n-            (\"duration_ms\", Json::Num(outcome.duration_ms as f64)),\n-            (\"timed_out\", Json::Bool(outcome.timed_out)),\n-            // A truncated log is incomplete evidence: say so in the receipt\n-            // rather than presenting a clipped stream as the whole output.\n-            (\"stdout_truncated\", Json::Bool(outcome.stdout_truncated)),\n-            (\"stderr_truncated\", Json::Bool(outcome.stderr_truncated)),\n-            (\"stdout_preview\", Json::str(preview(&stdout_clean, 400))),\n-            (\"stderr_preview\", Json::str(preview(&stderr_clean, 400))),\n-        ]));\n-    }\n-\n-    // The pre-check proved the checkout before the first obligation; this proves a\n-    // declared file was not changed while they ran (a `post-checkout` hook can\n-    // spawn a delayed writer, and an obligation can rewrite its own input). Extra\n-    // files are allowed here: obligations legitimately write build outputs.\n-    if let Err(reason) = verify_checkout_unchanged(&git, scratch.path(), &tree) {\n-        return Ok(refused_code(\"CHECKOUT_MUTATED_DURING_RUN\", reason));\n-    }\n-\n-    let worktree_diff = git\n-        .capture(&[\"diff\", \"--name-only\", &tree])\n-        // An empty list on a failed diff would be a receipt claiming \"no worktree\n-        // differences\" the check never observed, so the run refuses to certify.\n-        .map_err(|e| {\n-            format!(\"cannot record the worktree diff against {tree} (a receipt with an empty diff would be a false claim): {e}\")\n-        })?\n-        .lines()\n-        .filter(|l| !l.trim().is_empty())\n-        .map(str::to_string)\n-        .collect::<Vec<_>>();\n-\n-    // The scratch directory is removed by `Scratch::drop`, which runs on every\n-    // path out of this function, including the `?` above.\n-    drop(scratch);\n-\n-    let declared_ids: Vec<String> = effective.iter().map(|o| o.id.clone()).collect();\n-    let required_ids: Vec<String> = effective\n-        .iter()\n-        .filter(|o| o.required)\n-        .map(|o| o.id.clone())\n-        .collect();\n-    let selected_ids: Vec<String> = selected.iter().map(|o| o.id.clone()).collect();\n-    let missing_required: Vec<String> = required_ids\n-        .iter()\n-        .filter(|id| !selected_ids.contains(id))\n-        .cloned()\n-        .collect();\n-\n-    let status = if scope_mode == \"selected\" {\n-        \"PARTIAL\"\n-    } else if !missing_required.is_empty() {\n-        \"INCOMPLETE\"\n-    } else if failed {\n-        \"FAILED\"\n-    } else if timed_out {\n-        \"TIMEOUT\"\n-    } else if unsupported {\n-        \"UNSUPPORTED\"\n-    } else {\n-        \"PASSED\"\n-    };\n-\n-    let scope = Json::obj(vec![\n-        (\"mode\", Json::str(scope_mode)),\n-        (\n-            \"declared\",\n-            Json::Arr(declared_ids.iter().map(|s| Json::str(s.clone())).collect()),\n-        ),\n-        (\n-            \"required\",\n-            Json::Arr(required_ids.iter().map(|s| Json::str(s.clone())).collect()),\n-        ),\n-        (\n-            \"selected\",\n-            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),\n-        ),\n-        (\n-            \"executed\",\n-            Json::Arr(selected_ids.iter().map(|s| Json::str(s.clone())).collect()),\n-        ),\n-        (\n-            \"missing_required\",\n-            Json::Arr(\n-                missing_required\n-                    .iter()\n-                    .map(|s| Json::str(s.clone()))\n-                    .collect(),\n-            ),\n-        ),\n-    ]);\n-\n-    let receipt = state::seal_receipt(&Json::obj(vec![\n-        (\"schema\", Json::str(state::SCHEMA_RECEIPT)),\n-        (\"tree_oid\", Json::str(tree.clone())),\n-        (\"commit_oid\", Json::str(commit)),\n-        (\"parent_oid\", Json::str(parent)),\n-        (\"context_id\", Json::str(context_id)),\n-        (\"policy_digest\", Json::str(policy_digest)),\n-        (\"policy\", policy),\n-        (\"policy_version\", Json::str(config.policy_version.clone())),\n-        (\n-            \"execution_boundary\",\n-            Json::str(config.execution_boundary.clone()),\n-        ),\n-        (\"status\", Json::str(status)),\n-        (\n-            \"candidate_id\",\n-            match &candidate_record {\n-                Some(record) => Json::str(record.candidate_id.clone()),\n-                None => Json::Null,\n-            },\n-        ),\n-        (\"verification_scope\", scope),\n-        (\"started_at\", Json::str(started_at)),\n-        (\"finished_at\", Json::str(state::iso8601_now())),\n-        (\"obligations\", Json::Arr(outcomes)),\n-        (\n-            \"logs\",\n-            Json::Arr(logs.iter().map(|l| Json::str(l.clone())).collect()),\n-        ),\n-        (\n-            \"worktree_diff\",\n-            Json::Arr(worktree_diff.iter().map(|p| Json::str(p.clone())).collect()),\n-        ),\n-        // Evidence of the post-run proof: the declared files were still the tree's\n-        // when the last obligation finished (a run whose checkout changed is\n-        // refused before a receipt is written, so this field is always OK here).\n-        (\"checkout_recheck\", Json::str(\"OK\")),\n-        (\n-            \"scope_note\",\n-            Json::str(if scope_mode == \"selected\" {\n-                \"diagnostic run: only the selected obligations were executed, so this receipt proves nothing about the rest of the policy and is never publishable\"\n-            } else {\n-                \"verified for the declared obligations only; undeclared inputs are not covered\"\n-            }),\n-        ),\n-    ]));\n-    let path = state::save_receipt(root, &receipt)?;\n-    let mut out = receipt.clone();\n-    if let Json::Obj(pairs) = &mut out {\n-        pairs.push((\n-            \"receipt_path\".into(),\n-            Json::str(path.to_string_lossy().to_string()),\n-        ));\n-    }\n-    Ok(out)\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn preview(text: &str, limit: usize) -> String {\n     let mut out: String = text.chars().take(limit).collect();\n     if text.chars().count() > limit {\n         out.push('…');\n     }\n     out\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_run",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1527
+        },
+        "start": {
+          "column": 1,
+          "line": 1207
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1213:5: replace cmd_run -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 12,
+        "line": 1526
+      },
+      "start": {
+        "column": 5,
+        "line": 1213
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in cmd_run\n@@ -1254,17 +1254,17 @@\n         },\n     };\n \n     let selection: Option<Vec<Obligation>> = match &only {\n         None => None,\n         Some(ids) => {\n             let mut seen: BTreeSet<&str> = BTreeSet::new();\n             for id in ids {\n-                if !seen.insert(id.as_str()) { // survival-probe\n+                if  /* ~ changed by cargo-mutants ~ */seen.insert(id.as_str()) { // survival-probe\n                     return Ok(refused_code(\n                         \"DUPLICATE_OBLIGATION_ID\",\n                         format!(\n                             \"obligation {id:?} is requested more than once: a selection is a set\"\n                         ),\n                     ));\n                 }\n                 if !effective.iter().any(|o| &o.id == id) {\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_run",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1527
+        },
+        "start": {
+          "column": 1,
+          "line": 1207
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:1262:20: delete ! in cmd_run",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 1262
+      },
+      "start": {
+        "column": 20,
+        "line": 1262
+      }
+    }
+  }
+]

@@ -1,0 +1,77 @@
+--- crates/flow/src/state.rs
++++ replace guard_below_flow -> Result<(), String> with Ok(())
+@@ -284,73 +284,17 @@
+ ///
+ /// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:
+ /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes
+ /// Flow append outside the workspace. Every write below `.flow/` therefore checks
+ /// that each existing component is a real directory and that the target is not a
+ /// link. This is a check-then-write, so it is not a defence against a *concurrent*
+ /// local attacker — that boundary is documented, and the local user is trusted.
+ fn guard_below_flow(path: &Path) -> Result<(), String> {
+-    let mut anchor: Option<&Path> = None;
+-    for ancestor in path.ancestors() {
+-        if ancestor.file_name().map(|n| n == ".flow").unwrap_or(false) {
+-            anchor = ancestor.parent();
+-            break;
+-        }
+-    }
+-    let Some(root) = anchor else {
+-        return Ok(());
+-    };
+-    let relative = path
+-        .strip_prefix(root)
+-        .map_err(|_| format!("{} is not below {}", path.display(), root.display()))?;
+-    let mut current = root.to_path_buf();
+-    for component in relative.components() {
+-        current.push(component);
+-        match fs::symlink_metadata(&current) {
+-            Ok(meta) => {
+-                let kind = meta.file_type();
+-                let reparse = {
+-                    #[cfg(windows)]
+-                    {
+-                        use std::os::windows::fs::MetadataExt;
+-                        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+-                    }
+-                    #[cfg(not(windows))]
+-                    {
+-                        false
+-                    }
+-                };
+-                if kind.is_symlink() || reparse {
+-                    return Err(format!(
+-                        "refusing to write {}: {} is a symbolic link or reparse point, so the write would escape the workspace",
+-                        path.display(),
+-                        current.display()
+-                    ));
+-                }
+-            }
+-            Err(_) => break,
+-        }
+-    }
+-    // A hard link is indistinguishable from a regular file on Windows without
+-    // Win32, so the check exists where the metadata exposes it. It closes the
+-    // "journal appended through a link to an outside file" shape on Unix.
+-    #[cfg(unix)]
+-    if let Ok(meta) = fs::symlink_metadata(path) {
+-        use std::os::unix::fs::MetadataExt;
+-        if meta.is_file() && meta.nlink() > 1 {
+-            return Err(format!(
+-                "refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace",
+-                path.display(),
+-                meta.nlink()
+-            ));
+-        }
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {
+     write_atomic_bytes(path, data.as_bytes())
+ }
+ 
+ /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be
+ /// text and must never be round-tripped through `String`.

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1660,17 +1660,17 @@
+         return Ok(refused_code(
+             "TREE_MISMATCH",
+             format!(
+                 "receipt integrity error: file for {tree} names tree {:?}",
+                 receipt.tree_oid
+             ),
+         ));
+     }
+-    if receipt.scope_mode != "complete" {
++    if receipt.scope_mode == /* ~ changed by cargo-mutants ~ */ "complete" {
+         return Ok(refused_code(
+             "SCOPE_INCOMPLETE",
+             format!(
+                 "receipt scope is {:?}: a selective run is diagnostic and never publishable",
+                 receipt.scope_mode
+             ),
+         ));
+     }

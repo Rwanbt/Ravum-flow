@@ -1,0 +1,3316 @@
+[
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::base -> Command with Default::default()\n@@ -32,17 +32,17 @@\n }\n \n impl Git {\n     pub fn new(root: impl Into<PathBuf>) -> Self {\n         Git { root: root.into() }\n     }\n \n     fn base(&self) -> Command {\n-        git_command(&self.root)\n+        Default::default() /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn run(&self, args: &[&str]) -> Result<Output, String> {\n         self.run_bounded(args, None, None)\n     }\n \n     /// Run one Git plumbing command with bounded memory, bounded wall clock and\n     /// an optional explicit index.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::base",
+      "return_type": "-> Command",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 41
+        },
+        "start": {
+          "column": 5,
+          "line": 39
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:40:9: replace Git::base -> Command with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 40
+      },
+      "start": {
+        "column": 9,
+        "line": 40
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::run -> Result<Output, String> with Ok(Default::default())\n@@ -36,17 +36,17 @@\n         Git { root: root.into() }\n     }\n \n     fn base(&self) -> Command {\n         git_command(&self.root)\n     }\n \n     pub fn run(&self, args: &[&str]) -> Result<Output, String> {\n-        self.run_bounded(args, None, None)\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     /// Run one Git plumbing command with bounded memory, bounded wall clock and\n     /// an optional explicit index.\n     ///\n     /// * `stdin` is written to the child and the pipe is then closed; it is\n     ///   written from a detached thread so a child that produces output before\n     ///   reading its input cannot deadlock the call.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 45
+        },
+        "start": {
+          "column": 5,
+          "line": 43
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:44:9: replace Git::run -> Result<Output, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 44
+      },
+      "start": {
+        "column": 9,
+        "line": 44
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())\n@@ -61,105 +61,17 @@\n     /// * The wall clock is bounded by [`GIT_TIMEOUT_S`]; the child's tree is\n     ///   killed and the call fails with `GIT_TIMEOUT`.\n     pub fn run_bounded(\n         &self,\n         args: &[&str],\n         stdin: Option<&[u8]>,\n         index: Option<&Path>,\n     ) -> Result<Output, String> {\n-        let mut cmd = self.base();\n-        cmd.args(args)\n-            .stdin(if stdin.is_some() {\n-                Stdio::piped()\n-            } else {\n-                Stdio::null()\n-            })\n-            .stdout(Stdio::piped())\n-            .stderr(Stdio::piped());\n-        if let Some(path) = index {\n-            if !path.is_absolute() {\n-                return Err(format!(\n-                    \"GIT_INDEX_REFUSED: index override {} is not an absolute path\",\n-                    path.display()\n-                ));\n-            }\n-            cmd.env(\"GIT_INDEX_FILE\", path);\n-        }\n-        let started = Instant::now();\n-        let mut child = cmd\n-            .spawn()\n-            .map_err(|e| format!(\"cannot run git {args:?}: {e}\"))?;\n-        let stdout_pipe = child.stdout.take().expect(\"piped stdout\");\n-        let stderr_pipe = child.stderr.take().expect(\"piped stderr\");\n-        let out_rx = spawn_reader_with_cap(stdout_pipe, MAX_GIT_STREAM_BYTES);\n-        let err_rx = spawn_reader_with_cap(stderr_pipe, MAX_GIT_STREAM_BYTES);\n-        if let Some(bytes) = stdin {\n-            if let Some(mut pipe) = child.stdin.take() {\n-                let owned = bytes.to_vec();\n-                // Detached on purpose: the child may exit before reading all of\n-                // its input, and a broken pipe is not an error worth reporting.\n-                let _ = std::thread::Builder::new()\n-                    .name(\"flow-git-stdin\".into())\n-                    .spawn(move || {\n-                        let _ = pipe.write_all(&owned);\n-                    });\n-            }\n-        }\n-\n-        let deadline = started + Duration::from_secs(GIT_TIMEOUT_S);\n-        let mut timed_out = false;\n-        let mut exit = None;\n-        loop {\n-            match child.try_wait() {\n-                Ok(Some(status)) => {\n-                    exit = status.code();\n-                    break;\n-                }\n-                Ok(None) => {\n-                    if Instant::now() >= deadline {\n-                        timed_out = true;\n-                        kill_tree(child.id());\n-                        let _ = child.kill();\n-                        reap_bounded(&mut child);\n-                        break;\n-                    }\n-                    std::thread::sleep(POLL_INTERVAL);\n-                }\n-                Err(e) => {\n-                    let _ = child.kill();\n-                    reap_bounded(&mut child);\n-                    return Err(format!(\"git {args:?} could not be waited for: {e}\"));\n-                }\n-            }\n-        }\n-        let reader_deadline = Instant::now() + READER_GRACE;\n-        let stdout = receive(&out_rx, reader_deadline);\n-        let stderr = receive(&err_rx, reader_deadline);\n-        if timed_out {\n-            return Err(format!(\n-                \"GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete\"\n-            ));\n-        }\n-        if stdout.truncated {\n-            return Err(format!(\n-                \"GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stdout; refusing to parse a truncated answer\"\n-            ));\n-        }\n-        if stderr.truncated {\n-            return Err(format!(\n-                \"GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stderr; refusing to parse a truncated answer\"\n-            ));\n-        }\n-        Ok(Output {\n-            status: exit.unwrap_or(-1),\n-            stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),\n-            stdout_bytes: stdout.bytes,\n-            stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),\n-        })\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn capture(&self, args: &[&str]) -> Result<String, String> {\n         let out = self.run(args)?;\n         if out.status != 0 {\n             return Err(format!(\n                 \"git {args:?} failed ({}): {}\",\n                 out.status,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:69:9: replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 157
+      },
+      "start": {
+        "column": 9,
+        "line": 69
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ delete ! in Git::run_bounded\n@@ -71,17 +71,17 @@\n             .stdin(if stdin.is_some() {\n                 Stdio::piped()\n             } else {\n                 Stdio::null()\n             })\n             .stdout(Stdio::piped())\n             .stderr(Stdio::piped());\n         if let Some(path) = index {\n-            if !path.is_absolute() {\n+            if  /* ~ changed by cargo-mutants ~ */path.is_absolute() {\n                 return Err(format!(\n                     \"GIT_INDEX_REFUSED: index override {} is not an absolute path\",\n                     path.display()\n                 ));\n             }\n             cmd.env(\"GIT_INDEX_FILE\", path);\n         }\n         let started = Instant::now();\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/gitcli.rs:79:16: delete ! in Git::run_bounded",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 79
+      },
+      "start": {
+        "column": 16,
+        "line": 79
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in Git::run_bounded\n@@ -100,17 +100,17 @@\n                 let _ = std::thread::Builder::new()\n                     .name(\"flow-git-stdin\".into())\n                     .spawn(move || {\n                         let _ = pipe.write_all(&owned);\n                     });\n             }\n         }\n \n-        let deadline = started + Duration::from_secs(GIT_TIMEOUT_S);\n+        let deadline = started - /* ~ changed by cargo-mutants ~ */ Duration::from_secs(GIT_TIMEOUT_S);\n         let mut timed_out = false;\n         let mut exit = None;\n         loop {\n             match child.try_wait() {\n                 Ok(Some(status)) => {\n                     exit = status.code();\n                     break;\n                 }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:108:32: replace + with - in Git::run_bounded",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 108
+      },
+      "start": {
+        "column": 32,
+        "line": 108
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in Git::run_bounded\n@@ -100,17 +100,17 @@\n                 let _ = std::thread::Builder::new()\n                     .name(\"flow-git-stdin\".into())\n                     .spawn(move || {\n                         let _ = pipe.write_all(&owned);\n                     });\n             }\n         }\n \n-        let deadline = started + Duration::from_secs(GIT_TIMEOUT_S);\n+        let deadline = started * /* ~ changed by cargo-mutants ~ */ Duration::from_secs(GIT_TIMEOUT_S);\n         let mut timed_out = false;\n         let mut exit = None;\n         loop {\n             match child.try_wait() {\n                 Ok(Some(status)) => {\n                     exit = status.code();\n                     break;\n                 }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:108:32: replace + with * in Git::run_bounded",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 108
+      },
+      "start": {
+        "column": 32,
+        "line": 108
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace >= with < in Git::run_bounded\n@@ -110,17 +110,17 @@\n         let mut exit = None;\n         loop {\n             match child.try_wait() {\n                 Ok(Some(status)) => {\n                     exit = status.code();\n                     break;\n                 }\n                 Ok(None) => {\n-                    if Instant::now() >= deadline {\n+                    if Instant::now() < /* ~ changed by cargo-mutants ~ */ deadline {\n                         timed_out = true;\n                         kill_tree(child.id());\n                         let _ = child.kill();\n                         reap_bounded(&mut child);\n                         break;\n                     }\n                     std::thread::sleep(POLL_INTERVAL);\n                 }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:118:39: replace >= with < in Git::run_bounded",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 118
+      },
+      "start": {
+        "column": 39,
+        "line": 118
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in Git::run_bounded\n@@ -126,17 +126,17 @@\n                 }\n                 Err(e) => {\n                     let _ = child.kill();\n                     reap_bounded(&mut child);\n                     return Err(format!(\"git {args:?} could not be waited for: {e}\"));\n                 }\n             }\n         }\n-        let reader_deadline = Instant::now() + READER_GRACE;\n+        let reader_deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ READER_GRACE;\n         let stdout = receive(&out_rx, reader_deadline);\n         let stderr = receive(&err_rx, reader_deadline);\n         if timed_out {\n             return Err(format!(\n                 \"GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete\"\n             ));\n         }\n         if stdout.truncated {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:134:46: replace + with - in Git::run_bounded",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 134
+      },
+      "start": {
+        "column": 46,
+        "line": 134
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in Git::run_bounded\n@@ -126,17 +126,17 @@\n                 }\n                 Err(e) => {\n                     let _ = child.kill();\n                     reap_bounded(&mut child);\n                     return Err(format!(\"git {args:?} could not be waited for: {e}\"));\n                 }\n             }\n         }\n-        let reader_deadline = Instant::now() + READER_GRACE;\n+        let reader_deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ READER_GRACE;\n         let stdout = receive(&out_rx, reader_deadline);\n         let stderr = receive(&err_rx, reader_deadline);\n         if timed_out {\n             return Err(format!(\n                 \"GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete\"\n             ));\n         }\n         if stdout.truncated {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:134:46: replace + with * in Git::run_bounded",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 134
+      },
+      "start": {
+        "column": 46,
+        "line": 134
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ delete - in Git::run_bounded\n@@ -145,17 +145,17 @@\n             ));\n         }\n         if stderr.truncated {\n             return Err(format!(\n                 \"GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stderr; refusing to parse a truncated answer\"\n             ));\n         }\n         Ok(Output {\n-            status: exit.unwrap_or(-1),\n+            status: exit.unwrap_or( /* ~ changed by cargo-mutants ~ */1),\n             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),\n             stdout_bytes: stdout.bytes,\n             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),\n         })\n     }\n \n     pub fn capture(&self, args: &[&str]) -> Result<String, String> {\n         let out = self.run(args)?;\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::run_bounded",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 158
+        },
+        "start": {
+          "column": 5,
+          "line": 47
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/gitcli.rs:153:36: delete - in Git::run_bounded",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 153
+      },
+      "start": {
+        "column": 36,
+        "line": 153
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::capture -> Result<String, String> with Ok(String::new())\n@@ -153,25 +153,17 @@\n             status: exit.unwrap_or(-1),\n             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),\n             stdout_bytes: stdout.bytes,\n             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),\n         })\n     }\n \n     pub fn capture(&self, args: &[&str]) -> Result<String, String> {\n-        let out = self.run(args)?;\n-        if out.status != 0 {\n-            return Err(format!(\n-                \"git {args:?} failed ({}): {}\",\n-                out.status,\n-                out.stderr.trim()\n-            ));\n-        }\n-        Ok(out.stdout.trim().to_string())\n+        Ok(String::new()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::capture",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 170
+        },
+        "start": {
+          "column": 5,
+          "line": 160
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:161:9: replace Git::capture -> Result<String, String> with Ok(String::new())",
+    "package": "flow",
+    "replacement": "Ok(String::new())",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 169
+      },
+      "start": {
+        "column": 9,
+        "line": 161
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::capture -> Result<String, String> with Ok(\"xyzzy\".into())\n@@ -153,25 +153,17 @@\n             status: exit.unwrap_or(-1),\n             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),\n             stdout_bytes: stdout.bytes,\n             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),\n         })\n     }\n \n     pub fn capture(&self, args: &[&str]) -> Result<String, String> {\n-        let out = self.run(args)?;\n-        if out.status != 0 {\n-            return Err(format!(\n-                \"git {args:?} failed ({}): {}\",\n-                out.status,\n-                out.stderr.trim()\n-            ));\n-        }\n-        Ok(out.stdout.trim().to_string())\n+        Ok(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::capture",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 170
+        },
+        "start": {
+          "column": 5,
+          "line": 160
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:161:9: replace Git::capture -> Result<String, String> with Ok(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Ok(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 169
+      },
+      "start": {
+        "column": 9,
+        "line": 161
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace != with == in Git::capture\n@@ -154,17 +154,17 @@\n             stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),\n             stdout_bytes: stdout.bytes,\n             stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),\n         })\n     }\n \n     pub fn capture(&self, args: &[&str]) -> Result<String, String> {\n         let out = self.run(args)?;\n-        if out.status != 0 {\n+        if out.status == /* ~ changed by cargo-mutants ~ */ 0 {\n             return Err(format!(\n                 \"git {args:?} failed ({}): {}\",\n                 out.status,\n                 out.stderr.trim()\n             ));\n         }\n         Ok(out.stdout.trim().to_string())\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::capture",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 170
+        },
+        "start": {
+          "column": 5,
+          "line": 160
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:162:23: replace != with == in Git::capture",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 162
+      },
+      "start": {
+        "column": 23,
+        "line": 162
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::head_oid -> Result<String, String> with Ok(String::new())\n@@ -165,17 +165,17 @@\n                 out.status,\n                 out.stderr.trim()\n             ));\n         }\n         Ok(out.stdout.trim().to_string())\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n-        self.capture(&[\"rev-parse\", \"HEAD\"])\n+        Ok(String::new()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::head_oid",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 174
+        },
+        "start": {
+          "column": 5,
+          "line": 172
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:173:9: replace Git::head_oid -> Result<String, String> with Ok(String::new())",
+    "package": "flow",
+    "replacement": "Ok(String::new())",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 173
+      },
+      "start": {
+        "column": 9,
+        "line": 173
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::head_oid -> Result<String, String> with Ok(\"xyzzy\".into())\n@@ -165,17 +165,17 @@\n                 out.status,\n                 out.stderr.trim()\n             ));\n         }\n         Ok(out.stdout.trim().to_string())\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n-        self.capture(&[\"rev-parse\", \"HEAD\"])\n+        Ok(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::head_oid",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 174
+        },
+        "start": {
+          "column": 5,
+          "line": 172
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:173:9: replace Git::head_oid -> Result<String, String> with Ok(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Ok(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 173
+      },
+      "start": {
+        "column": 9,
+        "line": 173
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::head_tree -> Result<String, String> with Ok(String::new())\n@@ -169,17 +169,17 @@\n         Ok(out.stdout.trim().to_string())\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n-        self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n+        Ok(String::new()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::head_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 178
+        },
+        "start": {
+          "column": 5,
+          "line": 176
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:177:9: replace Git::head_tree -> Result<String, String> with Ok(String::new())",
+    "package": "flow",
+    "replacement": "Ok(String::new())",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 177
+      },
+      "start": {
+        "column": 9,
+        "line": 177
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::head_tree -> Result<String, String> with Ok(\"xyzzy\".into())\n@@ -169,17 +169,17 @@\n         Ok(out.stdout.trim().to_string())\n     }\n \n     pub fn head_oid(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n-        self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n+        Ok(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::head_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 178
+        },
+        "start": {
+          "column": 5,
+          "line": 176
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:177:9: replace Git::head_tree -> Result<String, String> with Ok(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Ok(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 177
+      },
+      "start": {
+        "column": 9,
+        "line": 177
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::write_tree -> Result<String, String> with Ok(String::new())\n@@ -173,17 +173,17 @@\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n-        self.capture(&[\"write-tree\"])\n+        Ok(String::new()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::write_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 182
+        },
+        "start": {
+          "column": 5,
+          "line": 180
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:181:9: replace Git::write_tree -> Result<String, String> with Ok(String::new())",
+    "package": "flow",
+    "replacement": "Ok(String::new())",
+    "span": {
+      "end": {
+        "column": 38,
+        "line": 181
+      },
+      "start": {
+        "column": 9,
+        "line": 181
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::write_tree -> Result<String, String> with Ok(\"xyzzy\".into())\n@@ -173,17 +173,17 @@\n         self.capture(&[\"rev-parse\", \"HEAD\"])\n     }\n \n     pub fn head_tree(&self) -> Result<String, String> {\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n-        self.capture(&[\"write-tree\"])\n+        Ok(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::write_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 182
+        },
+        "start": {
+          "column": 5,
+          "line": 180
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:181:9: replace Git::write_tree -> Result<String, String> with Ok(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Ok(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 38,
+        "line": 181
+      },
+      "start": {
+        "column": 9,
+        "line": 181
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::commit_tree -> Result<String, String> with Ok(String::new())\n@@ -177,17 +177,17 @@\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n-        self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n+        Ok(String::new()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n         let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::commit_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 186
+        },
+        "start": {
+          "column": 5,
+          "line": 184
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:185:9: replace Git::commit_tree -> Result<String, String> with Ok(String::new())",
+    "package": "flow",
+    "replacement": "Ok(String::new())",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 185
+      },
+      "start": {
+        "column": 9,
+        "line": 185
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::commit_tree -> Result<String, String> with Ok(\"xyzzy\".into())\n@@ -177,17 +177,17 @@\n         self.capture(&[\"rev-parse\", \"HEAD^{tree}\"])\n     }\n \n     pub fn write_tree(&self) -> Result<String, String> {\n         self.capture(&[\"write-tree\"])\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n-        self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n+        Ok(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n         let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::commit_tree",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 186
+        },
+        "start": {
+          "column": 5,
+          "line": 184
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:185:9: replace Git::commit_tree -> Result<String, String> with Ok(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Ok(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 185
+      },
+      "start": {
+        "column": 9,
+        "line": 185
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::update_ref -> Result<Output, String> with Ok(Default::default())\n@@ -181,17 +181,17 @@\n         self.capture(&[\"write-tree\"])\n     }\n \n     pub fn commit_tree(&self, tree: &str, parent: &str, message: &str) -> Result<String, String> {\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n-        self.run(&[\"update-ref\", reference, new, old])\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n         let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n         if out.status == 0 {\n             Ok(Some(out.stdout.trim().to_string()))\n         } else {\n             Ok(None)\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::update_ref",
+      "return_type": "-> Result<Output, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 190
+        },
+        "start": {
+          "column": 5,
+          "line": 188
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:189:9: replace Git::update_ref -> Result<Output, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 189
+      },
+      "start": {
+        "column": 9,
+        "line": 189
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::show_ref -> Result<Option<String>, String> with Ok(None)\n@@ -185,22 +185,17 @@\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n-        let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n-        if out.status == 0 {\n-            Ok(Some(out.stdout.trim().to_string()))\n-        } else {\n-            Ok(None)\n-        }\n+        Ok(None) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n         Ok(out.lines().map(str::to_string).collect())\n     }\n \n     pub fn version(&self) -> String {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::show_ref",
+      "return_type": "-> Result<Option<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 199
+        },
+        "start": {
+          "column": 5,
+          "line": 192
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(None)",
+    "package": "flow",
+    "replacement": "Ok(None)",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 198
+      },
+      "start": {
+        "column": 9,
+        "line": 193
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::show_ref -> Result<Option<String>, String> with Ok(Some(String::new()))\n@@ -185,22 +185,17 @@\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n-        let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n-        if out.status == 0 {\n-            Ok(Some(out.stdout.trim().to_string()))\n-        } else {\n-            Ok(None)\n-        }\n+        Ok(Some(String::new())) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n         Ok(out.lines().map(str::to_string).collect())\n     }\n \n     pub fn version(&self) -> String {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::show_ref",
+      "return_type": "-> Result<Option<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 199
+        },
+        "start": {
+          "column": 5,
+          "line": 192
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(Some(String::new()))",
+    "package": "flow",
+    "replacement": "Ok(Some(String::new()))",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 198
+      },
+      "start": {
+        "column": 9,
+        "line": 193
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::show_ref -> Result<Option<String>, String> with Ok(Some(\"xyzzy\".into()))\n@@ -185,22 +185,17 @@\n         self.capture(&[\"commit-tree\", tree, \"-p\", parent, \"-m\", message])\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n-        let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n-        if out.status == 0 {\n-            Ok(Some(out.stdout.trim().to_string()))\n-        } else {\n-            Ok(None)\n-        }\n+        Ok(Some(\"xyzzy\".into())) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n         Ok(out.lines().map(str::to_string).collect())\n     }\n \n     pub fn version(&self) -> String {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::show_ref",
+      "return_type": "-> Result<Option<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 199
+        },
+        "start": {
+          "column": 5,
+          "line": 192
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(Some(\"xyzzy\".into()))",
+    "package": "flow",
+    "replacement": "Ok(Some(\"xyzzy\".into()))",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 198
+      },
+      "start": {
+        "column": 9,
+        "line": 193
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace == with != in Git::show_ref\n@@ -186,17 +186,17 @@\n     }\n \n     pub fn update_ref(&self, reference: &str, new: &str, old: &str) -> Result<Output, String> {\n         self.run(&[\"update-ref\", reference, new, old])\n     }\n \n     pub fn show_ref(&self, reference: &str) -> Result<Option<String>, String> {\n         let out = self.run(&[\"rev-parse\", \"--verify\", \"--quiet\", reference])?;\n-        if out.status == 0 {\n+        if out.status != /* ~ changed by cargo-mutants ~ */ 0 {\n             Ok(Some(out.stdout.trim().to_string()))\n         } else {\n             Ok(None)\n         }\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::show_ref",
+      "return_type": "-> Result<Option<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 199
+        },
+        "start": {
+          "column": 5,
+          "line": 192
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:194:23: replace == with != in Git::show_ref",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 194
+      },
+      "start": {
+        "column": 23,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![])\n@@ -194,18 +194,17 @@\n         if out.status == 0 {\n             Ok(Some(out.stdout.trim().to_string()))\n         } else {\n             Ok(None)\n         }\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n-        let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n-        Ok(out.lines().map(str::to_string).collect())\n+        Ok(vec![]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn version(&self) -> String {\n         self.run(&[\"--version\"])\n             .map(|o| o.stdout.trim().to_string())\n             .unwrap_or_else(|e| format!(\"UNKNOWN: {e}\"))\n     }\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::status_porcelain",
+      "return_type": "-> Result<Vec<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 204
+        },
+        "start": {
+          "column": 5,
+          "line": 201
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:202:9: replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![])",
+    "package": "flow",
+    "replacement": "Ok(vec![])",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 203
+      },
+      "start": {
+        "column": 9,
+        "line": 202
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![String::new()])\n@@ -194,18 +194,17 @@\n         if out.status == 0 {\n             Ok(Some(out.stdout.trim().to_string()))\n         } else {\n             Ok(None)\n         }\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n-        let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n-        Ok(out.lines().map(str::to_string).collect())\n+        Ok(vec![String::new()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn version(&self) -> String {\n         self.run(&[\"--version\"])\n             .map(|o| o.stdout.trim().to_string())\n             .unwrap_or_else(|e| format!(\"UNKNOWN: {e}\"))\n     }\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::status_porcelain",
+      "return_type": "-> Result<Vec<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 204
+        },
+        "start": {
+          "column": 5,
+          "line": 201
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:202:9: replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![String::new()])",
+    "package": "flow",
+    "replacement": "Ok(vec![String::new()])",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 203
+      },
+      "start": {
+        "column": 9,
+        "line": 202
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![\"xyzzy\".into()])\n@@ -194,18 +194,17 @@\n         if out.status == 0 {\n             Ok(Some(out.stdout.trim().to_string()))\n         } else {\n             Ok(None)\n         }\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n-        let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n-        Ok(out.lines().map(str::to_string).collect())\n+        Ok(vec![\"xyzzy\".into()]) /* ~ changed by cargo-mutants ~ */\n     }\n \n     pub fn version(&self) -> String {\n         self.run(&[\"--version\"])\n             .map(|o| o.stdout.trim().to_string())\n             .unwrap_or_else(|e| format!(\"UNKNOWN: {e}\"))\n     }\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::status_porcelain",
+      "return_type": "-> Result<Vec<String>, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 204
+        },
+        "start": {
+          "column": 5,
+          "line": 201
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:202:9: replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![\"xyzzy\".into()])",
+    "package": "flow",
+    "replacement": "Ok(vec![\"xyzzy\".into()])",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 203
+      },
+      "start": {
+        "column": 9,
+        "line": 202
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::version -> String with String::new()\n@@ -199,19 +199,17 @@\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n         Ok(out.lines().map(str::to_string).collect())\n     }\n \n     pub fn version(&self) -> String {\n-        self.run(&[\"--version\"])\n-            .map(|o| o.stdout.trim().to_string())\n-            .unwrap_or_else(|e| format!(\"UNKNOWN: {e}\"))\n+        String::new() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Locate the repository root, refusing to run outside a Git work tree.\n ///\n /// The command is built with the same scrubbed environment as every other Git\n /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come\n /// from somewhere else.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::version",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 210
+        },
+        "start": {
+          "column": 5,
+          "line": 206
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:207:9: replace Git::version -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 209
+      },
+      "start": {
+        "column": 9,
+        "line": 207
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace Git::version -> String with \"xyzzy\".into()\n@@ -199,19 +199,17 @@\n     }\n \n     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {\n         let out = self.capture(&[\"status\", \"--porcelain=v1\", \"-uall\"])?;\n         Ok(out.lines().map(str::to_string).collect())\n     }\n \n     pub fn version(&self) -> String {\n-        self.run(&[\"--version\"])\n-            .map(|o| o.stdout.trim().to_string())\n-            .unwrap_or_else(|e| format!(\"UNKNOWN: {e}\"))\n+        \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// Locate the repository root, refusing to run outside a Git work tree.\n ///\n /// The command is built with the same scrubbed environment as every other Git\n /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come\n /// from somewhere else.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "Git::version",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 210
+        },
+        "start": {
+          "column": 5,
+          "line": 206
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:207:9: replace Git::version -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 209
+      },
+      "start": {
+        "column": 9,
+        "line": 207
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace toplevel -> Result<PathBuf, String> with Ok(Default::default())\n@@ -211,25 +211,17 @@\n }\n \n /// Locate the repository root, refusing to run outside a Git work tree.\n ///\n /// The command is built with the same scrubbed environment as every other Git\n /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come\n /// from somewhere else.\n pub fn toplevel(cwd: &Path) -> Result<PathBuf, String> {\n-    let git = Git::new(cwd);\n-    let out = git.run_bounded(&[\"rev-parse\", \"--show-toplevel\"], None, None)?;\n-    if out.status != 0 {\n-        return Err(\"not inside a Git work tree\".into());\n-    }\n-    let path = out.stdout.trim().to_string();\n-    PathBuf::from(path)\n-        .canonicalize()\n-        .map_err(|e| format!(\"cannot canonicalise repository root: {e}\"))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Variables that redirect Git at another repository, index, object store,\n /// configuration or helper program. Every occurrence is removed from the child\n /// environment (case-insensitively, because Windows environment names are).\n ///\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` are dynamic and handled by prefix.\n const SCRUBBED_GIT_ENV: &[&str] = &[\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "toplevel",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 228
+        },
+        "start": {
+          "column": 1,
+          "line": 213
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:219:5: replace toplevel -> Result<PathBuf, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 227
+      },
+      "start": {
+        "column": 5,
+        "line": 219
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace != with == in toplevel\n@@ -213,17 +213,17 @@\n /// Locate the repository root, refusing to run outside a Git work tree.\n ///\n /// The command is built with the same scrubbed environment as every other Git\n /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come\n /// from somewhere else.\n pub fn toplevel(cwd: &Path) -> Result<PathBuf, String> {\n     let git = Git::new(cwd);\n     let out = git.run_bounded(&[\"rev-parse\", \"--show-toplevel\"], None, None)?;\n-    if out.status != 0 {\n+    if out.status == /* ~ changed by cargo-mutants ~ */ 0 {\n         return Err(\"not inside a Git work tree\".into());\n     }\n     let path = out.stdout.trim().to_string();\n     PathBuf::from(path)\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise repository root: {e}\"))\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "toplevel",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 228
+        },
+        "start": {
+          "column": 1,
+          "line": 213
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:221:19: replace != with == in toplevel",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 221
+      },
+      "start": {
+        "column": 19,
+        "line": 221
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace env_allowlist -> &'static[&'static str] with Vec::leak(Vec::new())\n@@ -304,17 +304,17 @@\n     \"WINDIR\",\n     \"WindowsSDKVersion\",\n     \"WindowsSdkDir\",\n     \"windir\",\n ];\n \n /// The stable, sorted environment allowlist (for hashing and reporting).\n pub fn env_allowlist() -> &'static [&'static str] {\n-    ENV_ALLOWLIST\n+    Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Build `git -C <root>` with the redirecting part of the host environment\n /// removed and the non-interactive defaults applied.\n fn git_command(root: &Path) -> Command {\n     let mut cmd = Command::new(\"git\");\n     cmd.arg(\"-C\").arg(root);\n     scrub_env(&mut cmd);\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "env_allowlist",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 313
+        },
+        "start": {
+          "column": 1,
+          "line": 310
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(Vec::new())",
+    "package": "flow",
+    "replacement": "Vec::leak(Vec::new())",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 312
+      },
+      "start": {
+        "column": 5,
+        "line": 312
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace env_allowlist -> &'static[&'static str] with Vec::leak(vec![\"\"])\n@@ -304,17 +304,17 @@\n     \"WINDIR\",\n     \"WindowsSDKVersion\",\n     \"WindowsSdkDir\",\n     \"windir\",\n ];\n \n /// The stable, sorted environment allowlist (for hashing and reporting).\n pub fn env_allowlist() -> &'static [&'static str] {\n-    ENV_ALLOWLIST\n+    Vec::leak(vec![\"\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Build `git -C <root>` with the redirecting part of the host environment\n /// removed and the non-interactive defaults applied.\n fn git_command(root: &Path) -> Command {\n     let mut cmd = Command::new(\"git\");\n     cmd.arg(\"-C\").arg(root);\n     scrub_env(&mut cmd);\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "env_allowlist",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 313
+        },
+        "start": {
+          "column": 1,
+          "line": 310
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(vec![\"\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"\"])",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 312
+      },
+      "start": {
+        "column": 5,
+        "line": 312
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace env_allowlist -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])\n@@ -304,17 +304,17 @@\n     \"WINDIR\",\n     \"WindowsSDKVersion\",\n     \"WindowsSdkDir\",\n     \"windir\",\n ];\n \n /// The stable, sorted environment allowlist (for hashing and reporting).\n pub fn env_allowlist() -> &'static [&'static str] {\n-    ENV_ALLOWLIST\n+    Vec::leak(vec![\"xyzzy\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Build `git -C <root>` with the redirecting part of the host environment\n /// removed and the non-interactive defaults applied.\n fn git_command(root: &Path) -> Command {\n     let mut cmd = Command::new(\"git\");\n     cmd.arg(\"-C\").arg(root);\n     scrub_env(&mut cmd);\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "env_allowlist",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 313
+        },
+        "start": {
+          "column": 1,
+          "line": 310
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"xyzzy\"])",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 312
+      },
+      "start": {
+        "column": 5,
+        "line": 312
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace git_command -> Command with Default::default()\n@@ -310,20 +310,17 @@\n /// The stable, sorted environment allowlist (for hashing and reporting).\n pub fn env_allowlist() -> &'static [&'static str] {\n     ENV_ALLOWLIST\n }\n \n /// Build `git -C <root>` with the redirecting part of the host environment\n /// removed and the non-interactive defaults applied.\n fn git_command(root: &Path) -> Command {\n-    let mut cmd = Command::new(\"git\");\n-    cmd.arg(\"-C\").arg(root);\n-    scrub_env(&mut cmd);\n-    cmd\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// True when this variable name could redirect Git or its helpers. The\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject\n /// arbitrary configuration from the environment, so a prefix check is required in\n /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned\n /// directly instead of only through a spawned process.\n fn redirecting_env_name(upper: &str) -> bool {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "git_command",
+      "return_type": "-> Command",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 322
+        },
+        "start": {
+          "column": 1,
+          "line": 315
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:318:5: replace git_command -> Command with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 321
+      },
+      "start": {
+        "column": 5,
+        "line": 318
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace redirecting_env_name -> bool with true\n@@ -322,19 +322,17 @@\n }\n \n /// True when this variable name could redirect Git or its helpers. The\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject\n /// arbitrary configuration from the environment, so a prefix check is required in\n /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned\n /// directly instead of only through a spawned process.\n fn redirecting_env_name(upper: &str) -> bool {\n-    SCRUBBED_GIT_ENV.contains(&upper)\n-        || upper.starts_with(\"GIT_CONFIG_KEY_\")\n-        || upper.starts_with(\"GIT_CONFIG_VALUE_\")\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n /// Remove every environment variable that could redirect Git, then set the\n /// non-interactive, deterministic defaults. Host variables are inspected with\n /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are\n /// compared.\n fn scrub_env(cmd: &mut Command) {\n     for (name, _) in std::env::vars_os() {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redirecting_env_name",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 333
+        },
+        "start": {
+          "column": 1,
+          "line": 324
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:330:5: replace redirecting_env_name -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 332
+      },
+      "start": {
+        "column": 5,
+        "line": 330
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace redirecting_env_name -> bool with false\n@@ -322,19 +322,17 @@\n }\n \n /// True when this variable name could redirect Git or its helpers. The\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject\n /// arbitrary configuration from the environment, so a prefix check is required in\n /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned\n /// directly instead of only through a spawned process.\n fn redirecting_env_name(upper: &str) -> bool {\n-    SCRUBBED_GIT_ENV.contains(&upper)\n-        || upper.starts_with(\"GIT_CONFIG_KEY_\")\n-        || upper.starts_with(\"GIT_CONFIG_VALUE_\")\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n /// Remove every environment variable that could redirect Git, then set the\n /// non-interactive, deterministic defaults. Host variables are inspected with\n /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are\n /// compared.\n fn scrub_env(cmd: &mut Command) {\n     for (name, _) in std::env::vars_os() {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redirecting_env_name",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 333
+        },
+        "start": {
+          "column": 1,
+          "line": 324
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:330:5: replace redirecting_env_name -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 332
+      },
+      "start": {
+        "column": 5,
+        "line": 330
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace || with && in redirecting_env_name\n@@ -324,17 +324,17 @@\n /// True when this variable name could redirect Git or its helpers. The\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject\n /// arbitrary configuration from the environment, so a prefix check is required in\n /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned\n /// directly instead of only through a spawned process.\n fn redirecting_env_name(upper: &str) -> bool {\n     SCRUBBED_GIT_ENV.contains(&upper)\n         || upper.starts_with(\"GIT_CONFIG_KEY_\")\n-        || upper.starts_with(\"GIT_CONFIG_VALUE_\")\n+        && /* ~ changed by cargo-mutants ~ */ upper.starts_with(\"GIT_CONFIG_VALUE_\")\n }\n \n /// Remove every environment variable that could redirect Git, then set the\n /// non-interactive, deterministic defaults. Host variables are inspected with\n /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are\n /// compared.\n fn scrub_env(cmd: &mut Command) {\n     for (name, _) in std::env::vars_os() {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redirecting_env_name",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 333
+        },
+        "start": {
+          "column": 1,
+          "line": 324
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:332:9: replace || with && in redirecting_env_name",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 332
+      },
+      "start": {
+        "column": 9,
+        "line": 332
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace || with && in redirecting_env_name\n@@ -323,17 +323,17 @@\n \n /// True when this variable name could redirect Git or its helpers. The\n /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject\n /// arbitrary configuration from the environment, so a prefix check is required in\n /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned\n /// directly instead of only through a spawned process.\n fn redirecting_env_name(upper: &str) -> bool {\n     SCRUBBED_GIT_ENV.contains(&upper)\n-        || upper.starts_with(\"GIT_CONFIG_KEY_\")\n+        && /* ~ changed by cargo-mutants ~ */ upper.starts_with(\"GIT_CONFIG_KEY_\")\n         || upper.starts_with(\"GIT_CONFIG_VALUE_\")\n }\n \n /// Remove every environment variable that could redirect Git, then set the\n /// non-interactive, deterministic defaults. Host variables are inspected with\n /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are\n /// compared.\n fn scrub_env(cmd: &mut Command) {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redirecting_env_name",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 333
+        },
+        "start": {
+          "column": 1,
+          "line": 324
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:331:9: replace || with && in redirecting_env_name",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 331
+      },
+      "start": {
+        "column": 9,
+        "line": 331
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace scrub_env with ()\n@@ -332,27 +332,17 @@\n         || upper.starts_with(\"GIT_CONFIG_VALUE_\")\n }\n \n /// Remove every environment variable that could redirect Git, then set the\n /// non-interactive, deterministic defaults. Host variables are inspected with\n /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are\n /// compared.\n fn scrub_env(cmd: &mut Command) {\n-    for (name, _) in std::env::vars_os() {\n-        let upper = name.to_string_lossy().to_ascii_uppercase();\n-        if redirecting_env_name(&upper) {\n-            cmd.env_remove(&name);\n-        }\n-    }\n-    cmd.env(\"GIT_TERMINAL_PROMPT\", \"0\")\n-        .env(\"GIT_PAGER\", \"cat\")\n-        .env(\"GIT_EDITOR\", \"true\")\n-        .env(\"GIT_CONFIG_NOSYSTEM\", \"1\")\n-        .env(\"LC_ALL\", \"C\");\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n fn allowed_env() -> Vec<(OsString, OsString)> {\n     let host: Vec<(OsString, OsString)> = std::env::vars_os().collect();\n     let mut kept = Vec::new();\n     for wanted in env_allowlist() {\n         // Windows environment names are case-insensitive: scan for the first match.\n         if let Some((name, value)) = host\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "scrub_env",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 351
+        },
+        "start": {
+          "column": 1,
+          "line": 335
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:340:5: replace scrub_env with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 350
+      },
+      "start": {
+        "column": 5,
+        "line": 340
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace allowed_env -> Vec<(OsString, OsString)> with vec![]\n@@ -346,28 +346,17 @@\n     cmd.env(\"GIT_TERMINAL_PROMPT\", \"0\")\n         .env(\"GIT_PAGER\", \"cat\")\n         .env(\"GIT_EDITOR\", \"true\")\n         .env(\"GIT_CONFIG_NOSYSTEM\", \"1\")\n         .env(\"LC_ALL\", \"C\");\n }\n \n fn allowed_env() -> Vec<(OsString, OsString)> {\n-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect();\n-    let mut kept = Vec::new();\n-    for wanted in env_allowlist() {\n-        // Windows environment names are case-insensitive: scan for the first match.\n-        if let Some((name, value)) = host\n-            .iter()\n-            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))\n-        {\n-            kept.push((name.clone(), value.clone()));\n-        }\n-    }\n-    kept\n+    vec![] /* ~ changed by cargo-mutants ~ */\n }\n \n // ------------------------------------------------------------ obligations\n #[derive(Debug, Clone)]\n pub struct Obligation {\n     pub id: String,\n     pub program: String,\n     pub args: Vec<String>,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "allowed_env",
+      "return_type": "-> Vec<(OsString, OsString)>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 353
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![]",
+    "package": "flow",
+    "replacement": "vec![]",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 365
+      },
+      "start": {
+        "column": 5,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]\n@@ -346,28 +346,17 @@\n     cmd.env(\"GIT_TERMINAL_PROMPT\", \"0\")\n         .env(\"GIT_PAGER\", \"cat\")\n         .env(\"GIT_EDITOR\", \"true\")\n         .env(\"GIT_CONFIG_NOSYSTEM\", \"1\")\n         .env(\"LC_ALL\", \"C\");\n }\n \n fn allowed_env() -> Vec<(OsString, OsString)> {\n-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect();\n-    let mut kept = Vec::new();\n-    for wanted in env_allowlist() {\n-        // Windows environment names are case-insensitive: scan for the first match.\n-        if let Some((name, value)) = host\n-            .iter()\n-            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))\n-        {\n-            kept.push((name.clone(), value.clone()));\n-        }\n-    }\n-    kept\n+    vec![(Default::default(), Default::default())] /* ~ changed by cargo-mutants ~ */\n }\n \n // ------------------------------------------------------------ obligations\n #[derive(Debug, Clone)]\n pub struct Obligation {\n     pub id: String,\n     pub program: String,\n     pub args: Vec<String>,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "allowed_env",
+      "return_type": "-> Vec<(OsString, OsString)>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 353
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]",
+    "package": "flow",
+    "replacement": "vec![(Default::default(), Default::default())]",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 365
+      },
+      "start": {
+        "column": 5,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with +\n@@ -388,17 +388,17 @@\n     /// surplus was drained and discarded (it is not buffered anywhere).\n     pub stdout_truncated: bool,\n     /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stderr.\n     pub stderr_truncated: bool,\n }\n \n /// Bytes retained per stream. Anything beyond is drained to keep the child\n /// unblocked, then discarded.\n-pub const MAX_STREAM_BYTES: usize = 1024 * 1024;\n+pub const MAX_STREAM_BYTES: usize = 1024 + /* ~ changed by cargo-mutants ~ */ 1024;\n \n /// Appended to a truncated stream. Deliberately free of a copy of the cap so it\n /// cannot drift from [`MAX_STREAM_BYTES`].\n pub const TRUNCATION_MARKER: &str = \"\\n[flow: output truncated; remaining bytes discarded]\\n\";\n \n /// How long the reader threads may take to observe EOF after the child tree was\n /// killed. Streams that are still held open by a survivor are abandoned after\n /// this budget; their threads are detached, never joined.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:396:42: replace * with +",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 396
+      },
+      "start": {
+        "column": 42,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with /\n@@ -388,17 +388,17 @@\n     /// surplus was drained and discarded (it is not buffered anywhere).\n     pub stdout_truncated: bool,\n     /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stderr.\n     pub stderr_truncated: bool,\n }\n \n /// Bytes retained per stream. Anything beyond is drained to keep the child\n /// unblocked, then discarded.\n-pub const MAX_STREAM_BYTES: usize = 1024 * 1024;\n+pub const MAX_STREAM_BYTES: usize = 1024 / /* ~ changed by cargo-mutants ~ */ 1024;\n \n /// Appended to a truncated stream. Deliberately free of a copy of the cap so it\n /// cannot drift from [`MAX_STREAM_BYTES`].\n pub const TRUNCATION_MARKER: &str = \"\\n[flow: output truncated; remaining bytes discarded]\\n\";\n \n /// How long the reader threads may take to observe EOF after the child tree was\n /// killed. Streams that are still held open by a survivor are abandoned after\n /// this budget; their threads are detached, never joined.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:396:42: replace * with /",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 396
+      },
+      "start": {
+        "column": 42,
+        "line": 396
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with +\n@@ -417,17 +417,17 @@\n     truncated: bool,\n }\n \n /// Retained Git output per stream before the call fails.\n ///\n /// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on\n /// a big tree) can be large. It is still a bound: past it the answer is refused,\n /// never clipped.\n-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;\n+pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 + /* ~ changed by cargo-mutants ~ */ 1024;\n \n /// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged\n /// child from hanging the CLI forever, not to police slow repositories.\n pub const GIT_TIMEOUT_S: u64 = 300;\n \n /// Read `pipe` to EOF while retaining at most `cap` bytes.\n ///\n /// The surplus is still read and discarded: stopping the read would fill the\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:425:51: replace * with +",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 425
+      },
+      "start": {
+        "column": 51,
+        "line": 425
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with /\n@@ -417,17 +417,17 @@\n     truncated: bool,\n }\n \n /// Retained Git output per stream before the call fails.\n ///\n /// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on\n /// a big tree) can be large. It is still a bound: past it the answer is refused,\n /// never clipped.\n-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;\n+pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 / /* ~ changed by cargo-mutants ~ */ 1024;\n \n /// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged\n /// child from hanging the CLI forever, not to police slow repositories.\n pub const GIT_TIMEOUT_S: u64 = 300;\n \n /// Read `pipe` to EOF while retaining at most `cap` bytes.\n ///\n /// The surplus is still read and discarded: stopping the read would fill the\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:425:51: replace * with /",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 425
+      },
+      "start": {
+        "column": 51,
+        "line": 425
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with +\n@@ -417,17 +417,17 @@\n     truncated: bool,\n }\n \n /// Retained Git output per stream before the call fails.\n ///\n /// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on\n /// a big tree) can be large. It is still a bound: past it the answer is refused,\n /// never clipped.\n-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;\n+pub const MAX_GIT_STREAM_BYTES: usize = 64 + /* ~ changed by cargo-mutants ~ */ 1024 * 1024;\n \n /// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged\n /// child from hanging the CLI forever, not to police slow repositories.\n pub const GIT_TIMEOUT_S: u64 = 300;\n \n /// Read `pipe` to EOF while retaining at most `cap` bytes.\n ///\n /// The surplus is still read and discarded: stopping the read would fill the\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:425:44: replace * with +",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 425
+      },
+      "start": {
+        "column": 44,
+        "line": 425
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace * with /\n@@ -417,17 +417,17 @@\n     truncated: bool,\n }\n \n /// Retained Git output per stream before the call fails.\n ///\n /// Larger than an obligation's cap because legitimate plumbing (`ls-tree -r` on\n /// a big tree) can be large. It is still a bound: past it the answer is refused,\n /// never clipped.\n-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;\n+pub const MAX_GIT_STREAM_BYTES: usize = 64 / /* ~ changed by cargo-mutants ~ */ 1024 * 1024;\n \n /// Wall-clock bound for one Git invocation. Generous: it exists to stop a wedged\n /// child from hanging the CLI forever, not to police slow repositories.\n pub const GIT_TIMEOUT_S: u64 = 300;\n \n /// Read `pipe` to EOF while retaining at most `cap` bytes.\n ///\n /// The surplus is still read and discarded: stopping the read would fill the\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:425:44: replace * with /",
+    "package": "flow",
+    "replacement": "/",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 425
+      },
+      "start": {
+        "column": 44,
+        "line": 425
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace read_capped_at -> Captured with Default::default()\n@@ -428,38 +428,17 @@\n /// child from hanging the CLI forever, not to police slow repositories.\n pub const GIT_TIMEOUT_S: u64 = 300;\n \n /// Read `pipe` to EOF while retaining at most `cap` bytes.\n ///\n /// The surplus is still read and discarded: stopping the read would fill the\n /// pipe and deadlock a child that is writing (for example during a timeout).\n fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {\n-    let mut captured = Captured::default();\n-    let mut chunk = [0u8; 8192];\n-    loop {\n-        match pipe.read(&mut chunk) {\n-            Ok(0) => break,\n-            Ok(n) => {\n-                let room = cap.saturating_sub(captured.bytes.len());\n-                if room == 0 {\n-                    captured.truncated = true;\n-                    continue;\n-                }\n-                let take = n.min(room);\n-                captured.bytes.extend_from_slice(&chunk[..take]);\n-                if take < n {\n-                    captured.truncated = true;\n-                }\n-            }\n-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n-            Err(_) => break,\n-        }\n-    }\n-    captured\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n /// the non-guarantees on [`run_obligation`]).\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n     spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:436:5: replace read_capped_at -> Captured with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 457
+      },
+      "start": {
+        "column": 5,
+        "line": 436
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::Interrupted with true in read_capped_at\n@@ -445,17 +445,17 @@\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n                 if take < n {\n                     captured.truncated = true;\n                 }\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n+            Err(e) if true /* ~ changed by cargo-mutants ~ */ => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/gitcli.rs:453:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with true in read_capped_at",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 453
+      },
+      "start": {
+        "column": 23,
+        "line": 453
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at\n@@ -445,17 +445,17 @@\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n                 if take < n {\n                     captured.truncated = true;\n                 }\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n+            Err(e) if false /* ~ changed by cargo-mutants ~ */ => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/gitcli.rs:453:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 453
+      },
+      "start": {
+        "column": 23,
+        "line": 453
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace == with != in read_capped_at\n@@ -435,17 +435,17 @@\n fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {\n     let mut captured = Captured::default();\n     let mut chunk = [0u8; 8192];\n     loop {\n         match pipe.read(&mut chunk) {\n             Ok(0) => break,\n             Ok(n) => {\n                 let room = cap.saturating_sub(captured.bytes.len());\n-                if room == 0 {\n+                if room != /* ~ changed by cargo-mutants ~ */ 0 {\n                     captured.truncated = true;\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n                 if take < n {\n                     captured.truncated = true;\n                 }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:443:25: replace == with != in read_capped_at",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 443
+      },
+      "start": {
+        "column": 25,
+        "line": 443
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with == in read_capped_at\n@@ -441,17 +441,17 @@\n             Ok(n) => {\n                 let room = cap.saturating_sub(captured.bytes.len());\n                 if room == 0 {\n                     captured.truncated = true;\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n-                if take < n {\n+                if take == /* ~ changed by cargo-mutants ~ */ n {\n                     captured.truncated = true;\n                 }\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:449:25: replace < with == in read_capped_at",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 449
+      },
+      "start": {
+        "column": 25,
+        "line": 449
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with > in read_capped_at\n@@ -441,17 +441,17 @@\n             Ok(n) => {\n                 let room = cap.saturating_sub(captured.bytes.len());\n                 if room == 0 {\n                     captured.truncated = true;\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n-                if take < n {\n+                if take > /* ~ changed by cargo-mutants ~ */ n {\n                     captured.truncated = true;\n                 }\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:449:25: replace < with > in read_capped_at",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 449
+      },
+      "start": {
+        "column": 25,
+        "line": 449
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with <= in read_capped_at\n@@ -441,17 +441,17 @@\n             Ok(n) => {\n                 let room = cap.saturating_sub(captured.bytes.len());\n                 if room == 0 {\n                     captured.truncated = true;\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n-                if take < n {\n+                if take <= /* ~ changed by cargo-mutants ~ */ n {\n                     captured.truncated = true;\n                 }\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:449:25: replace < with <= in read_capped_at",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 449
+      },
+      "start": {
+        "column": 25,
+        "line": 449
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace == with != in read_capped_at\n@@ -445,17 +445,17 @@\n                     continue;\n                 }\n                 let take = n.min(room);\n                 captured.bytes.extend_from_slice(&chunk[..take]);\n                 if take < n {\n                     captured.truncated = true;\n                 }\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,\n+            Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::Interrupted => continue,\n             Err(_) => break,\n         }\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "read_capped_at",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 458
+        },
+        "start": {
+          "column": 1,
+          "line": 431
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:453:32: replace == with != in read_capped_at",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 453
+      },
+      "start": {
+        "column": 32,
+        "line": 453
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new()\n@@ -456,17 +456,17 @@\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n /// the non-guarantees on [`run_obligation`]).\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n-    spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n+    Receiver::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n     let (tx, rx) = mpsc::channel();\n     let _ = std::thread::Builder::new()\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 465
+        },
+        "start": {
+          "column": 1,
+          "line": 460
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new()",
+    "package": "flow",
+    "replacement": "Receiver::new()",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 464
+      },
+      "start": {
+        "column": 5,
+        "line": 464
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])\n@@ -456,17 +456,17 @@\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n /// the non-guarantees on [`run_obligation`]).\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n-    spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n+    Receiver::from_iter([Default::default()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n     let (tx, rx) = mpsc::channel();\n     let _ = std::thread::Builder::new()\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 465
+        },
+        "start": {
+          "column": 1,
+          "line": 460
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])",
+    "package": "flow",
+    "replacement": "Receiver::from_iter([Default::default()])",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 464
+      },
+      "start": {
+        "column": 5,
+        "line": 464
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new(Default::default())\n@@ -456,17 +456,17 @@\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n /// the non-guarantees on [`run_obligation`]).\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n-    spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n+    Receiver::new(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n     let (tx, rx) = mpsc::channel();\n     let _ = std::thread::Builder::new()\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 465
+        },
+        "start": {
+          "column": 1,
+          "line": 460
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new(Default::default())",
+    "package": "flow",
+    "replacement": "Receiver::new(Default::default())",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 464
+      },
+      "start": {
+        "column": 5,
+        "line": 464
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from(Default::default())\n@@ -456,17 +456,17 @@\n     }\n     captured\n }\n \n /// Start a detached reader thread. The thread is never joined: it sends its\n /// result if it ever reaches EOF and otherwise stays parked on the pipe (see\n /// the non-guarantees on [`run_obligation`]).\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n-    spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n+    Receiver::from(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n     let (tx, rx) = mpsc::channel();\n     let _ = std::thread::Builder::new()\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 465
+        },
+        "start": {
+          "column": 1,
+          "line": 460
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:464:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from(Default::default())",
+    "package": "flow",
+    "replacement": "Receiver::from(Default::default())",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 464
+      },
+      "start": {
+        "column": 5,
+        "line": 464
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new()\n@@ -463,23 +463,17 @@\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n     spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n-    let (tx, rx) = mpsc::channel();\n-    let _ = std::thread::Builder::new()\n-        .name(\"flow-obligation-reader\".into())\n-        .spawn(move || {\n-            let _ = tx.send(read_capped_at(pipe, cap));\n-        });\n-    rx\n+    Receiver::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n     let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n     if captured.truncated {\n         text.push_str(TRUNCATION_MARKER);\n     }\n     (text, captured.truncated)\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader_with_cap",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 478
+        },
+        "start": {
+          "column": 1,
+          "line": 467
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new()",
+    "package": "flow",
+    "replacement": "Receiver::new()",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 477
+      },
+      "start": {
+        "column": 5,
+        "line": 471
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])\n@@ -463,23 +463,17 @@\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n     spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n-    let (tx, rx) = mpsc::channel();\n-    let _ = std::thread::Builder::new()\n-        .name(\"flow-obligation-reader\".into())\n-        .spawn(move || {\n-            let _ = tx.send(read_capped_at(pipe, cap));\n-        });\n-    rx\n+    Receiver::from_iter([Default::default()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n     let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n     if captured.truncated {\n         text.push_str(TRUNCATION_MARKER);\n     }\n     (text, captured.truncated)\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader_with_cap",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 478
+        },
+        "start": {
+          "column": 1,
+          "line": 467
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])",
+    "package": "flow",
+    "replacement": "Receiver::from_iter([Default::default()])",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 477
+      },
+      "start": {
+        "column": 5,
+        "line": 471
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new(Default::default())\n@@ -463,23 +463,17 @@\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n     spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n-    let (tx, rx) = mpsc::channel();\n-    let _ = std::thread::Builder::new()\n-        .name(\"flow-obligation-reader\".into())\n-        .spawn(move || {\n-            let _ = tx.send(read_capped_at(pipe, cap));\n-        });\n-    rx\n+    Receiver::new(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n     let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n     if captured.truncated {\n         text.push_str(TRUNCATION_MARKER);\n     }\n     (text, captured.truncated)\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader_with_cap",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 478
+        },
+        "start": {
+          "column": 1,
+          "line": 467
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new(Default::default())",
+    "package": "flow",
+    "replacement": "Receiver::new(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 477
+      },
+      "start": {
+        "column": 5,
+        "line": 471
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from(Default::default())\n@@ -463,23 +463,17 @@\n fn spawn_reader<R: Read + Send + 'static>(pipe: R) -> mpsc::Receiver<Captured> {\n     spawn_reader_with_cap(pipe, MAX_STREAM_BYTES)\n }\n \n fn spawn_reader_with_cap<R: Read + Send + 'static>(\n     pipe: R,\n     cap: usize,\n ) -> mpsc::Receiver<Captured> {\n-    let (tx, rx) = mpsc::channel();\n-    let _ = std::thread::Builder::new()\n-        .name(\"flow-obligation-reader\".into())\n-        .spawn(move || {\n-            let _ = tx.send(read_capped_at(pipe, cap));\n-        });\n-    rx\n+    Receiver::from(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n     let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n     if captured.truncated {\n         text.push_str(TRUNCATION_MARKER);\n     }\n     (text, captured.truncated)\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "spawn_reader_with_cap",
+      "return_type": "-> mpsc::Receiver<Captured>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 478
+        },
+        "start": {
+          "column": 1,
+          "line": 467
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:471:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from(Default::default())",
+    "package": "flow",
+    "replacement": "Receiver::from(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 477
+      },
+      "start": {
+        "column": 5,
+        "line": 471
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace finish -> (String, bool) with (String::new(), true)\n@@ -473,21 +473,17 @@\n         .name(\"flow-obligation-reader\".into())\n         .spawn(move || {\n             let _ = tx.send(read_capped_at(pipe, cap));\n         });\n     rx\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n-    let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n-    if captured.truncated {\n-        text.push_str(TRUNCATION_MARKER);\n-    }\n-    (text, captured.truncated)\n+    (String::new(), true) /* ~ changed by cargo-mutants ~ */\n }\n \n fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {\n     // A timed-out receive leaves the thread detached; the channel is dropped\n     // with this function, so a later send is simply ignored.\n     rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))\n         .unwrap_or_default()\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "finish",
+      "return_type": "-> (String, bool)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 486
+        },
+        "start": {
+          "column": 1,
+          "line": 480
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:481:5: replace finish -> (String, bool) with (String::new(), true)",
+    "package": "flow",
+    "replacement": "(String::new(), true)",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 485
+      },
+      "start": {
+        "column": 5,
+        "line": 481
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace finish -> (String, bool) with (String::new(), false)\n@@ -473,21 +473,17 @@\n         .name(\"flow-obligation-reader\".into())\n         .spawn(move || {\n             let _ = tx.send(read_capped_at(pipe, cap));\n         });\n     rx\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n-    let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n-    if captured.truncated {\n-        text.push_str(TRUNCATION_MARKER);\n-    }\n-    (text, captured.truncated)\n+    (String::new(), false) /* ~ changed by cargo-mutants ~ */\n }\n \n fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {\n     // A timed-out receive leaves the thread detached; the channel is dropped\n     // with this function, so a later send is simply ignored.\n     rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))\n         .unwrap_or_default()\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "finish",
+      "return_type": "-> (String, bool)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 486
+        },
+        "start": {
+          "column": 1,
+          "line": 480
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:481:5: replace finish -> (String, bool) with (String::new(), false)",
+    "package": "flow",
+    "replacement": "(String::new(), false)",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 485
+      },
+      "start": {
+        "column": 5,
+        "line": 481
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace finish -> (String, bool) with (\"xyzzy\".into(), true)\n@@ -473,21 +473,17 @@\n         .name(\"flow-obligation-reader\".into())\n         .spawn(move || {\n             let _ = tx.send(read_capped_at(pipe, cap));\n         });\n     rx\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n-    let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n-    if captured.truncated {\n-        text.push_str(TRUNCATION_MARKER);\n-    }\n-    (text, captured.truncated)\n+    (\"xyzzy\".into(), true) /* ~ changed by cargo-mutants ~ */\n }\n \n fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {\n     // A timed-out receive leaves the thread detached; the channel is dropped\n     // with this function, so a later send is simply ignored.\n     rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))\n         .unwrap_or_default()\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "finish",
+      "return_type": "-> (String, bool)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 486
+        },
+        "start": {
+          "column": 1,
+          "line": 480
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:481:5: replace finish -> (String, bool) with (\"xyzzy\".into(), true)",
+    "package": "flow",
+    "replacement": "(\"xyzzy\".into(), true)",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 485
+      },
+      "start": {
+        "column": 5,
+        "line": 481
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace finish -> (String, bool) with (\"xyzzy\".into(), false)\n@@ -473,21 +473,17 @@\n         .name(\"flow-obligation-reader\".into())\n         .spawn(move || {\n             let _ = tx.send(read_capped_at(pipe, cap));\n         });\n     rx\n }\n \n fn finish(captured: Captured) -> (String, bool) {\n-    let mut text = String::from_utf8_lossy(&captured.bytes).to_string();\n-    if captured.truncated {\n-        text.push_str(TRUNCATION_MARKER);\n-    }\n-    (text, captured.truncated)\n+    (\"xyzzy\".into(), false) /* ~ changed by cargo-mutants ~ */\n }\n \n fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {\n     // A timed-out receive leaves the thread detached; the channel is dropped\n     // with this function, so a later send is simply ignored.\n     rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))\n         .unwrap_or_default()\n }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "finish",
+      "return_type": "-> (String, bool)",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 486
+        },
+        "start": {
+          "column": 1,
+          "line": 480
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:481:5: replace finish -> (String, bool) with (\"xyzzy\".into(), false)",
+    "package": "flow",
+    "replacement": "(\"xyzzy\".into(), false)",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 485
+      },
+      "start": {
+        "column": 5,
+        "line": 481
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace receive -> Captured with Default::default()\n@@ -483,18 +483,17 @@\n         text.push_str(TRUNCATION_MARKER);\n     }\n     (text, captured.truncated)\n }\n \n fn receive(rx: &mpsc::Receiver<Captured>, deadline: Instant) -> Captured {\n     // A timed-out receive leaves the thread detached; the channel is dropped\n     // with this function, so a later send is simply ignored.\n-    rx.recv_timeout(deadline.saturating_duration_since(Instant::now()))\n-        .unwrap_or_default()\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// Run one obligation with bounded output and bounded wall-clock containment.\n ///\n /// Bounds:\n /// * at most [`MAX_STREAM_BYTES`] retained per stream (the rest is drained and\n ///   discarded), flagged through [`Outcome::stdout_truncated`] /\n ///   [`Outcome::stderr_truncated`];\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "receive",
+      "return_type": "-> Captured",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 493
+        },
+        "start": {
+          "column": 1,
+          "line": 488
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:491:5: replace receive -> Captured with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 492
+      },
+      "start": {
+        "column": 5,
+        "line": 491
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with None\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in(\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with Some(Default::default())\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in(\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program_in -> Option<PathBuf> with None\n@@ -531,44 +531,17 @@\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n-    let path = path?;\n-    let extensions: Vec<String> = pathext\n-        .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n-        .split(';')\n-        .filter(|e| !e.is_empty())\n-        .map(|e| e.to_ascii_lowercase())\n-        .collect();\n-    let has_extension = std::path::Path::new(program).extension().is_some();\n-    for dir in std::env::split_paths(&path) {\n-        if has_extension {\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        } else {\n-            for extension in &extensions {\n-                let candidate = dir.join(format!(\"{program}{extension}\"));\n-                if candidate.is_file() {\n-                    return Some(candidate);\n-                }\n-            }\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n     None\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 539
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program_in -> Option<PathBuf> with Some(Default::default())\n@@ -531,44 +531,17 @@\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n-    let path = path?;\n-    let extensions: Vec<String> = pathext\n-        .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n-        .split(';')\n-        .filter(|e| !e.is_empty())\n-        .map(|e| e.to_ascii_lowercase())\n-        .collect();\n-    let has_extension = std::path::Path::new(program).extension().is_some();\n-    for dir in std::env::split_paths(&path) {\n-        if has_extension {\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        } else {\n-            for extension in &extensions {\n-                let candidate = dir.join(format!(\"{program}{extension}\"));\n-                if candidate.is_file() {\n-                    return Some(candidate);\n-                }\n-            }\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n     None\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 539
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ delete ! in resolve_program_in\n@@ -535,17 +535,17 @@\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n     let path = path?;\n     let extensions: Vec<String> = pathext\n         .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n         .split(';')\n-        .filter(|e| !e.is_empty())\n+        .filter(|e|  /* ~ changed by cargo-mutants ~ */e.is_empty())\n         .map(|e| e.to_ascii_lowercase())\n         .collect();\n     let has_extension = std::path::Path::new(program).extension().is_some();\n     for dir in std::env::split_paths(&path) {\n         if has_extension {\n             let candidate = dir.join(program);\n             if candidate.is_file() {\n                 return Some(candidate);\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/gitcli.rs:543:21: delete ! in resolve_program_in",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 543
+      },
+      "start": {
+        "column": 21,
+        "line": 543
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with Some(Default::default())\n@@ -563,17 +563,17 @@\n             }\n         }\n     }\n     None\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n     let started = Instant::now();\n     // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the\n     // declared name is kept, so the message names what the policy asked for.\n     let program: PathBuf =\n         resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 572
+        },
+        "start": {
+          "column": 1,
+          "line": 569
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:571:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 571
+      },
+      "start": {
+        "column": 5,
+        "line": 571
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace run_obligation -> Outcome with Default::default()\n@@ -567,103 +567,17 @@\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n     None\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n-    let started = Instant::now();\n-    // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the\n-    // declared name is kept, so the message names what the policy asked for.\n-    let program: PathBuf =\n-        resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));\n-    let mut cmd = Command::new(&program);\n-    cmd.args(&ob.args)\n-        .current_dir(cwd)\n-        .env_clear()\n-        .stdin(Stdio::null())\n-        .stdout(Stdio::piped())\n-        .stderr(Stdio::piped());\n-    for (k, v) in allowed_env() {\n-        cmd.env(k, v);\n-    }\n-    #[cfg(unix)]\n-    {\n-        use std::os::unix::process::CommandExt;\n-        // Process-group leader: a negative PID then addresses the whole group.\n-        cmd.process_group(0);\n-    }\n-    let mut child: Child = match cmd.spawn() {\n-        Ok(child) => child,\n-        Err(e) => {\n-            return Outcome {\n-                id: ob.id.clone(),\n-                status: \"UNSUPPORTED\",\n-                exit: None,\n-                timed_out: false,\n-                duration_ms: started.elapsed().as_millis(),\n-                stdout: String::new(),\n-                stderr: format!(\"cannot start {:?}: {e}\", ob.program),\n-                stdout_truncated: false,\n-                stderr_truncated: false,\n-            }\n-        }\n-    };\n-    let stdout_pipe = child.stdout.take().expect(\"piped stdout\");\n-    let stderr_pipe = child.stderr.take().expect(\"piped stderr\");\n-    let out_rx = spawn_reader(stdout_pipe);\n-    let err_rx = spawn_reader(stderr_pipe);\n-\n-    let deadline = Duration::from_secs(ob.timeout_s.max(1));\n-    let mut timed_out = false;\n-    let exit = loop {\n-        match child.try_wait() {\n-            Ok(Some(status)) => break status.code(),\n-            Ok(None) => {\n-                if started.elapsed() > deadline {\n-                    timed_out = true;\n-                    kill_tree(child.id());\n-                    let _ = child.kill();\n-                    reap_bounded(&mut child);\n-                    break None;\n-                }\n-                std::thread::sleep(POLL_INTERVAL);\n-            }\n-            Err(_) => {\n-                let _ = child.kill();\n-                reap_bounded(&mut child);\n-                break None;\n-            }\n-        }\n-    };\n-\n-    let reader_deadline = Instant::now() + READER_GRACE;\n-    let stdout = finish(receive(&out_rx, reader_deadline));\n-    let stderr = finish(receive(&err_rx, reader_deadline));\n-\n-    let status = if timed_out {\n-        \"TIMEOUT\"\n-    } else if exit == Some(0) {\n-        \"PASSED\"\n-    } else {\n-        \"FAILED\"\n-    };\n-    Outcome {\n-        id: ob.id.clone(),\n-        status,\n-        exit,\n-        timed_out,\n-        duration_ms: started.elapsed().as_millis(),\n-        stdout: stdout.0,\n-        stderr: stderr.0,\n-        stdout_truncated: stdout.1,\n-        stderr_truncated: stderr.1,\n-    }\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n     let deadline = Instant::now() + REAP_GRACE;\n     while Instant::now() < deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:575:5: replace run_obligation -> Outcome with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 661
+      },
+      "start": {
+        "column": 5,
+        "line": 575
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace > with == in run_obligation\n@@ -615,17 +615,17 @@\n     let err_rx = spawn_reader(stderr_pipe);\n \n     let deadline = Duration::from_secs(ob.timeout_s.max(1));\n     let mut timed_out = false;\n     let exit = loop {\n         match child.try_wait() {\n             Ok(Some(status)) => break status.code(),\n             Ok(None) => {\n-                if started.elapsed() > deadline {\n+                if started.elapsed() == /* ~ changed by cargo-mutants ~ */ deadline {\n                     timed_out = true;\n                     kill_tree(child.id());\n                     let _ = child.kill();\n                     reap_bounded(&mut child);\n                     break None;\n                 }\n                 std::thread::sleep(POLL_INTERVAL);\n             }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:623:38: replace > with == in run_obligation",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 623
+      },
+      "start": {
+        "column": 38,
+        "line": 623
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace > with < in run_obligation\n@@ -615,17 +615,17 @@\n     let err_rx = spawn_reader(stderr_pipe);\n \n     let deadline = Duration::from_secs(ob.timeout_s.max(1));\n     let mut timed_out = false;\n     let exit = loop {\n         match child.try_wait() {\n             Ok(Some(status)) => break status.code(),\n             Ok(None) => {\n-                if started.elapsed() > deadline {\n+                if started.elapsed() < /* ~ changed by cargo-mutants ~ */ deadline {\n                     timed_out = true;\n                     kill_tree(child.id());\n                     let _ = child.kill();\n                     reap_bounded(&mut child);\n                     break None;\n                 }\n                 std::thread::sleep(POLL_INTERVAL);\n             }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:623:38: replace > with < in run_obligation",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 623
+      },
+      "start": {
+        "column": 38,
+        "line": 623
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace > with >= in run_obligation\n@@ -615,17 +615,17 @@\n     let err_rx = spawn_reader(stderr_pipe);\n \n     let deadline = Duration::from_secs(ob.timeout_s.max(1));\n     let mut timed_out = false;\n     let exit = loop {\n         match child.try_wait() {\n             Ok(Some(status)) => break status.code(),\n             Ok(None) => {\n-                if started.elapsed() > deadline {\n+                if started.elapsed() >= /* ~ changed by cargo-mutants ~ */ deadline {\n                     timed_out = true;\n                     kill_tree(child.id());\n                     let _ = child.kill();\n                     reap_bounded(&mut child);\n                     break None;\n                 }\n                 std::thread::sleep(POLL_INTERVAL);\n             }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:623:38: replace > with >= in run_obligation",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 623
+      },
+      "start": {
+        "column": 38,
+        "line": 623
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in run_obligation\n@@ -632,17 +632,17 @@\n             Err(_) => {\n                 let _ = child.kill();\n                 reap_bounded(&mut child);\n                 break None;\n             }\n         }\n     };\n \n-    let reader_deadline = Instant::now() + READER_GRACE;\n+    let reader_deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ READER_GRACE;\n     let stdout = finish(receive(&out_rx, reader_deadline));\n     let stderr = finish(receive(&err_rx, reader_deadline));\n \n     let status = if timed_out {\n         \"TIMEOUT\"\n     } else if exit == Some(0) {\n         \"PASSED\"\n     } else {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:640:42: replace + with - in run_obligation",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 640
+      },
+      "start": {
+        "column": 42,
+        "line": 640
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in run_obligation\n@@ -632,17 +632,17 @@\n             Err(_) => {\n                 let _ = child.kill();\n                 reap_bounded(&mut child);\n                 break None;\n             }\n         }\n     };\n \n-    let reader_deadline = Instant::now() + READER_GRACE;\n+    let reader_deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ READER_GRACE;\n     let stdout = finish(receive(&out_rx, reader_deadline));\n     let stderr = finish(receive(&err_rx, reader_deadline));\n \n     let status = if timed_out {\n         \"TIMEOUT\"\n     } else if exit == Some(0) {\n         \"PASSED\"\n     } else {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:640:42: replace + with * in run_obligation",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 640
+      },
+      "start": {
+        "column": 42,
+        "line": 640
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace == with != in run_obligation\n@@ -638,17 +638,17 @@\n     };\n \n     let reader_deadline = Instant::now() + READER_GRACE;\n     let stdout = finish(receive(&out_rx, reader_deadline));\n     let stderr = finish(receive(&err_rx, reader_deadline));\n \n     let status = if timed_out {\n         \"TIMEOUT\"\n-    } else if exit == Some(0) {\n+    } else if exit != /* ~ changed by cargo-mutants ~ */ Some(0) {\n         \"PASSED\"\n     } else {\n         \"FAILED\"\n     };\n     Outcome {\n         id: ob.id.clone(),\n         status,\n         exit,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "run_obligation",
+      "return_type": "-> Outcome",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 662
+        },
+        "start": {
+          "column": 1,
+          "line": 574
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:646:20: replace == with != in run_obligation",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 646
+      },
+      "start": {
+        "column": 20,
+        "line": 646
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace reap_bounded with ()\n@@ -658,23 +658,17 @@\n         stderr: stderr.0,\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n-    let deadline = Instant::now() + REAP_GRACE;\n-    while Instant::now() < deadline {\n-        match child.try_wait() {\n-            Ok(Some(_)) | Err(_) => return,\n-            Ok(None) => std::thread::sleep(POLL_INTERVAL),\n-        }\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Kill the child and, where the platform supports it, its descendants.\n ///\n /// Windows: `taskkill /T /F` walks the process tree.\n ///\n /// POSIX: the child was spawned as a process-group leader (see\n /// [`run_obligation`]), so the shell's `kill` builtin is asked to signal\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:666:5: replace reap_bounded with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 672
+      },
+      "start": {
+        "column": 5,
+        "line": 666
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in reap_bounded\n@@ -658,17 +658,17 @@\n         stderr: stderr.0,\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n-    let deadline = Instant::now() + REAP_GRACE;\n+    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ REAP_GRACE;\n     while Instant::now() < deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n             Ok(None) => std::thread::sleep(POLL_INTERVAL),\n         }\n     }\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:666:35: replace + with - in reap_bounded",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 666
+      },
+      "start": {
+        "column": 35,
+        "line": 666
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in reap_bounded\n@@ -658,17 +658,17 @@\n         stderr: stderr.0,\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n-    let deadline = Instant::now() + REAP_GRACE;\n+    let deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ REAP_GRACE;\n     while Instant::now() < deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n             Ok(None) => std::thread::sleep(POLL_INTERVAL),\n         }\n     }\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:666:35: replace + with * in reap_bounded",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 666
+      },
+      "start": {
+        "column": 35,
+        "line": 666
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with == in reap_bounded\n@@ -659,17 +659,17 @@\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n     let deadline = Instant::now() + REAP_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() == /* ~ changed by cargo-mutants ~ */ deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n             Ok(None) => std::thread::sleep(POLL_INTERVAL),\n         }\n     }\n }\n \n /// Kill the child and, where the platform supports it, its descendants.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:667:26: replace < with == in reap_bounded",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 667
+      },
+      "start": {
+        "column": 26,
+        "line": 667
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with > in reap_bounded\n@@ -659,17 +659,17 @@\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n     let deadline = Instant::now() + REAP_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() > /* ~ changed by cargo-mutants ~ */ deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n             Ok(None) => std::thread::sleep(POLL_INTERVAL),\n         }\n     }\n }\n \n /// Kill the child and, where the platform supports it, its descendants.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:667:26: replace < with > in reap_bounded",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 667
+      },
+      "start": {
+        "column": 26,
+        "line": 667
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace < with <= in reap_bounded\n@@ -659,17 +659,17 @@\n         stdout_truncated: stdout.1,\n         stderr_truncated: stderr.1,\n     }\n }\n \n /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.\n fn reap_bounded(child: &mut Child) {\n     let deadline = Instant::now() + REAP_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() <= /* ~ changed by cargo-mutants ~ */ deadline {\n         match child.try_wait() {\n             Ok(Some(_)) | Err(_) => return,\n             Ok(None) => std::thread::sleep(POLL_INTERVAL),\n         }\n     }\n }\n \n /// Kill the child and, where the platform supports it, its descendants.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "reap_bounded",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 664
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:667:26: replace < with <= in reap_bounded",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 667
+      },
+      "start": {
+        "column": 26,
+        "line": 667
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace kill_tree with ()\n@@ -678,47 +678,17 @@\n ///\n /// POSIX: the child was spawned as a process-group leader (see\n /// [`run_obligation`]), so the shell's `kill` builtin is asked to signal\n /// `-<pid>`; the plain PID is signalled as a fallback. A descendant that leaves\n /// the process group is not reached — the limitation is documented, never\n /// hidden. (No `unsafe` FFI: the POSIX shell builtin is used instead of\n /// `libc::kill`, keeping the crate dependency-free.)\n pub fn kill_tree(pid: u32) {\n-    #[cfg(windows)]\n-    {\n-        let _ = Command::new(\"taskkill\")\n-            .args([\"/PID\", &pid.to_string(), \"/T\", \"/F\"])\n-            .stdout(Stdio::null())\n-            .stderr(Stdio::null())\n-            .status();\n-    }\n-    #[cfg(not(windows))]\n-    {\n-        // `-s KILL` avoids the `-9`/`-9 -pgid` option ambiguity, but the group id\n-        // still starts with `-`: without an explicit `--`, dash parses `-1234` as\n-        // an option (\"Illegal option -9\") and the group is never signalled — only\n-        // the direct child died, and a descendant of a timed-out obligation could\n-        // outlive the containment. `--` makes the operand unambiguous in dash and\n-        // bash alike.\n-        let group = format!(\"-{pid}\");\n-        let direct = pid.to_string();\n-        let _ = Command::new(\"sh\")\n-            .args([\n-                \"-c\",\n-                \"kill -s KILL -- \\\"$1\\\" 2>/dev/null || kill -s KILL \\\"$2\\\" 2>/dev/null\",\n-                \"flow-kill-tree\",\n-                &group,\n-                &direct,\n-            ])\n-            .stdin(Stdio::null())\n-            .stdout(Stdio::null())\n-            .stderr(Stdio::null())\n-            .status();\n-    }\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Redact values of secret-looking environment variables and known token shapes\n /// BEFORE a log is written to disk.\n ///\n /// Name matching is deliberately broad (`SECRET`, `TOKEN`, `PASSWORD`, `PASSWD`,\n /// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a\n /// value that happens to equal a credential is harmless, while leaking one is not.\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "kill_tree",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 717
+        },
+        "start": {
+          "column": 1,
+          "line": 675
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:686:5: replace kill_tree with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 716
+      },
+      "start": {
+        "column": 5,
+        "line": 686
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace redact -> String with String::new()\n@@ -723,57 +723,17 @@\n /// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a\n /// value that happens to equal a credential is harmless, while leaking one is not.\n /// Shape matching covers the tokens that are recognisable without their variable\n /// name (GitHub `ghp_`/`gho_`/`ghs_`/`github_pat_`, OpenAI `sk-`, AWS `AKIA`/`ASIA`\n /// access-key ids). A secret that is printed from a file, with no matching\n /// environment variable and no recognisable shape, is **not** covered — there is no\n /// sandbox and no secret broker (documented non-guarantee).\n pub fn redact(text: &str) -> String {\n-    let mut out = text.to_string();\n-    // `vars()` panics on a non-Unicode value, which on Unix is ordinary. The text\n-    // being redacted is already valid UTF-8, so a lossy view of the value matches\n-    // it exactly whenever the secret is actually present.\n-    for (name, value) in std::env::vars_os() {\n-        let upper = name.to_string_lossy().to_ascii_uppercase();\n-        let value = value.to_string_lossy();\n-        let looks_secret = [\n-            \"SECRET\",\n-            \"TOKEN\",\n-            \"PASSWORD\",\n-            \"PASSWD\",\n-            \"PRIVATE_KEY\",\n-            \"API_KEY\",\n-            \"APIKEY\",\n-            \"ACCESS_KEY\",\n-            \"SECRET_KEY\",\n-            \"CREDENTIAL\",\n-            \"AUTH_TOKEN\",\n-        ]\n-        .iter()\n-        .any(|needle| upper.contains(needle));\n-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {\n-            out = out.replace(value.as_ref(), \"[REDACTED]\");\n-        }\n-    }\n-    // Prefixes of token families whose value is recognisable on its own. `AKIA`\n-    // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n-    for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n-        while let Some(idx) = out.find(shape) {\n-            let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n-                .map(|off| idx + off)\n-                .unwrap_or(out.len());\n-            if end <= idx + shape.len() {\n-                break;\n-            }\n-            out.replace_range(idx..end, \"[REDACTED]\");\n-        }\n-    }\n-    out\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn redacts_secret_env_value() {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:731:5: replace redact -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 771
+      },
+      "start": {
+        "column": 5,
+        "line": 731
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace redact -> String with \"xyzzy\".into()\n@@ -723,57 +723,17 @@\n /// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a\n /// value that happens to equal a credential is harmless, while leaking one is not.\n /// Shape matching covers the tokens that are recognisable without their variable\n /// name (GitHub `ghp_`/`gho_`/`ghs_`/`github_pat_`, OpenAI `sk-`, AWS `AKIA`/`ASIA`\n /// access-key ids). A secret that is printed from a file, with no matching\n /// environment variable and no recognisable shape, is **not** covered — there is no\n /// sandbox and no secret broker (documented non-guarantee).\n pub fn redact(text: &str) -> String {\n-    let mut out = text.to_string();\n-    // `vars()` panics on a non-Unicode value, which on Unix is ordinary. The text\n-    // being redacted is already valid UTF-8, so a lossy view of the value matches\n-    // it exactly whenever the secret is actually present.\n-    for (name, value) in std::env::vars_os() {\n-        let upper = name.to_string_lossy().to_ascii_uppercase();\n-        let value = value.to_string_lossy();\n-        let looks_secret = [\n-            \"SECRET\",\n-            \"TOKEN\",\n-            \"PASSWORD\",\n-            \"PASSWD\",\n-            \"PRIVATE_KEY\",\n-            \"API_KEY\",\n-            \"APIKEY\",\n-            \"ACCESS_KEY\",\n-            \"SECRET_KEY\",\n-            \"CREDENTIAL\",\n-            \"AUTH_TOKEN\",\n-        ]\n-        .iter()\n-        .any(|needle| upper.contains(needle));\n-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {\n-            out = out.replace(value.as_ref(), \"[REDACTED]\");\n-        }\n-    }\n-    // Prefixes of token families whose value is recognisable on its own. `AKIA`\n-    // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n-    for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n-        while let Some(idx) = out.find(shape) {\n-            let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n-                .map(|off| idx + off)\n-                .unwrap_or(out.len());\n-            if end <= idx + shape.len() {\n-                break;\n-            }\n-            out.replace_range(idx..end, \"[REDACTED]\");\n-        }\n-    }\n-    out\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn redacts_secret_env_value() {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:731:5: replace redact -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 771
+      },
+      "start": {
+        "column": 5,
+        "line": 731
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace && with || in redact\n@@ -745,17 +745,17 @@\n             \"APIKEY\",\n             \"ACCESS_KEY\",\n             \"SECRET_KEY\",\n             \"CREDENTIAL\",\n             \"AUTH_TOKEN\",\n         ]\n         .iter()\n         .any(|needle| upper.contains(needle));\n-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {\n+        if looks_secret && value.len() >= 8 || /* ~ changed by cargo-mutants ~ */ out.contains(value.as_ref()) {\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:753:45: replace && with || in redact",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 753
+      },
+      "start": {
+        "column": 45,
+        "line": 753
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace && with || in redact\n@@ -745,17 +745,17 @@\n             \"APIKEY\",\n             \"ACCESS_KEY\",\n             \"SECRET_KEY\",\n             \"CREDENTIAL\",\n             \"AUTH_TOKEN\",\n         ]\n         .iter()\n         .any(|needle| upper.contains(needle));\n-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {\n+        if looks_secret || /* ~ changed by cargo-mutants ~ */ value.len() >= 8 && out.contains(value.as_ref()) {\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:753:25: replace && with || in redact",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 753
+      },
+      "start": {
+        "column": 25,
+        "line": 753
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace >= with < in redact\n@@ -745,17 +745,17 @@\n             \"APIKEY\",\n             \"ACCESS_KEY\",\n             \"SECRET_KEY\",\n             \"CREDENTIAL\",\n             \"AUTH_TOKEN\",\n         ]\n         .iter()\n         .any(|needle| upper.contains(needle));\n-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {\n+        if looks_secret && value.len() < /* ~ changed by cargo-mutants ~ */ 8 && out.contains(value.as_ref()) {\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:753:40: replace >= with < in redact",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 753
+      },
+      "start": {
+        "column": 40,
+        "line": 753
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace && with || in redact\n@@ -754,17 +754,17 @@\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n+                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' || /* ~ changed by cargo-mutants ~ */ c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:762:72: replace && with || in redact",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 762
+      },
+      "start": {
+        "column": 72,
+        "line": 762
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace && with || in redact\n@@ -754,17 +754,17 @@\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n+                .find(|c: char| !c.is_ascii_alphanumeric() || /* ~ changed by cargo-mutants ~ */ c != '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:762:60: replace && with || in redact",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 62,
+        "line": 762
+      },
+      "start": {
+        "column": 60,
+        "line": 762
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ delete ! in redact\n@@ -754,17 +754,17 @@\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n+                .find(|c: char|  /* ~ changed by cargo-mutants ~ */c.is_ascii_alphanumeric() && c != '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/gitcli.rs:762:33: delete ! in redact",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 762
+      },
+      "start": {
+        "column": 33,
+        "line": 762
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace != with == in redact\n@@ -754,17 +754,17 @@\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n+                .find(|c: char| !c.is_ascii_alphanumeric() && c == /* ~ changed by cargo-mutants ~ */ '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:762:65: replace != with == in redact",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 67,
+        "line": 762
+      },
+      "start": {
+        "column": 65,
+        "line": 762
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace != with == in redact\n@@ -754,17 +754,17 @@\n             out = out.replace(value.as_ref(), \"[REDACTED]\");\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n+                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c == /* ~ changed by cargo-mutants ~ */ '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:762:77: replace != with == in redact",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 79,
+        "line": 762
+      },
+      "start": {
+        "column": 77,
+        "line": 762
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in redact\n@@ -755,17 +755,17 @@\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n-                .map(|off| idx + off)\n+                .map(|off| idx - /* ~ changed by cargo-mutants ~ */ off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n     out\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:763:32: replace + with - in redact",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 763
+      },
+      "start": {
+        "column": 32,
+        "line": 763
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in redact\n@@ -755,17 +755,17 @@\n         }\n     }\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n-                .map(|off| idx + off)\n+                .map(|off| idx * /* ~ changed by cargo-mutants ~ */ off)\n                 .unwrap_or(out.len());\n             if end <= idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n     out\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:763:32: replace + with * in redact",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 763
+      },
+      "start": {
+        "column": 32,
+        "line": 763
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace <= with > in redact\n@@ -757,17 +757,17 @@\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n-            if end <= idx + shape.len() {\n+            if end > /* ~ changed by cargo-mutants ~ */ idx + shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n     out\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:765:20: replace <= with > in redact",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 765
+      },
+      "start": {
+        "column": 20,
+        "line": 765
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with - in redact\n@@ -757,17 +757,17 @@\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n-            if end <= idx + shape.len() {\n+            if end <= idx - /* ~ changed by cargo-mutants ~ */ shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n     out\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:765:27: replace + with - in redact",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 765
+      },
+      "start": {
+        "column": 27,
+        "line": 765
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace + with * in redact\n@@ -757,17 +757,17 @@\n     // Prefixes of token families whose value is recognisable on its own. `AKIA`\n     // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.\n     for shape in [\"ghp_\", \"gho_\", \"ghs_\", \"github_pat_\", \"sk-\", \"AKIA\", \"ASIA\"] {\n         while let Some(idx) = out.find(shape) {\n             let end = out[idx..]\n                 .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')\n                 .map(|off| idx + off)\n                 .unwrap_or(out.len());\n-            if end <= idx + shape.len() {\n+            if end <= idx * /* ~ changed by cargo-mutants ~ */ shape.len() {\n                 break;\n             }\n             out.replace_range(idx..end, \"[REDACTED]\");\n         }\n     }\n     out\n }\n \n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "redact",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 772
+        },
+        "start": {
+          "column": 1,
+          "line": 719
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/gitcli.rs:765:27: replace + with * in redact",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 765
+      },
+      "start": {
+        "column": 27,
+        "line": 765
+      }
+    }
+  }
+]

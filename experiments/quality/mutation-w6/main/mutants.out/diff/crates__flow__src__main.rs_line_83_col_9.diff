@@ -1,0 +1,24 @@
+--- crates/flow/src/main.rs
++++ delete match arm "help" | "-h" | "--help" in dispatch
+@@ -75,20 +75,17 @@
+ 
+ fn dispatch(args: &[String]) -> u8 {
+     let Some(command) = args.first().map(String::as_str) else {
+         print!("{USAGE}");
+         return 2;
+     };
+     let rest = &args[1..];
+     match command {
+-        "help" | "-h" | "--help" => {
+-            print!("{USAGE}");
+-            0
+-        }
++         /* ~ changed by cargo-mutants ~ */
+         "version" | "--version" => {
+             emit(Json::obj(vec![
+                 ("status", Json::str("VERSION")),
+                 (
+                     "tool",
+                     Json::str(format!("flow {}", env!("CARGO_PKG_VERSION"))),
+                 ),
+                 ("policy_version", Json::str(state::POLICY_VERSION)),

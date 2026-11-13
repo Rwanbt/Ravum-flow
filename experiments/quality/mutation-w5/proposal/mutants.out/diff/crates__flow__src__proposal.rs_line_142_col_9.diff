@@ -1,0 +1,74 @@
+--- crates/flow/src/proposal.rs
++++ replace Proposal::from_json -> Proposal with Default::default()
+@@ -134,70 +134,17 @@
+                 Err(e) => return Err(format!("cannot load proposal {id}: {e}")),
+             }
+         }
+         out.sort_by(|a, b| a.proposal_id.cmp(&b.proposal_id));
+         Ok(out)
+     }
+ 
+     pub fn from_json(value: Json) -> Proposal {
+-        let get = |key: &str| {
+-            value
+-                .get(key)
+-                .and_then(Json::as_str)
+-                .unwrap_or("")
+-                .to_string()
+-        };
+-        let changes = value
+-            .get("changes")
+-            .and_then(Json::as_arr)
+-            .map(|items| {
+-                items
+-                    .iter()
+-                    .map(|c| Change {
+-                        status: c
+-                            .get("status")
+-                            .and_then(Json::as_str)
+-                            .unwrap_or("")
+-                            .to_string(),
+-                        path: c
+-                            .get("path")
+-                            .and_then(Json::as_str)
+-                            .unwrap_or("")
+-                            .to_string(),
+-                        old_mode: c
+-                            .get("old_mode")
+-                            .and_then(Json::as_str)
+-                            .unwrap_or("")
+-                            .to_string(),
+-                        new_mode: c
+-                            .get("new_mode")
+-                            .and_then(Json::as_str)
+-                            .unwrap_or("")
+-                            .to_string(),
+-                        new_oid: c
+-                            .get("new_oid")
+-                            .and_then(Json::as_str)
+-                            .unwrap_or("")
+-                            .to_string(),
+-                    })
+-                    .collect()
+-            })
+-            .unwrap_or_default();
+-        Proposal {
+-            proposal_id: get("proposal_id"),
+-            agent_id: get("agent_id"),
+-            task_id: get("task_id"),
+-            base_commit: get("base_commit"),
+-            base_tree: get("base_tree"),
+-            tree_oid: get("tree_oid"),
+-            content_digest: get("content_digest"),
+-            changes,
+-            json: value,
+-        }
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[derive(Debug, Clone)]
+ pub struct Candidate {
+     pub candidate_id: String,
+     pub base_commit: String,
+     pub tree_oid: String,

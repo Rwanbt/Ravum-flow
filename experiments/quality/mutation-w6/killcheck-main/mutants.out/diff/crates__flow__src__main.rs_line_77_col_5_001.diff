@@ -1,0 +1,181 @@
+--- crates/flow/src/main.rs
++++ replace dispatch -> u8 with 1
+@@ -69,177 +69,17 @@
+ 
+ fn main() -> ExitCode {
+     let args: Vec<String> = std::env::args().skip(1).collect();
+     let code = dispatch(&args);
+     ExitCode::from(code)
+ }
+ 
+ fn dispatch(args: &[String]) -> u8 {
+-    let Some(command) = args.first().map(String::as_str) else {
+-        print!("{USAGE}");
+-        return 2;
+-    };
+-    let rest = &args[1..];
+-    match command {
+-        "help" | "-h" | "--help" => { // survival-probe
+-            print!("{USAGE}");
+-            0
+-        }
+-        "version" | "--version" => { // survival-probe
+-            emit(Json::obj(vec![
+-                ("status", Json::str("VERSION")),
+-                (
+-                    "tool",
+-                    Json::str(format!("flow {}", env!("CARGO_PKG_VERSION"))),
+-                ),
+-                ("policy_version", Json::str(state::POLICY_VERSION)),
+-                ("git", Json::str(gitcli::Git::new(".").version())),
+-                ("schema", Json::str(state::SCHEMA_RECEIPT)),
+-                // Every document this build can emit, so a client that discovers
+-                // schemas from `version` learns the whole contract instead of
+-                // half of it.
+-                (
+-                    "schemas",
+-                    Json::str(
+-                        [
+-                            state::SCHEMA_CONFIG,
+-                            state::SCHEMA_RECEIPT,
+-                            state::SCHEMA_JOURNAL,
+-                            state::SCHEMA_PROPOSAL,
+-                            state::SCHEMA_CANDIDATE,
+-                            state::SCHEMA_ADOPTION,
+-                            state::SCHEMA_PLAN,
+-                            state::SCHEMA_STATUS,
+-                            state::SCHEMA_PROPOSAL_LIST,
+-                        ]
+-                        .join(", "),
+-                    ),
+-                ),
+-            ]));
+-            0
+-        }
+-        _ => {
+-            let root =
+-                match gitcli::toplevel(&std::env::current_dir().unwrap_or(PathBuf::from("."))) {
+-                    Ok(root) => root,
+-                    Err(err) => {
+-                        emit_error(&err);
+-                        return 1;
+-                    }
+-                };
+-            if let Err(reason) = validate_flags(command, rest) {
+-                emit_error(&reason);
+-                return 2;
+-            }
+-            let result = match command {
+-                "init" => commands::cmd_init(
+-                    &root,
+-                    has_flag(rest, "--force"),
+-                    has_flag(rest, "--adopt-policy"),
+-                ),
+-                "approve" => commands::cmd_approve(&root),
+-                "doctor" => commands::cmd_doctor(&root),
+-                "status" => commands::cmd_status(&root),
+-                "run" => {
+-                    // A timeout that is silently dropped would make the receipt
+-                    // prove a deadline that was never applied, so an unparseable
+-                    // or zero value is a usage error rather than a default.
+-                    let timeout = match flag_value(rest, "--timeout") {
+-                        None => None,
+-                        Some(raw) => match raw.parse::<u64>() {
+-                            Ok(seconds) if seconds >= 1 => Some(seconds),
+-                            _ => {
+-                                emit_error(&format!(
+-                                    "`--timeout` needs a whole number of seconds >= 1 (found {raw:?})"
+-                                ));
+-                                return 2;
+-                            }
+-                        },
+-                    };
+-                    commands::cmd_run(
+-                        &root,
+-                        collect_values(rest, &["--obligation", "--obligations"]),
+-                        timeout,
+-                        flag_value(rest, "--candidate"),
+-                    )
+-                }
+-                "publish" => commands::cmd_publish(
+-                    &root,
+-                    flag_value(rest, "--ref"),
+-                    flag_value(rest, "--expected-old"),
+-                    flag_value(rest, "--message"),
+-                    flag_value(rest, "--candidate"),
+-                    has_flag(rest, "--dry-run"),
+-                ),
+-                "propose" => commands::cmd_propose(
+-                    &root,
+-                    flag_value(rest, "--agent"),
+-                    flag_value(rest, "--task"),
+-                    flag_value(rest, "--base"),
+-                    flag_value(rest, "--patch"),
+-                    flag_value(rest, "--key"),
+-                ),
+-                "proposals" => {
+-                    let sub = rest.first().map(String::as_str).unwrap_or("list");
+-                    match sub {
+-                        "list" => commands::cmd_proposals(&root, None),
+-                        "show" => match rest.get(1) {
+-                            Some(id) => commands::cmd_proposals(&root, Some(id.clone())),
+-                            None => {
+-                                emit_error("`flow proposals show <id>` needs a proposal id");
+-                                return 2;
+-                            }
+-                        },
+-                        other => {
+-                            emit_error(&format!(
+-                                "unknown `proposals` subcommand {other:?} (list | show <id>)"
+-                            ));
+-                            return 2;
+-                        }
+-                    }
+-                }
+-                "assemble" => match collect_values(rest, &["--proposal"]) {
+-                    Some(ids) => commands::cmd_assemble(&root, &ids),
+-                    None => commands::cmd_assemble(&root, &[]),
+-                },
+-                "reconcile" => commands::cmd_reconcile(&root),
+-                "explain" => commands::cmd_explain(
+-                    &root,
+-                    flag_value(rest, "--tree"),
+-                    flag_value(rest, "--candidate"),
+-                ),
+-                "disable" => commands::cmd_set_disabled(&root, true),
+-                "enable" => commands::cmd_set_disabled(&root, false),
+-                other => {
+-                    emit_error(&format!("unknown command {other:?} (run `flow help`)"));
+-                    return 2;
+-                }
+-            };
+-            match result {
+-                Ok(value) => {
+-                    let mut code = exit_code_for(&value);
+-                    // A diagnostic that found a broken guarantee is not a success.
+-                    // The documented contract is `0 when overall=OK, 1 when
+-                    // overall=FAILED`, and it is tested.
+-                    if command == "doctor"
+-                        && value.get("overall").and_then(Json::as_str) == Some("FAILED")
+-                    {
+-                        code = 1;
+-                    }
+-                    emit(value);
+-                    code
+-                }
+-                Err(err) => {
+-                    emit_error(&err);
+-                    1
+-                }
+-            }
+-        }
+-    }
++    1 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Flags that take a value, per command. An unknown flag, or a value flag
+ /// without a value, is a usage error: silently ignoring `--dry-run` on a program
+ /// that does not know it would publish when the operator asked for a plan.
+ fn value_flags(command: &str) -> &'static [&'static str] {
+     match command {
+         "run" => &["--obligation", "--obligations", "--timeout", "--candidate"],

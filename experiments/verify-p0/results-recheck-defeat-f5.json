@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "post": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-f5-target\\debug\\flow.exe",
+    "sha256": "50c92cd80be2947724be64da437ec19b7bd882e4af6f796c30af4767d2ee414d"
+  },
+  "probes": {
+    "a_write_and_revert": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 705
+      },
+      "receipt": true,
+      "checkout_recheck": "OK",
+      "obligation_log": "seen_hex=414c5048410a",
+      "expected": "PASSED: the transient rewrite is reverted before the re-check"
+    },
+    "b_extra_directories": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 968
+      },
+      "receipt": true,
+      "checkout_recheck": "OK",
+      "expected": "PASSED: extra entries are allowed at the re-check (build outputs); the deleted one is gone, the leftover is ignored"
+    },
+    "c1_declared_dir_component": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 819
+      },
+      "receipt": true,
+      "checkout_recheck": "OK",
+      "expected": "PASSED: `nested` is declared (implied by nested/file.txt); re-creating it must not be a false positive"
+    },
+    "c2_undeclared_child_dir": {
+      "run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "UNSUPPORTED_CHECKOUT",
+        "reason": "the checkout holds 1 directory(ies) the tree does not declare (for example [\"nested/extra\"]): a hook or the host created them, and an empty directory can change what an obligation discovers",
+        "duration_ms": 659
+      },
+      "receipt": false,
+      "expected": "REFUSED/UNSUPPORTED_CHECKOUT: nested/extra is not declared"
+    },
+    "e_dot_git_race": {
+      "run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "UNSUPPORTED_CHECKOUT",
+        "reason": "the checkout holds 1 file(s) the tree does not declare (for example [\".git/HEAD\"]): a hook or the host created them, so the obligations would not see exactly the verified tree",
+        "duration_ms": 344
+      },
+      "receipt": false,
+      "obligation_log": "",
+      "expected": "REFUSED/UNSUPPORTED_CHECKOUT: `materialise` removes the `.git` link before the check, so a `.git` entry present at check time is an extra entry (was skipped at 7a034ff)"
+    },
+    "e2_dot_git_after_check": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 950
+      },
+      "receipt": true,
+      "checkout_recheck": "OK",
+      "obligation_log": "git_dir_seen=True",
+      "expected": "PASSED: the re-check proves only declared files; extras created while the obligations run are allowed (documented)"
+    }
+  }
+}

@@ -1,0 +1,118 @@
+--- crates/flow/src/lock.rs
++++ replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())
+@@ -213,114 +213,17 @@
+         if let Some(owner) = parse(&text) {
+             return Some(owner);
+         }
+     }
+     None
+ }
+ 
+ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
+-    let path = lock_path(root);
+-    if let Some(parent) = path.parent() {
+-        fs::create_dir_all(parent)
+-            .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
+-    }
+-    let deadline = Instant::now() + ACQUIRE_BUDGET;
+-    loop {
+-        let ours = nonce();
+-        match create_lock_file(&path, &ours, purpose) {
+-            Ok(()) => {
+-                return Ok(LockGuard {
+-                    path: path.clone(),
+-                    nonce: ours,
+-                })
+-            }
+-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+-                let text = match fs::read_to_string(&path) {
+-                    Ok(t) => t,
+-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+-                    Err(err) => {
+-                        return Err(LockError::Unknown(format!(
+-                            "lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running",
+-                            path.display()
+-                        )))
+-                    }
+-                };
+-                // A creator may have created the file and not finished writing it
+-                // yet. Wait for the record to appear before concluding anything:
+-                // "empty right now" is not "unattributable forever".
+-                let owner = match wait_for_record(&path, text) {
+-                    Some(owner) => owner,
+-                    None => {
+-                        return Err(LockError::Unknown(format!(
+-                            "lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it",
+-                            path.display(),
+-                            LOCK_SCHEMA,
+-                            path.display()
+-                        )))
+-                    }
+-                };
+-                if owner.pid == std::process::id() {
+-                    return Err(LockError::Held(format!(
+-                        "this process already holds {} for {:?}",
+-                        path.display(),
+-                        owner.purpose
+-                    )));
+-                }
+-                match pid_alive(owner.pid) {
+-                    // A live owner is never displaced, whatever the age says.
+-                    Some(true) => {
+-                        if Instant::now() >= deadline {
+-                            return Err(LockError::Held(format!(
+-                                "another flow process (pid {}, purpose {:?}, {}s old) holds {}",
+-                                owner.pid,
+-                                owner.purpose,
+-                                crate::state::unix_now().saturating_sub(owner.at),
+-                                path.display()
+-                            )));
+-                        }
+-                    }
+-                    None => {
+-                        return Err(LockError::Unknown(format!(
+-                            "cannot establish whether pid {} (purpose {:?}) is alive on this host, so {} is not stolen",
+-                            owner.pid,
+-                            owner.purpose,
+-                            path.display()
+-                        )))
+-                    }
+-                    Some(false) => {
+-                        // Provably dead owner: steal only if the file still
+-                        // carries the nonce that was observed, so a concurrent
+-                        // successor is never removed.
+-                        match fs::read_to_string(&path) {
+-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {
+-                                match fs::remove_file(&path) {
+-                                    Ok(()) => continue,
+-                                    Err(err) => {
+-                                        return Err(LockError::Io(format!(
+-                                            "cannot remove the dead lock {}: {err}",
+-                                            path.display()
+-                                        )))
+-                                    }
+-                                }
+-                            }
+-                            _ => continue,
+-                        }
+-                    }
+-                }
+-                std::thread::sleep(POLL_INTERVAL);
+-            }
+-            Err(e) => {
+-                return Err(LockError::Io(format!(
+-                    "cannot create {}: {e}",
+-                    path.display()
+-                )))
+-            }
+-        }
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(windows)]
+ fn pid_alive(pid: u32) -> Option<bool> {
+     let out = std::process::Command::new("tasklist")
+         .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+         .output()
+         .ok()?;

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1879,17 +1879,17 @@
+                 Json::str("plan only: no commit was created, no ref was moved, no journal record was appended"),
+             ),
+         ]));
+     }
+     let message = message.unwrap_or_else(|| format!("flow: publish verified tree {tree}"));
+     let commit = git.commit_tree(&tree, &old, &message)?;
+     // The commit we are about to publish must carry exactly the qualified tree.
+     let prepared_tree = git.capture(&["rev-parse", &format!("{commit}^{{tree}}")])?;
+-    if prepared_tree != tree {
++    if prepared_tree == /* ~ changed by cargo-mutants ~ */ tree {
+         return Ok(refused_code(
+             "COMMIT_TREE_MISMATCH",
+             format!(
+                 "prepared commit {commit} carries tree {prepared_tree}, not the verified {tree}"
+             ),
+         ));
+     }
+     let id = format!(

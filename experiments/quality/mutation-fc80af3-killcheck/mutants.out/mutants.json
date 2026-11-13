@@ -1,0 +1,40 @@
+[
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace * with +\n@@ -30,17 +30,17 @@\n use crate::paths;\n // One validator for every \"is this a Git object id\" question in the crate: a\n // second copy is a rule that can drift away from the trust boundary.\n use crate::paths::is_object_id;\n use crate::sha256::sha256_hex;\n use crate::state::{self, SCHEMA_CANDIDATE, SCHEMA_PROPOSAL};\n \n /// A patch larger than this is not a proposal, it is a repository dump.\n-pub const MAX_PATCH_BYTES: usize = 32 * 1024 * 1024;\n+pub const MAX_PATCH_BYTES: usize = 32 * 1024 + /* ~ changed by cargo-mutants ~ */ 1024;\n /// Blobs are read only to validate a symlink target; bound that read too.\n const MAX_SYMLINK_TARGET_BYTES: usize = 4096;\n \n pub fn refusal(code: &str, detail: impl Into<String>) -> Json {\n     Json::obj(vec![\n         (\"status\", Json::str(\"REFUSED\")),\n         (\"code\", Json::str(code)),\n         (\"reason\", Json::str(detail.into())),\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:38:46: replace * with +",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 38
+      },
+      "start": {
+        "column": 46,
+        "line": 38
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace * with +\n@@ -30,17 +30,17 @@\n use crate::paths;\n // One validator for every \"is this a Git object id\" question in the crate: a\n // second copy is a rule that can drift away from the trust boundary.\n use crate::paths::is_object_id;\n use crate::sha256::sha256_hex;\n use crate::state::{self, SCHEMA_CANDIDATE, SCHEMA_PROPOSAL};\n \n /// A patch larger than this is not a proposal, it is a repository dump.\n-pub const MAX_PATCH_BYTES: usize = 32 * 1024 * 1024;\n+pub const MAX_PATCH_BYTES: usize = 32 + /* ~ changed by cargo-mutants ~ */ 1024 * 1024;\n /// Blobs are read only to validate a symlink target; bound that read too.\n const MAX_SYMLINK_TARGET_BYTES: usize = 4096;\n \n pub fn refusal(code: &str, detail: impl Into<String>) -> Json {\n     Json::obj(vec![\n         (\"status\", Json::str(\"REFUSED\")),\n         (\"code\", Json::str(code)),\n         (\"reason\", Json::str(detail.into())),\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": null,
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:38:39: replace * with +",
+    "package": "flow",
+    "replacement": "+",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 38
+      },
+      "start": {
+        "column": 39,
+        "line": 38
+      }
+    }
+  }
+]

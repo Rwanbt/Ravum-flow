@@ -1,0 +1,41 @@
+--- crates/flow/src/json.rs
++++ replace Parser<'a>::array -> Result<Json, String> with Ok(Default::default())
+@@ -241,37 +241,17 @@
+                 }
+                 _ => return Err(format!("expected ',' or '}}' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Obj(pairs))
+     }
+ 
+     fn array(&mut self) -> Result<Json, String> {
+-        self.pos += 1;
+-        let mut items = Vec::new();
+-        self.ws();
+-        if self.peek() == Some(b']') {
+-            self.pos += 1;
+-            return Ok(Json::Arr(items));
+-        }
+-        loop {
+-            self.ws();
+-            items.push(self.value()?);
+-            self.ws();
+-            match self.peek() {
+-                Some(b',') => self.pos += 1,
+-                Some(b']') => {
+-                    self.pos += 1;
+-                    break;
+-                }
+-                _ => return Err(format!("expected ',' or ']' at {}", self.pos)),
+-            }
+-        }
+-        Ok(Json::Arr(items))
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn string(&mut self) -> Result<String, String> {
+         self.pos += 1; // opening quote
+         let mut out = String::new();
+         loop {
+             let b = self.peek().ok_or("unterminated string")?;
+             self.pos += 1;

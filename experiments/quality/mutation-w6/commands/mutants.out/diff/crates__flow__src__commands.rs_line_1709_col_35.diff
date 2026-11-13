@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1701,17 +1701,17 @@
+         return Ok(refused_code(
+             "POLICY_VERSION_MISMATCH",
+             format!(
+                 "receipt policy_version {:?} != current {:?}",
+                 receipt.policy_version, config.policy_version
+             ),
+         ));
+     }
+-    if receipt.execution_boundary != config.execution_boundary {
++    if receipt.execution_boundary == /* ~ changed by cargo-mutants ~ */ config.execution_boundary {
+         return Ok(refused_code(
+             "EXECUTION_BOUNDARY_MISMATCH",
+             format!(
+                 "receipt execution_boundary {:?} != current {:?}",
+                 receipt.execution_boundary, config.execution_boundary
+             ),
+         ));
+     }

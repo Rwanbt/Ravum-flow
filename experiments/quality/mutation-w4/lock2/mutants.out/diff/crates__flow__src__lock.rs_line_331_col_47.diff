@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace || with && in pid_alive
+@@ -323,17 +323,17 @@
+     let out = std::process::Command::new("tasklist")
+         .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+         .output()
+         .ok()?;
+     if !out.status.success() {
+         return None;
+     }
+     let text = String::from_utf8_lossy(&out.stdout);
+-    Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
++    Some(text.contains(&format!("\"{pid}\"")) && /* ~ changed by cargo-mutants ~ */ text.contains(&format!(",{pid},")))
+ }
+ 
+ /// Ask `kill -0` and read its message.
+ ///
+ /// The exit status alone cannot answer the question: it is non-zero both for a
+ /// process that is gone (ESRCH) and for a live process owned by another user
+ /// (EPERM). Liveness is only "provable" when the message says the process does
+ /// not exist; anything else is unknown, and unknown is never stolen.

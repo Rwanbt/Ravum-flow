@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_publish
+@@ -1669,17 +1669,17 @@
+         return Ok(refused_code(
+             "SCOPE_INCOMPLETE",
+             format!(
+                 "receipt scope is {:?}: a selective run is diagnostic and never publishable",
+                 receipt.scope_mode
+             ),
+         ));
+     }
+-    if !receipt.missing_required.is_empty() {
++    if  /* ~ changed by cargo-mutants ~ */receipt.missing_required.is_empty() {
+         return Ok(refused_code(
+             "MISSING_REQUIRED",
+             format!(
+                 "receipt does not cover required obligations {:?}",
+                 receipt.missing_required
+             ),
+         ));
+     }

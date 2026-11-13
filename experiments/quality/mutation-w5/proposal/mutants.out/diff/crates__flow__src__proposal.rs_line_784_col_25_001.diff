@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace < with > in path_conflicts
+@@ -776,17 +776,17 @@
+         for change in &proposal.changes {
+             per_path
+                 .entry(change.path.as_str())
+                 .or_default()
+                 .push(proposal);
+         }
+     }
+     for (path, owners) in &per_path {
+-        if owners.len() < 2 {
++        if owners.len() > /* ~ changed by cargo-mutants ~ */ 2 {
+             continue;
+         }
+         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();
+         let mut modes: std::collections::BTreeSet<(String, String)> =
+             std::collections::BTreeSet::new();
+         for proposal in owners {
+             for change in proposal.changes.iter().filter(|c| &c.path == path) {
+                 if change.status != "M"

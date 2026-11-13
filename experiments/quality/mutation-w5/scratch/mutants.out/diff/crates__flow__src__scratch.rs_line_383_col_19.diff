@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace += with -= in remove_tree_bounded
+@@ -375,17 +375,17 @@
+         if Instant::now() >= deadline || processed >= MAX_CLEANUP_ENTRIES {
+             break;
+         }
+         if children_pushed {
+             make_writable(&path);
+             let _ = fs::remove_dir(&path);
+             continue;
+         }
+-        processed += 1;
++        processed -= /* ~ changed by cargo-mutants ~ */ 1;
+         let Ok(meta) = fs::symlink_metadata(&path) else {
+             continue;
+         };
+         if meta.is_dir() {
+             stack.push((path.clone(), true));
+             if let Ok(entries) = fs::read_dir(&path) {
+                 for entry in entries.flatten() {
+                     stack.push((entry.path(), false));

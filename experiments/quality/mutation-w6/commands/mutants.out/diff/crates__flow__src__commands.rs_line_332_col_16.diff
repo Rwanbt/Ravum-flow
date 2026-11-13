@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_doctor
+@@ -324,17 +324,17 @@
+         hooks_dir
+     } else {
+         root.join(hooks_dir)
+     };
+     let mut hooks: Vec<String> = Vec::new();
+     if let Ok(entries) = fs::read_dir(&hooks_dir) {
+         for entry in entries.flatten() {
+             let name = entry.file_name().to_string_lossy().to_string();
+-            if !name.ends_with(".sample") {
++            if  /* ~ changed by cargo-mutants ~ */name.ends_with(".sample") {
+                 hooks.push(name);
+             }
+         }
+     }
+     hooks.sort();
+     push(
+         "hooks",
+         if hooks.is_empty() { "OK" } else { "WARN" },

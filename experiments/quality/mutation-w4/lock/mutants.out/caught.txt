@@ -1,0 +1,27 @@
+crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with ""
+crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with "xyzzy"
+crates/flow/src/lock.rs:59:9: replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())
+crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with String::new()
+crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with "xyzzy".into()
+crates/flow/src/lock.rs:70:5: replace lock_path -> PathBuf with Default::default()
+crates/flow/src/lock.rs:92:5: replace parse -> Option<Owner> with None
+crates/flow/src/lock.rs:94:15: replace != with == in parse
+crates/flow/src/lock.rs:151:9: replace <impl Drop for LockGuard>::drop with ()
+crates/flow/src/lock.rs:152:57: replace == with != in <impl Drop for LockGuard>::drop
+crates/flow/src/lock.rs:163:5: replace nonce -> String with String::new()
+crates/flow/src/lock.rs:163:5: replace nonce -> String with "xyzzy".into()
+crates/flow/src/lock.rs:186:5: replace create_lock_file -> std::io::Result<()> with Ok(())
+crates/flow/src/lock.rs:204:5: replace wait_for_record -> Option<Owner> with None
+crates/flow/src/lock.rs:207:35: replace + with - in wait_for_record
+crates/flow/src/lock.rs:208:26: replace < with == in wait_for_record
+crates/flow/src/lock.rs:208:26: replace < with > in wait_for_record
+crates/flow/src/lock.rs:226:35: replace + with - in acquire_lock
+crates/flow/src/lock.rs:236:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock
+crates/flow/src/lock.rs:236:32: replace == with != in acquire_lock
+crates/flow/src/lock.rs:261:30: replace == with != in acquire_lock
+crates/flow/src/lock.rs:271:43: replace >= with < in acquire_lock
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with None
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(false)
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:327:8: delete ! in pid_alive
+crates/flow/src/lock.rs:331:47: replace || with && in pid_alive

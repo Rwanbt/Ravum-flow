@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace == with != in path_conflicts
+@@ -783,17 +783,17 @@
+     for (path, owners) in &per_path {
+         if owners.len() < 2 {
+             continue;
+         }
+         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();
+         let mut modes: std::collections::BTreeSet<(String, String)> =
+             std::collections::BTreeSet::new();
+         for proposal in owners {
+-            for change in proposal.changes.iter().filter(|c| &c.path == path) {
++            for change in proposal.changes.iter().filter(|c| &c.path != /* ~ changed by cargo-mutants ~ */ path) {
+                 if change.status != "M"
+                     || change.new_mode == "120000"
+                     || change.old_mode == "120000"
+                 {
+                     return Some(refusal(
+                         "PATH_OPERATION_CONFLICT",
+                         format!(
+                             "proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently",

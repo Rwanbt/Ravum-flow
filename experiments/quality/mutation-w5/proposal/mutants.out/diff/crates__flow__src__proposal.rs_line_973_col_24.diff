@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace match guard c.tree_oid == tree_oid && c.proposals == proposal_ids with true in assemble
+@@ -965,17 +965,17 @@
+     ]);
+     fs::create_dir_all(state::candidates_dir(root))
+         .map_err(|e| format!("cannot create candidates dir: {e}"))?;
+     let path = Candidate::path(root, &candidate_id);
+     if path.exists() {
+         // Same inputs, same id. Only an identical record may reuse the slot.
+         let existing = Candidate::load(root, &candidate_id)?;
+         match existing {
+-            Some(c) if c.tree_oid == tree_oid && c.proposals == proposal_ids => {}
++            Some(c) if true /* ~ changed by cargo-mutants ~ */ => {}
+             _ => {
+                 return Ok(refusal(
+                     "CANDIDATE_IMMUTABLE",
+                     format!("candidate {candidate_id} exists with different content: refusing to overwrite it"),
+                 ))
+             }
+         }
+     } else {

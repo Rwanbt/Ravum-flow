@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace is_within -> bool with true
+@@ -258,17 +258,17 @@
+         .map_err(|e| format!("cannot canonicalise {what} {}: {e}", path.display()))?;
+     if !resolved.is_dir() {
+         return Err(format!("{what} {} is not a directory", resolved.display()));
+     }
+     Ok(resolved)
+ }
+ 
+ fn is_within(root: &Path, candidate: &Path) -> bool {
+-    candidate.starts_with(root)
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn refusal_message(candidate: &Path, repo_root: &Path) -> String {
+     format!(
+         "refusing to create a scratch directory inside the repository: {} is inside {}",
+         candidate.display(),
+         repo_root.display()
+     )

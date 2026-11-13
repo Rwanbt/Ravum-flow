@@ -1,0 +1,34 @@
+--- crates/flow/src/lock.rs
++++ replace kill_liveness -> Option<bool> with None
+@@ -334,30 +334,17 @@
+ /// Ask `kill -0` and read its message.
+ ///
+ /// The exit status alone cannot answer the question: it is non-zero both for a
+ /// process that is gone (ESRCH) and for a live process owned by another user
+ /// (EPERM). Liveness is only "provable" when the message says the process does
+ /// not exist; anything else is unknown, and unknown is never stolen.
+ #[cfg(not(windows))]
+ fn kill_liveness(pid: u32) -> Option<bool> {
+-    let out = std::process::Command::new("kill")
+-        .args(["-0", &pid.to_string()])
+-        .env("LC_ALL", "C")
+-        .output()
+-        .ok()?;
+-    if out.status.success() {
+-        return Some(true);
+-    }
+-    let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();
+-    if message.contains("no such process") || message.contains("does not exist") {
+-        Some(false)
+-    } else {
+-        None
+-    }
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while
+ /// the pid exists, and it cannot confuse "gone" with "not mine". Only when the
+ /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.
+ #[cfg(target_os = "linux")]
+ fn pid_alive(pid: u32) -> Option<bool> {
+     if Path::new(&format!("/proc/{pid}")).exists() {

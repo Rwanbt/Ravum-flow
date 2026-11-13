@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace flow_dir -> PathBuf with Default::default()
+@@ -172,17 +172,17 @@
+                 .get("disabled")
+                 .and_then(Json::as_bool)
+                 .unwrap_or(false),
+         })
+     }
+ }
+ 
+ pub fn flow_dir(root: &Path) -> PathBuf {
+-    root.join(".flow")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn config_path(root: &Path) -> PathBuf {
+     flow_dir(root).join("config.json")
+ }
+ 
+ pub fn journal_path(root: &Path) -> PathBuf {
+     flow_dir(root).join("journal.jsonl")

@@ -1,0 +1,2 @@
+crates/flow/src/commands.rs:792:80: replace == with != in verify_checkout_fidelity
+crates/flow/src/commands.rs:786:5: replace verify_checkout_fidelity -> Result<(), String> with Ok(())

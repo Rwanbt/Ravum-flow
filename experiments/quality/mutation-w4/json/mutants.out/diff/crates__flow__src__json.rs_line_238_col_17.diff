@@ -1,0 +1,24 @@
+--- crates/flow/src/json.rs
++++ delete match arm Some(b'}') in Parser<'a>::object
+@@ -230,20 +230,17 @@
+             // which value wins. Flow refuses them instead of picking one.
+             if pairs.iter().any(|(k, _)| k == &key) {
+                 return Err(format!("duplicate object key {key:?} at {}", self.pos));
+             }
+             pairs.push((key, value));
+             self.ws();
+             match self.peek() {
+                 Some(b',') => self.pos += 1,
+-                Some(b'}') => {
+-                    self.pos += 1;
+-                    break;
+-                }
++                 /* ~ changed by cargo-mutants ~ */
+                 _ => return Err(format!("expected ',' or '}}' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Obj(pairs))
+     }
+ 
+     fn array(&mut self) -> Result<Json, String> {
+         self.pos += 1;

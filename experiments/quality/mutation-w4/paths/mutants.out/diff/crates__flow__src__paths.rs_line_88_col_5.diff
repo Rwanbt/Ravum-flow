@@ -1,0 +1,53 @@
+--- crates/flow/src/paths.rs
++++ replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())
+@@ -80,49 +80,17 @@
+             return Err(format!("reserved device name {component:?}"));
+         }
+     }
+     Ok(())
+ }
+ 
+ /// Resolve `candidate` (which may not exist yet) and require it to stay under `root`.
+ pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String> {
+-    let root = root
+-        .canonicalize()
+-        .map_err(|e| format!("cannot canonicalise root {}: {e}", root.display()))?;
+-    let mut probe = candidate.to_path_buf();
+-    let mut suffix: Vec<std::ffi::OsString> = Vec::new();
+-    loop {
+-        if probe.exists() {
+-            let mut resolved = probe
+-                .canonicalize()
+-                .map_err(|e| format!("cannot canonicalise {}: {e}", probe.display()))?;
+-            for part in suffix.iter().rev() {
+-                resolved.push(part);
+-            }
+-            if !resolved.starts_with(&root) {
+-                return Err(format!(
+-                    "path {} escapes {} (symlink or junction)",
+-                    resolved.display(),
+-                    root.display()
+-                ));
+-            }
+-            return Ok(resolved);
+-        }
+-        match probe.file_name().map(|n| n.to_os_string()) {
+-            Some(name) => {
+-                suffix.push(name);
+-                probe = probe
+-                    .parent()
+-                    .ok_or_else(|| "path has no existing ancestor".to_string())?
+-                    .to_path_buf();
+-            }
+-            None => return Err("path has no file name".into()),
+-        }
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// True when `candidate` is lexically inside `root`, used only by tests now:
+ /// containment is enforced by `scratch::materialise`, which also resolves the
+ /// canonical path (a lexical check alone does not see a junction).
+ #[cfg(test)]
+ pub fn lexically_inside(root: &Path, candidate: &Path) -> bool {
+     let mut depth: i32 = 0;

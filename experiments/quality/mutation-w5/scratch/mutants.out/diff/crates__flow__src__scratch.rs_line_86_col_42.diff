@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace || with && in Scratch::still_owned
+@@ -78,17 +78,17 @@
+     pub fn path(&self) -> &Path {
+         &self.path
+     }
+ 
+     fn still_owned(&self) -> bool {
+         let Ok(meta) = fs::symlink_metadata(&self.path) else {
+             return false;
+         };
+-        if meta.file_type().is_symlink() || !meta.is_dir() {
++        if meta.file_type().is_symlink() && /* ~ changed by cargo-mutants ~ */ !meta.is_dir() {
+             return false;
+         }
+         match fs::canonicalize(&self.path) {
+             Ok(resolved) if resolved == self.canonical => {}
+             _ => return false,
+         }
+         fs::symlink_metadata(self.path.join(OWNED_MARKER))
+             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())

@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in admit
+@@ -631,17 +631,17 @@
+     };
+     let proposal_id = {
+         let material =
+             format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
+         sha256_hex(material.as_bytes())[..32].to_string()
+     };
+ 
+     if let Some(existing) = Proposal::load(root, &proposal_id)? {
+-        if existing.content_digest != content_digest {
++        if existing.content_digest == /* ~ changed by cargo-mutants ~ */ content_digest {
+             return Ok(refusal(
+                 "IDEMPOTENCY_CONFLICT",
+                 format!(
+                     "proposal {proposal_id} already exists with content {} but this patch is {}: a correction is a new proposal, use a new --key",
+                     &existing.content_digest[..12],
+                     &content_digest[..12]
+                 ),
+             ));

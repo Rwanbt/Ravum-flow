@@ -1,0 +1,10 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 764c2be..96ed227 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -1126 +1126 @@ fn parse_cat_file_batch<'e, 'b>(
+-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
++    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe
+@@ -1262 +1262 @@ pub fn cmd_run(
+-                if !seen.insert(id.as_str()) {
++                if !seen.insert(id.as_str()) { // survival-probe

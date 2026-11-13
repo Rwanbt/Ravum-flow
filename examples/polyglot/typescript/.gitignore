@@ -1,0 +1,6 @@
+# A dependency-free TypeScript fixture: no node_modules is ever installed.
+# `noEmit` means there is no build output either; the two entries below only
+# cover an editor or a stray invocation.
+/node_modules/
+/dist/
+*.tsbuildinfo

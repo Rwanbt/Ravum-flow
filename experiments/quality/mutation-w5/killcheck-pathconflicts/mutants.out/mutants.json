@@ -1,0 +1,130 @@
+[
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace || with && in path_conflicts\n@@ -786,17 +786,17 @@\n         }\n         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();\n         let mut modes: std::collections::BTreeSet<(String, String)> =\n             std::collections::BTreeSet::new();\n         for proposal in owners {\n             for change in proposal.changes.iter().filter(|c| &c.path == path) {\n                 if change.status != \"M\"\n                     || change.new_mode == \"120000\"\n-                    || change.old_mode == \"120000\"\n+                    && /* ~ changed by cargo-mutants ~ */ change.old_mode == \"120000\"\n                 {\n                     return Some(refusal(\n                         \"PATH_OPERATION_CONFLICT\",\n                         format!(\n                             \"proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently\",\n                             proposal.proposal_id,\n                             change.status,\n                             ids.join(\", \")\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "path_conflicts",
+      "return_type": "-> Option<Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 821
+        },
+        "start": {
+          "column": 1,
+          "line": 764
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:794:21: replace || with && in path_conflicts",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 794
+      },
+      "start": {
+        "column": 21,
+        "line": 794
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace || with && in path_conflicts\n@@ -785,17 +785,17 @@\n             continue;\n         }\n         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();\n         let mut modes: std::collections::BTreeSet<(String, String)> =\n             std::collections::BTreeSet::new();\n         for proposal in owners {\n             for change in proposal.changes.iter().filter(|c| &c.path == path) {\n                 if change.status != \"M\"\n-                    || change.new_mode == \"120000\"\n+                    && /* ~ changed by cargo-mutants ~ */ change.new_mode == \"120000\"\n                     || change.old_mode == \"120000\"\n                 {\n                     return Some(refusal(\n                         \"PATH_OPERATION_CONFLICT\",\n                         format!(\n                             \"proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently\",\n                             proposal.proposal_id,\n                             change.status,\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "path_conflicts",
+      "return_type": "-> Option<Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 821
+        },
+        "start": {
+          "column": 1,
+          "line": 764
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:793:21: replace || with && in path_conflicts",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 793
+      },
+      "start": {
+        "column": 21,
+        "line": 793
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace == with != in path_conflicts\n@@ -785,17 +785,17 @@\n             continue;\n         }\n         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();\n         let mut modes: std::collections::BTreeSet<(String, String)> =\n             std::collections::BTreeSet::new();\n         for proposal in owners {\n             for change in proposal.changes.iter().filter(|c| &c.path == path) {\n                 if change.status != \"M\"\n-                    || change.new_mode == \"120000\"\n+                    || change.new_mode != /* ~ changed by cargo-mutants ~ */ \"120000\"\n                     || change.old_mode == \"120000\"\n                 {\n                     return Some(refusal(\n                         \"PATH_OPERATION_CONFLICT\",\n                         format!(\n                             \"proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently\",\n                             proposal.proposal_id,\n                             change.status,\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "path_conflicts",
+      "return_type": "-> Option<Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 821
+        },
+        "start": {
+          "column": 1,
+          "line": 764
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:793:40: replace == with != in path_conflicts",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 793
+      },
+      "start": {
+        "column": 40,
+        "line": 793
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/proposal.rs\n+++ replace == with != in path_conflicts\n@@ -786,17 +786,17 @@\n         }\n         let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();\n         let mut modes: std::collections::BTreeSet<(String, String)> =\n             std::collections::BTreeSet::new();\n         for proposal in owners {\n             for change in proposal.changes.iter().filter(|c| &c.path == path) {\n                 if change.status != \"M\"\n                     || change.new_mode == \"120000\"\n-                    || change.old_mode == \"120000\"\n+                    || change.old_mode != /* ~ changed by cargo-mutants ~ */ \"120000\"\n                 {\n                     return Some(refusal(\n                         \"PATH_OPERATION_CONFLICT\",\n                         format!(\n                             \"proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently\",\n                             proposal.proposal_id,\n                             change.status,\n                             ids.join(\", \")\n",
+    "file": "crates/flow/src/proposal.rs",
+    "function": {
+      "function_name": "path_conflicts",
+      "return_type": "-> Option<Json>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 821
+        },
+        "start": {
+          "column": 1,
+          "line": 764
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/proposal.rs:794:40: replace == with != in path_conflicts",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 42,
+        "line": 794
+      },
+      "start": {
+        "column": 40,
+        "line": 794
+      }
+    }
+  }
+]

@@ -1,0 +1,30 @@
+--- crates/flow/src/state.rs
++++ replace string_list -> Vec<String> with vec![]
+@@ -583,26 +583,17 @@
+         return Err(format!(
+             "receipt content does not match its integrity digest (recorded {recorded}, computed {computed})"
+         ));
+     }
+     Ok(())
+ }
+ 
+ fn string_list(value: &Json, key: &str) -> Vec<String> {
+-    value // survival-probe
+-        .get(key)
+-        .and_then(Json::as_arr)
+-        .map(|items| {
+-            items
+-                .iter()
+-                .filter_map(|v| v.as_str().map(str::to_string))
+-                .collect()
+-        })
+-        .unwrap_or_default()
++    vec![] /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Where a *partial* (selected) execution is recorded. Deliberately a different
+ /// file from the complete slot so the two can never shadow one another.
+ pub fn partial_receipt_path(root: &Path, tree_oid: &str, context_id: &str) -> PathBuf {
+     let prefix: String = context_id.chars().take(12).collect();
+     receipts_dir(root).join(format!("{tree_oid}.partial.{prefix}.json"))
+ }

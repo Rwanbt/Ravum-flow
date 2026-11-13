@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace > with >= in validate_relative
+@@ -30,17 +30,17 @@
+     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())
+ }
+ 
+ /// Validate a repository-relative path as written in a receipt or config.
+ pub fn validate_relative(path: &str) -> Result<(), String> {
+     if path.is_empty() {
+         return Err("empty path".into());
+     }
+-    if path.len() > 4096 {
++    if path.len() >= /* ~ changed by cargo-mutants ~ */ 4096 {
+         return Err("path longer than 4096 bytes".into());
+     }
+     if path.bytes().any(|b| b < 0x20) {
+         return Err("control character in path".into());
+     }
+     if path.starts_with('/') || path.starts_with('\\') {
+         return Err("absolute path is not allowed".into());
+     }

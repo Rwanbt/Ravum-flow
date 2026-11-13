@@ -1,0 +1,25 @@
+--- crates/flow/src/lock.rs
++++ replace <impl Drop for LockGuard>::drop with ()
+@@ -143,21 +143,17 @@
+     path: PathBuf,
+     nonce: String,
+ }
+ 
+ impl Drop for LockGuard {
+     fn drop(&mut self) {
+         // Only remove the lock this guard owns: a successor's lock must never be
+         // deleted by a slow predecessor's destructor.
+-        if let Ok(text) = fs::read_to_string(&self.path) {
+-            if parse(&text).map(|o| o.nonce).as_deref() == Some(self.nonce.as_str()) {
+-                let _ = fs::remove_file(&self.path);
+-            }
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// A process-unique, non-cryptographic nonce. It only has to distinguish two
+ /// Flow lock writers, not to resist an attacker (the lock is not a security
+ /// boundary against a local writer with the same rights).
+ fn nonce() -> String {
+     use std::sync::atomic::{AtomicU64, Ordering};

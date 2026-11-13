@@ -1,0 +1,834 @@
+[
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace match guard (c as u32) < 0x20 with true in write_string\n@@ -137,17 +137,17 @@\n     out.push('\"');\n     for ch in s.chars() {\n         match ch {\n             '\"' => out.push_str(\"\\\\\\\"\"),\n             '\\\\' => out.push_str(\"\\\\\\\\\"),\n             '\\n' => out.push_str(\"\\\\n\"),\n             '\\r' => out.push_str(\"\\\\r\"),\n             '\\t' => out.push_str(\"\\\\t\"),\n-            c if (c as u32) < 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n+            c if true /* ~ changed by cargo-mutants ~ */ => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n             c => out.push(c),\n         }\n     }\n     out.push('\"');\n }\n \n // ------------------------------------------------------------------ parser\n pub fn parse(src: &str) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "write_string",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 150
+        },
+        "start": {
+          "column": 1,
+          "line": 136
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/json.rs:145:18: replace match guard (c as u32) < 0x20 with true in write_string",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 145
+      },
+      "start": {
+        "column": 18,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace match guard (c as u32) < 0x20 with false in write_string\n@@ -137,17 +137,17 @@\n     out.push('\"');\n     for ch in s.chars() {\n         match ch {\n             '\"' => out.push_str(\"\\\\\\\"\"),\n             '\\\\' => out.push_str(\"\\\\\\\\\"),\n             '\\n' => out.push_str(\"\\\\n\"),\n             '\\r' => out.push_str(\"\\\\r\"),\n             '\\t' => out.push_str(\"\\\\t\"),\n-            c if (c as u32) < 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n+            c if false /* ~ changed by cargo-mutants ~ */ => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n             c => out.push(c),\n         }\n     }\n     out.push('\"');\n }\n \n // ------------------------------------------------------------------ parser\n pub fn parse(src: &str) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "write_string",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 150
+        },
+        "start": {
+          "column": 1,
+          "line": 136
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/json.rs:145:18: replace match guard (c as u32) < 0x20 with false in write_string",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 145
+      },
+      "start": {
+        "column": 18,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace < with == in write_string\n@@ -137,17 +137,17 @@\n     out.push('\"');\n     for ch in s.chars() {\n         match ch {\n             '\"' => out.push_str(\"\\\\\\\"\"),\n             '\\\\' => out.push_str(\"\\\\\\\\\"),\n             '\\n' => out.push_str(\"\\\\n\"),\n             '\\r' => out.push_str(\"\\\\r\"),\n             '\\t' => out.push_str(\"\\\\t\"),\n-            c if (c as u32) < 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n+            c if (c as u32) == /* ~ changed by cargo-mutants ~ */ 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n             c => out.push(c),\n         }\n     }\n     out.push('\"');\n }\n \n // ------------------------------------------------------------------ parser\n pub fn parse(src: &str) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "write_string",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 150
+        },
+        "start": {
+          "column": 1,
+          "line": 136
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:145:29: replace < with == in write_string",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 145
+      },
+      "start": {
+        "column": 29,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace < with > in write_string\n@@ -137,17 +137,17 @@\n     out.push('\"');\n     for ch in s.chars() {\n         match ch {\n             '\"' => out.push_str(\"\\\\\\\"\"),\n             '\\\\' => out.push_str(\"\\\\\\\\\"),\n             '\\n' => out.push_str(\"\\\\n\"),\n             '\\r' => out.push_str(\"\\\\r\"),\n             '\\t' => out.push_str(\"\\\\t\"),\n-            c if (c as u32) < 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n+            c if (c as u32) > /* ~ changed by cargo-mutants ~ */ 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n             c => out.push(c),\n         }\n     }\n     out.push('\"');\n }\n \n // ------------------------------------------------------------------ parser\n pub fn parse(src: &str) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "write_string",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 150
+        },
+        "start": {
+          "column": 1,
+          "line": 136
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:145:29: replace < with > in write_string",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 145
+      },
+      "start": {
+        "column": 29,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace < with <= in write_string\n@@ -137,17 +137,17 @@\n     out.push('\"');\n     for ch in s.chars() {\n         match ch {\n             '\"' => out.push_str(\"\\\\\\\"\"),\n             '\\\\' => out.push_str(\"\\\\\\\\\"),\n             '\\n' => out.push_str(\"\\\\n\"),\n             '\\r' => out.push_str(\"\\\\r\"),\n             '\\t' => out.push_str(\"\\\\t\"),\n-            c if (c as u32) < 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n+            c if (c as u32) <= /* ~ changed by cargo-mutants ~ */ 0x20 => out.push_str(&format!(\"\\\\u{:04x}\", c as u32)),\n             c => out.push(c),\n         }\n     }\n     out.push('\"');\n }\n \n // ------------------------------------------------------------------ parser\n pub fn parse(src: &str) -> Result<Json, String> {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "write_string",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 150
+        },
+        "start": {
+          "column": 1,
+          "line": 136
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:145:29: replace < with <= in write_string",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 30,
+        "line": 145
+      },
+      "start": {
+        "column": 29,
+        "line": 145
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace + with - in Parser<'a>::string\n@@ -287,17 +287,17 @@\n                         b'b' => out.push('\\u{8}'),\n                         b'f' => out.push('\\u{c}'),\n                         b'n' => out.push('\\n'),\n                         b'r' => out.push('\\r'),\n                         b't' => out.push('\\t'),\n                         b'u' => {\n                             let hex = self\n                                 .bytes\n-                                .get(self.pos..self.pos + 4)\n+                                .get(self.pos..self.pos - /* ~ changed by cargo-mutants ~ */ 4)\n                                 .ok_or(\"truncated \\\\u escape\")?;\n                             let s = std::str::from_utf8(hex).map_err(|_| \"bad \\\\u escape\")?;\n                             let code = u32::from_str_radix(s, 16).map_err(|_| \"bad \\\\u escape\")?;\n                             self.pos += 4;\n                             out.push(char::from_u32(code).ok_or(\"invalid code point\")?);\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:295:57: replace + with - in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 58,
+        "line": 295
+      },
+      "start": {
+        "column": 57,
+        "line": 295
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace + with * in Parser<'a>::string\n@@ -287,17 +287,17 @@\n                         b'b' => out.push('\\u{8}'),\n                         b'f' => out.push('\\u{c}'),\n                         b'n' => out.push('\\n'),\n                         b'r' => out.push('\\r'),\n                         b't' => out.push('\\t'),\n                         b'u' => {\n                             let hex = self\n                                 .bytes\n-                                .get(self.pos..self.pos + 4)\n+                                .get(self.pos..self.pos * /* ~ changed by cargo-mutants ~ */ 4)\n                                 .ok_or(\"truncated \\\\u escape\")?;\n                             let s = std::str::from_utf8(hex).map_err(|_| \"bad \\\\u escape\")?;\n                             let code = u32::from_str_radix(s, 16).map_err(|_| \"bad \\\\u escape\")?;\n                             self.pos += 4;\n                             out.push(char::from_u32(code).ok_or(\"invalid code point\")?);\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:295:57: replace + with * in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 58,
+        "line": 295
+      },
+      "start": {
+        "column": 57,
+        "line": 295
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace += with -= in Parser<'a>::string\n@@ -291,17 +291,17 @@\n                         b't' => out.push('\\t'),\n                         b'u' => {\n                             let hex = self\n                                 .bytes\n                                 .get(self.pos..self.pos + 4)\n                                 .ok_or(\"truncated \\\\u escape\")?;\n                             let s = std::str::from_utf8(hex).map_err(|_| \"bad \\\\u escape\")?;\n                             let code = u32::from_str_radix(s, 16).map_err(|_| \"bad \\\\u escape\")?;\n-                            self.pos += 4;\n+                            self.pos -= /* ~ changed by cargo-mutants ~ */ 4;\n                             out.push(char::from_u32(code).ok_or(\"invalid code point\")?);\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:299:38: replace += with -= in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 299
+      },
+      "start": {
+        "column": 38,
+        "line": 299
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace += with *= in Parser<'a>::string\n@@ -291,17 +291,17 @@\n                         b't' => out.push('\\t'),\n                         b'u' => {\n                             let hex = self\n                                 .bytes\n                                 .get(self.pos..self.pos + 4)\n                                 .ok_or(\"truncated \\\\u escape\")?;\n                             let s = std::str::from_utf8(hex).map_err(|_| \"bad \\\\u escape\")?;\n                             let code = u32::from_str_radix(s, 16).map_err(|_| \"bad \\\\u escape\")?;\n-                            self.pos += 4;\n+                            self.pos *= /* ~ changed by cargo-mutants ~ */ 4;\n                             out.push(char::from_u32(code).ok_or(\"invalid code point\")?);\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:299:38: replace += with *= in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 40,
+        "line": 299
+      },
+      "start": {
+        "column": 38,
+        "line": 299
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace > with == in Parser<'a>::string\n@@ -301,17 +301,17 @@\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n                     let len = utf8_len(b);\n-                    if start + len > self.bytes.len() {\n+                    if start + len == /* ~ changed by cargo-mutants ~ */ self.bytes.len() {\n                         return Err(\"truncated UTF-8\".into());\n                     }\n                     let s = std::str::from_utf8(&self.bytes[start..start + len])\n                         .map_err(|_| \"invalid UTF-8\")?;\n                     out.push_str(s);\n                     self.pos = start + len;\n                 }\n             }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:309:36: replace > with == in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 309
+      },
+      "start": {
+        "column": 36,
+        "line": 309
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace > with < in Parser<'a>::string\n@@ -301,17 +301,17 @@\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n                     let len = utf8_len(b);\n-                    if start + len > self.bytes.len() {\n+                    if start + len < /* ~ changed by cargo-mutants ~ */ self.bytes.len() {\n                         return Err(\"truncated UTF-8\".into());\n                     }\n                     let s = std::str::from_utf8(&self.bytes[start..start + len])\n                         .map_err(|_| \"invalid UTF-8\")?;\n                     out.push_str(s);\n                     self.pos = start + len;\n                 }\n             }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:309:36: replace > with < in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 309
+      },
+      "start": {
+        "column": 36,
+        "line": 309
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace > with >= in Parser<'a>::string\n@@ -301,17 +301,17 @@\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n                     let len = utf8_len(b);\n-                    if start + len > self.bytes.len() {\n+                    if start + len >= /* ~ changed by cargo-mutants ~ */ self.bytes.len() {\n                         return Err(\"truncated UTF-8\".into());\n                     }\n                     let s = std::str::from_utf8(&self.bytes[start..start + len])\n                         .map_err(|_| \"invalid UTF-8\")?;\n                     out.push_str(s);\n                     self.pos = start + len;\n                 }\n             }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:309:36: replace > with >= in Parser<'a>::string",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 309
+      },
+      "start": {
+        "column": 36,
+        "line": 309
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace + with - in Parser<'a>::string\n@@ -301,17 +301,17 @@\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n                     let len = utf8_len(b);\n-                    if start + len > self.bytes.len() {\n+                    if start - /* ~ changed by cargo-mutants ~ */ len > self.bytes.len() {\n                         return Err(\"truncated UTF-8\".into());\n                     }\n                     let s = std::str::from_utf8(&self.bytes[start..start + len])\n                         .map_err(|_| \"invalid UTF-8\")?;\n                     out.push_str(s);\n                     self.pos = start + len;\n                 }\n             }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:309:30: replace + with - in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 309
+      },
+      "start": {
+        "column": 30,
+        "line": 309
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace + with * in Parser<'a>::string\n@@ -301,17 +301,17 @@\n                         }\n                         other => return Err(format!(\"bad escape \\\\{}\", other as char)),\n                     }\n                 }\n                 _ => {\n                     // copy the UTF-8 sequence as-is\n                     let start = self.pos - 1;\n                     let len = utf8_len(b);\n-                    if start + len > self.bytes.len() {\n+                    if start * /* ~ changed by cargo-mutants ~ */ len > self.bytes.len() {\n                         return Err(\"truncated UTF-8\".into());\n                     }\n                     let s = std::str::from_utf8(&self.bytes[start..start + len])\n                         .map_err(|_| \"invalid UTF-8\")?;\n                     out.push_str(s);\n                     self.pos = start + len;\n                 }\n             }\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "Parser<'a>::string",
+      "return_type": "-> Result<String, String>",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 319
+        },
+        "start": {
+          "column": 5,
+          "line": 272
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/json.rs:309:30: replace + with * in Parser<'a>::string",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 309
+      },
+      "start": {
+        "column": 30,
+        "line": 309
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace utf8_len -> usize with 0\n@@ -337,22 +337,17 @@\n                 \"number {s:?} is not finite; JSON has no infinity, so it is refused\"\n             ));\n         }\n         Ok(Json::Num(value))\n     }\n }\n \n fn utf8_len(first: u8) -> usize {\n-    match first {\n-        0x00..=0x7f => 1,\n-        0xc0..=0xdf => 2,\n-        0xe0..=0xef => 3,\n-        _ => 4,\n-    }\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn round_trip() {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "utf8_len",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 351
+        },
+        "start": {
+          "column": 1,
+          "line": 344
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/json.rs:345:5: replace utf8_len -> usize with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 350
+      },
+      "start": {
+        "column": 5,
+        "line": 345
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ replace utf8_len -> usize with 1\n@@ -337,22 +337,17 @@\n                 \"number {s:?} is not finite; JSON has no infinity, so it is refused\"\n             ));\n         }\n         Ok(Json::Num(value))\n     }\n }\n \n fn utf8_len(first: u8) -> usize {\n-    match first {\n-        0x00..=0x7f => 1,\n-        0xc0..=0xdf => 2,\n-        0xe0..=0xef => 3,\n-        _ => 4,\n-    }\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     #[test]\n     fn round_trip() {\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "utf8_len",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 351
+        },
+        "start": {
+          "column": 1,
+          "line": 344
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/json.rs:345:5: replace utf8_len -> usize with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 350
+      },
+      "start": {
+        "column": 5,
+        "line": 345
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ delete match arm 0xc0..= 0xdf in utf8_len\n@@ -339,17 +339,17 @@\n         }\n         Ok(Json::Num(value))\n     }\n }\n \n fn utf8_len(first: u8) -> usize {\n     match first {\n         0x00..=0x7f => 1,\n-        0xc0..=0xdf => 2,\n+         /* ~ changed by cargo-mutants ~ */\n         0xe0..=0xef => 3,\n         _ => 4,\n     }\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "utf8_len",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 351
+        },
+        "start": {
+          "column": 1,
+          "line": 344
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/json.rs:347:9: delete match arm 0xc0..= 0xdf in utf8_len",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 347
+      },
+      "start": {
+        "column": 9,
+        "line": 347
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/json.rs\n+++ delete match arm 0xe0..= 0xef in utf8_len\n@@ -340,17 +340,17 @@\n         Ok(Json::Num(value))\n     }\n }\n \n fn utf8_len(first: u8) -> usize {\n     match first {\n         0x00..=0x7f => 1,\n         0xc0..=0xdf => 2,\n-        0xe0..=0xef => 3,\n+         /* ~ changed by cargo-mutants ~ */\n         _ => 4,\n     }\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n",
+    "file": "crates/flow/src/json.rs",
+    "function": {
+      "function_name": "utf8_len",
+      "return_type": "-> usize",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 351
+        },
+        "start": {
+          "column": 1,
+          "line": 344
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/json.rs:348:9: delete match arm 0xe0..= 0xef in utf8_len",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 348
+      },
+      "start": {
+        "column": 9,
+        "line": 348
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -36,17 +36,17 @@\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n-    if path.starts_with('/') || path.starts_with('\\\\') {\n+    if path.starts_with('/') && /* ~ changed by cargo-mutants ~ */ path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:44:30: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 44
+      },
+      "start": {
+        "column": 30,
+        "line": 44
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() || /* ~ changed by cargo-mutants ~ */ bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:59: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 48
+      },
+      "start": {
+        "column": 59,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 || /* ~ changed by cargo-mutants ~ */ bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:25: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 48
+      },
+      "start": {
+        "column": 25,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace >= with < in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() < /* ~ changed by cargo-mutants ~ */ 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:20: replace >= with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 48
+      },
+      "start": {
+        "column": 20,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -40,17 +40,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] != /* ~ changed by cargo-mutants ~ */ b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:48:71: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 48
+      },
+      "start": {
+        "column": 71,
+        "line": 48
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" && /* ~ changed by cargo-mutants ~ */ component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:29: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 55
+      },
+      "start": {
+        "column": 29,
+        "line": 55
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component != /* ~ changed by cargo-mutants ~ */ \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:22: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 24,
+        "line": 55
+      },
+      "start": {
+        "column": 22,
+        "line": 55
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -47,17 +47,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" || component != /* ~ changed by cargo-mutants ~ */ \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 84
+        },
+        "start": {
+          "column": 1,
+          "line": 33
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:55:42: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 55
+      },
+      "start": {
+        "column": 42,
+        "line": 55
+      }
+    }
+  }
+]

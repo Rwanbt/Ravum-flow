@@ -1,0 +1,2338 @@
+[
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace main -> ExitCode with Default::default()\n@@ -63,19 +63,17 @@\n Every command prints machine-readable JSON on stdout. `--json` is accepted for\n compatibility; JSON is already the default.\n Exit codes: 0 = PASSED/PUBLISHED/PLAN/INITIALIZED/APPROVED/ADMITTED/ASSEMBLED/\n RECORD/RECONCILED/EXPLAIN/STATUS/DISABLED/ENABLED, 1 = REFUSED/FAILED/UNKNOWN/\n UNSUPPORTED/NEEDS_RECONCILIATION/ERROR, 2 = usage.\n \";\n \n fn main() -> ExitCode {\n-    let args: Vec<String> = std::env::args().skip(1).collect();\n-    let code = dispatch(&args);\n-    ExitCode::from(code)\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n fn dispatch(args: &[String]) -> u8 {\n     let Some(command) = args.first().map(String::as_str) else {\n         print!(\"{USAGE}\");\n         return 2;\n     };\n     let rest = &args[1..];\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "main",
+      "return_type": "-> ExitCode",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 74
+        },
+        "start": {
+          "column": 1,
+          "line": 70
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:71:5: replace main -> ExitCode with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 73
+      },
+      "start": {
+        "column": 5,
+        "line": 71
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace dispatch -> u8 with 0\n@@ -69,177 +69,17 @@\n \n fn main() -> ExitCode {\n     let args: Vec<String> = std::env::args().skip(1).collect();\n     let code = dispatch(&args);\n     ExitCode::from(code)\n }\n \n fn dispatch(args: &[String]) -> u8 {\n-    let Some(command) = args.first().map(String::as_str) else {\n-        print!(\"{USAGE}\");\n-        return 2;\n-    };\n-    let rest = &args[1..];\n-    match command {\n-        \"help\" | \"-h\" | \"--help\" => {\n-            print!(\"{USAGE}\");\n-            0\n-        }\n-        \"version\" | \"--version\" => {\n-            emit(Json::obj(vec![\n-                (\"status\", Json::str(\"VERSION\")),\n-                (\n-                    \"tool\",\n-                    Json::str(format!(\"flow {}\", env!(\"CARGO_PKG_VERSION\"))),\n-                ),\n-                (\"policy_version\", Json::str(state::POLICY_VERSION)),\n-                (\"git\", Json::str(gitcli::Git::new(\".\").version())),\n-                (\"schema\", Json::str(state::SCHEMA_RECEIPT)),\n-                // Every document this build can emit, so a client that discovers\n-                // schemas from `version` learns the whole contract instead of\n-                // half of it.\n-                (\n-                    \"schemas\",\n-                    Json::str(\n-                        [\n-                            state::SCHEMA_CONFIG,\n-                            state::SCHEMA_RECEIPT,\n-                            state::SCHEMA_JOURNAL,\n-                            state::SCHEMA_PROPOSAL,\n-                            state::SCHEMA_CANDIDATE,\n-                            state::SCHEMA_ADOPTION,\n-                            state::SCHEMA_PLAN,\n-                            state::SCHEMA_STATUS,\n-                            state::SCHEMA_PROPOSAL_LIST,\n-                        ]\n-                        .join(\", \"),\n-                    ),\n-                ),\n-            ]));\n-            0\n-        }\n-        _ => {\n-            let root =\n-                match gitcli::toplevel(&std::env::current_dir().unwrap_or(PathBuf::from(\".\"))) {\n-                    Ok(root) => root,\n-                    Err(err) => {\n-                        emit_error(&err);\n-                        return 1;\n-                    }\n-                };\n-            if let Err(reason) = validate_flags(command, rest) {\n-                emit_error(&reason);\n-                return 2;\n-            }\n-            let result = match command {\n-                \"init\" => commands::cmd_init(\n-                    &root,\n-                    has_flag(rest, \"--force\"),\n-                    has_flag(rest, \"--adopt-policy\"),\n-                ),\n-                \"approve\" => commands::cmd_approve(&root),\n-                \"doctor\" => commands::cmd_doctor(&root),\n-                \"status\" => commands::cmd_status(&root),\n-                \"run\" => {\n-                    // A timeout that is silently dropped would make the receipt\n-                    // prove a deadline that was never applied, so an unparseable\n-                    // or zero value is a usage error rather than a default.\n-                    let timeout = match flag_value(rest, \"--timeout\") {\n-                        None => None,\n-                        Some(raw) => match raw.parse::<u64>() {\n-                            Ok(seconds) if seconds >= 1 => Some(seconds),\n-                            _ => {\n-                                emit_error(&format!(\n-                                    \"`--timeout` needs a whole number of seconds >= 1 (found {raw:?})\"\n-                                ));\n-                                return 2;\n-                            }\n-                        },\n-                    };\n-                    commands::cmd_run(\n-                        &root,\n-                        collect_values(rest, &[\"--obligation\", \"--obligations\"]),\n-                        timeout,\n-                        flag_value(rest, \"--candidate\"),\n-                    )\n-                }\n-                \"publish\" => commands::cmd_publish(\n-                    &root,\n-                    flag_value(rest, \"--ref\"),\n-                    flag_value(rest, \"--expected-old\"),\n-                    flag_value(rest, \"--message\"),\n-                    flag_value(rest, \"--candidate\"),\n-                    has_flag(rest, \"--dry-run\"),\n-                ),\n-                \"propose\" => commands::cmd_propose(\n-                    &root,\n-                    flag_value(rest, \"--agent\"),\n-                    flag_value(rest, \"--task\"),\n-                    flag_value(rest, \"--base\"),\n-                    flag_value(rest, \"--patch\"),\n-                    flag_value(rest, \"--key\"),\n-                ),\n-                \"proposals\" => {\n-                    let sub = rest.first().map(String::as_str).unwrap_or(\"list\");\n-                    match sub {\n-                        \"list\" => commands::cmd_proposals(&root, None),\n-                        \"show\" => match rest.get(1) {\n-                            Some(id) => commands::cmd_proposals(&root, Some(id.clone())),\n-                            None => {\n-                                emit_error(\"`flow proposals show <id>` needs a proposal id\");\n-                                return 2;\n-                            }\n-                        },\n-                        other => {\n-                            emit_error(&format!(\n-                                \"unknown `proposals` subcommand {other:?} (list | show <id>)\"\n-                            ));\n-                            return 2;\n-                        }\n-                    }\n-                }\n-                \"assemble\" => match collect_values(rest, &[\"--proposal\"]) {\n-                    Some(ids) => commands::cmd_assemble(&root, &ids),\n-                    None => commands::cmd_assemble(&root, &[]),\n-                },\n-                \"reconcile\" => commands::cmd_reconcile(&root),\n-                \"explain\" => commands::cmd_explain(\n-                    &root,\n-                    flag_value(rest, \"--tree\"),\n-                    flag_value(rest, \"--candidate\"),\n-                ),\n-                \"disable\" => commands::cmd_set_disabled(&root, true),\n-                \"enable\" => commands::cmd_set_disabled(&root, false),\n-                other => {\n-                    emit_error(&format!(\"unknown command {other:?} (run `flow help`)\"));\n-                    return 2;\n-                }\n-            };\n-            match result {\n-                Ok(value) => {\n-                    let mut code = exit_code_for(&value);\n-                    // A diagnostic that found a broken guarantee is not a success.\n-                    // The documented contract is `0 when overall=OK, 1 when\n-                    // overall=FAILED`, and it is tested.\n-                    if command == \"doctor\"\n-                        && value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n-                    {\n-                        code = 1;\n-                    }\n-                    emit(value);\n-                    code\n-                }\n-                Err(err) => {\n-                    emit_error(&err);\n-                    1\n-                }\n-            }\n-        }\n-    }\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 237
+      },
+      "start": {
+        "column": 5,
+        "line": 77
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace dispatch -> u8 with 1\n@@ -69,177 +69,17 @@\n \n fn main() -> ExitCode {\n     let args: Vec<String> = std::env::args().skip(1).collect();\n     let code = dispatch(&args);\n     ExitCode::from(code)\n }\n \n fn dispatch(args: &[String]) -> u8 {\n-    let Some(command) = args.first().map(String::as_str) else {\n-        print!(\"{USAGE}\");\n-        return 2;\n-    };\n-    let rest = &args[1..];\n-    match command {\n-        \"help\" | \"-h\" | \"--help\" => {\n-            print!(\"{USAGE}\");\n-            0\n-        }\n-        \"version\" | \"--version\" => {\n-            emit(Json::obj(vec![\n-                (\"status\", Json::str(\"VERSION\")),\n-                (\n-                    \"tool\",\n-                    Json::str(format!(\"flow {}\", env!(\"CARGO_PKG_VERSION\"))),\n-                ),\n-                (\"policy_version\", Json::str(state::POLICY_VERSION)),\n-                (\"git\", Json::str(gitcli::Git::new(\".\").version())),\n-                (\"schema\", Json::str(state::SCHEMA_RECEIPT)),\n-                // Every document this build can emit, so a client that discovers\n-                // schemas from `version` learns the whole contract instead of\n-                // half of it.\n-                (\n-                    \"schemas\",\n-                    Json::str(\n-                        [\n-                            state::SCHEMA_CONFIG,\n-                            state::SCHEMA_RECEIPT,\n-                            state::SCHEMA_JOURNAL,\n-                            state::SCHEMA_PROPOSAL,\n-                            state::SCHEMA_CANDIDATE,\n-                            state::SCHEMA_ADOPTION,\n-                            state::SCHEMA_PLAN,\n-                            state::SCHEMA_STATUS,\n-                            state::SCHEMA_PROPOSAL_LIST,\n-                        ]\n-                        .join(\", \"),\n-                    ),\n-                ),\n-            ]));\n-            0\n-        }\n-        _ => {\n-            let root =\n-                match gitcli::toplevel(&std::env::current_dir().unwrap_or(PathBuf::from(\".\"))) {\n-                    Ok(root) => root,\n-                    Err(err) => {\n-                        emit_error(&err);\n-                        return 1;\n-                    }\n-                };\n-            if let Err(reason) = validate_flags(command, rest) {\n-                emit_error(&reason);\n-                return 2;\n-            }\n-            let result = match command {\n-                \"init\" => commands::cmd_init(\n-                    &root,\n-                    has_flag(rest, \"--force\"),\n-                    has_flag(rest, \"--adopt-policy\"),\n-                ),\n-                \"approve\" => commands::cmd_approve(&root),\n-                \"doctor\" => commands::cmd_doctor(&root),\n-                \"status\" => commands::cmd_status(&root),\n-                \"run\" => {\n-                    // A timeout that is silently dropped would make the receipt\n-                    // prove a deadline that was never applied, so an unparseable\n-                    // or zero value is a usage error rather than a default.\n-                    let timeout = match flag_value(rest, \"--timeout\") {\n-                        None => None,\n-                        Some(raw) => match raw.parse::<u64>() {\n-                            Ok(seconds) if seconds >= 1 => Some(seconds),\n-                            _ => {\n-                                emit_error(&format!(\n-                                    \"`--timeout` needs a whole number of seconds >= 1 (found {raw:?})\"\n-                                ));\n-                                return 2;\n-                            }\n-                        },\n-                    };\n-                    commands::cmd_run(\n-                        &root,\n-                        collect_values(rest, &[\"--obligation\", \"--obligations\"]),\n-                        timeout,\n-                        flag_value(rest, \"--candidate\"),\n-                    )\n-                }\n-                \"publish\" => commands::cmd_publish(\n-                    &root,\n-                    flag_value(rest, \"--ref\"),\n-                    flag_value(rest, \"--expected-old\"),\n-                    flag_value(rest, \"--message\"),\n-                    flag_value(rest, \"--candidate\"),\n-                    has_flag(rest, \"--dry-run\"),\n-                ),\n-                \"propose\" => commands::cmd_propose(\n-                    &root,\n-                    flag_value(rest, \"--agent\"),\n-                    flag_value(rest, \"--task\"),\n-                    flag_value(rest, \"--base\"),\n-                    flag_value(rest, \"--patch\"),\n-                    flag_value(rest, \"--key\"),\n-                ),\n-                \"proposals\" => {\n-                    let sub = rest.first().map(String::as_str).unwrap_or(\"list\");\n-                    match sub {\n-                        \"list\" => commands::cmd_proposals(&root, None),\n-                        \"show\" => match rest.get(1) {\n-                            Some(id) => commands::cmd_proposals(&root, Some(id.clone())),\n-                            None => {\n-                                emit_error(\"`flow proposals show <id>` needs a proposal id\");\n-                                return 2;\n-                            }\n-                        },\n-                        other => {\n-                            emit_error(&format!(\n-                                \"unknown `proposals` subcommand {other:?} (list | show <id>)\"\n-                            ));\n-                            return 2;\n-                        }\n-                    }\n-                }\n-                \"assemble\" => match collect_values(rest, &[\"--proposal\"]) {\n-                    Some(ids) => commands::cmd_assemble(&root, &ids),\n-                    None => commands::cmd_assemble(&root, &[]),\n-                },\n-                \"reconcile\" => commands::cmd_reconcile(&root),\n-                \"explain\" => commands::cmd_explain(\n-                    &root,\n-                    flag_value(rest, \"--tree\"),\n-                    flag_value(rest, \"--candidate\"),\n-                ),\n-                \"disable\" => commands::cmd_set_disabled(&root, true),\n-                \"enable\" => commands::cmd_set_disabled(&root, false),\n-                other => {\n-                    emit_error(&format!(\"unknown command {other:?} (run `flow help`)\"));\n-                    return 2;\n-                }\n-            };\n-            match result {\n-                Ok(value) => {\n-                    let mut code = exit_code_for(&value);\n-                    // A diagnostic that found a broken guarantee is not a success.\n-                    // The documented contract is `0 when overall=OK, 1 when\n-                    // overall=FAILED`, and it is tested.\n-                    if command == \"doctor\"\n-                        && value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n-                    {\n-                        code = 1;\n-                    }\n-                    emit(value);\n-                    code\n-                }\n-                Err(err) => {\n-                    emit_error(&err);\n-                    1\n-                }\n-            }\n-        }\n-    }\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 237
+      },
+      "start": {
+        "column": 5,
+        "line": 77
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"help\" | \"-h\" | \"--help\" in dispatch\n@@ -75,20 +75,17 @@\n \n fn dispatch(args: &[String]) -> u8 {\n     let Some(command) = args.first().map(String::as_str) else {\n         print!(\"{USAGE}\");\n         return 2;\n     };\n     let rest = &args[1..];\n     match command {\n-        \"help\" | \"-h\" | \"--help\" => {\n-            print!(\"{USAGE}\");\n-            0\n-        }\n+         /* ~ changed by cargo-mutants ~ */\n         \"version\" | \"--version\" => {\n             emit(Json::obj(vec![\n                 (\"status\", Json::str(\"VERSION\")),\n                 (\n                     \"tool\",\n                     Json::str(format!(\"flow {}\", env!(\"CARGO_PKG_VERSION\"))),\n                 ),\n                 (\"policy_version\", Json::str(state::POLICY_VERSION)),\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:83:9: delete match arm \"help\" | \"-h\" | \"--help\" in dispatch",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 86
+      },
+      "start": {
+        "column": 9,
+        "line": 83
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"version\" | \"--version\" in dispatch\n@@ -79,49 +79,17 @@\n         return 2;\n     };\n     let rest = &args[1..];\n     match command {\n         \"help\" | \"-h\" | \"--help\" => {\n             print!(\"{USAGE}\");\n             0\n         }\n-        \"version\" | \"--version\" => {\n-            emit(Json::obj(vec![\n-                (\"status\", Json::str(\"VERSION\")),\n-                (\n-                    \"tool\",\n-                    Json::str(format!(\"flow {}\", env!(\"CARGO_PKG_VERSION\"))),\n-                ),\n-                (\"policy_version\", Json::str(state::POLICY_VERSION)),\n-                (\"git\", Json::str(gitcli::Git::new(\".\").version())),\n-                (\"schema\", Json::str(state::SCHEMA_RECEIPT)),\n-                // Every document this build can emit, so a client that discovers\n-                // schemas from `version` learns the whole contract instead of\n-                // half of it.\n-                (\n-                    \"schemas\",\n-                    Json::str(\n-                        [\n-                            state::SCHEMA_CONFIG,\n-                            state::SCHEMA_RECEIPT,\n-                            state::SCHEMA_JOURNAL,\n-                            state::SCHEMA_PROPOSAL,\n-                            state::SCHEMA_CANDIDATE,\n-                            state::SCHEMA_ADOPTION,\n-                            state::SCHEMA_PLAN,\n-                            state::SCHEMA_STATUS,\n-                            state::SCHEMA_PROPOSAL_LIST,\n-                        ]\n-                        .join(\", \"),\n-                    ),\n-                ),\n-            ]));\n-            0\n-        }\n+         /* ~ changed by cargo-mutants ~ */\n         _ => {\n             let root =\n                 match gitcli::toplevel(&std::env::current_dir().unwrap_or(PathBuf::from(\".\"))) {\n                     Ok(root) => root,\n                     Err(err) => {\n                         emit_error(&err);\n                         return 1;\n                     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:87:9: delete match arm \"version\" | \"--version\" in dispatch",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 119
+      },
+      "start": {
+        "column": 9,
+        "line": 87
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace match guard seconds >= 1 with true in dispatch\n@@ -141,17 +141,17 @@\n                 \"status\" => commands::cmd_status(&root),\n                 \"run\" => {\n                     // A timeout that is silently dropped would make the receipt\n                     // prove a deadline that was never applied, so an unparseable\n                     // or zero value is a usage error rather than a default.\n                     let timeout = match flag_value(rest, \"--timeout\") {\n                         None => None,\n                         Some(raw) => match raw.parse::<u64>() {\n-                            Ok(seconds) if seconds >= 1 => Some(seconds),\n+                            Ok(seconds) if true /* ~ changed by cargo-mutants ~ */ => Some(seconds),\n                             _ => {\n                                 emit_error(&format!(\n                                     \"`--timeout` needs a whole number of seconds >= 1 (found {raw:?})\"\n                                 ));\n                                 return 2;\n                             }\n                         },\n                     };\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/main.rs:149:44: replace match guard seconds >= 1 with true in dispatch",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 149
+      },
+      "start": {
+        "column": 44,
+        "line": 149
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace match guard seconds >= 1 with false in dispatch\n@@ -141,17 +141,17 @@\n                 \"status\" => commands::cmd_status(&root),\n                 \"run\" => {\n                     // A timeout that is silently dropped would make the receipt\n                     // prove a deadline that was never applied, so an unparseable\n                     // or zero value is a usage error rather than a default.\n                     let timeout = match flag_value(rest, \"--timeout\") {\n                         None => None,\n                         Some(raw) => match raw.parse::<u64>() {\n-                            Ok(seconds) if seconds >= 1 => Some(seconds),\n+                            Ok(seconds) if false /* ~ changed by cargo-mutants ~ */ => Some(seconds),\n                             _ => {\n                                 emit_error(&format!(\n                                     \"`--timeout` needs a whole number of seconds >= 1 (found {raw:?})\"\n                                 ));\n                                 return 2;\n                             }\n                         },\n                     };\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/main.rs:149:44: replace match guard seconds >= 1 with false in dispatch",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 56,
+        "line": 149
+      },
+      "start": {
+        "column": 44,
+        "line": 149
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace >= with < in dispatch\n@@ -141,17 +141,17 @@\n                 \"status\" => commands::cmd_status(&root),\n                 \"run\" => {\n                     // A timeout that is silently dropped would make the receipt\n                     // prove a deadline that was never applied, so an unparseable\n                     // or zero value is a usage error rather than a default.\n                     let timeout = match flag_value(rest, \"--timeout\") {\n                         None => None,\n                         Some(raw) => match raw.parse::<u64>() {\n-                            Ok(seconds) if seconds >= 1 => Some(seconds),\n+                            Ok(seconds) if seconds < /* ~ changed by cargo-mutants ~ */ 1 => Some(seconds),\n                             _ => {\n                                 emit_error(&format!(\n                                     \"`--timeout` needs a whole number of seconds >= 1 (found {raw:?})\"\n                                 ));\n                                 return 2;\n                             }\n                         },\n                     };\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:149:52: replace >= with < in dispatch",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 54,
+        "line": 149
+      },
+      "start": {
+        "column": 52,
+        "line": 149
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace && with || in dispatch\n@@ -216,17 +216,17 @@\n             };\n             match result {\n                 Ok(value) => {\n                     let mut code = exit_code_for(&value);\n                     // A diagnostic that found a broken guarantee is not a success.\n                     // The documented contract is `0 when overall=OK, 1 when\n                     // overall=FAILED`, and it is tested.\n                     if command == \"doctor\"\n-                        && value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n+                        || /* ~ changed by cargo-mutants ~ */ value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n                     {\n                         code = 1;\n                     }\n                     emit(value);\n                     code\n                 }\n                 Err(err) => {\n                     emit_error(&err);\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:224:25: replace && with || in dispatch",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 224
+      },
+      "start": {
+        "column": 25,
+        "line": 224
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in dispatch\n@@ -215,17 +215,17 @@\n                 }\n             };\n             match result {\n                 Ok(value) => {\n                     let mut code = exit_code_for(&value);\n                     // A diagnostic that found a broken guarantee is not a success.\n                     // The documented contract is `0 when overall=OK, 1 when\n                     // overall=FAILED`, and it is tested.\n-                    if command == \"doctor\"\n+                    if command != /* ~ changed by cargo-mutants ~ */ \"doctor\"\n                         && value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n                     {\n                         code = 1;\n                     }\n                     emit(value);\n                     code\n                 }\n                 Err(err) => {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:223:32: replace == with != in dispatch",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 223
+      },
+      "start": {
+        "column": 32,
+        "line": 223
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in dispatch\n@@ -216,17 +216,17 @@\n             };\n             match result {\n                 Ok(value) => {\n                     let mut code = exit_code_for(&value);\n                     // A diagnostic that found a broken guarantee is not a success.\n                     // The documented contract is `0 when overall=OK, 1 when\n                     // overall=FAILED`, and it is tested.\n                     if command == \"doctor\"\n-                        && value.get(\"overall\").and_then(Json::as_str) == Some(\"FAILED\")\n+                        && value.get(\"overall\").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(\"FAILED\")\n                     {\n                         code = 1;\n                     }\n                     emit(value);\n                     code\n                 }\n                 Err(err) => {\n                     emit_error(&err);\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "dispatch",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 238
+        },
+        "start": {
+          "column": 1,
+          "line": 76
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:224:72: replace == with != in dispatch",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 74,
+        "line": 224
+      },
+      "start": {
+        "column": 72,
+        "line": 224
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace value_flags -> &'static[&'static str] with Vec::leak(Vec::new())\n@@ -236,24 +236,17 @@\n         }\n     }\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n-        \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n-        \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n-        \"assemble\" => &[\"--proposal\"],\n-        \"explain\" => &[\"--tree\", \"--candidate\"],\n-        _ => &[],\n-    }\n+    Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n const GLOBAL_BOOL_FLAGS: &[&str] = &[\"--json\", \"--help\"];\n \n /// Boolean flags that a command actually implements.\n ///\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(Vec::new())",
+    "package": "flow",
+    "replacement": "Vec::leak(Vec::new())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 251
+      },
+      "start": {
+        "column": 5,
+        "line": 244
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace value_flags -> &'static[&'static str] with Vec::leak(vec![\"\"])\n@@ -236,24 +236,17 @@\n         }\n     }\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n-        \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n-        \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n-        \"assemble\" => &[\"--proposal\"],\n-        \"explain\" => &[\"--tree\", \"--candidate\"],\n-        _ => &[],\n-    }\n+    Vec::leak(vec![\"\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n const GLOBAL_BOOL_FLAGS: &[&str] = &[\"--json\", \"--help\"];\n \n /// Boolean flags that a command actually implements.\n ///\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(vec![\"\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"\"])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 251
+      },
+      "start": {
+        "column": 5,
+        "line": 244
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace value_flags -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])\n@@ -236,24 +236,17 @@\n         }\n     }\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n-        \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n-        \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n-        \"assemble\" => &[\"--proposal\"],\n-        \"explain\" => &[\"--tree\", \"--candidate\"],\n-        _ => &[],\n-    }\n+    Vec::leak(vec![\"xyzzy\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n const GLOBAL_BOOL_FLAGS: &[&str] = &[\"--json\", \"--help\"];\n \n /// Boolean flags that a command actually implements.\n ///\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:244:5: replace value_flags -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"xyzzy\"])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 251
+      },
+      "start": {
+        "column": 5,
+        "line": 244
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"run\" in value_flags\n@@ -237,17 +237,17 @@\n     }\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n-        \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n+         /* ~ changed by cargo-mutants ~ */\n         \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n         \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n         \"assemble\" => &[\"--proposal\"],\n         \"explain\" => &[\"--tree\", \"--candidate\"],\n         _ => &[],\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:245:9: delete match arm \"run\" in value_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 81,
+        "line": 245
+      },
+      "start": {
+        "column": 9,
+        "line": 245
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"publish\" in value_flags\n@@ -238,17 +238,17 @@\n }\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n-        \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n+         /* ~ changed by cargo-mutants ~ */\n         \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n         \"assemble\" => &[\"--proposal\"],\n         \"explain\" => &[\"--tree\", \"--candidate\"],\n         _ => &[],\n     }\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:246:9: delete match arm \"publish\" in value_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 79,
+        "line": 246
+      },
+      "start": {
+        "column": 9,
+        "line": 246
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"propose\" in value_flags\n@@ -239,17 +239,17 @@\n \n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n         \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n-        \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n+         /* ~ changed by cargo-mutants ~ */\n         \"assemble\" => &[\"--proposal\"],\n         \"explain\" => &[\"--tree\", \"--candidate\"],\n         _ => &[],\n     }\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:247:9: delete match arm \"propose\" in value_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 247
+      },
+      "start": {
+        "column": 9,
+        "line": 247
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"assemble\" in value_flags\n@@ -240,17 +240,17 @@\n /// Flags that take a value, per command. An unknown flag, or a value flag\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n         \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n         \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n-        \"assemble\" => &[\"--proposal\"],\n+         /* ~ changed by cargo-mutants ~ */\n         \"explain\" => &[\"--tree\", \"--candidate\"],\n         _ => &[],\n     }\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n const GLOBAL_BOOL_FLAGS: &[&str] = &[\"--json\", \"--help\"];\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:248:9: delete match arm \"assemble\" in value_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 248
+      },
+      "start": {
+        "column": 9,
+        "line": 248
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"explain\" in value_flags\n@@ -241,17 +241,17 @@\n /// without a value, is a usage error: silently ignoring `--dry-run` on a program\n /// that does not know it would publish when the operator asked for a plan.\n fn value_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"run\" => &[\"--obligation\", \"--obligations\", \"--timeout\", \"--candidate\"],\n         \"publish\" => &[\"--ref\", \"--expected-old\", \"--message\", \"--candidate\"],\n         \"propose\" => &[\"--agent\", \"--task\", \"--base\", \"--patch\", \"--key\"],\n         \"assemble\" => &[\"--proposal\"],\n-        \"explain\" => &[\"--tree\", \"--candidate\"],\n+         /* ~ changed by cargo-mutants ~ */\n         _ => &[],\n     }\n }\n \n /// Boolean flags accepted by any command: output mode and help. Any other boolean\n /// is per command, below.\n const GLOBAL_BOOL_FLAGS: &[&str] = &[\"--json\", \"--help\"];\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "value_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 252
+        },
+        "start": {
+          "column": 1,
+          "line": 240
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:249:9: delete match arm \"explain\" in value_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 249
+      },
+      "start": {
+        "column": 9,
+        "line": 249
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace bool_flags -> &'static[&'static str] with Vec::leak(Vec::new())\n@@ -258,21 +258,17 @@\n /// Boolean flags that a command actually implements.\n ///\n /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`\n /// would execute the obligations and write a receipt for an operator who asked for\n /// a plan. That is the same defect class as `publish --dry-run=true` (which the\n /// second review found and this file already refuses), so an unimplemented\n /// boolean is a usage error.\n fn bool_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"init\" => &[\"--force\", \"--adopt-policy\"],\n-        \"publish\" => &[\"--dry-run\"],\n-        _ => &[],\n-    }\n+    Vec::leak(Vec::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "bool_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 271
+        },
+        "start": {
+          "column": 1,
+          "line": 258
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(Vec::new())",
+    "package": "flow",
+    "replacement": "Vec::leak(Vec::new())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 270
+      },
+      "start": {
+        "column": 5,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace bool_flags -> &'static[&'static str] with Vec::leak(vec![\"\"])\n@@ -258,21 +258,17 @@\n /// Boolean flags that a command actually implements.\n ///\n /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`\n /// would execute the obligations and write a receipt for an operator who asked for\n /// a plan. That is the same defect class as `publish --dry-run=true` (which the\n /// second review found and this file already refuses), so an unimplemented\n /// boolean is a usage error.\n fn bool_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"init\" => &[\"--force\", \"--adopt-policy\"],\n-        \"publish\" => &[\"--dry-run\"],\n-        _ => &[],\n-    }\n+    Vec::leak(vec![\"\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "bool_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 271
+        },
+        "start": {
+          "column": 1,
+          "line": 258
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(vec![\"\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"\"])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 270
+      },
+      "start": {
+        "column": 5,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace bool_flags -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])\n@@ -258,21 +258,17 @@\n /// Boolean flags that a command actually implements.\n ///\n /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`\n /// would execute the obligations and write a receipt for an operator who asked for\n /// a plan. That is the same defect class as `publish --dry-run=true` (which the\n /// second review found and this file already refuses), so an unimplemented\n /// boolean is a usage error.\n fn bool_flags(command: &str) -> &'static [&'static str] {\n-    match command {\n-        \"init\" => &[\"--force\", \"--adopt-policy\"],\n-        \"publish\" => &[\"--dry-run\"],\n-        _ => &[],\n-    }\n+    Vec::leak(vec![\"xyzzy\"]) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "bool_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 271
+        },
+        "start": {
+          "column": 1,
+          "line": 258
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:266:5: replace bool_flags -> &'static[&'static str] with Vec::leak(vec![\"xyzzy\"])",
+    "package": "flow",
+    "replacement": "Vec::leak(vec![\"xyzzy\"])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 270
+      },
+      "start": {
+        "column": 5,
+        "line": 266
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"init\" in bool_flags\n@@ -259,17 +259,17 @@\n ///\n /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`\n /// would execute the obligations and write a receipt for an operator who asked for\n /// a plan. That is the same defect class as `publish --dry-run=true` (which the\n /// second review found and this file already refuses), so an unimplemented\n /// boolean is a usage error.\n fn bool_flags(command: &str) -> &'static [&'static str] {\n     match command {\n-        \"init\" => &[\"--force\", \"--adopt-policy\"],\n+         /* ~ changed by cargo-mutants ~ */\n         \"publish\" => &[\"--dry-run\"],\n         _ => &[],\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "bool_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 271
+        },
+        "start": {
+          "column": 1,
+          "line": 258
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:267:9: delete match arm \"init\" in bool_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 267
+      },
+      "start": {
+        "column": 9,
+        "line": 267
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ delete match arm \"publish\" in bool_flags\n@@ -260,17 +260,17 @@\n /// Accepting a boolean a command ignores is not harmless: `flow run --dry-run`\n /// would execute the obligations and write a receipt for an operator who asked for\n /// a plan. That is the same defect class as `publish --dry-run=true` (which the\n /// second review found and this file already refuses), so an unimplemented\n /// boolean is a usage error.\n fn bool_flags(command: &str) -> &'static [&'static str] {\n     match command {\n         \"init\" => &[\"--force\", \"--adopt-policy\"],\n-        \"publish\" => &[\"--dry-run\"],\n+         /* ~ changed by cargo-mutants ~ */\n         _ => &[],\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "bool_flags",
+      "return_type": "-> &'static[&'static str]",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 271
+        },
+        "start": {
+          "column": 1,
+          "line": 258
+        }
+      }
+    },
+    "genre": "MatchArm",
+    "name": "crates/flow/src/main.rs:268:9: delete match arm \"publish\" in bool_flags",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 268
+      },
+      "start": {
+        "column": 9,
+        "line": 268
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace validate_flags -> Result<(), String> with Ok(())\n@@ -268,72 +268,17 @@\n         \"publish\" => &[\"--dry-run\"],\n         _ => &[],\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n-    let takes_value = value_flags(command);\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if arg == \"--\" {\n-            index += 1;\n-            continue;\n-        }\n-        if let Some(body) = arg.strip_prefix(\"--\") {\n-            let (name, inline_value) = match body.split_once('=') {\n-                Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n-                None => (format!(\"--{body}\"), None),\n-            };\n-            if takes_value.contains(&name.as_str()) {\n-                if inline_value.is_none() {\n-                    match args.get(index + 1) {\n-                        None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n-                        Some(value) if value.starts_with(\"--\") => {\n-                            return Err(format!(\n-                                \"`{name}` needs a value, found the flag {value:?} instead\"\n-                            ))\n-                        }\n-                        Some(_) => {}\n-                    }\n-                    index += 2;\n-                    continue;\n-                }\n-            } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n-                || bool_flags(command).contains(&name.as_str())\n-            {\n-                // A boolean flag is a token, not a `key=value` pair. Accepting\n-                // `--dry-run=true` here and then matching only the exact token in\n-                // `has_flag` would run a real publication for an operator who\n-                // asked for a plan, so the shape is refused rather than guessed.\n-                if let Some(value) = inline_value {\n-                    return Err(format!(\n-                        \"`{name}` takes no value (found {value:?}); write `{name}` on its own\"\n-                    ));\n-                }\n-            } else if matches!(name.as_str(), \"--dry-run\" | \"--force\" | \"--adopt-policy\") {\n-                return Err(format!(\n-                    \"`{name}` is not implemented by `flow {command}` (see `flow help`); an option that would be ignored is a usage error\"\n-                ));\n-            } else {\n-                return Err(format!(\n-                    \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n-                ));\n-            }\n-        } else if command != \"proposals\" {\n-            return Err(format!(\n-                \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n-            ));\n-        }\n-        index += 1;\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:276:5: replace validate_flags -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 331
+      },
+      "start": {
+        "column": 5,
+        "line": 276
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with == in validate_flags\n@@ -270,17 +270,17 @@\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n-    while index < args.len() {\n+    while index == /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n             index += 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:278:17: replace < with == in validate_flags",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 278
+      },
+      "start": {
+        "column": 17,
+        "line": 278
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with > in validate_flags\n@@ -270,17 +270,17 @@\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n-    while index < args.len() {\n+    while index > /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n             index += 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:278:17: replace < with > in validate_flags",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 278
+      },
+      "start": {
+        "column": 17,
+        "line": 278
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with <= in validate_flags\n@@ -270,17 +270,17 @@\n     }\n }\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n-    while index < args.len() {\n+    while index <= /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n             index += 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:278:17: replace < with <= in validate_flags",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 278
+      },
+      "start": {
+        "column": 17,
+        "line": 278
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in validate_flags\n@@ -272,17 +272,17 @@\n \n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n-        if arg == \"--\" {\n+        if arg != /* ~ changed by cargo-mutants ~ */ \"--\" {\n             index += 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:280:16: replace == with != in validate_flags",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 280
+      },
+      "start": {
+        "column": 16,
+        "line": 280
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in validate_flags\n@@ -273,17 +273,17 @@\n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n-            index += 1;\n+            index -= /* ~ changed by cargo-mutants ~ */ 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:281:19: replace += with -= in validate_flags",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 281
+      },
+      "start": {
+        "column": 19,
+        "line": 281
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -273,17 +273,17 @@\n /// Reject an unknown flag, a value flag without a value, or a stray positional\n /// argument, before any mutation.\n fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {\n     let takes_value = value_flags(command);\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if arg == \"--\" {\n-            index += 1;\n+            index *= /* ~ changed by cargo-mutants ~ */ 1;\n             continue;\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:281:19: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 281
+      },
+      "start": {
+        "column": 19,
+        "line": 281
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace match guard value.starts_with(\"--\") with true in validate_flags\n@@ -285,17 +285,17 @@\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n                 if inline_value.is_none() {\n                     match args.get(index + 1) {\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n-                        Some(value) if value.starts_with(\"--\") => {\n+                        Some(value) if true /* ~ changed by cargo-mutants ~ */ => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n                     index += 2;\n                     continue;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/main.rs:293:40: replace match guard value.starts_with(\"--\") with true in validate_flags",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 63,
+        "line": 293
+      },
+      "start": {
+        "column": 40,
+        "line": 293
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace match guard value.starts_with(\"--\") with false in validate_flags\n@@ -285,17 +285,17 @@\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n                 if inline_value.is_none() {\n                     match args.get(index + 1) {\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n-                        Some(value) if value.starts_with(\"--\") => {\n+                        Some(value) if false /* ~ changed by cargo-mutants ~ */ => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n                     index += 2;\n                     continue;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/main.rs:293:40: replace match guard value.starts_with(\"--\") with false in validate_flags",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 63,
+        "line": 293
+      },
+      "start": {
+        "column": 40,
+        "line": 293
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with - in validate_flags\n@@ -283,17 +283,17 @@\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n                 if inline_value.is_none() {\n-                    match args.get(index + 1) {\n+                    match args.get(index - /* ~ changed by cargo-mutants ~ */ 1) {\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n                         Some(value) if value.starts_with(\"--\") => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:291:42: replace + with - in validate_flags",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 291
+      },
+      "start": {
+        "column": 42,
+        "line": 291
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with * in validate_flags\n@@ -283,17 +283,17 @@\n         }\n         if let Some(body) = arg.strip_prefix(\"--\") {\n             let (name, inline_value) = match body.split_once('=') {\n                 Some((head, value)) => (format!(\"--{head}\"), Some(value)),\n                 None => (format!(\"--{body}\"), None),\n             };\n             if takes_value.contains(&name.as_str()) {\n                 if inline_value.is_none() {\n-                    match args.get(index + 1) {\n+                    match args.get(index * /* ~ changed by cargo-mutants ~ */ 1) {\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n                         Some(value) if value.starts_with(\"--\") => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:291:42: replace + with * in validate_flags",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 291
+      },
+      "start": {
+        "column": 42,
+        "line": 291
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in validate_flags\n@@ -292,17 +292,17 @@\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n                         Some(value) if value.starts_with(\"--\") => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n-                    index += 2;\n+                    index -= /* ~ changed by cargo-mutants ~ */ 2;\n                     continue;\n                 }\n             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n                 || bool_flags(command).contains(&name.as_str())\n             {\n                 // A boolean flag is a token, not a `key=value` pair. Accepting\n                 // `--dry-run=true` here and then matching only the exact token in\n                 // `has_flag` would run a real publication for an operator who\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:300:27: replace += with -= in validate_flags",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 300
+      },
+      "start": {
+        "column": 27,
+        "line": 300
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -292,17 +292,17 @@\n                         None => return Err(format!(\"`{name}` needs a value (flow {command} ...)\")),\n                         Some(value) if value.starts_with(\"--\") => {\n                             return Err(format!(\n                                 \"`{name}` needs a value, found the flag {value:?} instead\"\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n-                    index += 2;\n+                    index *= /* ~ changed by cargo-mutants ~ */ 2;\n                     continue;\n                 }\n             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n                 || bool_flags(command).contains(&name.as_str())\n             {\n                 // A boolean flag is a token, not a `key=value` pair. Accepting\n                 // `--dry-run=true` here and then matching only the exact token in\n                 // `has_flag` would run a real publication for an operator who\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:300:27: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 300
+      },
+      "start": {
+        "column": 27,
+        "line": 300
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace || with && in validate_flags\n@@ -296,17 +296,17 @@\n                             ))\n                         }\n                         Some(_) => {}\n                     }\n                     index += 2;\n                     continue;\n                 }\n             } else if GLOBAL_BOOL_FLAGS.contains(&name.as_str())\n-                || bool_flags(command).contains(&name.as_str())\n+                && /* ~ changed by cargo-mutants ~ */ bool_flags(command).contains(&name.as_str())\n             {\n                 // A boolean flag is a token, not a `key=value` pair. Accepting\n                 // `--dry-run=true` here and then matching only the exact token in\n                 // `has_flag` would run a real publication for an operator who\n                 // asked for a plan, so the shape is refused rather than guessed.\n                 if let Some(value) = inline_value {\n                     return Err(format!(\n                         \"`{name}` takes no value (found {value:?}); write `{name}` on its own\"\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:304:17: replace || with && in validate_flags",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 19,
+        "line": 304
+      },
+      "start": {
+        "column": 17,
+        "line": 304
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace != with == in validate_flags\n@@ -316,17 +316,17 @@\n                 return Err(format!(\n                     \"`{name}` is not implemented by `flow {command}` (see `flow help`); an option that would be ignored is a usage error\"\n                 ));\n             } else {\n                 return Err(format!(\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n-        } else if command != \"proposals\" {\n+        } else if command == /* ~ changed by cargo-mutants ~ */ \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n         index += 1;\n     }\n     Ok(())\n }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:324:27: replace != with == in validate_flags",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 324
+      },
+      "start": {
+        "column": 27,
+        "line": 324
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in validate_flags\n@@ -321,17 +321,17 @@\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n         } else if command != \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n-        index += 1;\n+        index -= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:329:15: replace += with -= in validate_flags",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 329
+      },
+      "start": {
+        "column": 15,
+        "line": 329
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in validate_flags\n@@ -321,17 +321,17 @@\n                     \"unknown option {name:?} for `flow {command}` (see `flow help`)\"\n                 ));\n             }\n         } else if command != \"proposals\" {\n             return Err(format!(\n                 \"unexpected argument {arg:?} for `flow {command}` (see `flow help`)\"\n             ));\n         }\n-        index += 1;\n+        index *= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "validate_flags",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 273
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:329:15: replace += with *= in validate_flags",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 329
+      },
+      "start": {
+        "column": 15,
+        "line": 329
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace flag_value -> Option<String> with None\n@@ -327,27 +327,17 @@\n             ));\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n-    let mut index = 0;\n-    while index < args.len() {\n-        if args[index] == name {\n-            return args.get(index + 1).cloned();\n-        }\n-        if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n-            return Some(value.to_string());\n-        }\n-        index += 1;\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 345
+      },
+      "start": {
+        "column": 5,
+        "line": 335
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace flag_value -> Option<String> with Some(String::new())\n@@ -327,27 +327,17 @@\n             ));\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n-    let mut index = 0;\n-    while index < args.len() {\n-        if args[index] == name {\n-            return args.get(index + 1).cloned();\n-        }\n-        if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n-            return Some(value.to_string());\n-        }\n-        index += 1;\n-    }\n-    None\n+    Some(String::new()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some(String::new())",
+    "package": "flow",
+    "replacement": "Some(String::new())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 345
+      },
+      "start": {
+        "column": 5,
+        "line": 335
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace flag_value -> Option<String> with Some(\"xyzzy\".into())\n@@ -327,27 +327,17 @@\n             ));\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n-    let mut index = 0;\n-    while index < args.len() {\n-        if args[index] == name {\n-            return args.get(index + 1).cloned();\n-        }\n-        if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n-            return Some(value.to_string());\n-        }\n-        index += 1;\n-    }\n-    None\n+    Some(\"xyzzy\".into()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:335:5: replace flag_value -> Option<String> with Some(\"xyzzy\".into())",
+    "package": "flow",
+    "replacement": "Some(\"xyzzy\".into())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 345
+      },
+      "start": {
+        "column": 5,
+        "line": 335
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with == in flag_value\n@@ -328,17 +328,17 @@\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n-    while index < args.len() {\n+    while index == /* ~ changed by cargo-mutants ~ */ args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:336:17: replace < with == in flag_value",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 336
+      },
+      "start": {
+        "column": 17,
+        "line": 336
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with > in flag_value\n@@ -328,17 +328,17 @@\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n-    while index < args.len() {\n+    while index > /* ~ changed by cargo-mutants ~ */ args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:336:17: replace < with > in flag_value",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 336
+      },
+      "start": {
+        "column": 17,
+        "line": 336
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with <= in flag_value\n@@ -328,17 +328,17 @@\n         }\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n-    while index < args.len() {\n+    while index <= /* ~ changed by cargo-mutants ~ */ args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:336:17: replace < with <= in flag_value",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 336
+      },
+      "start": {
+        "column": 17,
+        "line": 336
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in flag_value\n@@ -329,17 +329,17 @@\n         index += 1;\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n-        if args[index] == name {\n+        if args[index] != /* ~ changed by cargo-mutants ~ */ name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n     None\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:337:24: replace == with != in flag_value",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 337
+      },
+      "start": {
+        "column": 24,
+        "line": 337
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with - in flag_value\n@@ -330,17 +330,17 @@\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n-            return args.get(index + 1).cloned();\n+            return args.get(index - /* ~ changed by cargo-mutants ~ */ 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n     None\n }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:338:35: replace + with - in flag_value",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 338
+      },
+      "start": {
+        "column": 35,
+        "line": 338
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with * in flag_value\n@@ -330,17 +330,17 @@\n     }\n     Ok(())\n }\n \n fn flag_value(args: &[String], name: &str) -> Option<String> {\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n-            return args.get(index + 1).cloned();\n+            return args.get(index * /* ~ changed by cargo-mutants ~ */ 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n         index += 1;\n     }\n     None\n }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:338:35: replace + with * in flag_value",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 338
+      },
+      "start": {
+        "column": 35,
+        "line": 338
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in flag_value\n@@ -335,17 +335,17 @@\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n-        index += 1;\n+        index -= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:343:15: replace += with -= in flag_value",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 343
+      },
+      "start": {
+        "column": 15,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in flag_value\n@@ -335,17 +335,17 @@\n     let mut index = 0;\n     while index < args.len() {\n         if args[index] == name {\n             return args.get(index + 1).cloned();\n         }\n         if let Some(value) = args[index].strip_prefix(&format!(\"{name}=\")) {\n             return Some(value.to_string());\n         }\n-        index += 1;\n+        index *= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "flag_value",
+      "return_type": "-> Option<String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 346
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:343:15: replace += with *= in flag_value",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 343
+      },
+      "start": {
+        "column": 15,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with None\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2;\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1;\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2;\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1;\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![])",
+    "package": "flow",
+    "replacement": "Some(vec![])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2;\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1;\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![String::new()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])",
+    "package": "flow",
+    "replacement": "Some(vec![String::new()])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace collect_values -> Option<Vec<String>> with Some(vec![\"xyzzy\".into()])\n@@ -344,43 +344,17 @@\n     }\n     None\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n-    let mut out = Vec::new();\n-    let mut index = 0;\n-    while index < args.len() {\n-        let arg = &args[index];\n-        if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n-                out.push(value.clone());\n-            }\n-            index += 2;\n-            continue;\n-        }\n-        let mut matched = false;\n-        for name in names {\n-            if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n-                out.push(value.to_string());\n-                matched = true;\n-                break;\n-            }\n-        }\n-        let _ = matched;\n-        index += 1;\n-    }\n-    if out.is_empty() {\n-        None\n-    } else {\n-        Some(out)\n-    }\n+    Some(vec![\"xyzzy\".into()]) /* ~ changed by cargo-mutants ~ */\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![\"xyzzy\".into()])",
+    "package": "flow",
+    "replacement": "Some(vec![\"xyzzy\".into()])",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 378
+      },
+      "start": {
+        "column": 5,
+        "line": 352
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with == in collect_values\n@@ -346,17 +346,17 @@\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n-    while index < args.len() {\n+    while index == /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n             index += 2;\n             continue;\n         }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:354:17: replace < with == in collect_values",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 354
+      },
+      "start": {
+        "column": 17,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with > in collect_values\n@@ -346,17 +346,17 @@\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n-    while index < args.len() {\n+    while index > /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n             index += 2;\n             continue;\n         }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:354:17: replace < with > in collect_values",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 354
+      },
+      "start": {
+        "column": 17,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace < with <= in collect_values\n@@ -346,17 +346,17 @@\n }\n \n /// Collect every occurrence of any of `names`, in command-line order.\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n-    while index < args.len() {\n+    while index <= /* ~ changed by cargo-mutants ~ */ args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n             index += 2;\n             continue;\n         }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:354:17: replace < with <= in collect_values",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 18,
+        "line": 354
+      },
+      "start": {
+        "column": 17,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with - in collect_values\n@@ -349,17 +349,17 @@\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n+            if let Some(value) = args.get(index - /* ~ changed by cargo-mutants ~ */ 1) {\n                 out.push(value.clone());\n             }\n             index += 2;\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:357:49: replace + with - in collect_values",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 357
+      },
+      "start": {
+        "column": 49,
+        "line": 357
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace + with * in collect_values\n@@ -349,17 +349,17 @@\n /// `--name value` and `--name=value` are both accepted; a repeated flag keeps\n /// its order, which is the assembly order of a candidate.\n fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n-            if let Some(value) = args.get(index + 1) {\n+            if let Some(value) = args.get(index * /* ~ changed by cargo-mutants ~ */ 1) {\n                 out.push(value.clone());\n             }\n             index += 2;\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:357:49: replace + with * in collect_values",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 50,
+        "line": 357
+      },
+      "start": {
+        "column": 49,
+        "line": 357
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in collect_values\n@@ -352,17 +352,17 @@\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n-            index += 2;\n+            index -= /* ~ changed by cargo-mutants ~ */ 2;\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:360:19: replace += with -= in collect_values",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 360
+      },
+      "start": {
+        "column": 19,
+        "line": 360
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -352,17 +352,17 @@\n     let mut out = Vec::new();\n     let mut index = 0;\n     while index < args.len() {\n         let arg = &args[index];\n         if names.contains(&arg.as_str()) {\n             if let Some(value) = args.get(index + 1) {\n                 out.push(value.clone());\n             }\n-            index += 2;\n+            index *= /* ~ changed by cargo-mutants ~ */ 2;\n             continue;\n         }\n         let mut matched = false;\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:360:19: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 21,
+        "line": 360
+      },
+      "start": {
+        "column": 19,
+        "line": 360
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with -= in collect_values\n@@ -364,17 +364,17 @@\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n             }\n         }\n         let _ = matched;\n-        index += 1;\n+        index -= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:372:15: replace += with -= in collect_values",
+    "package": "flow",
+    "replacement": "-=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 372
+      },
+      "start": {
+        "column": 15,
+        "line": 372
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace += with *= in collect_values\n@@ -364,17 +364,17 @@\n         for name in names {\n             if let Some(value) = arg.strip_prefix(&format!(\"{name}=\")) {\n                 out.push(value.to_string());\n                 matched = true;\n                 break;\n             }\n         }\n         let _ = matched;\n-        index += 1;\n+        index *= /* ~ changed by cargo-mutants ~ */ 1;\n     }\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "collect_values",
+      "return_type": "-> Option<Vec<String>>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 379
+        },
+        "start": {
+          "column": 1,
+          "line": 348
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:372:15: replace += with *= in collect_values",
+    "package": "flow",
+    "replacement": "*=",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 372
+      },
+      "start": {
+        "column": 15,
+        "line": 372
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace has_flag -> bool with true\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name)\n+    true /* ~ changed by cargo-mutants ~ */\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:382:5: replace has_flag -> bool with true",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 382
+      },
+      "start": {
+        "column": 5,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace has_flag -> bool with false\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name)\n+    false /* ~ changed by cargo-mutants ~ */\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:382:5: replace has_flag -> bool with false",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 382
+      },
+      "start": {
+        "column": 5,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in has_flag\n@@ -374,17 +374,17 @@\n     if out.is_empty() {\n         None\n     } else {\n         Some(out)\n     }\n }\n \n fn has_flag(args: &[String], name: &str) -> bool {\n-    args.iter().any(|a| a == name)\n+    args.iter().any(|a| a != /* ~ changed by cargo-mutants ~ */ name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n     if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n         return 2;\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "has_flag",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 383
+        },
+        "start": {
+          "column": 1,
+          "line": 381
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:382:27: replace == with != in has_flag",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 382
+      },
+      "start": {
+        "column": 27,
+        "line": 382
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace exit_code_for -> u8 with 0\n@@ -381,27 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n-        return 2;\n-    }\n-    match value.get(\"status\").and_then(Json::as_str) {\n-        Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n-        | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n-        | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n-        | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n-        Some(_) => 1,\n-        None => 1,\n-    }\n+    0 /* ~ changed by cargo-mutants ~ */\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty());\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 0",
+    "package": "flow",
+    "replacement": "0",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 399
+      },
+      "start": {
+        "column": 5,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace exit_code_for -> u8 with 1\n@@ -381,27 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n-        return 2;\n-    }\n-    match value.get(\"status\").and_then(Json::as_str) {\n-        Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n-        | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n-        | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n-        | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n-        Some(_) => 1,\n-        None => 1,\n-    }\n+    1 /* ~ changed by cargo-mutants ~ */\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty());\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 1",
+    "package": "flow",
+    "replacement": "1",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 399
+      },
+      "start": {
+        "column": 5,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace == with != in exit_code_for\n@@ -381,17 +381,17 @@\n fn has_flag(args: &[String], name: &str) -> bool {\n     args.iter().any(|a| a == name)\n }\n \n fn exit_code_for(value: &Json) -> u8 {\n     // A document that names USAGE is a usage error whatever its status: the\n     // published contract reserves exit 2 for \"you called me wrong\", and a script\n     // must be able to tell that apart from a policy refusal (exit 1).\n-    if value.get(\"code\").and_then(Json::as_str) == Some(\"USAGE\") {\n+    if value.get(\"code\").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(\"USAGE\") {\n         return 2;\n     }\n     match value.get(\"status\").and_then(Json::as_str) {\n         Some(\"PASSED\") | Some(\"PUBLISHED\") | Some(\"PLAN\") | Some(\"INITIALIZED\")\n         | Some(\"APPROVED\") | Some(\"ADMITTED\") | Some(\"ASSEMBLED\") | Some(\"RECORD\")\n         | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n         | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n         Some(_) => 1,\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "exit_code_for",
+      "return_type": "-> u8",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 400
+        },
+        "start": {
+          "column": 1,
+          "line": 385
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/main.rs:389:49: replace == with != in exit_code_for",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 389
+      },
+      "start": {
+        "column": 49,
+        "line": 389
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace emit with ()\n@@ -395,17 +395,17 @@\n         | Some(\"RECONCILED\") | Some(\"EXPLAIN\") | Some(\"STATUS\") | Some(\"DISABLED\")\n         | Some(\"ENABLED\") | Some(\"REPORT\") => 0,\n         Some(_) => 1,\n         None => 1,\n     }\n }\n \n fn emit(value: Json) {\n-    println!(\"{}\", value.to_string_pretty());\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n fn emit_error(message: &str) {\n     emit(Json::obj(vec![\n         (\"status\", Json::str(\"ERROR\")),\n         (\"error\", Json::str(message)),\n     ]));\n }\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "emit",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 404
+        },
+        "start": {
+          "column": 1,
+          "line": 402
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:403:5: replace emit with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 403
+      },
+      "start": {
+        "column": 5,
+        "line": 403
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/main.rs\n+++ replace emit_error with ()\n@@ -399,20 +399,17 @@\n     }\n }\n \n fn emit(value: Json) {\n     println!(\"{}\", value.to_string_pretty());\n }\n \n fn emit_error(message: &str) {\n-    emit(Json::obj(vec![\n-        (\"status\", Json::str(\"ERROR\")),\n-        (\"error\", Json::str(message)),\n-    ]));\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn args(values: &[&str]) -> Vec<String> {\n         values.iter().map(|v| v.to_string()).collect()\n",
+    "file": "crates/flow/src/main.rs",
+    "function": {
+      "function_name": "emit_error",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 411
+        },
+        "start": {
+          "column": 1,
+          "line": 406
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/main.rs:407:5: replace emit_error with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 410
+      },
+      "start": {
+        "column": 5,
+        "line": 407
+      }
+    }
+  }
+]

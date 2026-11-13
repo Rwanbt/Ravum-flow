@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_explain
+@@ -2303,17 +2303,17 @@
+         (Some(t), _) => t.clone(),
+         (None, Some(record)) => record.tree_oid.clone(),
+         (None, None) => git.head_tree()?,
+     };
+     let receipt = Receipt::load(root, &tree)?;
+     let records = state::read_journal(root)?;
+     let related: Vec<Json> = records
+         .iter()
+-        .filter(|r| r.get("tree").and_then(Json::as_str) == Some(tree.as_str())) // survival-probe
++        .filter(|r| r.get("tree").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(tree.as_str())) // survival-probe
+         .cloned()
+         .collect();
+     // Proposals are attributed to a candidate, so explain can name who proposed
+     // what without the caller having to correlate ids by hand.
+     let proposals = match &candidate_record {
+         None => Json::Arr(Vec::new()),
+         Some(record) => Json::Arr(
+             record

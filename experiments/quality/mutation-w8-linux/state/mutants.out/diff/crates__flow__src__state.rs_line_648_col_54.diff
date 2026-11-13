@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace + with - in save_receipt
+@@ -640,17 +640,17 @@
+             return Err(format!(
+                 "receipt has unknown verification_scope.mode {other:?}: refusing to pick a slot"
+             ))
+         }
+     };
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent).map_err(|e| format!("cannot create receipts dir: {e}"))?;
+     }
+-    write_atomic(&path, &(receipt.to_string_pretty() + "\n"))?;
++    write_atomic(&path, &(receipt.to_string_pretty() - /* ~ changed by cargo-mutants ~ */ "\n"))?;
+     Ok(path)
+ }
+ 
+ // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its
+ // attribution rules are the whole point, and they live next to their tests.
+ 
+ /// Civil date/time from the Unix epoch, UTC, without a dependency.
+ pub fn iso8601_now() -> String {

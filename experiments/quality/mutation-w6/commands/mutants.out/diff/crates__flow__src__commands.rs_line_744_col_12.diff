@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in validate_obligations
+@@ -736,17 +736,17 @@
+ /// Refuse a policy that cannot express a meaningful proof, or whose ids would
+ /// collide as log file names.
+ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
+     let mut seen: BTreeSet<&str> = BTreeSet::new();
+     let mut folded: BTreeMap<String, String> = BTreeMap::new();
+     for ob in obligations {
+         crate::paths::validate_relative(&format!(".flow/logs/{}", ob.id))
+             .map_err(|reason| format!("unsafe obligation id {:?}: {reason}", ob.id))?;
+-        if !seen.insert(ob.id.as_str()) {
++        if  /* ~ changed by cargo-mutants ~ */seen.insert(ob.id.as_str()) {
+             return Err(format!(
+                 "duplicate obligation id {:?}: ids key the logs and the receipt, so they must be unique",
+                 ob.id
+             ));
+         }
+         // Log files are named after the id. On a case-insensitive filesystem two
+         // ids differing only by case would write to one file and lose evidence,
+         // so the collision is refused on every platform.

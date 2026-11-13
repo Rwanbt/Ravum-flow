@@ -1,0 +1,10 @@
+crates/flow/src/gitcli.rs:741:40: replace >= with < in redact
+crates/flow/src/gitcli.rs:750:72: replace && with || in redact
+crates/flow/src/gitcli.rs:750:60: replace && with || in redact
+crates/flow/src/gitcli.rs:750:33: delete ! in redact
+crates/flow/src/gitcli.rs:750:65: replace != with == in redact
+crates/flow/src/gitcli.rs:751:32: replace + with - in redact
+crates/flow/src/gitcli.rs:751:32: replace + with * in redact
+crates/flow/src/gitcli.rs:753:20: replace <= with > in redact
+crates/flow/src/gitcli.rs:753:27: replace + with - in redact
+crates/flow/src/gitcli.rs:753:27: replace + with * in redact

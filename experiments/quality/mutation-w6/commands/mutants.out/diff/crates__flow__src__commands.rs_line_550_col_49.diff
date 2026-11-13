@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_status
+@@ -542,17 +542,17 @@
+     let disabled = config.as_ref().map(|c| c.disabled).unwrap_or(false);
+     let obligations = config.as_ref().map(|c| c.obligations.len()).unwrap_or(0);
+ 
+     let mut latest = Json::Null;
+     if let Ok(entries) = fs::read_dir(state::receipts_dir(root)) {
+         let mut files: Vec<PathBuf> = entries
+             .flatten()
+             .map(|e| e.path())
+-            .filter(|p| p.extension().map(|e| e == "json").unwrap_or(false))
++            .filter(|p| p.extension().map(|e| e != /* ~ changed by cargo-mutants ~ */ "json").unwrap_or(false))
+             .collect();
+         files.sort();
+         if let Some(last) = files.last() {
+             if let Ok(text) = fs::read_to_string(last) {
+                 if let Ok(value) = json::parse(&text) {
+                     // A receipt whose content does not match its integrity digest
+                     // is not evidence. It is shown for inspection, never as PASSED.
+                     let trust = match state::verify_receipt_integrity(&value) {

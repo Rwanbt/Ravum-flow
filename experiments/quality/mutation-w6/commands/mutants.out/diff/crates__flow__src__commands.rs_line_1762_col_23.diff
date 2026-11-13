@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1754,17 +1754,17 @@
+                             .and_then(Json::as_str)
+                             .unwrap_or("UNKNOWN")
+                     ),
+                 ))
+             }
+             Some(_) => {}
+         }
+     }
+-    if receipt.status != "PASSED" {
++    if receipt.status == /* ~ changed by cargo-mutants ~ */ "PASSED" {
+         return Ok(refused_code(
+             "STATUS_NOT_PASSED",
+             format!(
+                 "receipt status is {}: a non-PASSED receipt is never publishable",
+                 receipt.status
+             ),
+         ));
+     }

@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace TempIndex::path -> &Path with Box::leak(Box::new(Default::default()))
+@@ -310,17 +310,17 @@
+                 "flow-index-{}-{}",
+                 std::process::id(),
+                 state::unique_suffix()
+             )),
+         }
+     }
+ 
+     fn path(&self) -> &Path {
+-        &self.path
++        Box::leak(Box::new(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Drop for TempIndex {
+     fn drop(&mut self) {
+         let _ = fs::remove_file(&self.path);
+     }
+ }

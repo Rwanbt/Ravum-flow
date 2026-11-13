@@ -1,0 +1,39 @@
+crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(None)
+crates/flow/src/commands.rs:223:27: replace match guard adoption.policy_digest != digest with false in adoption_gate
+crates/flow/src/commands.rs:506:5: replace program_on_path -> bool with false
+crates/flow/src/commands.rs:539:42: delete ! in cmd_status
+crates/flow/src/commands.rs:792:57: replace += with *= in verify_checkout_fidelity
+crates/flow/src/commands.rs:794:74: replace > with < in verify_checkout_fidelity
+crates/flow/src/commands.rs:868:13: delete match arm "160000" in verify_checkout_fidelity
+crates/flow/src/commands.rs:863:25: replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity
+crates/flow/src/commands.rs:873:36: replace match guard !meta.is_file() with false in verify_checkout_fidelity
+crates/flow/src/commands.rs:942:23: replace > with >= in parse_tree_entries
+crates/flow/src/commands.rs:996:5: replace verify_checkout_modes -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1000:33: replace && with || in verify_checkout_modes
+crates/flow/src/commands.rs:1000:21: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1000:41: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1006:64: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1006:56: replace & with | in verify_checkout_modes
+crates/flow/src/commands.rs:1006:56: replace & with ^ in verify_checkout_modes
+crates/flow/src/commands.rs:1007:27: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1007:36: replace == with != in verify_checkout_modes
+crates/flow/src/commands.rs:1077:22: replace > with >= in verify_checkout_content
+crates/flow/src/commands.rs:1126:45: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1126:38: replace * with + in parse_cat_file_batch
+crates/flow/src/commands.rs:1160:18: replace > with >= in parse_cat_file_batch
+crates/flow/src/commands.rs:1262:20: delete ! in cmd_run
+crates/flow/src/commands.rs:1530:5: replace preview -> String with String::new()
+crates/flow/src/commands.rs:1530:5: replace preview -> String with "xyzzy".into()
+crates/flow/src/commands.rs:1531:29: replace > with == in preview
+crates/flow/src/commands.rs:1531:29: replace > with < in preview
+crates/flow/src/commands.rs:1531:29: replace > with >= in preview
+crates/flow/src/commands.rs:1587:31: replace || with && in cmd_publish
+crates/flow/src/commands.rs:1587:24: replace > with == in cmd_publish
+crates/flow/src/commands.rs:1587:24: replace > with >= in cmd_publish
+crates/flow/src/commands.rs:1746:28: replace match guard entry.get("status").and_then(Json::as_str) != Some("PASSED") with false in cmd_publish
+crates/flow/src/commands.rs:1773:8: delete ! in cmd_publish
+crates/flow/src/commands.rs:1819:31: replace != with == in cmd_publish
+crates/flow/src/commands.rs:2116:19: replace += with -= in pending_intents
+crates/flow/src/commands.rs:2119:21: replace >= with < in pending_intents
+crates/flow/src/commands.rs:2183:31: replace > with >= in cmd_reconcile
+crates/flow/src/commands.rs:2311:58: replace == with != in cmd_explain

@@ -1,0 +1,43 @@
+--- crates/flow/src/proposal.rs
++++ replace validate_tree -> Result<(), Json> with Ok(())
+@@ -484,39 +484,17 @@
+         || (target.len() >= 2 && target.as_bytes()[1] == b':');
+     let escapes = target.split(['/', '\\']).any(|part| part == "..");
+     target.is_empty() || absolute || escapes
+ }
+ 
+ /// Refuse a tree the host cannot represent or Flow cannot verify, whatever route
+ /// produced it.
+ fn validate_tree(git: &Git, tree: &str) -> Result<(), Json> {
+-    let listing = git
+-        .run_bounded(&["ls-tree", "-r", "-z", tree], None, None)
+-        .map_err(|e| refusal("TREE_UNREADABLE", format!("cannot list tree {tree}: {e}")))?;
+-    if listing.status != 0 {
+-        return Err(refusal(
+-            "TREE_UNREADABLE",
+-            format!("cannot list tree {tree}: {}", listing.stderr.trim()),
+-        ));
+-    }
+-    let entries = parse_tree_listing(tree, &listing.stdout)?;
+-    let mut folded: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+-    for path in entries {
+-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
+-    }
+-    if let Some((name, count)) = folded.iter().find(|(_, c)| **c > 1) {
+-        return Err(refusal(
+-            "CASE_COLLISION",
+-            format!(
+-                "tree {tree} holds {count} paths that differ only by case (for example {name:?}): a case-insensitive host cannot materialise them, so the candidate could not be verified faithfully"
+-            ),
+-        ));
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Parse one `ls-tree -r -z` answer into the paths of a candidate tree.
+ ///
+ /// This is the parsing half of [`validate_tree`], separated so a hostile or
+ /// corrupted object store can be simulated byte for byte: an entry without a
+ /// tab, a gitlink, or a path Flow cannot represent must be a named refusal.
+ fn parse_tree_listing(tree: &str, listing: &str) -> Result<Vec<String>, Json> {

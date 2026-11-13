@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace policy_digest -> String with String::new()
+@@ -713,17 +713,17 @@
+                     .map(|n| Json::str(*n))
+                     .collect(),
+             ),
+         ),
+     ])
+ }
+ 
+ fn policy_digest(policy: &Json) -> String {
+-    sha256::sha256_hex(policy.to_string().as_bytes())
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
+     let context = Json::obj(vec![
+         ("codec", Json::str(state::CONTEXT_CODEC)),
+         ("tree_oid", Json::str(tree)),
+         ("policy", policy.clone()),
+         ("git_version", Json::str(git.version())),

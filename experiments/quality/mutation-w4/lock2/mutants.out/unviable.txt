@@ -1,0 +1,6 @@
+crates/flow/src/lock.rs:92:5: replace parse -> Option<Owner> with Some(Default::default())
+crates/flow/src/lock.rs:106:5: replace inspect -> LockInfo with Default::default()
+crates/flow/src/lock.rs:204:5: replace wait_for_record -> Option<Owner> with Some(Default::default())
+crates/flow/src/lock.rs:207:35: replace + with * in wait_for_record
+crates/flow/src/lock.rs:221:5: replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())
+crates/flow/src/lock.rs:226:35: replace + with * in acquire_lock

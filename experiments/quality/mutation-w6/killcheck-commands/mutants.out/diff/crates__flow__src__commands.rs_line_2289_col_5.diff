@@ -1,0 +1,132 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_explain -> Result<Json, String> with Ok(Default::default())
+@@ -2281,128 +2281,17 @@
+ }
+ 
+ // ----------------------------------------------------------------- explain
+ pub fn cmd_explain(
+     root: &Path,
+     tree: Option<String>,
+     candidate: Option<String>,
+ ) -> Result<Json, String> {
+-    let git = Git::new(root);
+-    let candidate_record = match candidate.as_deref() {
+-        None => None,
+-        Some(id) => match crate::proposal::Candidate::load(root, id)? {
+-            Some(record) => Some(record),
+-            None => {
+-                return Ok(refused_code(
+-                    "UNKNOWN_CANDIDATE",
+-                    format!("no candidate {id:?} in .flow/candidates/"),
+-                ))
+-            }
+-        },
+-    };
+-    let tree = match (&tree, &candidate_record) {
+-        (Some(t), _) => t.clone(),
+-        (None, Some(record)) => record.tree_oid.clone(),
+-        (None, None) => git.head_tree()?,
+-    };
+-    let receipt = Receipt::load(root, &tree)?;
+-    let records = state::read_journal(root)?;
+-    let related: Vec<Json> = records
+-        .iter()
+-        .filter(|r| r.get("tree").and_then(Json::as_str) == Some(tree.as_str())) // survival-probe
+-        .cloned()
+-        .collect();
+-    // Proposals are attributed to a candidate, so explain can name who proposed
+-    // what without the caller having to correlate ids by hand.
+-    let proposals = match &candidate_record {
+-        None => Json::Arr(Vec::new()),
+-        Some(record) => Json::Arr(
+-            record
+-                .proposals
+-                .iter()
+-                .filter_map(|id| crate::proposal::Proposal::load(root, id).ok().flatten())
+-                .map(|proposal| {
+-                    Json::obj(vec![
+-                        ("proposal_id", Json::str(proposal.proposal_id)),
+-                        ("agent_id", Json::str(proposal.agent_id)),
+-                        ("task_id", Json::str(proposal.task_id)),
+-                        ("base_commit", Json::str(proposal.base_commit)),
+-                        ("tree_oid", Json::str(proposal.tree_oid)),
+-                    ])
+-                })
+-                .collect(),
+-        ),
+-    };
+-    // A receipt is evidence only if its content still matches its digest and the
+-    // logs it names are present. Inspection must say so explicitly: displaying a
+-    // tampered receipt as `PASSED` is the false green Flow refuses at publication.
+-    let (receipt_json, receipt_trust, receipt_display, evidence_complete, missing_logs) =
+-        match &receipt {
+-            None => (
+-                Json::Null,
+-                "NO_RECEIPT",
+-                Json::Null,
+-                false,
+-                Vec::<String>::new(),
+-            ),
+-            Some(r) => {
+-                let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
+-                let missing: Vec<String> = r
+-                    .logs
+-                    .iter()
+-                    .filter(|rel| !root.join(rel.as_str()).is_file())
+-                    .cloned()
+-                    .collect();
+-                let display = if integrity_ok {
+-                    Json::str(r.status.clone())
+-                } else {
+-                    Json::str("RECEIPT_INTEGRITY_INVALID")
+-                };
+-                (
+-                    r.json.clone(),
+-                    if integrity_ok {
+-                        "INTEGRITY_OK"
+-                    } else {
+-                        "RECEIPT_INTEGRITY_INVALID"
+-                    },
+-                    display,
+-                    integrity_ok && missing.is_empty(),
+-                    missing,
+-                )
+-            }
+-        };
+-    Ok(Json::obj(vec![
+-        ("status", Json::str("EXPLAIN")),
+-        ("tree", Json::str(tree)),
+-        (
+-            "candidate_id",
+-            match &candidate_record {
+-                Some(record) => Json::str(record.candidate_id.clone()),
+-                None => Json::Null,
+-            },
+-        ),
+-        (
+-            "candidate",
+-            match &candidate_record {
+-                Some(record) => record.json.clone(),
+-                None => Json::Null,
+-            },
+-        ),
+-        ("proposals", proposals),
+-        ("receipt", receipt_json),
+-        ("receipt_trust", Json::str(receipt_trust)),
+-        ("receipt_status_display", receipt_display),
+-        ("evidence_complete", Json::Bool(evidence_complete)),
+-        (
+-            "missing_logs",
+-            Json::Arr(missing_logs.into_iter().map(Json::str).collect()),
+-        ),
+-        ("journal", Json::Arr(related)),
+-    ]))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // --------------------------------------------------------------- disable
+ pub fn cmd_set_disabled(root: &Path, disabled: bool) -> Result<Json, String> {
+     let mut config = state::load_config(root)?;
+     config.disabled = disabled;
+     state::save_config(root, &config)?;
+     Ok(Json::obj(vec![

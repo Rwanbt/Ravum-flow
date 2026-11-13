@@ -1,0 +1,1 @@
+crates/flow/src/commands.rs:357:26: replace && with || in cmd_doctor

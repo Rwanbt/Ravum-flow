@@ -1,0 +1,36 @@
+--- crates/flow/src/commands.rs
++++ replace parse_tree_dirs -> Result<BTreeSet<String>, String> with Ok(BTreeSet::from_iter(["xyzzy".into()]))
+@@ -960,32 +960,17 @@
+         ));
+     }
+     parse_tree_dirs(tree, &listing.stdout_bytes)
+ }
+ 
+ /// The parsing half of [`ls_tree_dirs`], separated for the same reason as
+ /// [`parse_tree_entries`]: crafted bytes can pin every refusal directly.
+ fn parse_tree_dirs(tree: &str, listing: &[u8]) -> Result<BTreeSet<String>, String> {
+-    let mut dirs = BTreeSet::new();
+-    for entry in listing.split(|byte| *byte == 0) {
+-        if entry.is_empty() {
+-            continue;
+-        }
+-        let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
+-            return Err(format!("tree {tree}: unparsable ls-tree -d entry"));
+-        };
+-        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
+-            format!(
+-                "tree {tree} holds a directory path that is not valid UTF-8: this platform cannot represent it faithfully"
+-            )
+-        })?;
+-        dirs.insert(path.replace('\\', "/"));
+-    }
+-    Ok(dirs)
++    Ok(BTreeSet::from_iter(["xyzzy".into()])) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// On a host that carries the executable bit, the checkout must carry the tree's
+ /// mode: a hook that chmods a file (or a filesystem that cannot represent the
+ /// mode) changes what an obligation *executes*, without touching a byte the
+ /// content comparison can see. Windows does not represent the bit and is not
+ /// checked; that limit is documented.
+ fn verify_checkout_modes(

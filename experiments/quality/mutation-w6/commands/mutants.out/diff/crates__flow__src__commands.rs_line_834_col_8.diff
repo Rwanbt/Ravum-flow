@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in verify_checkout_fidelity
+@@ -826,17 +826,17 @@
+         .iter()
+         .map(|(_, _, path, _)| path.as_str())
+         .collect();
+     let mut unexpected: Vec<&str> = present
+         .iter()
+         .copied()
+         .filter(|path| !declared.contains(path))
+         .collect();
+-    if !unexpected.is_empty() {
++    if  /* ~ changed by cargo-mutants ~ */unexpected.is_empty() {
+         unexpected.sort_unstable();
+         return Err(format!(
+             "the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree",
+             unexpected.len(),
+             &unexpected[..unexpected.len().min(3)]
+         ));
+     }
+     let declared_dirs = ls_tree_dirs(git, tree)?;

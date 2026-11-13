@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at
+@@ -445,17 +445,17 @@
+                     continue;
+                 }
+                 let take = n.min(room);
+                 captured.bytes.extend_from_slice(&chunk[..take]);
+                 if take < n { // survival-probe
+                     captured.truncated = true;
+                 }
+             }
+-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue, // survival-probe
++            Err(e) if false /* ~ changed by cargo-mutants ~ */ => continue, // survival-probe
+             Err(_) => break,
+         }
+     }
+     captured
+ }
+ 
+ /// Start a detached reader thread. The thread is never joined: it sends its
+ /// result if it ever reaches EOF and otherwise stays parked on the pipe (see

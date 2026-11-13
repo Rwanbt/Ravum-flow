@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ delete ! in assemble
+@@ -825,17 +825,17 @@
+     if proposal_ids.is_empty() {
+         return Ok(refusal(
+             "NO_PROPOSAL",
+             "assemble needs at least one --proposal <id>",
+         ));
+     }
+     let mut seen: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+     for id in proposal_ids {
+-        if !seen.insert(id.as_str()) {
++        if  /* ~ changed by cargo-mutants ~ */seen.insert(id.as_str()) {
+             return Ok(refusal(
+                 "DUPLICATE_PROPOSAL",
+                 format!("proposal {id:?} is listed more than once: a candidate applies each proposal exactly once"),
+             ));
+         }
+     }
+     let mut proposals: Vec<Proposal> = Vec::new();
+     for id in proposal_ids {

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace += with -= in pending_intents
+@@ -2108,17 +2108,17 @@
+         let id = record
+             .get("id")
+             .and_then(Json::as_str)
+             .unwrap_or("")
+             .to_string();
+         let position = {
+             let slot = seen.entry(id.clone()).or_insert(0);
+             let position = *slot;
+-            *slot += 1;
++            *slot -= /* ~ changed by cargo-mutants ~ */ 1;
+             position
+         };
+         if position >= outcomes.get(&id).copied().unwrap_or(0) {
+             pending.push(record);
+         }
+     }
+     Ok(pending)
+ }

@@ -1,0 +1,26 @@
+crates/flow/src/gitcli.rs:177:9: replace Git::head_tree -> Result<String, String> with Ok(String::new())
+crates/flow/src/gitcli.rs:177:9: replace Git::head_tree -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/gitcli.rs:330:5: replace redirecting_env_name -> bool with true
+crates/flow/src/gitcli.rs:330:5: replace redirecting_env_name -> bool with false
+crates/flow/src/gitcli.rs:332:9: replace || with && in redirecting_env_name
+crates/flow/src/gitcli.rs:331:9: replace || with && in redirecting_env_name
+crates/flow/src/gitcli.rs:396:42: replace * with /
+crates/flow/src/gitcli.rs:396:42: replace * with +
+crates/flow/src/gitcli.rs:425:51: replace * with /
+crates/flow/src/gitcli.rs:425:44: replace * with /
+crates/flow/src/gitcli.rs:436:5: replace read_capped_at -> Captured with Default::default()
+crates/flow/src/gitcli.rs:453:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at
+crates/flow/src/gitcli.rs:449:25: replace < with == in read_capped_at
+crates/flow/src/gitcli.rs:449:25: replace < with <= in read_capped_at
+crates/flow/src/gitcli.rs:453:32: replace == with != in read_capped_at
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:623:38: replace > with < in run_obligation
+crates/flow/src/gitcli.rs:623:38: replace > with == in run_obligation
+crates/flow/src/gitcli.rs:727:5: replace redact -> String with String::new()
+crates/flow/src/gitcli.rs:727:5: replace redact -> String with "xyzzy".into()
+crates/flow/src/gitcli.rs:758:72: replace && with || in redact
+crates/flow/src/gitcli.rs:758:60: replace && with || in redact
+crates/flow/src/gitcli.rs:758:33: delete ! in redact
+crates/flow/src/gitcli.rs:758:65: replace != with == in redact
+crates/flow/src/gitcli.rs:686:5: replace kill_tree with ()

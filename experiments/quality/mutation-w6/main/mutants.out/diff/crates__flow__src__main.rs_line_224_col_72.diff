@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace == with != in dispatch
+@@ -216,17 +216,17 @@
+             };
+             match result {
+                 Ok(value) => {
+                     let mut code = exit_code_for(&value);
+                     // A diagnostic that found a broken guarantee is not a success.
+                     // The documented contract is `0 when overall=OK, 1 when
+                     // overall=FAILED`, and it is tested.
+                     if command == "doctor"
+-                        && value.get("overall").and_then(Json::as_str) == Some("FAILED")
++                        && value.get("overall").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some("FAILED")
+                     {
+                         code = 1;
+                     }
+                     emit(value);
+                     code
+                 }
+                 Err(err) => {
+                     emit_error(&err);

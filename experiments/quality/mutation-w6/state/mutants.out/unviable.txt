@@ -1,0 +1,6 @@
+crates/flow/src/state.rs:422:5: replace read_journal -> Result<Vec<Json>, JournalError> with Ok(vec![Default::default()])
+crates/flow/src/state.rs:492:9: replace Receipt::load -> Result<Option<Receipt>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:552:5: replace without_field -> Json with Default::default()
+crates/flow/src/state.rs:566:5: replace seal_receipt -> Json with Default::default()
+crates/flow/src/state.rs:648:54: replace + with - in save_receipt
+crates/flow/src/state.rs:648:54: replace + with * in save_receipt

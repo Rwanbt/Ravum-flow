@@ -1,0 +1,44 @@
+
+== D:\App\Ravum-flow\crates\flow\src\lock.rs  lines 93.15% (340/365)  branches 84.21% (32/38)
+-- uncovered lines: 120,121,225,282,283,284,285,286,287,297,298,299,300,301,311,312,313,314,315,328,413,429,536,618,657
+-- uncovered branch lines (4):
+   222: 1/2 branch points untaken
+          218 }
+          219 
+          220 pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
+          221     let path = lock_path(root);
+      >>  222     if let Some(parent) = path.parent() {
+          223         fs::create_dir_all(parent)
+          224             .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
+          225     }
+          226     let deadline = Instant::now() + ACQUIRE_BUDGET;
+   236: 1/2 branch points untaken
+          232                     path: path.clone(),
+          233                     nonce: ours,
+          234                 })
+          235             }
+      >>  236             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+          237                 let text = match fs::read_to_string(&path) {
+          238                     Ok(t) => t,
+          239                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+          240                     Err(err) => {
+   327: 1/2 branch points untaken
+          323     let out = std::process::Command::new("tasklist")
+          324         .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+          325         .output()
+          326         .ok()?;
+      >>  327     if !out.status.success() {
+          328         return None;
+          329     }
+          330     let text = String::from_utf8_lossy(&out.stdout);
+          331     Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
+   427: 3/4 branch points untaken
+          423         let root = temp_flow_dir("garbage");
+          424         fs::write(lock_path(&root), "").unwrap();
+          425         match acquire_lock(&root, "publish") {
+          426             Err(LockError::Unknown(m)) => {
+      >>  427                 assert!(m.contains("never stolen") || m.contains("cannot be established"))
+          428             }
+          429             other => panic!("an unowned lock must be refused: {other:?}"),
+          430         }
+          431         assert!(

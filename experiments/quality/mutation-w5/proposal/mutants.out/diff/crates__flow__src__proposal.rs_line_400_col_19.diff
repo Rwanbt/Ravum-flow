@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in diff_changes
+@@ -392,17 +392,17 @@
+             "--no-renames",
+             "--no-commit-id",
+             from_tree,
+             to_tree,
+         ],
+         None,
+         None,
+     )?;
+-    if out.status != 0 {
++    if out.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot diff {from_tree}..{to_tree}: {}",
+             out.stderr.trim()
+         ));
+     }
+     parse_raw_diff(&out.stdout)
+ }
+ 

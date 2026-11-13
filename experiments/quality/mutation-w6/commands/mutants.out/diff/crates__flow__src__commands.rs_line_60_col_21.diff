@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace && with || in cmd_init
+@@ -52,17 +52,17 @@
+ // ------------------------------------------------------------------- init
+ pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, String> {
+     let git = Git::new(root);
+     let _ = git.version();
+     let dir = state::flow_dir(root);
+     // A `.flow/config.json` can arrive with a clone. It is a claim about what
+     // should run, not a consent to run it: adoption is a separate, explicit act.
+     let existing_config = state::config_path(root).exists();
+-    if dir.exists() && !force && !(adopt_policy && existing_config) {
++    if dir.exists() || /* ~ changed by cargo-mutants ~ */ !force && !(adopt_policy && existing_config) {
+         return Ok(refused(
+             ".flow already exists (pass --force to rewrite config, journal is preserved)",
+         ));
+     }
+     let config = if existing_config {
+         match state::load_config(root) {
+             Ok(config) => config,
+             Err(e) => {

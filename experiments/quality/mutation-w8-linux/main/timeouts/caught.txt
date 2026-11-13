@@ -1,0 +1,4 @@
+crates/flow/src/main.rs:281:19: replace += with *= in validate_flags
+crates/flow/src/main.rs:300:27: replace += with *= in validate_flags
+crates/flow/src/main.rs:329:15: replace += with *= in validate_flags
+crates/flow/src/main.rs:343:15: replace += with *= in flag_value

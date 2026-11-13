@@ -1,0 +1,1143 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 4.40094085,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.667974222,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:996:5: replace verify_checkout_modes -> Result<(), String> with Ok(())",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 996,
+              "column": 5
+            },
+            "end": {
+              "line": 1019,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_996_col_5.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_996_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 2.78524123,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 15.342705768,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1000:33: replace && with || in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1000,
+              "column": 33
+            },
+            "end": {
+              "line": 1000,
+              "column": 35
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1000_col_33.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1000_col_33.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 4.8654029229999995,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 15.198460675,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1000:21: replace != with == in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1000,
+              "column": 21
+            },
+            "end": {
+              "line": 1000,
+              "column": 23
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1000_col_21.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1000_col_21.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.221141232,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 16.354461774,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1006:64: replace != with == in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1006,
+              "column": 64
+            },
+            "end": {
+              "line": 1006,
+              "column": 66
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1006_col_64.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1006_col_64.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.854487586,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.687984869,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1006:56: replace & with | in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1006,
+              "column": 56
+            },
+            "end": {
+              "line": 1006,
+              "column": 57
+            }
+          },
+          "replacement": "|",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1006_col_56.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1006_col_56.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.764706792,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.6678036,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1000:41: replace != with == in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1000,
+              "column": 41
+            },
+            "end": {
+              "line": 1000,
+              "column": 43
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1000_col_41.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1000_col_41.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.9326573759999999,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 25.81198066,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1006:56: replace & with ^ in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1006,
+              "column": 56
+            },
+            "end": {
+              "line": 1006,
+              "column": 57
+            }
+          },
+          "replacement": "^",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1006_col_56_001.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1006_col_56_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.856950867,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.7373492280000002,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1007:27: replace != with == in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1007,
+              "column": 27
+            },
+            "end": {
+              "line": 1007,
+              "column": 29
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1007_col_27.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1007_col_27.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.661435304,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.689647862,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/commands.rs:1007:36: replace == with != in verify_checkout_modes",
+          "package": "flow",
+          "file": "crates/flow/src/commands.rs",
+          "function": {
+            "function_name": "verify_checkout_modes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 986,
+                "column": 1
+              },
+              "end": {
+                "line": 1020,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 1007,
+              "column": 36
+            },
+            "end": {
+              "line": 1007,
+              "column": 38
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__commands.rs_line_1007_col_36.log",
+      "diff_path": "diff/crates__flow__src__commands.rs_line_1007_col_36.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.705999649,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.854353854,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/gitcli.rs:571:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+          "package": "flow",
+          "file": "crates/flow/src/gitcli.rs",
+          "function": {
+            "function_name": "resolve_program",
+            "return_type": "-> Option<PathBuf>",
+            "span": {
+              "start": {
+                "line": 569,
+                "column": 1
+              },
+              "end": {
+                "line": 572,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 571,
+              "column": 5
+            },
+            "end": {
+              "line": 571,
+              "column": 9
+            }
+          },
+          "replacement": "Some(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__gitcli.rs_line_571_col_5.log",
+      "diff_path": "diff/crates__flow__src__gitcli.rs_line_571_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.861368755,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.708649462,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "guard_below_flow",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 283,
+                "column": 1
+              },
+              "end": {
+                "line": 349,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 292,
+              "column": 5
+            },
+            "end": {
+              "line": 348,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_292_col_5.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_292_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.2165247080000001,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.079268019,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:340:27: replace && with || in guard_below_flow",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "guard_below_flow",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 283,
+                "column": 1
+              },
+              "end": {
+                "line": 349,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 27
+            },
+            "end": {
+              "line": 340,
+              "column": 29
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_340_col_27.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_340_col_27.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.806374704,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.078610849,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:340:43: replace > with == in guard_below_flow",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "guard_below_flow",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 283,
+                "column": 1
+              },
+              "end": {
+                "line": 349,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 43
+            },
+            "end": {
+              "line": 340,
+              "column": 44
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_340_col_43.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_340_col_43.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0534127149999999,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.063093251,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:340:43: replace > with >= in guard_below_flow",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "guard_below_flow",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 283,
+                "column": 1
+              },
+              "end": {
+                "line": 349,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 43
+            },
+            "end": {
+              "line": 340,
+              "column": 44
+            }
+          },
+          "replacement": ">=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_340_col_43_002.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_340_col_43_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.876281996,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.084217471,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "write_atomic_bytes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 355,
+                "column": 1
+              },
+              "end": {
+                "line": 384,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 358,
+              "column": 5
+            },
+            "end": {
+              "line": 383,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_358_col_5.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_358_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.25420951,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.101607347,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:340:43: replace > with < in guard_below_flow",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "guard_below_flow",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 283,
+                "column": 1
+              },
+              "end": {
+                "line": 349,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 340,
+              "column": 43
+            },
+            "end": {
+              "line": 340,
+              "column": 44
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_340_col_43_001.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_340_col_43_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.809426698,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 27.195336627,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/state.rs:377:52: delete ! in write_atomic_bytes",
+          "package": "flow",
+          "file": "crates/flow/src/state.rs",
+          "function": {
+            "function_name": "write_atomic_bytes",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 355,
+                "column": 1
+              },
+              "end": {
+                "line": 384,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 377,
+              "column": 52
+            },
+            "end": {
+              "line": 377,
+              "column": 53
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__state.rs_line_377_col_52.log",
+      "diff_path": "diff/crates__flow__src__state.rs_line_377_col_52.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.264858191,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 26.352136465,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 17,
+  "missed": 3,
+  "caught": 14,
+  "timeout": 0,
+  "unviable": 0,
+  "success": 0,
+  "start_time": "2026-11-11T10:36:24.99611798Z",
+  "end_time": "2026-11-11T10:38:28.77046638Z",
+  "cargo_mutants_version": "27.1.0"
+}

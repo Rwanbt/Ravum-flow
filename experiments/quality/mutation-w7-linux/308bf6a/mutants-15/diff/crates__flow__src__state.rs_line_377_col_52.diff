@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in write_atomic_bytes
+@@ -369,17 +369,17 @@
+     }
+     fs::rename(&tmp, path).map_err(|e| format!("cannot rename into {}: {e}", path.display()))?;
+     // The rename is durable only once the containing directory is flushed. A
+     // journal entry whose rename is lost after a power cut, while `update-ref`
+     // already moved the ref, is precisely the state recovery must never have to
+     // guess about. Windows exposes no directory fsync, so the claim there is
+     // "file fsynced before the rename" and the README says so.
+     #[cfg(not(windows))]
+-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w7probe
++    if let Some(parent) = path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) { // w7probe
+         let dir = File::open(parent)
+             .map_err(|e| format!("cannot open {} for fsync: {e}", parent.display()))?;
+         dir.sync_all()
+             .map_err(|e| format!("cannot fsync {}: {e}", parent.display()))?;
+     }
+     Ok(())
+ }
+ 

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace += with -= in count_by_id
+@@ -2080,17 +2080,17 @@
+     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+     for record in records {
+         if record.get("event").and_then(Json::as_str) == Some(event) {
+             let id = record
+                 .get("id")
+                 .and_then(Json::as_str)
+                 .unwrap_or("")
+                 .to_string();
+-            *counts.entry(id).or_insert(0) += 1;
++            *counts.entry(id).or_insert(0) -= /* ~ changed by cargo-mutants ~ */ 1;
+         }
+     }
+     counts
+ }
+ 
+ /// Intents that no outcome can be attributed to.
+ ///
+ /// Counting, not set membership: an intent is closed only when the journal holds

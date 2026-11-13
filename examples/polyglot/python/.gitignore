@@ -1,0 +1,4 @@
+# Bytecode caches of the fixture. Flow always runs the materialised copy in a
+# throwaway directory; these only appear when a reader runs Python in place.
+__pycache__/
+*.pyc

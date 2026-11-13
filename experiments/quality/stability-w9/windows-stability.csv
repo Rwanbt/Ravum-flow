@@ -1,0 +1,14 @@
+run,threads,exit,passed,failed,ignored,seconds,concurrent_load
+# serialised: no mutation/coverage/build campaign ran while this script ran
+# head=47af568671c716786d98a5dfba5beb457591e5a0
+1,default,0,480,0,0,75,none
+2,1,0,480,0,0,274.4,none
+3,default,0,480,0,0,73.3,none
+4,1,0,480,0,0,275.8,none
+5,default,0,480,0,0,75.1,none
+6,1,0,480,0,0,281.4,none
+7,default,0,480,0,0,78.2,none
+8,1,0,480,0,0,302.2,none
+9,default,0,480,0,0,99.7,none
+10,1,0,480,0,0,320.2,none
+done

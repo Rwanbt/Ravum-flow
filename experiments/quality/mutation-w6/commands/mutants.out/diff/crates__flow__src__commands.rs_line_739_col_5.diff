@@ -1,0 +1,49 @@
+--- crates/flow/src/commands.rs
++++ replace validate_obligations -> Result<(), String> with Ok(())
+@@ -731,45 +731,17 @@
+         ("arch", Json::str(std::env::consts::ARCH)),
+     ]);
+     sha256::sha256_hex(context.to_string().as_bytes())
+ }
+ 
+ /// Refuse a policy that cannot express a meaningful proof, or whose ids would
+ /// collide as log file names.
+ fn validate_obligations(obligations: &[Obligation]) -> Result<(), String> {
+-    let mut seen: BTreeSet<&str> = BTreeSet::new();
+-    let mut folded: BTreeMap<String, String> = BTreeMap::new();
+-    for ob in obligations {
+-        crate::paths::validate_relative(&format!(".flow/logs/{}", ob.id))
+-            .map_err(|reason| format!("unsafe obligation id {:?}: {reason}", ob.id))?;
+-        if !seen.insert(ob.id.as_str()) {
+-            return Err(format!(
+-                "duplicate obligation id {:?}: ids key the logs and the receipt, so they must be unique",
+-                ob.id
+-            ));
+-        }
+-        // Log files are named after the id. On a case-insensitive filesystem two
+-        // ids differing only by case would write to one file and lose evidence,
+-        // so the collision is refused on every platform.
+-        if let Some(other) = folded.get(&ob.id.to_lowercase()) {
+-            return Err(format!(
+-                "obligation ids {:?} and {:?} differ only by case: their log files would collide on a case-insensitive filesystem",
+-                other, ob.id
+-            ));
+-        }
+-        folded.insert(ob.id.to_lowercase(), ob.id.clone());
+-    }
+-    if !obligations.iter().any(|o| o.required) {
+-        return Err(
+-            "the policy declares no required obligation: nothing would be proven, so no receipt is publishable"
+-                .into(),
+-        );
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // -------------------------------------------------------------------- run
+ 
+ /// Refuse to certify a checkout that is not a faithful copy of the tree.
+ ///
+ /// `git worktree add` exits 0, with an empty stderr, on trees the host cannot
+ /// represent: two paths differing only by case on a case-insensitive filesystem,

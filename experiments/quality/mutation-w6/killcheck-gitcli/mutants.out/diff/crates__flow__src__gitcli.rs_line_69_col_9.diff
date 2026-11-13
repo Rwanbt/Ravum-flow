@@ -1,0 +1,109 @@
+--- crates/flow/src/gitcli.rs
++++ replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())
+@@ -61,105 +61,17 @@
+     /// * The wall clock is bounded by [`GIT_TIMEOUT_S`]; the child's tree is
+     ///   killed and the call fails with `GIT_TIMEOUT`.
+     pub fn run_bounded(
+         &self,
+         args: &[&str],
+         stdin: Option<&[u8]>,
+         index: Option<&Path>,
+     ) -> Result<Output, String> {
+-        let mut cmd = self.base();
+-        cmd.args(args)
+-            .stdin(if stdin.is_some() {
+-                Stdio::piped()
+-            } else {
+-                Stdio::null()
+-            })
+-            .stdout(Stdio::piped())
+-            .stderr(Stdio::piped());
+-        if let Some(path) = index {
+-            if !path.is_absolute() {
+-                return Err(format!(
+-                    "GIT_INDEX_REFUSED: index override {} is not an absolute path",
+-                    path.display()
+-                ));
+-            }
+-            cmd.env("GIT_INDEX_FILE", path);
+-        }
+-        let started = Instant::now();
+-        let mut child = cmd
+-            .spawn()
+-            .map_err(|e| format!("cannot run git {args:?}: {e}"))?;
+-        let stdout_pipe = child.stdout.take().expect("piped stdout");
+-        let stderr_pipe = child.stderr.take().expect("piped stderr");
+-        let out_rx = spawn_reader_with_cap(stdout_pipe, MAX_GIT_STREAM_BYTES);
+-        let err_rx = spawn_reader_with_cap(stderr_pipe, MAX_GIT_STREAM_BYTES);
+-        if let Some(bytes) = stdin {
+-            if let Some(mut pipe) = child.stdin.take() {
+-                let owned = bytes.to_vec();
+-                // Detached on purpose: the child may exit before reading all of
+-                // its input, and a broken pipe is not an error worth reporting.
+-                let _ = std::thread::Builder::new()
+-                    .name("flow-git-stdin".into())
+-                    .spawn(move || {
+-                        let _ = pipe.write_all(&owned);
+-                    });
+-            }
+-        }
+-
+-        let deadline = started + Duration::from_secs(GIT_TIMEOUT_S);
+-        let mut timed_out = false;
+-        let mut exit = None;
+-        loop {
+-            match child.try_wait() {
+-                Ok(Some(status)) => {
+-                    exit = status.code();
+-                    break;
+-                }
+-                Ok(None) => {
+-                    if Instant::now() >= deadline {
+-                        timed_out = true;
+-                        kill_tree(child.id());
+-                        let _ = child.kill();
+-                        reap_bounded(&mut child);
+-                        break;
+-                    }
+-                    std::thread::sleep(POLL_INTERVAL);
+-                }
+-                Err(e) => {
+-                    let _ = child.kill();
+-                    reap_bounded(&mut child);
+-                    return Err(format!("git {args:?} could not be waited for: {e}"));
+-                }
+-            }
+-        }
+-        let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
+-        let stdout = receive(&out_rx, reader_deadline);
+-        let stderr = receive(&err_rx, reader_deadline);
+-        if timed_out {
+-            return Err(format!(
+-                "GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete"
+-            ));
+-        }
+-        if stdout.truncated {
+-            return Err(format!(
+-                "GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stdout; refusing to parse a truncated answer"
+-            ));
+-        }
+-        if stderr.truncated {
+-            return Err(format!(
+-                "GIT_OUTPUT_TOO_LARGE: git {args:?} wrote more than {MAX_GIT_STREAM_BYTES} bytes to stderr; refusing to parse a truncated answer"
+-            ));
+-        }
+-        Ok(Output {
+-            status: exit.unwrap_or(-1), // survival-probe
+-            stdout: String::from_utf8_lossy(&stdout.bytes).to_string(),
+-            stdout_bytes: stdout.bytes,
+-            stderr: String::from_utf8_lossy(&stderr.bytes).to_string(),
+-        })
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn capture(&self, args: &[&str]) -> Result<String, String> {
+         let out = self.run(args)?;
+         if out.status != 0 {
+             return Err(format!(
+                 "git {args:?} failed ({}): {}",
+                 out.status,

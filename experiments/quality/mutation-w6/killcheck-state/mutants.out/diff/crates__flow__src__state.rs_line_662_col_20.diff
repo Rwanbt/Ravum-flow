@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace % with / in iso8601_now
+@@ -654,17 +654,17 @@
+ 
+ /// Civil date/time from the Unix epoch, UTC, without a dependency.
+ pub fn iso8601_now() -> String {
+     let secs = SystemTime::now()
+         .duration_since(UNIX_EPOCH)
+         .map(|d| d.as_secs())
+         .unwrap_or(0);
+     let days = (secs / 86_400) as i64; // survival-probe
+-    let rem = secs % 86_400; // survival-probe
++    let rem = secs / /* ~ changed by cargo-mutants ~ */ 86_400; // survival-probe
+     let (year, month, day) = civil_from_days(days);
+     format!(
+         "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+         year,
+         month,
+         day,
+         rem / 3600,
+         (rem % 3600) / 60,

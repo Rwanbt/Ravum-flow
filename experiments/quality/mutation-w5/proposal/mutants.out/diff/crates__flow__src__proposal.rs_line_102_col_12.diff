@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ delete ! in Proposal::load
+@@ -94,17 +94,17 @@
+ 
+     pub fn load(root: &Path, id: &str) -> Result<Option<Proposal>, String> {
+         if !paths::is_record_id(id) {
+             return Err(format!(
+                 "INVALID_RECORD_ID: {id:?} is not a 32-character hex proposal id"
+             ));
+         }
+         let path = Self::metadata_path(root, id);
+-        if !path.exists() {
++        if  /* ~ changed by cargo-mutants ~ */path.exists() {
+             return Ok(None);
+         }
+         let value = json::parse(
+             &fs::read_to_string(&path)
+                 .map_err(|e| format!("cannot read {}: {e}", path.display()))?,
+         )?;
+         // A record written by a different schema is never reinterpreted: the
+         // fields could mean something else entirely.

@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ delete ! in canonical_dir
+@@ -251,17 +251,17 @@
+ fn is_hex_object_id(value: &str) -> bool {
+     (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+ }
+ 
+ fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {
+     let resolved = path
+         .canonicalize()
+         .map_err(|e| format!("cannot canonicalise {what} {}: {e}", path.display()))?;
+-    if !resolved.is_dir() {
++    if  /* ~ changed by cargo-mutants ~ */resolved.is_dir() {
+         return Err(format!("{what} {} is not a directory", resolved.display()));
+     }
+     Ok(resolved)
+ }
+ 
+ fn is_within(root: &Path, candidate: &Path) -> bool {
+     candidate.starts_with(root)
+ }

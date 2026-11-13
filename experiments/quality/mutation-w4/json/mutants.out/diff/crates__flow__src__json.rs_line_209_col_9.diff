@@ -1,0 +1,57 @@
+--- crates/flow/src/json.rs
++++ replace Parser<'a>::object -> Result<Json, String> with Ok(Default::default())
+@@ -201,53 +201,17 @@
+             self.pos += word.len();
+             Ok(value)
+         } else {
+             Err(format!("invalid literal at {}", self.pos))
+         }
+     }
+ 
+     fn object(&mut self) -> Result<Json, String> {
+-        self.pos += 1;
+-        let mut pairs = Vec::new();
+-        self.ws();
+-        if self.peek() == Some(b'}') {
+-            self.pos += 1;
+-            return Ok(Json::Obj(pairs));
+-        }
+-        loop {
+-            self.ws();
+-            if self.peek() != Some(b'"') {
+-                return Err(format!("expected key at {}", self.pos));
+-            }
+-            let key = self.string()?;
+-            self.ws();
+-            if self.peek() != Some(b':') {
+-                return Err(format!("expected ':' at {}", self.pos));
+-            }
+-            self.pos += 1;
+-            self.ws();
+-            let value = self.value()?;
+-            // Duplicate names are ambiguous: two readers can disagree about
+-            // which value wins. Flow refuses them instead of picking one.
+-            if pairs.iter().any(|(k, _)| k == &key) {
+-                return Err(format!("duplicate object key {key:?} at {}", self.pos));
+-            }
+-            pairs.push((key, value));
+-            self.ws();
+-            match self.peek() {
+-                Some(b',') => self.pos += 1,
+-                Some(b'}') => {
+-                    self.pos += 1;
+-                    break;
+-                }
+-                _ => return Err(format!("expected ',' or '}}' at {}", self.pos)),
+-            }
+-        }
+-        Ok(Json::Obj(pairs))
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn array(&mut self) -> Result<Json, String> {
+         self.pos += 1;
+         let mut items = Vec::new();
+         self.ws();
+         if self.peek() == Some(b']') {
+             self.pos += 1;

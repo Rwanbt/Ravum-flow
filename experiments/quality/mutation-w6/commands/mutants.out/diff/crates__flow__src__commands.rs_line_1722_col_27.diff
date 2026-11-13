@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1714,17 +1714,17 @@
+                 receipt.execution_boundary, config.execution_boundary
+             ),
+         ));
+     }
+     // The context covers the toolchain and platform the run actually used; a Git
+     // upgrade between run and publish changes it, and the receipt is then no
+     // longer a statement about the tool that would publish.
+     let expected_context = build_context_id(&git, &tree, &policy);
+-    if receipt.context_id != expected_context {
++    if receipt.context_id == /* ~ changed by cargo-mutants ~ */ expected_context {
+         return Ok(refused_code(
+             "CONTEXT_MISMATCH",
+             format!(
+                 "the receipt context is {} but this environment now computes {}: the toolchain or platform changed since the run",
+                 short(&receipt.context_id),
+                 short(&expected_context)
+             ),
+         ));

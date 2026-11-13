@@ -1,0 +1,226 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace verify_checkout_fidelity -> Result<(), String> with Ok(())\n@@ -778,119 +778,17 @@\n /// not the verified tree while the receipt claims the tree was checked, which is\n /// a false `PASSED` with no tampering involved.\n ///\n /// This is a statement about the checkout **at the moment it is checked**: a hook\n /// (or an obligation) can change it afterwards. `verify_checkout_unchanged` runs\n /// the same byte and mode proof again after the last obligation and refuses a run\n /// whose declared files changed meanwhile.\n fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {\n-    let expected = ls_tree_entries(git, tree)?;\n-\n-    // A gitlink is refused for what it is, **before** the presence check: a\n-    // checkout never materialises submodule content, so a gitlink entry would\n-    // otherwise be reported as \"the checkout is missing 1 of N entries\", which\n-    // names the symptom and hides the cause. The refusal is still a refusal.\n-    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == \"160000\") {\n-        return Err(format!(\n-            \"tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified\"\n-        ));\n-    }\n-\n-    // Two paths differing only by case cannot both exist on a case-insensitive\n-    // filesystem: the checkout silently keeps one of them.\n-    let mut folded: BTreeMap<String, usize> = BTreeMap::new();\n-    for (_, _, path, _) in &expected {\n-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;\n-    }\n-    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) {\n-        return Err(format!(\n-            \"tree {tree} holds {count} paths that differ only by case (for example {name:?}): this host cannot represent them faithfully, so the obligations would not see the verified tree\"\n-        ));\n-    }\n-\n-    // Everything the tree names must actually exist on disk, and nothing else may\n-    // be present. `git worktree add` runs the repository's `post-checkout` hook\n-    // (including one reached through `core.hooksPath` pointing at a directory the\n-    // tree itself ships), so the checkout can gain files and directories after it\n-    // was written. An extra path is not cosmetic: a toolchain file, a\n-    // `.cargo/config.toml`, an empty cache directory or a test found by a glob\n-    // changes what an obligation sees without touching a byte the tree declares.\n-    let mut actual_files: Vec<String> = Vec::new();\n-    let mut actual_dirs: Vec<String> = Vec::new();\n-    collect_entries(scratch, scratch, &mut actual_files, &mut actual_dirs)?;\n-    let present: BTreeSet<&str> = actual_files.iter().map(String::as_str).collect();\n-    let mut missing: Vec<&str> = expected\n-        .iter()\n-        .map(|(_, _, path, _)| path.as_str())\n-        .filter(|path| !present.contains(path))\n-        .collect();\n-    if !missing.is_empty() {\n-        missing.sort_unstable();\n-        return Err(format!(\n-            \"the checkout is missing {} of {} tree entries (for example {:?}): the obligations would not see the verified tree\",\n-            missing.len(),\n-            expected.len(),\n-            &missing[..missing.len().min(3)]\n-        ));\n-    }\n-    let declared: BTreeSet<&str> = expected\n-        .iter()\n-        .map(|(_, _, path, _)| path.as_str())\n-        .collect();\n-    let mut unexpected: Vec<&str> = present\n-        .iter()\n-        .copied()\n-        .filter(|path| !declared.contains(path))\n-        .collect();\n-    if !unexpected.is_empty() {\n-        unexpected.sort_unstable();\n-        return Err(format!(\n-            \"the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree\",\n-            unexpected.len(),\n-            &unexpected[..unexpected.len().min(3)]\n-        ));\n-    }\n-    let declared_dirs = ls_tree_dirs(git, tree)?;\n-    let mut unexpected_dirs: Vec<&str> = actual_dirs\n-        .iter()\n-        .map(String::as_str)\n-        .filter(|dir| !declared_dirs.contains(*dir))\n-        .collect();\n-    if !unexpected_dirs.is_empty() {\n-        unexpected_dirs.sort_unstable();\n-        return Err(format!(\n-            \"the checkout holds {} directory(ies) the tree does not declare (for example {:?}): a hook or the host created them, and an empty directory can change what an obligation discovers\",\n-            unexpected_dirs.len(),\n-            &unexpected_dirs[..unexpected_dirs.len().min(3)]\n-        ));\n-    }\n-\n-    // And each entry must have the type the tree declares.\n-    for (mode, _, path, _) in &expected {\n-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n-        let meta = fs::symlink_metadata(&full)\n-            .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-        match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n-                return Err(format!(\n-                    \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n-                ));\n-            }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n-                return Err(format!(\n-                    \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n-                ));\n-            }\n-            _ => {}\n-        }\n-    }\n-\n-    verify_checkout_modes(scratch, tree, &expected)?;\n-    verify_checkout_content(git, scratch, tree, &expected, \"during checkout\")\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The tree's entries: `(mode, blob oid, path, size)`, from one bounded\n /// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit\n /// reason instead of being lossily folded into `U+FFFD` (two different paths would\n /// then look like a case collision, which is a misleading diagnosis).\n fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {\n     // The listing comes from the source repository: the checkout deliberately\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:786:5: replace verify_checkout_fidelity -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 78,
+        "line": 888
+      },
+      "start": {
+        "column": 5,
+        "line": 786
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n+            \"120000\" if true /* ~ changed by cargo-mutants ~ */ => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n+            \"120000\" if false /* ~ changed by cargo-mutants ~ */ => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 55,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.is_file() with true in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n+            \"100644\" | \"100755\" if true /* ~ changed by cargo-mutants ~ */ => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with true in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard !meta.is_file() with false in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n+            \"100644\" | \"100755\" if false /* ~ changed by cargo-mutants ~ */ => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with false in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 51,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in verify_checkout_fidelity\n@@ -865,17 +865,17 @@\n     }\n \n     // And each entry must have the type the tree declares.\n     for (mode, _, path, _) in &expected {\n         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n-            \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n+            \"120000\" if  /* ~ changed by cargo-mutants ~ */meta.file_type().is_symlink() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n             \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:873:25: delete ! in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 26,
+        "line": 873
+      },
+      "start": {
+        "column": 25,
+        "line": 873
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in verify_checkout_fidelity\n@@ -870,17 +870,17 @@\n         let meta = fs::symlink_metadata(&full)\n             .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n         match mode.as_str() {\n             \"120000\" if !meta.file_type().is_symlink() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it\"\n                 ));\n             }\n-            \"100644\" | \"100755\" if !meta.is_file() => { // w7probe\n+            \"100644\" | \"100755\" if  /* ~ changed by cargo-mutants ~ */meta.is_file() => { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file\"\n                 ));\n             }\n             _ => {}\n         }\n     }\n \n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_fidelity",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 889
+        },
+        "start": {
+          "column": 1,
+          "line": 772
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:878:36: delete ! in verify_checkout_fidelity",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 37,
+        "line": 878
+      },
+      "start": {
+        "column": 36,
+        "line": 878
+      }
+    }
+  }
+]

@@ -1,0 +1,32 @@
+--- crates/flow/src/state.rs
++++ replace verify_receipt_integrity -> Result<(), String> with Ok(())
+@@ -568,28 +568,17 @@
+     let mut sealed = body;
+     if let Json::Obj(pairs) = &mut sealed {
+         pairs.push(("integrity".to_string(), Json::str(digest)));
+     }
+     sealed
+ }
+ 
+ pub fn verify_receipt_integrity(value: &Json) -> Result<(), String> {
+-    let recorded = value
+-        .get("integrity")
+-        .and_then(Json::as_str)
+-        .ok_or("receipt carries no integrity digest")?;
+-    let body = without_field(value, "integrity");
+-    let computed = crate::sha256::sha256_hex(body.to_string().as_bytes());
+-    if computed != recorded {
+-        return Err(format!(
+-            "receipt content does not match its integrity digest (recorded {recorded}, computed {computed})"
+-        ));
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn string_list(value: &Json, key: &str) -> Vec<String> {
+     value
+         .get(key)
+         .and_then(Json::as_arr)
+         .map(|items| {
+             items

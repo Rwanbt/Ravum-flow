@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace Proposal::metadata_path -> PathBuf with Default::default()
+@@ -80,17 +80,17 @@
+     pub tree_oid: String,
+     pub content_digest: String,
+     pub changes: Vec<Change>,
+     pub json: Json,
+ }
+ 
+ impl Proposal {
+     fn metadata_path(root: &Path, id: &str) -> PathBuf {
+-        state::proposals_dir(root).join(format!("{id}.json"))
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn patch_path(root: &Path, id: &str) -> PathBuf {
+         state::proposals_dir(root).join(format!("{id}.patch"))
+     }
+ 
+     pub fn load(root: &Path, id: &str) -> Result<Option<Proposal>, String> {
+         if !paths::is_record_id(id) {

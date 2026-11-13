@@ -1,0 +1,107 @@
+--- crates/flow/src/gitcli.rs
++++ replace run_obligation -> Outcome with Default::default()
+@@ -567,103 +567,17 @@
+ }
+ 
+ #[cfg(not(windows))]
+ fn resolve_program(_program: &str) -> Option<PathBuf> { // survival-probe
+     None
+ }
+ 
+ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+-    let started = Instant::now();
+-    // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the
+-    // declared name is kept, so the message names what the policy asked for.
+-    let program: PathBuf =
+-        resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));
+-    let mut cmd = Command::new(&program);
+-    cmd.args(&ob.args)
+-        .current_dir(cwd)
+-        .env_clear()
+-        .stdin(Stdio::null())
+-        .stdout(Stdio::piped())
+-        .stderr(Stdio::piped());
+-    for (k, v) in allowed_env() {
+-        cmd.env(k, v);
+-    }
+-    #[cfg(unix)]
+-    {
+-        use std::os::unix::process::CommandExt;
+-        // Process-group leader: a negative PID then addresses the whole group.
+-        cmd.process_group(0);
+-    }
+-    let mut child: Child = match cmd.spawn() {
+-        Ok(child) => child,
+-        Err(e) => {
+-            return Outcome {
+-                id: ob.id.clone(),
+-                status: "UNSUPPORTED",
+-                exit: None,
+-                timed_out: false,
+-                duration_ms: started.elapsed().as_millis(),
+-                stdout: String::new(),
+-                stderr: format!("cannot start {:?}: {e}", ob.program),
+-                stdout_truncated: false,
+-                stderr_truncated: false,
+-            }
+-        }
+-    };
+-    let stdout_pipe = child.stdout.take().expect("piped stdout");
+-    let stderr_pipe = child.stderr.take().expect("piped stderr");
+-    let out_rx = spawn_reader(stdout_pipe);
+-    let err_rx = spawn_reader(stderr_pipe);
+-
+-    let deadline = Duration::from_secs(ob.timeout_s.max(1));
+-    let mut timed_out = false;
+-    let exit = loop {
+-        match child.try_wait() {
+-            Ok(Some(status)) => break status.code(),
+-            Ok(None) => {
+-                if started.elapsed() > deadline { // survival-probe
+-                    timed_out = true;
+-                    kill_tree(child.id());
+-                    let _ = child.kill();
+-                    reap_bounded(&mut child);
+-                    break None;
+-                }
+-                std::thread::sleep(POLL_INTERVAL);
+-            }
+-            Err(_) => {
+-                let _ = child.kill();
+-                reap_bounded(&mut child);
+-                break None;
+-            }
+-        }
+-    };
+-
+-    let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
+-    let stdout = finish(receive(&out_rx, reader_deadline));
+-    let stderr = finish(receive(&err_rx, reader_deadline));
+-
+-    let status = if timed_out {
+-        "TIMEOUT"
+-    } else if exit == Some(0) {
+-        "PASSED"
+-    } else {
+-        "FAILED"
+-    };
+-    Outcome {
+-        id: ob.id.clone(),
+-        status,
+-        exit,
+-        timed_out,
+-        duration_ms: started.elapsed().as_millis(),
+-        stdout: stdout.0,
+-        stderr: stderr.0,
+-        stdout_truncated: stdout.1,
+-        stderr_truncated: stderr.1,
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.
+ fn reap_bounded(child: &mut Child) {
+     let deadline = Instant::now() + REAP_GRACE; // survival-probe
+     while Instant::now() < deadline {
+         match child.try_wait() {
+             Ok(Some(_)) | Err(_) => return,

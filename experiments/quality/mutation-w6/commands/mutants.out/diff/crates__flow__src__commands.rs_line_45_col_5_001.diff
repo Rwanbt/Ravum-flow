@@ -1,0 +1,25 @@
+--- crates/flow/src/commands.rs
++++ replace current_ref -> Result<String, String> with Ok("xyzzy".into())
+@@ -37,21 +37,17 @@
+     ])
+ }
+ 
+ fn short(digest: &str) -> String {
+     digest.chars().take(12).collect()
+ }
+ 
+ fn current_ref(git: &Git) -> Result<String, String> {
+-    let out = git.run(&["symbolic-ref", "-q", "HEAD"])?;
+-    if out.status != 0 {
+-        return Err("detached HEAD: pass --ref explicitly".into());
+-    }
+-    Ok(out.stdout.trim().to_string())
++    Ok("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ------------------------------------------------------------------- init
+ pub fn cmd_init(root: &Path, force: bool, adopt_policy: bool) -> Result<Json, String> {
+     let git = Git::new(root);
+     let _ = git.version();
+     let dir = state::flow_dir(root);
+     // A `.flow/config.json` can arrive with a clone. It is a claim about what

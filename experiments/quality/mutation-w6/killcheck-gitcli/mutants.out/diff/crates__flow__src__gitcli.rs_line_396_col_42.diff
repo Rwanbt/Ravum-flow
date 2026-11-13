@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace * with +
+@@ -388,17 +388,17 @@
+     /// surplus was drained and discarded (it is not buffered anywhere).
+     pub stdout_truncated: bool,
+     /// True when the child wrote more than [`MAX_STREAM_BYTES`] to stderr.
+     pub stderr_truncated: bool,
+ }
+ 
+ /// Bytes retained per stream. Anything beyond is drained to keep the child
+ /// unblocked, then discarded.
+-pub const MAX_STREAM_BYTES: usize = 1024 * 1024; // survival-probe
++pub const MAX_STREAM_BYTES: usize = 1024 + /* ~ changed by cargo-mutants ~ */ 1024; // survival-probe
+ 
+ /// Appended to a truncated stream. Deliberately free of a copy of the cap so it
+ /// cannot drift from [`MAX_STREAM_BYTES`].
+ pub const TRUNCATION_MARKER: &str = "\n[flow: output truncated; remaining bytes discarded]\n";
+ 
+ /// How long the reader threads may take to observe EOF after the child tree was
+ /// killed. Streams that are still held open by a survivor are abandoned after
+ /// this budget; their threads are detached, never joined.

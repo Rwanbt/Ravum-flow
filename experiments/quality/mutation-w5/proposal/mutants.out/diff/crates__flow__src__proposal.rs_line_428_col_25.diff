@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace || with && in validate_path
+@@ -420,17 +420,17 @@
+     }
+     let first = path.split('/').next().unwrap_or("");
+     if first == ".git" || path == ".git" {
+         return Err(refusal(
+             "FORBIDDEN_PATH",
+             format!("change {path:?} writes into .git/: Flow never mutates Git metadata through a proposal"),
+         ));
+     }
+-    if first == ".flow" || path == ".flow" {
++    if first == ".flow" && /* ~ changed by cargo-mutants ~ */ path == ".flow" {
+         return Err(refusal(
+             "FORBIDDEN_PATH",
+             format!(
+                 "change {path:?} writes into .flow/: Flow's own state is not a proposal target"
+             ),
+         ));
+     }
+     if change.new_mode == "160000" || change.old_mode == "160000" {

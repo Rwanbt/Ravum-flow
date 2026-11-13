@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace == with != in append_journal
+@@ -382,17 +382,17 @@
+     }
+     Ok(())
+ }
+ 
+ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+     // Every record carries its schema so a future reader can refuse a mismatch.
+     let mut tagged = record.clone();
+     if let Json::Obj(pairs) = &mut tagged {
+-        if !pairs.iter().any(|(k, _)| k == "schema") {
++        if !pairs.iter().any(|(k, _)| k != /* ~ changed by cargo-mutants ~ */ "schema") {
+             pairs.insert(0, ("schema".to_string(), Json::str(SCHEMA_JOURNAL)));
+         }
+     }
+     let path = journal_path(root);
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
+     }
+     guard_below_flow(&path)?;

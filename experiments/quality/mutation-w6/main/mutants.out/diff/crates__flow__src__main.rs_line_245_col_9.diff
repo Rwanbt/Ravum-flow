@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ delete match arm "run" in value_flags
+@@ -237,17 +237,17 @@
+     }
+ }
+ 
+ /// Flags that take a value, per command. An unknown flag, or a value flag
+ /// without a value, is a usage error: silently ignoring `--dry-run` on a program
+ /// that does not know it would publish when the operator asked for a plan.
+ fn value_flags(command: &str) -> &'static [&'static str] {
+     match command {
+-        "run" => &["--obligation", "--obligations", "--timeout", "--candidate"],
++         /* ~ changed by cargo-mutants ~ */
+         "publish" => &["--ref", "--expected-old", "--message", "--candidate"],
+         "propose" => &["--agent", "--task", "--base", "--patch", "--key"],
+         "assemble" => &["--proposal"],
+         "explain" => &["--tree", "--candidate"],
+         _ => &[],
+     }
+ }
+ 

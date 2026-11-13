@@ -1,0 +1,6 @@
+crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow
+crates/flow/src/state.rs:377:52: delete ! in write_atomic_bytes
+crates/flow/src/state.rs:390:41: replace == with != in append_journal
+crates/flow/src/state.rs:661:22: replace / with % in iso8601_now

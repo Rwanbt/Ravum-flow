@@ -1,0 +1,7 @@
+crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:543:21: delete ! in resolve_program_in
+crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow

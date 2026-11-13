@@ -1,0 +1,1 @@
+["version", "proposals", "--obligations=1", "=x", "HEAD", "--base", "CON", "--unknown", "", "help", "--unknown", "--obligations", "--unknown"]

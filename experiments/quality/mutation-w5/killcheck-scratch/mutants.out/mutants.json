@@ -1,0 +1,162 @@
+[
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace || with && in Scratch::still_owned\n@@ -78,17 +78,17 @@\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n+        if meta.file_type().is_symlink() && /* ~ changed by cargo-mutants ~ */ !meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:86:42: replace || with && in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 86
+      },
+      "start": {
+        "column": 42,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ delete ! in Scratch::still_owned\n@@ -78,17 +78,17 @@\n     pub fn path(&self) -> &Path {\n         &self.path\n     }\n \n     fn still_owned(&self) -> bool {\n         let Ok(meta) = fs::symlink_metadata(&self.path) else {\n             return false;\n         };\n-        if meta.file_type().is_symlink() || !meta.is_dir() {\n+        if meta.file_type().is_symlink() ||  /* ~ changed by cargo-mutants ~ */meta.is_dir() {\n             return false;\n         }\n         match fs::canonicalize(&self.path) {\n             Ok(resolved) if resolved == self.canonical => {}\n             _ => return false,\n         }\n         fs::symlink_metadata(self.path.join(OWNED_MARKER))\n             .map(|meta| meta.is_file() && !meta.file_type().is_symlink())\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "Scratch::still_owned",
+      "return_type": "-> bool",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 96
+        },
+        "start": {
+          "column": 5,
+          "line": 82
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/scratch.rs:86:45: delete ! in Scratch::still_owned",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 86
+      },
+      "start": {
+        "column": 45,
+        "line": 86
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard add.status == 0 with true in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if true /* ~ changed by cargo-mutants ~ */ => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with true in materialise_in",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 194
+      },
+      "start": {
+        "column": 20,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace match guard add.status == 0 with false in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if false /* ~ changed by cargo-mutants ~ */ => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with false in materialise_in",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 194
+      },
+      "start": {
+        "column": 20,
+        "line": 194
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace == with != in materialise_in\n@@ -186,17 +186,17 @@\n         abandon(&path, &repo_root);\n         return Err(format!(\n             \"refusing scratch directory {}: path is not valid UTF-8\",\n             path.display()\n         ));\n     };\n \n     match git.run(&[\"worktree\", \"add\", \"--detach\", \"--quiet\", path_str, commit]) {\n-        Ok(add) if add.status == 0 => {}\n+        Ok(add) if add.status != /* ~ changed by cargo-mutants ~ */ 0 => {}\n         Ok(add) => {\n             abandon(&path, &repo_root);\n             return Err(format!(\n                 \"cannot materialise commit {commit} in {}: {}\",\n                 path.display(),\n                 add.stderr.trim()\n             ));\n         }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "materialise_in",
+      "return_type": "-> Result<Scratch, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 231
+        },
+        "start": {
+          "column": 1,
+          "line": 123
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:194:31: replace == with != in materialise_in",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 194
+      },
+      "start": {
+        "column": 31,
+        "line": 194
+      }
+    }
+  }
+]

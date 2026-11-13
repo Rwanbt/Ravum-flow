@@ -1,0 +1,39 @@
+--- crates/flow/src/state.rs
++++ replace read_journal -> Result<Vec<Json>, JournalError> with Ok(vec![Default::default()])
+@@ -414,35 +414,17 @@
+     content.extend_from_slice(line.as_bytes());
+     write_atomic_bytes(&path, &content).map_err(|e| format!("cannot append journal: {e}"))
+ }
+ /// Read every journal record.
+ ///
+ /// A missing journal is an empty journal (a fresh repository). Anything else
+ /// that prevents a faithful read is an error — never silently an empty set.
+ pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {
+-    let path = journal_path(root);
+-    if !path.exists() {
+-        return Ok(Vec::new());
+-    }
+-    let file =
+-        File::open(&path).map_err(|e| JournalError::Io(format!("cannot open journal: {e}")))?;
+-    let mut records = Vec::new();
+-    for (lineno, line) in BufReader::new(file).lines().enumerate() {
+-        let line =
+-            line.map_err(|e| JournalError::Io(format!("cannot read line {}: {e}", lineno + 1)))?;
+-        if line.trim().is_empty() {
+-            continue;
+-        }
+-        let record = json::parse(&line).map_err(|e| {
+-            JournalError::Corrupt(format!("torn or invalid line {}: {e}", lineno + 1))
+-        })?;
+-        records.push(record);
+-    }
+-    Ok(records)
++    Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Epoch seconds, used for lock ages.
+ pub fn unix_now() -> u64 {
+     SystemTime::now()
+         .duration_since(UNIX_EPOCH)
+         .map(|d| d.as_secs())
+         .unwrap_or(0)

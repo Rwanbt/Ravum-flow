@@ -1,0 +1,7 @@
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index 2a16dfb..9851293 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -396 +396 @@ fn parent_to_flush(path: &Path) -> Option<&Path> {
+-    path.parent().filter(|p| !p.as_os_str().is_empty())
++    path.parent().filter(|p| !p.as_os_str().is_empty()) // wave8-probe

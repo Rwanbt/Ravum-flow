@@ -1,0 +1,28 @@
+--- crates/flow/src/commands.rs
++++ replace ls_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![(String::new(), String::new(), "xyzzy".into(), 0)])
+@@ -885,24 +885,17 @@
+ 
+ /// The tree's entries: `(mode, blob oid, path, size)`, from one bounded
+ /// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit
+ /// reason instead of being lossily folded into `U+FFFD` (two different paths would
+ /// then look like a case collision, which is a misleading diagnosis).
+ fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {
+     // The listing comes from the source repository: the checkout deliberately
+     // has no `.git`, so it cannot answer for itself.
+-    let listing = git.run(&["ls-tree", "-r", "-l", "-z", tree])?;
+-    if listing.status != 0 {
+-        return Err(format!(
+-            "cannot list tree {tree}: {}",
+-            listing.stderr.trim()
+-        ));
+-    }
+-    parse_tree_entries(tree, &listing.stdout_bytes)
++    Ok(vec![(String::new(), String::new(), "xyzzy".into(), 0)]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The parsing half of [`ls_tree_entries`], separated so every refusal can be
+ /// pinned against a crafted Git answer (a hostile or broken Git is an input, not
+ /// an oracle): the walk never panics, and an entry it cannot read is refused.
+ fn parse_tree_entries(
+     tree: &str,
+     listing: &[u8],

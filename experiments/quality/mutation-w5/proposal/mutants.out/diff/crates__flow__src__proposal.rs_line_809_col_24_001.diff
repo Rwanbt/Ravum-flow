@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace > with < in path_conflicts
+@@ -801,17 +801,17 @@
+                             change.status,
+                             ids.join(", ")
+                         ),
+                     ));
+                 }
+                 modes.insert((change.old_mode.clone(), change.new_mode.clone()));
+             }
+         }
+-        if modes.len() > 1 {
++        if modes.len() < /* ~ changed by cargo-mutants ~ */ 1 {
+             return Some(refusal(
+                 "PATH_OPERATION_CONFLICT",
+                 format!(
+                     "proposals {} change the mode of {path:?} differently: {:?}",
+                     ids.join(", "),
+                     modes.into_iter().collect::<Vec<_>>()
+                 ),
+             ));

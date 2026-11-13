@@ -1,0 +1,16 @@
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index db4f5cc..a4b57ae 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -316 +316 @@ fn guard_below_flow(path: &Path) -> Result<(), String> {
+-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
++                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe
+@@ -377 +377 @@ pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
+-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
++    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w8probe
+@@ -390 +390 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+-        if !pairs.iter().any(|(k, _)| k == "schema") {
++        if !pairs.iter().any(|(k, _)| k == "schema") { // w8probe
+@@ -661 +661 @@ pub fn iso8601_now() -> String {
+-    let days = (secs / 86_400) as i64;
++    let days = (secs / 86_400) as i64; // w8probe

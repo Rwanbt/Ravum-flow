@@ -1,0 +1,7 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 5f27ea0..b42b785 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -357 +357 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
+-        if cfg!(windows) && longpaths != "true" {
++        if cfg!(windows) && longpaths != "true" { // survival-probe

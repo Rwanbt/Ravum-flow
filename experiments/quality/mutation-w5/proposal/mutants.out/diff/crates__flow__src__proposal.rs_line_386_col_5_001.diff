@@ -1,0 +1,41 @@
+--- crates/flow/src/proposal.rs
++++ replace diff_changes -> Result<Vec<Change>, String> with Ok(vec![Default::default()])
+@@ -378,37 +378,17 @@
+             new_mode,
+             new_oid,
+         });
+     }
+     Ok(changes)
+ }
+ 
+ fn diff_changes(git: &Git, from_tree: &str, to_tree: &str) -> Result<Vec<Change>, String> {
+-    let out = git.run_bounded(
+-        &[
+-            "diff-tree",
+-            "-r",
+-            "-z",
+-            "--raw",
+-            "--no-renames",
+-            "--no-commit-id",
+-            from_tree,
+-            to_tree,
+-        ],
+-        None,
+-        None,
+-    )?;
+-    if out.status != 0 {
+-        return Err(format!(
+-            "cannot diff {from_tree}..{to_tree}: {}",
+-            out.stderr.trim()
+-        ));
+-    }
+-    parse_raw_diff(&out.stdout)
++    Ok(vec![Default::default()]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Paths Flow must never accept from a proposal: they either escape the tree,
+ /// write Flow's own state, or cannot be represented faithfully on a supported
+ /// host. Refusing here keeps the failure at admission time, where the agent can
+ /// still correct its proposal.
+ fn validate_path(git: &Git, change: &Change) -> Result<(), Json> {
+     let path = &change.path;

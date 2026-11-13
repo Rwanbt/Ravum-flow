@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with *= in validate_flags
+@@ -273,17 +273,17 @@
+ /// Reject an unknown flag, a value flag without a value, or a stray positional
+ /// argument, before any mutation.
+ fn validate_flags(command: &str, args: &[String]) -> Result<(), String> {
+     let takes_value = value_flags(command);
+     let mut index = 0;
+     while index < args.len() {
+         let arg = &args[index];
+         if arg == "--" {
+-            index += 1; // survival-probe
++            index *= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe
+             continue;
+         }
+         if let Some(body) = arg.strip_prefix("--") {
+             let (name, inline_value) = match body.split_once('=') {
+                 Some((head, value)) => (format!("--{head}"), Some(value)),
+                 None => (format!("--{body}"), None),
+             };
+             if takes_value.contains(&name.as_str()) {

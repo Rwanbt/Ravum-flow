@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in count_by_id
+@@ -2074,17 +2074,17 @@
+         return false;
+     }
+     std::env::var("FLOW_TEST_CRASH").as_deref() == Ok(name)
+ }
+ 
+ fn count_by_id(records: &[Json], event: &str) -> BTreeMap<String, usize> {
+     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+     for record in records {
+-        if record.get("event").and_then(Json::as_str) == Some(event) {
++        if record.get("event").and_then(Json::as_str) != /* ~ changed by cargo-mutants ~ */ Some(event) {
+             let id = record
+                 .get("id")
+                 .and_then(Json::as_str)
+                 .unwrap_or("")
+                 .to_string();
+             *counts.entry(id).or_insert(0) += 1;
+         }
+     }

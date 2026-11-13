@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace pid_alive -> Option<bool> with None
+@@ -363,17 +363,17 @@
+     if Path::new(&format!("/proc/{pid}")).exists() {
+         return Some(true);
+     }
+     kill_liveness(pid)
+ }
+ 
+ #[cfg(all(unix, not(target_os = "linux")))]
+ fn pid_alive(pid: u32) -> Option<bool> {
+-    kill_liveness(pid)
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     fn temp_flow_dir(tag: &str) -> PathBuf {
+         let path = std::env::temp_dir().join(format!("flow-lock-{}-{tag}", std::process::id()));

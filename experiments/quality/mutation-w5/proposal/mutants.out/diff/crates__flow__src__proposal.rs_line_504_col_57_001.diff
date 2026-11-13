@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace += with *= in validate_tree
+@@ -496,17 +496,17 @@
+         return Err(refusal(
+             "TREE_UNREADABLE",
+             format!("cannot list tree {tree}: {}", listing.stderr.trim()),
+         ));
+     }
+     let entries = parse_tree_listing(tree, &listing.stdout)?;
+     let mut folded: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+     for path in entries {
+-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
++        *folded.entry(path.to_lowercase()).or_insert(0) *= /* ~ changed by cargo-mutants ~ */ 1;
+     }
+     if let Some((name, count)) = folded.iter().find(|(_, c)| **c > 1) {
+         return Err(refusal(
+             "CASE_COLLISION",
+             format!(
+                 "tree {tree} holds {count} paths that differ only by case (for example {name:?}): a case-insensitive host cannot materialise them, so the candidate could not be verified faithfully"
+             ),
+         ));

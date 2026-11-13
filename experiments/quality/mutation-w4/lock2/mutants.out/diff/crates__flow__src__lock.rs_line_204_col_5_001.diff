@@ -1,0 +1,34 @@
+--- crates/flow/src/lock.rs
++++ replace wait_for_record -> Option<Owner> with Some(Default::default())
+@@ -196,30 +196,17 @@
+     }
+     let linked = fs::hard_link(&tmp, path);
+     let _ = fs::remove_file(&tmp);
+     linked
+ }
+ 
+ /// Read the lock record, tolerating a creator that is still writing it.
+ fn wait_for_record(path: &Path, first: String) -> Option<Owner> {
+-    if let Some(owner) = parse(&first) {
+-        return Some(owner);
+-    }
+-    let deadline = Instant::now() + CREATE_GRACE;
+-    while Instant::now() < deadline {
+-        std::thread::sleep(POLL_INTERVAL);
+-        let Ok(text) = fs::read_to_string(path) else {
+-            return None;
+-        };
+-        if let Some(owner) = parse(&text) {
+-            return Some(owner);
+-        }
+-    }
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
+     let path = lock_path(root);
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent)
+             .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
+     }

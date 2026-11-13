@@ -1,0 +1,66 @@
+[
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace allowed_env -> Vec<(OsString, OsString)> with vec![]\n@@ -346,28 +346,17 @@\n     cmd.env(\"GIT_TERMINAL_PROMPT\", \"0\")\n         .env(\"GIT_PAGER\", \"cat\")\n         .env(\"GIT_EDITOR\", \"true\")\n         .env(\"GIT_CONFIG_NOSYSTEM\", \"1\")\n         .env(\"LC_ALL\", \"C\");\n }\n \n fn allowed_env() -> Vec<(OsString, OsString)> {\n-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect(); // wave8-probe4b\n-    let mut kept = Vec::new();\n-    for wanted in env_allowlist() {\n-        // Windows environment names are case-insensitive: scan for the first match.\n-        if let Some((name, value)) = host\n-            .iter()\n-            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))\n-        {\n-            kept.push((name.clone(), value.clone()));\n-        }\n-    }\n-    kept\n+    vec![] /* ~ changed by cargo-mutants ~ */\n }\n \n // ------------------------------------------------------------ obligations\n #[derive(Debug, Clone)]\n pub struct Obligation {\n     pub id: String,\n     pub program: String,\n     pub args: Vec<String>,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "allowed_env",
+      "return_type": "-> Vec<(OsString, OsString)>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 353
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![]",
+    "package": "flow",
+    "replacement": "vec![]",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 365
+      },
+      "start": {
+        "column": 5,
+        "line": 354
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]\n@@ -346,28 +346,17 @@\n     cmd.env(\"GIT_TERMINAL_PROMPT\", \"0\")\n         .env(\"GIT_PAGER\", \"cat\")\n         .env(\"GIT_EDITOR\", \"true\")\n         .env(\"GIT_CONFIG_NOSYSTEM\", \"1\")\n         .env(\"LC_ALL\", \"C\");\n }\n \n fn allowed_env() -> Vec<(OsString, OsString)> {\n-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect(); // wave8-probe4b\n-    let mut kept = Vec::new();\n-    for wanted in env_allowlist() {\n-        // Windows environment names are case-insensitive: scan for the first match.\n-        if let Some((name, value)) = host\n-            .iter()\n-            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))\n-        {\n-            kept.push((name.clone(), value.clone()));\n-        }\n-    }\n-    kept\n+    vec![(Default::default(), Default::default())] /* ~ changed by cargo-mutants ~ */\n }\n \n // ------------------------------------------------------------ obligations\n #[derive(Debug, Clone)]\n pub struct Obligation {\n     pub id: String,\n     pub program: String,\n     pub args: Vec<String>,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "allowed_env",
+      "return_type": "-> Vec<(OsString, OsString)>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 366
+        },
+        "start": {
+          "column": 1,
+          "line": 353
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:354:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]",
+    "package": "flow",
+    "replacement": "vec![(Default::default(), Default::default())]",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 365
+      },
+      "start": {
+        "column": 5,
+        "line": 354
+      }
+    }
+  }
+]

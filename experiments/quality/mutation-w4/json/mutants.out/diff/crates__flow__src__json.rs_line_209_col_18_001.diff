@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace += with *= in Parser<'a>::object
+@@ -201,17 +201,17 @@
+             self.pos += word.len();
+             Ok(value)
+         } else {
+             Err(format!("invalid literal at {}", self.pos))
+         }
+     }
+ 
+     fn object(&mut self) -> Result<Json, String> {
+-        self.pos += 1;
++        self.pos *= /* ~ changed by cargo-mutants ~ */ 1;
+         let mut pairs = Vec::new();
+         self.ws();
+         if self.peek() == Some(b'}') {
+             self.pos += 1;
+             return Ok(Json::Obj(pairs));
+         }
+         loop {
+             self.ws();

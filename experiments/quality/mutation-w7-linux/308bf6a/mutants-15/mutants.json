@@ -1,0 +1,546 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace verify_checkout_modes -> Result<(), String> with Ok(())\n@@ -993,40 +993,17 @@\n /// mode) changes what an obligation *executes*, without touching a byte the\n /// content comparison can see. Windows does not represent the bit and is not\n /// checked; that limit is documented.\n fn verify_checkout_modes( // w7probe\n     scratch: &Path,\n     tree: &str,\n     expected: &[(String, String, String, u64)],\n ) -> Result<(), String> {\n-    #[cfg(unix)]\n-    {\n-        use std::os::unix::fs::PermissionsExt;\n-        for (mode, _, path, _) in expected {\n-            if mode != \"100644\" && mode != \"100755\" { // w7probe\n-                continue;\n-            }\n-            let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n-            let meta = fs::symlink_metadata(&full)\n-                .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n-            if executable != (mode == \"100755\") { // w7probe\n-                return Err(format!(\n-                    \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n-                    if executable { \"executable\" } else { \"non-executable\" }\n-                ));\n-            }\n-        }\n-    }\n-    #[cfg(not(unix))]\n-    {\n-        let _ = (scratch, tree, expected);\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Prove the declared content did not change while the obligations ran.\n ///\n /// The fidelity check happens *before* the first obligation. A `post-checkout`\n /// hook can spawn a writer that changes a file later, and an obligation can\n /// rewrite its own input; both would make the receipt claim that the tree passed\n /// while the obligations saw something else. Re-running the same byte and mode\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1001:5: replace verify_checkout_modes -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 1024
+      },
+      "start": {
+        "column": 5,
+        "line": 1001
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace && with || in verify_checkout_modes\n@@ -997,17 +997,17 @@\n     scratch: &Path,\n     tree: &str,\n     expected: &[(String, String, String, u64)],\n ) -> Result<(), String> {\n     #[cfg(unix)]\n     {\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n-            if mode != \"100644\" && mode != \"100755\" { // w7probe\n+            if mode != \"100644\" || /* ~ changed by cargo-mutants ~ */ mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n             let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1005:33: replace && with || in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 35,
+        "line": 1005
+      },
+      "start": {
+        "column": 33,
+        "line": 1005
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in verify_checkout_modes\n@@ -997,17 +997,17 @@\n     scratch: &Path,\n     tree: &str,\n     expected: &[(String, String, String, u64)],\n ) -> Result<(), String> {\n     #[cfg(unix)]\n     {\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n-            if mode != \"100644\" && mode != \"100755\" { // w7probe\n+            if mode == /* ~ changed by cargo-mutants ~ */ \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n             let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1005:21: replace != with == in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 1005
+      },
+      "start": {
+        "column": 21,
+        "line": 1005
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in verify_checkout_modes\n@@ -997,17 +997,17 @@\n     scratch: &Path,\n     tree: &str,\n     expected: &[(String, String, String, u64)],\n ) -> Result<(), String> {\n     #[cfg(unix)]\n     {\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n-            if mode != \"100644\" && mode != \"100755\" { // w7probe\n+            if mode != \"100644\" && mode == /* ~ changed by cargo-mutants ~ */ \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n             let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1005:41: replace != with == in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 1005
+      },
+      "start": {
+        "column": 41,
+        "line": 1005
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in verify_checkout_modes\n@@ -1003,17 +1003,17 @@\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n             if mode != \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n+            let executable = meta.permissions().mode() & 0o111 == /* ~ changed by cargo-mutants ~ */ 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n                     if executable { \"executable\" } else { \"non-executable\" }\n                 ));\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1011:64: replace != with == in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 66,
+        "line": 1011
+      },
+      "start": {
+        "column": 64,
+        "line": 1011
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace & with | in verify_checkout_modes\n@@ -1003,17 +1003,17 @@\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n             if mode != \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n+            let executable = meta.permissions().mode() | /* ~ changed by cargo-mutants ~ */ 0o111 != 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n                     if executable { \"executable\" } else { \"non-executable\" }\n                 ));\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1011:56: replace & with | in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "|",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 1011
+      },
+      "start": {
+        "column": 56,
+        "line": 1011
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace & with ^ in verify_checkout_modes\n@@ -1003,17 +1003,17 @@\n         use std::os::unix::fs::PermissionsExt;\n         for (mode, _, path, _) in expected {\n             if mode != \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n-            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n+            let executable = meta.permissions().mode() ^ /* ~ changed by cargo-mutants ~ */ 0o111 != 0; // w7probe\n             if executable != (mode == \"100755\") { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n                     if executable { \"executable\" } else { \"non-executable\" }\n                 ));\n             }\n         }\n     }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1011:56: replace & with ^ in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "^",
+    "span": {
+      "end": {
+        "column": 57,
+        "line": 1011
+      },
+      "start": {
+        "column": 56,
+        "line": 1011
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in verify_checkout_modes\n@@ -1004,17 +1004,17 @@\n         for (mode, _, path, _) in expected {\n             if mode != \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n             let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n-            if executable != (mode == \"100755\") { // w7probe\n+            if executable == /* ~ changed by cargo-mutants ~ */ (mode == \"100755\") { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n                     if executable { \"executable\" } else { \"non-executable\" }\n                 ));\n             }\n         }\n     }\n     #[cfg(not(unix))]\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1012:27: replace != with == in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 1012
+      },
+      "start": {
+        "column": 27,
+        "line": 1012
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace == with != in verify_checkout_modes\n@@ -1004,17 +1004,17 @@\n         for (mode, _, path, _) in expected {\n             if mode != \"100644\" && mode != \"100755\" { // w7probe\n                 continue;\n             }\n             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));\n             let meta = fs::symlink_metadata(&full)\n                 .map_err(|e| format!(\"cannot stat {path:?} after checkout: {e}\"))?;\n             let executable = meta.permissions().mode() & 0o111 != 0; // w7probe\n-            if executable != (mode == \"100755\") { // w7probe\n+            if executable != (mode != /* ~ changed by cargo-mutants ~ */ \"100755\") { // w7probe\n                 return Err(format!(\n                     \"tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree\",\n                     if executable { \"executable\" } else { \"non-executable\" }\n                 ));\n             }\n         }\n     }\n     #[cfg(not(unix))]\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "verify_checkout_modes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 1025
+        },
+        "start": {
+          "column": 1,
+          "line": 991
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1012:36: replace == with != in verify_checkout_modes",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 38,
+        "line": 1012
+      },
+      "start": {
+        "column": 36,
+        "line": 1012
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with Some(Default::default())\n@@ -563,17 +563,17 @@\n             }\n         }\n     }\n     None\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> { // w7probe\n-    None // w7probe\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */ // w7probe\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n     let started = Instant::now();\n     // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the\n     // declared name is kept, so the message names what the policy asked for.\n     let program: PathBuf =\n         resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 572
+        },
+        "start": {
+          "column": 1,
+          "line": 569
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:571:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 571
+      },
+      "start": {
+        "column": 5,
+        "line": 571
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace guard_below_flow -> Result<(), String> with Ok(())\n@@ -284,73 +284,17 @@\n ///\n /// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:\n /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes\n /// Flow append outside the workspace. Every write below `.flow/` therefore checks\n /// that each existing component is a real directory and that the target is not a\n /// link. This is a check-then-write, so it is not a defence against a *concurrent*\n /// local attacker — that boundary is documented, and the local user is trusted.\n fn guard_below_flow(path: &Path) -> Result<(), String> {\n-    let mut anchor: Option<&Path> = None;\n-    for ancestor in path.ancestors() {\n-        if ancestor.file_name().map(|n| n == \".flow\").unwrap_or(false) {\n-            anchor = ancestor.parent();\n-            break;\n-        }\n-    }\n-    let Some(root) = anchor else {\n-        return Ok(());\n-    };\n-    let relative = path\n-        .strip_prefix(root)\n-        .map_err(|_| format!(\"{} is not below {}\", path.display(), root.display()))?;\n-    let mut current = root.to_path_buf();\n-    for component in relative.components() {\n-        current.push(component);\n-        match fs::symlink_metadata(&current) {\n-            Ok(meta) => {\n-                let kind = meta.file_type();\n-                let reparse = {\n-                    #[cfg(windows)]\n-                    {\n-                        use std::os::windows::fs::MetadataExt;\n-                        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0\n-                    }\n-                    #[cfg(not(windows))]\n-                    {\n-                        false\n-                    }\n-                };\n-                if kind.is_symlink() || reparse {\n-                    return Err(format!(\n-                        \"refusing to write {}: {} is a symbolic link or reparse point, so the write would escape the workspace\",\n-                        path.display(),\n-                        current.display()\n-                    ));\n-                }\n-            }\n-            Err(_) => break,\n-        }\n-    }\n-    // A hard link is indistinguishable from a regular file on Windows without\n-    // Win32, so the check exists where the metadata exposes it. It closes the\n-    // \"journal appended through a link to an outside file\" shape on Unix.\n-    #[cfg(unix)]\n-    if let Ok(meta) = fs::symlink_metadata(path) {\n-        use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 { // w7probe\n-            return Err(format!(\n-                \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n-                path.display(),\n-                meta.nlink()\n-            ));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {\n     write_atomic_bytes(path, data.as_bytes())\n }\n \n /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be\n /// text and must never be round-tripped through `String`.\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 348
+      },
+      "start": {
+        "column": 5,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace && with || in guard_below_flow\n@@ -332,17 +332,17 @@\n         }\n     }\n     // A hard link is indistinguishable from a regular file on Windows without\n     // Win32, so the check exists where the metadata exposes it. It closes the\n     // \"journal appended through a link to an outside file\" shape on Unix.\n     #[cfg(unix)]\n     if let Ok(meta) = fs::symlink_metadata(path) {\n         use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 { // w7probe\n+        if meta.is_file() || /* ~ changed by cargo-mutants ~ */ meta.nlink() > 1 { // w7probe\n             return Err(format!(\n                 \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n                 path.display(),\n                 meta.nlink()\n             ));\n         }\n     }\n     Ok(())\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:340:27: replace && with || in guard_below_flow",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 340
+      },
+      "start": {
+        "column": 27,
+        "line": 340
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace > with == in guard_below_flow\n@@ -332,17 +332,17 @@\n         }\n     }\n     // A hard link is indistinguishable from a regular file on Windows without\n     // Win32, so the check exists where the metadata exposes it. It closes the\n     // \"journal appended through a link to an outside file\" shape on Unix.\n     #[cfg(unix)]\n     if let Ok(meta) = fs::symlink_metadata(path) {\n         use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 { // w7probe\n+        if meta.is_file() && meta.nlink() == /* ~ changed by cargo-mutants ~ */ 1 { // w7probe\n             return Err(format!(\n                 \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n                 path.display(),\n                 meta.nlink()\n             ));\n         }\n     }\n     Ok(())\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:340:43: replace > with == in guard_below_flow",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 340
+      },
+      "start": {
+        "column": 43,
+        "line": 340
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace > with < in guard_below_flow\n@@ -332,17 +332,17 @@\n         }\n     }\n     // A hard link is indistinguishable from a regular file on Windows without\n     // Win32, so the check exists where the metadata exposes it. It closes the\n     // \"journal appended through a link to an outside file\" shape on Unix.\n     #[cfg(unix)]\n     if let Ok(meta) = fs::symlink_metadata(path) {\n         use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 { // w7probe\n+        if meta.is_file() && meta.nlink() < /* ~ changed by cargo-mutants ~ */ 1 { // w7probe\n             return Err(format!(\n                 \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n                 path.display(),\n                 meta.nlink()\n             ));\n         }\n     }\n     Ok(())\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:340:43: replace > with < in guard_below_flow",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 340
+      },
+      "start": {
+        "column": 43,
+        "line": 340
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace > with >= in guard_below_flow\n@@ -332,17 +332,17 @@\n         }\n     }\n     // A hard link is indistinguishable from a regular file on Windows without\n     // Win32, so the check exists where the metadata exposes it. It closes the\n     // \"journal appended through a link to an outside file\" shape on Unix.\n     #[cfg(unix)]\n     if let Ok(meta) = fs::symlink_metadata(path) {\n         use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 { // w7probe\n+        if meta.is_file() && meta.nlink() >= /* ~ changed by cargo-mutants ~ */ 1 { // w7probe\n             return Err(format!(\n                 \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n                 path.display(),\n                 meta.nlink()\n             ));\n         }\n     }\n     Ok(())\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:340:43: replace > with >= in guard_below_flow",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 340
+      },
+      "start": {
+        "column": 43,
+        "line": 340
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace write_atomic_bytes -> Result<(), String> with Ok(())\n@@ -350,42 +350,17 @@\n \n pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {\n     write_atomic_bytes(path, data.as_bytes())\n }\n \n /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be\n /// text and must never be round-tripped through `String`.\n pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {\n-    guard_below_flow(path)?;\n-    // The temporary name carries the process id: two Flow processes writing\n-    // different files never fight over one shared scratch name.\n-    let tmp = path.with_extension(format!(\"tmp-flow-{}\", std::process::id()));\n-    {\n-        let mut file =\n-            File::create(&tmp).map_err(|e| format!(\"cannot create {}: {e}\", tmp.display()))?;\n-        file.write_all(data)\n-            .map_err(|e| format!(\"cannot write {}: {e}\", tmp.display()))?;\n-        file.sync_all()\n-            .map_err(|e| format!(\"cannot fsync {}: {e}\", tmp.display()))?;\n-    }\n-    fs::rename(&tmp, path).map_err(|e| format!(\"cannot rename into {}: {e}\", path.display()))?;\n-    // The rename is durable only once the containing directory is flushed. A\n-    // journal entry whose rename is lost after a power cut, while `update-ref`\n-    // already moved the ref, is precisely the state recovery must never have to\n-    // guess about. Windows exposes no directory fsync, so the claim there is\n-    // \"file fsynced before the rename\" and the README says so.\n-    #[cfg(not(windows))]\n-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w7probe\n-        let dir = File::open(parent)\n-            .map_err(|e| format!(\"cannot open {} for fsync: {e}\", parent.display()))?;\n-        dir.sync_all()\n-            .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") {\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "write_atomic_bytes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 384
+        },
+        "start": {
+          "column": 1,
+          "line": 355
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 383
+      },
+      "start": {
+        "column": 5,
+        "line": 358
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in write_atomic_bytes\n@@ -369,17 +369,17 @@\n     }\n     fs::rename(&tmp, path).map_err(|e| format!(\"cannot rename into {}: {e}\", path.display()))?;\n     // The rename is durable only once the containing directory is flushed. A\n     // journal entry whose rename is lost after a power cut, while `update-ref`\n     // already moved the ref, is precisely the state recovery must never have to\n     // guess about. Windows exposes no directory fsync, so the claim there is\n     // \"file fsynced before the rename\" and the README says so.\n     #[cfg(not(windows))]\n-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w7probe\n+    if let Some(parent) = path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) { // w7probe\n         let dir = File::open(parent)\n             .map_err(|e| format!(\"cannot open {} for fsync: {e}\", parent.display()))?;\n         dir.sync_all()\n             .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n     }\n     Ok(())\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "write_atomic_bytes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 384
+        },
+        "start": {
+          "column": 1,
+          "line": 355
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:377:52: delete ! in write_atomic_bytes",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 377
+      },
+      "start": {
+        "column": 52,
+        "line": 377
+      }
+    }
+  }
+]

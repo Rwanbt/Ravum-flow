@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace || with && in classify_apply_failure
+@@ -747,17 +747,17 @@
+         &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+         Some(patch),
+         Some(index),
+     )
+ }
+ 
+ fn classify_apply_failure(stderr: &str) -> &'static str {
+     let text = stderr.to_lowercase();
+-    if text.contains("already exists") || text.contains("does not exist") {
++    if text.contains("already exists") && /* ~ changed by cargo-mutants ~ */ text.contains("does not exist") {
+         "PATH_CONFLICT"
+     } else if text.contains("does not match index") || text.contains("does not apply") {
+         "HUNK_CONFLICT"
+     } else {
+         "APPLY_REFUSED"
+     }
+ }
+ 

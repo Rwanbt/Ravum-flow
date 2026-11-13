@@ -1,0 +1,7 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 5f27ea0..d32bba2 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -792 +792 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == "160000") {
++    if let Some((_, _, path, _)) = expected.iter().find(|(mode, _, _, _)| mode == "160000") { // survival-probe

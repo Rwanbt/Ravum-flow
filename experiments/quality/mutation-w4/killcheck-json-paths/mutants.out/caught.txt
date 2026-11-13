@@ -1,0 +1,22 @@
+crates/flow/src/json.rs:145:18: replace match guard (c as u32) < 0x20 with true in write_string
+crates/flow/src/json.rs:145:18: replace match guard (c as u32) < 0x20 with false in write_string
+crates/flow/src/json.rs:145:29: replace < with == in write_string
+crates/flow/src/json.rs:145:29: replace < with > in write_string
+crates/flow/src/json.rs:145:29: replace < with <= in write_string
+crates/flow/src/json.rs:295:57: replace + with - in Parser<'a>::string
+crates/flow/src/json.rs:295:57: replace + with * in Parser<'a>::string
+crates/flow/src/json.rs:299:38: replace += with -= in Parser<'a>::string
+crates/flow/src/json.rs:299:38: replace += with *= in Parser<'a>::string
+crates/flow/src/json.rs:309:36: replace > with < in Parser<'a>::string
+crates/flow/src/json.rs:309:30: replace + with - in Parser<'a>::string
+crates/flow/src/json.rs:345:5: replace utf8_len -> usize with 1
+crates/flow/src/json.rs:347:9: delete match arm 0xc0..= 0xdf in utf8_len
+crates/flow/src/json.rs:348:9: delete match arm 0xe0..= 0xef in utf8_len
+crates/flow/src/paths.rs:44:30: replace || with && in validate_relative
+crates/flow/src/paths.rs:48:59: replace && with || in validate_relative
+crates/flow/src/paths.rs:48:25: replace && with || in validate_relative
+crates/flow/src/paths.rs:48:20: replace >= with < in validate_relative
+crates/flow/src/paths.rs:48:71: replace == with != in validate_relative
+crates/flow/src/paths.rs:55:29: replace || with && in validate_relative
+crates/flow/src/paths.rs:55:22: replace == with != in validate_relative
+crates/flow/src/paths.rs:55:42: replace == with != in validate_relative

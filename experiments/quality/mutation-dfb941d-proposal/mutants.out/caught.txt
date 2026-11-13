@@ -1,0 +1,8 @@
+crates/flow/src/proposal.rs:38:46: replace * with /
+crates/flow/src/proposal.rs:38:39: replace * with /
+crates/flow/src/proposal.rs:88:9: replace Proposal::metadata_path -> PathBuf with Default::default()
+crates/flow/src/proposal.rs:92:9: replace Proposal::patch_path -> PathBuf with Default::default()
+crates/flow/src/proposal.rs:96:9: replace Proposal::load -> Result<Option<Proposal>, String> with Ok(None)
+crates/flow/src/proposal.rs:96:12: delete ! in Proposal::load
+crates/flow/src/proposal.rs:102:12: delete ! in Proposal::load
+crates/flow/src/proposal.rs:112:19: replace != with == in Proposal::load

@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace && with || in Scratch::still_owned
+@@ -86,17 +86,17 @@
+         if meta.file_type().is_symlink() || !meta.is_dir() {
+             return false;
+         }
+         match fs::canonicalize(&self.path) {
+             Ok(resolved) if resolved == self.canonical => {}
+             _ => return false,
+         }
+         fs::symlink_metadata(self.path.join(OWNED_MARKER))
+-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())
++            .map(|meta| meta.is_file() || /* ~ changed by cargo-mutants ~ */ !meta.file_type().is_symlink())
+             .unwrap_or(false)
+     }
+ }
+ 
+ impl Drop for Scratch {
+     /// Bounded, idempotent, non-panicking cleanup.
+     ///
+     /// The directory is removed only while it is provably still the one this

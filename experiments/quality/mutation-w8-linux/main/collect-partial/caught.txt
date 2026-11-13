@@ -1,0 +1,5 @@
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with None
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec!["xyzzy".into()])
+crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![])
+crates/flow/src/main.rs:360:19: replace += with -= in collect_values

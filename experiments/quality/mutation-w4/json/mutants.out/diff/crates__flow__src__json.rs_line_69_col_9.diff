@@ -1,0 +1,23 @@
+--- crates/flow/src/json.rs
++++ replace Json::to_string_pretty -> String with String::new()
+@@ -61,19 +61,17 @@
+         let mut out = String::new();
+         self.write(&mut out, None, 0);
+         f.write_str(&out)
+     }
+ }
+ 
+ impl Json {
+     pub fn to_string_pretty(&self) -> String {
+-        let mut out = String::new();
+-        self.write(&mut out, Some(2), 0);
+-        out
++        String::new() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn write(&self, out: &mut String, indent: Option<usize>, level: usize) {
+         match self {
+             Json::Null => out.push_str("null"),
+             Json::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+             Json::Num(n) => {
+                 if n.fract() == 0.0 && n.abs() < 9.0e15 {

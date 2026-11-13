@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in admit
+@@ -599,17 +599,17 @@
+             "BASE_INVALID",
+             format!("base {base:?} is not a 40- or 64-character hex commit id"),
+         ));
+     }
+     let base = base.trim().to_string();
+     // The base must be a commit that this repository actually holds: a tree OID
+     // or an unknown object would make `read-tree` ambiguous or fail late.
+     let base_tree_out = git.run_bounded(&["rev-parse", &format!("{base}^{{tree}}")], None, None)?;
+-    if base_tree_out.status != 0 {
++    if base_tree_out.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Ok(refusal(
+             "BASE_INVALID",
+             format!(
+                 "base {base} is not a commit reachable in this object store: {}",
+                 base_tree_out.stderr.trim()
+             ),
+         ));
+     }

@@ -1,0 +1,38 @@
+crates/flow/src/scratch.rs:83:9: replace Scratch::still_owned -> bool with true
+crates/flow/src/scratch.rs:83:9: replace Scratch::still_owned -> bool with false
+crates/flow/src/scratch.rs:86:45: delete ! in Scratch::still_owned
+crates/flow/src/scratch.rs:90:29: replace match guard resolved == self.canonical with true in Scratch::still_owned
+crates/flow/src/scratch.rs:90:29: replace match guard resolved == self.canonical with false in Scratch::still_owned
+crates/flow/src/scratch.rs:90:38: replace == with != in Scratch::still_owned
+crates/flow/src/scratch.rs:94:40: replace && with || in Scratch::still_owned
+crates/flow/src/scratch.rs:94:43: delete ! in Scratch::still_owned
+crates/flow/src/scratch.rs:106:9: replace <impl Drop for Scratch>::drop with ()
+crates/flow/src/scratch.rs:107:60: replace + with - in <impl Drop for Scratch>::drop
+crates/flow/src/scratch.rs:134:8: delete ! in materialise_in
+crates/flow/src/scratch.rs:162:23: replace match guard e.kind() == io::ErrorKind::AlreadyExists with false in materialise_in
+crates/flow/src/scratch.rs:162:32: replace == with != in materialise_in
+crates/flow/src/scratch.rs:252:5: replace is_hex_object_id -> bool with true
+crates/flow/src/scratch.rs:241:5: replace candidate_path -> PathBuf with Default::default()
+crates/flow/src/scratch.rs:252:37: replace && with || in is_hex_object_id
+crates/flow/src/scratch.rs:252:5: replace is_hex_object_id -> bool with false
+crates/flow/src/scratch.rs:256:5: replace canonical_dir -> Result<PathBuf, String> with Ok(Default::default())
+crates/flow/src/scratch.rs:259:8: delete ! in canonical_dir
+crates/flow/src/scratch.rs:266:5: replace is_within -> bool with true
+crates/flow/src/scratch.rs:266:5: replace is_within -> bool with false
+crates/flow/src/scratch.rs:270:5: replace refusal_message -> String with String::new()
+crates/flow/src/scratch.rs:270:5: replace refusal_message -> String with "xyzzy".into()
+crates/flow/src/scratch.rs:278:5: replace verify_created_dir -> Result<(), String> with Ok(())
+crates/flow/src/scratch.rs:286:8: delete ! in verify_created_dir
+crates/flow/src/scratch.rs:298:17: replace != with == in verify_created_dir
+crates/flow/src/scratch.rs:311:5: replace detach_git_link -> Result<(), String> with Ok(())
+crates/flow/src/scratch.rs:314:19: replace match guard e.kind() == io::ErrorKind::NotFound with false in detach_git_link
+crates/flow/src/scratch.rs:314:28: replace == with != in detach_git_link
+crates/flow/src/scratch.rs:328:8: delete ! in detach_git_link
+crates/flow/src/scratch.rs:343:5: replace abandon with ()
+crates/flow/src/scratch.rs:350:5: replace prune_worktrees with ()
+crates/flow/src/scratch.rs:372:5: replace remove_tree_bounded with ()
+crates/flow/src/scratch.rs:375:39: replace || with && in remove_tree_bounded
+crates/flow/src/scratch.rs:350:8: delete ! in prune_worktrees
+crates/flow/src/scratch.rs:375:27: replace >= with < in remove_tree_bounded
+crates/flow/src/scratch.rs:375:52: replace >= with < in remove_tree_bounded
+crates/flow/src/scratch.rs:383:19: replace += with -= in remove_tree_bounded

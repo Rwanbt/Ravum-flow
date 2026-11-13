@@ -1,0 +1,47 @@
+--- crates/flow/src/gitcli.rs
++++ replace kill_tree with ()
+@@ -670,43 +670,17 @@
+ ///
+ /// POSIX: the child was spawned as a process-group leader (see
+ /// [`run_obligation`]), so the shell's `kill` builtin is asked to signal
+ /// `-<pid>`; the plain PID is signalled as a fallback. A descendant that leaves
+ /// the process group is not reached — the limitation is documented, never
+ /// hidden. (No `unsafe` FFI: the POSIX shell builtin is used instead of
+ /// `libc::kill`, keeping the crate dependency-free.)
+ pub fn kill_tree(pid: u32) {
+-    #[cfg(windows)]
+-    {
+-        let _ = Command::new("taskkill")
+-            .args(["/PID", &pid.to_string(), "/T", "/F"])
+-            .stdout(Stdio::null())
+-            .stderr(Stdio::null())
+-            .status();
+-    }
+-    #[cfg(not(windows))]
+-    {
+-        // `-s KILL` avoids the `-9`/`-9 -pgid` option ambiguity; the operands
+-        // are quoted positional arguments, never interpreted by the shell.
+-        let group = format!("-{pid}");
+-        let direct = pid.to_string();
+-        let _ = Command::new("sh")
+-            .args([
+-                "-c",
+-                "kill -s KILL \"$1\" 2>/dev/null || kill -s KILL \"$2\" 2>/dev/null",
+-                "flow-kill-tree",
+-                &group,
+-                &direct,
+-            ])
+-            .stdin(Stdio::null())
+-            .stdout(Stdio::null())
+-            .stderr(Stdio::null())
+-            .status();
+-    }
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Redact values of secret-looking environment variables and known token shapes
+ /// BEFORE a log is written to disk.
+ ///
+ /// Name matching is deliberately broad (`SECRET`, `TOKEN`, `PASSWORD`, `PASSWD`,
+ /// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a
+ /// value that happens to equal a credential is harmless, while leaking one is not.

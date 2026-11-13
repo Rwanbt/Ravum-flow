@@ -1,0 +1,2 @@
+crates/flow/src/main.rs:83:9: delete match arm "help" | "-h" | "--help" in dispatch
+crates/flow/src/main.rs:87:9: delete match arm "version" | "--version" in dispatch

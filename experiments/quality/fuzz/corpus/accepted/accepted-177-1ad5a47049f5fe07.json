@@ -1,0 +1,1 @@
+{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","obligations":[{"id":"green","program":"git","args":["--version"],"required":true,"timeo t_s":30}]}

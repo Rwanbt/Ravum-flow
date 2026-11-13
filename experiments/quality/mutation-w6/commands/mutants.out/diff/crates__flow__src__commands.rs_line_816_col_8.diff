@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in verify_checkout_fidelity
+@@ -808,17 +808,17 @@
+     let mut actual_dirs: Vec<String> = Vec::new();
+     collect_entries(scratch, scratch, &mut actual_files, &mut actual_dirs)?;
+     let present: BTreeSet<&str> = actual_files.iter().map(String::as_str).collect();
+     let mut missing: Vec<&str> = expected
+         .iter()
+         .map(|(_, _, path, _)| path.as_str())
+         .filter(|path| !present.contains(path))
+         .collect();
+-    if !missing.is_empty() {
++    if  /* ~ changed by cargo-mutants ~ */missing.is_empty() {
+         missing.sort_unstable();
+         return Err(format!(
+             "the checkout is missing {} of {} tree entries (for example {:?}): the obligations would not see the verified tree",
+             missing.len(),
+             expected.len(),
+             &missing[..missing.len().min(3)]
+         ));
+     }

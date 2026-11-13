@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace > with == in cmd_reconcile
+@@ -2180,17 +2180,17 @@
+             .unwrap_or("")
+             .to_string();
+         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);
+         let outcomes_for_id = outcome_counts.get(&id).copied().unwrap_or(0);
+         // A shared id cannot be attributed to one intent. Checking `done` first
+         // would let one duplicate's outcome silently close the other, which is
+         // exactly how an unresolved publication can be reported as reconciled.
+         if intents_for_id > 1 {
+-            if intents_for_id > outcomes_for_id { // survival-probe
++            if intents_for_id == /* ~ changed by cargo-mutants ~ */ outcomes_for_id { // survival-probe
+                 needs_human = true;
+                 resolved.push(Json::obj(vec![
+                     ("id", Json::str(id)),
+                     ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                     ("reason", Json::str("DUPLICATE_INTENT_ID")),
+                 ]));
+             }
+             continue;

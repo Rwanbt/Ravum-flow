@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace * with /
+@@ -30,17 +30,17 @@
+ use crate::paths;
+ // One validator for every "is this a Git object id" question in the crate: a
+ // second copy is a rule that can drift away from the trust boundary.
+ use crate::paths::is_object_id;
+ use crate::sha256::sha256_hex;
+ use crate::state::{self, SCHEMA_CANDIDATE, SCHEMA_PROPOSAL};
+ 
+ /// A patch larger than this is not a proposal, it is a repository dump.
+-pub const MAX_PATCH_BYTES: usize = 32 * 1024 * 1024;
++pub const MAX_PATCH_BYTES: usize = 32 / /* ~ changed by cargo-mutants ~ */ 1024 * 1024;
+ /// Blobs are read only to validate a symlink target; bound that read too.
+ const MAX_SYMLINK_TARGET_BYTES: usize = 4096;
+ 
+ pub fn refusal(code: &str, detail: impl Into<String>) -> Json {
+     Json::obj(vec![
+         ("status", Json::str("REFUSED")),
+         ("code", Json::str(code)),
+         ("reason", Json::str(detail.into())),

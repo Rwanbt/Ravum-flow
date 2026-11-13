@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace + with - in Parser<'a>::string
+@@ -301,17 +301,17 @@
+                         }
+                         other => return Err(format!("bad escape \\{}", other as char)),
+                     }
+                 }
+                 _ => {
+                     // copy the UTF-8 sequence as-is
+                     let start = self.pos - 1;
+                     let len = utf8_len(b);
+-                    if start + len > self.bytes.len() {
++                    if start - /* ~ changed by cargo-mutants ~ */ len > self.bytes.len() {
+                         return Err("truncated UTF-8".into());
+                     }
+                     let s = std::str::from_utf8(&self.bytes[start..start + len])
+                         .map_err(|_| "invalid UTF-8")?;
+                     out.push_str(s);
+                     self.pos = start + len;
+                 }
+             }

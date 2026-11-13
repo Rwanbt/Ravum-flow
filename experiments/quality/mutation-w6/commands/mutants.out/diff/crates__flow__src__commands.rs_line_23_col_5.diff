@@ -1,0 +1,24 @@
+--- crates/flow/src/commands.rs
++++ replace refused -> Json with Default::default()
+@@ -15,20 +15,17 @@
+ use std::path::{Path, PathBuf};
+ 
+ use crate::gitcli::{self, Git, Obligation};
+ use crate::json::{self, Json};
+ use crate::sha256;
+ use crate::state::{self, Config, Receipt};
+ 
+ fn refused(why: impl Into<String>) -> Json {
+-    Json::obj(vec![
+-        ("status", Json::str("REFUSED")),
+-        ("reason", Json::str(why.into())),
+-    ])
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// A refusal that carries a stable machine-readable code. The `status` stays
+ /// `REFUSED` so callers (and the exit-code contract) never have to special-case
+ /// the reason, while tests and operators can assert on the precise cause.
+ fn refused_code(code: &str, why: impl Into<String>) -> Json {
+     Json::obj(vec![
+         ("status", Json::str("REFUSED")),

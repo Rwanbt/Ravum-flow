@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace + with - in acquire_lock
+@@ -218,17 +218,17 @@
+ }
+ 
+ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
+     let path = lock_path(root);
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent)
+             .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
+     }
+-    let deadline = Instant::now() + ACQUIRE_BUDGET;
++    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ ACQUIRE_BUDGET;
+     loop {
+         let ours = nonce();
+         match create_lock_file(&path, &ours, purpose) {
+             Ok(()) => {
+                 return Ok(LockGuard {
+                     path: path.clone(),
+                     nonce: ours,
+                 })

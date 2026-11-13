@@ -1,0 +1,179 @@
+   Compiling flow v0.1.0 (D:\App\Ravum-flow-base\crates\flow)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.29s
+     Running tests\cli.rs (target\debug\deps\cli-cc71ff8c7852dfbc.exe)
+
+running 36 tests
+test json::tests::rejects_trailing_data ... ok
+test json::tests::round_trip ... ok
+test init_creates_state_and_refuses_second_call ... ok
+test disable_blocks_run_and_publish ... ok
+test doctor_is_read_only_and_reports_guarantees ... ok
+test dirty_and_untracked_files_are_preserved_byte_for_byte ... ok
+test p0a_selective_run_never_yields_a_publishable_receipt ... FAILED
+test p0a_duplicate_or_unknown_obligation_ids_are_refused ... FAILED
+test p0a_an_optional_failing_obligation_does_not_mask_a_green_required_set ... ok
+test p0a_symlink_rewritten_as_a_file_is_refused ... FAILED
+test p0a_case_colliding_tree_is_refused_not_certified ... FAILED
+test p0a_full_run_with_one_failing_required_obligation_is_never_publishable ... ok
+test p0b_a_timeout_override_is_never_publishable ... FAILED
+test p0b_a_tampered_receipt_is_not_publishable ... FAILED
+test crash_after_intent_is_not_published_and_reconciles ... ok
+test p0b_adding_a_required_obligation_makes_the_receipt_stale ... FAILED
+test p0b_an_ambiguous_config_is_refused_not_guessed ... FAILED
+test crash_after_ref_is_observed_as_published ... ok
+test obligation_timeout_is_timeout_not_pass ... ok
+test publish_without_receipt_is_refused ... ok
+test run_without_obligations_is_unknown_never_passed ... ok
+test p0b_changing_a_timeout_makes_the_receipt_stale ... FAILED
+test p0b_changing_the_policy_version_makes_the_receipt_stale ... FAILED
+test p0c_one_outcome_cannot_close_two_intents ... FAILED
+test p0b_explicit_ref_must_name_a_branch ... FAILED
+test p0c_duplicate_intent_id_requires_a_human ... FAILED
+test run_failing_obligation_is_failed_and_publish_refuses ... ok
+test p0c_corrupt_journal_is_not_reported_as_reconciled ... FAILED
+test run_passing_obligation_binds_the_index_tree ... ok
+test p0c_status_refuses_to_guess_on_a_corrupt_journal ... FAILED
+test publish_with_stale_expected_old_is_refused ... ok
+test p0c_reconcile_is_idempotent ... ok
+test p0c_ref_moved_elsewhere_needs_reconciliation ... FAILED
+test unsafe_obligation_id_is_refused ... ok
+test publish_moves_the_ref_with_cas_and_records_the_journal ... ok
+test two_concurrent_publishes_publish_at_most_once ... ok
+
+failures:
+
+---- p0a_selective_run_never_yields_a_publishable_receipt stdout ----
+
+thread 'p0a_selective_run_never_yields_a_publishable_receipt' (5812) panicked at crates\flow\tests\cli.rs:535:5:
+assertion `left == right` failed: a run that executed only part of the required policy must not exit 0: {"schema":"flow-receipt/1","tree_oid":"8b28ac435193b6db5bef426450301f80e894f8c0","commit_oid":"1e98b118baaa3fcd5e381eb3673531deee333e7f","parent_oid":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","status":"PASSED","started_at":"2026-11-09T19:19:43Z","finished_at":"2026-11-09T19:19:44Z","obligations":[{"id":"green","status":"PASSED","required":true,"exit":0,"duration_ms":90,"timed_out":false,"stdout_preview":"git version 2.51.1.windows.1\n","stderr_preview":""}],"logs":[".flow/logs/8b28ac435193b6db5bef426450301f80e894f8c0/green.stdout.log",".flow/logs/8b28ac435193b6db5bef426450301f80e894f8c0/green.stderr.log"],"worktree_diff":[],"scope_note":"verified for the declared obligations only; undeclared inputs are not covered","receipt_path":"\\\\?\\C:\\Users\\barat\\AppData\\Local\\Temp\\flow-it-8768-11\\.flow\\receipts\\8b28ac435193b6db5bef426450301f80e894f8c0.json"}
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- p0a_duplicate_or_unknown_obligation_ids_are_refused stdout ----
+
+thread 'p0a_duplicate_or_unknown_obligation_ids_are_refused' (4632) panicked at crates\flow\tests\cli.rs:570:5:
+assertion `left == right` failed: a duplicated id is ambiguous and must be refused: {"schema":"flow-receipt/1","tree_oid":"8b28ac435193b6db5bef426450301f80e894f8c0","commit_oid":"1e98b118baaa3fcd5e381eb3673531deee333e7f","parent_oid":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","status":"PASSED","started_at":"2026-11-09T19:19:43Z","finished_at":"2026-11-09T19:19:44Z","obligations":[{"id":"green","status":"PASSED","required":true,"exit":0,"duration_ms":89,"timed_out":false,"stdout_preview":"git version 2.51.1.windows.1\n","stderr_preview":""}],"logs":[".flow/logs/8b28ac435193b6db5bef426450301f80e894f8c0/green.stdout.log",".flow/logs/8b28ac435193b6db5bef426450301f80e894f8c0/green.stderr.log"],"worktree_diff":[],"scope_note":"verified for the declared obligations only; undeclared inputs are not covered","receipt_path":"\\\\?\\C:\\Users\\barat\\AppData\\Local\\Temp\\flow-it-8768-8\\.flow\\receipts\\8b28ac435193b6db5bef426450301f80e894f8c0.json"}
+  left: 0
+ right: 1
+
+---- p0a_symlink_rewritten_as_a_file_is_refused stdout ----
+
+thread 'p0a_symlink_rewritten_as_a_file_is_refused' (15664) panicked at crates\flow\tests\cli.rs:1043:5:
+assertion `left == right` failed: a symlink checked out as a file is not the tree: {"schema":"flow-receipt/1","tree_oid":"182b8d8799dfc1d376cff21ea8e3d7c3a2880f93","commit_oid":"6f148088bbdc47186dd204d381e6b7f560c37d42","parent_oid":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","context_id":"b4ecd536d93632a8744780497344d77cc5a3719772093b4cfacc1609f280c88f","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","status":"PASSED","started_at":"2026-11-09T19:19:44Z","finished_at":"2026-11-09T19:19:44Z","obligations":[{"id":"green","status":"PASSED","required":true,"exit":0,"duration_ms":70,"timed_out":false,"stdout_preview":"git version 2.51.1.windows.1\n","stderr_preview":""}],"logs":[".flow/logs/182b8d8799dfc1d376cff21ea8e3d7c3a2880f93/green.stdout.log",".flow/logs/182b8d8799dfc1d376cff21ea8e3d7c3a2880f93/green.stderr.log"],"worktree_diff":["link"],"scope_note":"verified for the declared obligations only; undeclared inputs are not covered","receipt_path":"\\\\?\\C:\\Users\\barat\\AppData\\Local\\Temp\\flow-it-8768-9\\.flow\\receipts\\182b8d8799dfc1d376cff21ea8e3d7c3a2880f93.json"}
+  left: 0
+ right: 1
+
+---- p0a_case_colliding_tree_is_refused_not_certified stdout ----
+
+thread 'p0a_case_colliding_tree_is_refused_not_certified' (4740) panicked at crates\flow\tests\cli.rs:1001:5:
+assertion `left == right` failed: a tree this host cannot reproduce must never be certified: {"schema":"flow-receipt/1","tree_oid":"35cc40835f87db519eb829d14cfba50177e310d7","commit_oid":"1c589faaaa39c1aaaed62e3ade33547fda7ed87e","parent_oid":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","context_id":"5bd6a905480fbaa356fc8db045ebb3fe4fe454f6f3f3cdf9bbc74c2931a5f5b0","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","status":"PASSED","started_at":"2026-11-09T19:19:44Z","finished_at":"2026-11-09T19:19:44Z","obligations":[{"id":"green","status":"PASSED","required":true,"exit":0,"duration_ms":90,"timed_out":false,"stdout_preview":"git version 2.51.1.windows.1\n","stderr_preview":""}],"logs":[".flow/logs/35cc40835f87db519eb829d14cfba50177e310d7/green.stdout.log",".flow/logs/35cc40835f87db519eb829d14cfba50177e310d7/green.stderr.log"],"worktree_diff":["src/Case.txt","src/case.txt"],"scope_note":"verified for the declared obligations only; undeclared inputs are not covered","receipt_path":"\\\\?\\C:\\Users\\barat\\AppData\\Local\\Temp\\flow-it-8768-1\\.flow\\receipts\\35cc40835f87db519eb829d14cfba50177e310d7.json"}
+  left: 0
+ right: 1
+
+---- p0b_a_timeout_override_is_never_publishable stdout ----
+
+thread 'p0b_a_timeout_override_is_never_publishable' (12752) panicked at crates\flow\tests\cli.rs:936:5:
+assertion `left == right` failed: an ad-hoc deadline does not prove the configured policy: {"status":"PUBLISHED","ref":"refs/heads/main","old":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","commit":"01975db88288f2b8ef770b563eab91f33f29ca27","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:43Z","receipt_finished_at":"2026-11-09T19:19:44Z","receipt_commit":"1e98b118baaa3fcd5e381eb3673531deee333e7f","obligations":["green"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0b_a_tampered_receipt_is_not_publishable stdout ----
+
+thread 'p0b_a_tampered_receipt_is_not_publishable' (6468) panicked at crates\flow\tests\cli.rs:694:5:
+assertion `left == right` failed: editing a receipt on disk must not turn FAILED into publishable: {"status":"PUBLISHED","ref":"refs/heads/main","old":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","commit":"01975db88288f2b8ef770b563eab91f33f29ca27","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"13ad0c1037740defda34c287185bc832e84cc779ae9cf8b6410b2177535913b4","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:43Z","receipt_finished_at":"2026-11-09T19:19:44Z","receipt_commit":"1e98b118baaa3fcd5e381eb3673531deee333e7f","obligations":["red"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0b_adding_a_required_obligation_makes_the_receipt_stale stdout ----
+
+thread 'p0b_adding_a_required_obligation_makes_the_receipt_stale' (9408) panicked at crates\flow\tests\cli.rs:628:5:
+assertion `left == right` failed: a receipt produced under a weaker policy is not publishable: {"status":"PUBLISHED","ref":"refs/heads/main","old":"8fd383ca563fce83d22ad6d88107d2e05bfd0531","commit":"01975db88288f2b8ef770b563eab91f33f29ca27","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:43Z","receipt_finished_at":"2026-11-09T19:19:44Z","receipt_commit":"1e98b118baaa3fcd5e381eb3673531deee333e7f","obligations":["green"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0b_an_ambiguous_config_is_refused_not_guessed stdout ----
+
+thread 'p0b_an_ambiguous_config_is_refused_not_guessed' (12336) panicked at crates\flow\tests\cli.rs:960:5:
+assertion `left != right` failed: duplicate keys make the policy ambiguous: {"schema":"flow-receipt/1","tree_oid":"42d4c5245460645340a0b5b189f055b93cca0f7e","commit_oid":"ffe69d317ff6c67aa4f523a76572123d45062ca1","parent_oid":"d85f6abaecff10d54a97d579e7990d305fc81fee","context_id":"2c735062e5d7b528e77a3edeedcae0d58f71851d761ef4fa2d303ed6b00cbaf2","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","status":"PASSED","started_at":"2026-11-09T19:19:44Z","finished_at":"2026-11-09T19:19:45Z","obligations":[{"id":"green","status":"PASSED","required":true,"exit":0,"duration_ms":92,"timed_out":false,"stdout_preview":"git version 2.51.1.windows.1\n","stderr_preview":""}],"logs":[".flow/logs/42d4c5245460645340a0b5b189f055b93cca0f7e/green.stdout.log",".flow/logs/42d4c5245460645340a0b5b189f055b93cca0f7e/green.stderr.log"],"worktree_diff":[],"scope_note":"verified for the declared obligations only; undeclared inputs are not covered","receipt_path":"\\\\?\\C:\\Users\\barat\\AppData\\Local\\Temp\\flow-it-8768-16\\.flow\\receipts\\42d4c5245460645340a0b5b189f055b93cca0f7e.json"}
+  left: 0
+ right: 0
+
+---- p0b_changing_a_timeout_makes_the_receipt_stale stdout ----
+
+thread 'p0b_changing_a_timeout_makes_the_receipt_stale' (13856) panicked at crates\flow\tests\cli.rs:654:5:
+assertion `left == right` failed: timeout is part of the policy identity: {"status":"PUBLISHED","ref":"refs/heads/main","old":"d85f6abaecff10d54a97d579e7990d305fc81fee","commit":"55285deb429a11a37793240ff97f56adc783e6e7","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:45Z","receipt_finished_at":"2026-11-09T19:19:45Z","receipt_commit":"7177bba688c13d68aaacd15645252c1dfa2385d6","obligations":["green"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0b_changing_the_policy_version_makes_the_receipt_stale stdout ----
+
+thread 'p0b_changing_the_policy_version_makes_the_receipt_stale' (7064) panicked at crates\flow\tests\cli.rs:676:5:
+assertion `left == right` failed: policy_version is part of the identity: {"status":"PUBLISHED","ref":"refs/heads/main","old":"d85f6abaecff10d54a97d579e7990d305fc81fee","commit":"55285deb429a11a37793240ff97f56adc783e6e7","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:45Z","receipt_finished_at":"2026-11-09T19:19:45Z","receipt_commit":"7177bba688c13d68aaacd15645252c1dfa2385d6","obligations":["green"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0c_one_outcome_cannot_close_two_intents stdout ----
+
+thread 'p0c_one_outcome_cannot_close_two_intents' (10632) panicked at crates\flow\tests\cli.rs:1076:5:
+assertion `left != right` failed: one outcome must not be allowed to close two intents: {"status":"RECONCILED","resolved":[],"note":"reconciliation never moves a ref: it only records what is observable"}
+  left: 0
+ right: 0
+
+---- p0b_explicit_ref_must_name_a_branch stdout ----
+
+thread 'p0b_explicit_ref_must_name_a_branch' (11252) panicked at crates\flow\tests\cli.rs:709:5:
+assertion `left == right` failed: an ambiguous ref must be refused: {"status":"PUBLISHED","ref":"HEAD","old":"d85f6abaecff10d54a97d579e7990d305fc81fee","commit":"55285deb429a11a37793240ff97f56adc783e6e7","tree":"8b28ac435193b6db5bef426450301f80e894f8c0","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","receipt_logs":2,"receipt_started_at":"2026-11-09T19:19:45Z","receipt_finished_at":"2026-11-09T19:19:46Z","receipt_commit":"7177bba688c13d68aaacd15645252c1dfa2385d6","obligations":["green"],"worktree_diff":[],"note":"only refs were moved; the working tree was not modified and may now differ"}
+  left: 0
+ right: 1
+
+---- p0c_duplicate_intent_id_requires_a_human stdout ----
+
+thread 'p0c_duplicate_intent_id_requires_a_human' (4556) panicked at crates\flow\tests\cli.rs:784:5:
+assertion `left != right` failed: two intents sharing one id are ambiguous: {"status":"RECONCILED","resolved":[{"id":"dup-1","ref":"refs/heads/main","observed":"60883de9884af9d5f109dd974a59168aeb564b6e","resolution":"NOT_PUBLISHED"},{"id":"dup-1","ref":"refs/heads/main","observed":"60883de9884af9d5f109dd974a59168aeb564b6e","resolution":"NOT_PUBLISHED"}],"note":"reconciliation never moves a ref: it only records what is observable"}
+  left: 0
+ right: 0
+
+---- p0c_corrupt_journal_is_not_reported_as_reconciled stdout ----
+
+thread 'p0c_corrupt_journal_is_not_reported_as_reconciled' (6220) panicked at crates\flow\tests\cli.rs:740:5:
+assertion `left != right` failed: an unreadable journal cannot be reconciled successfully: {"status":"RECONCILED","resolved":[],"note":"reconciliation never moves a ref: it only records what is observable"}
+  left: 0
+ right: 0
+
+---- p0c_status_refuses_to_guess_on_a_corrupt_journal stdout ----
+
+thread 'p0c_status_refuses_to_guess_on_a_corrupt_journal' (3452) panicked at crates\flow\tests\cli.rs:867:5:
+assertion `left != right` failed: a status report that silently ignores an unreadable journal is a lie: {"status":"REPORT","branch":"main","head":"60883de9884af9d5f109dd974a59168aeb564b6e","tree":"42d4c5245460645340a0b5b189f055b93cca0f7e","dirty_count":1,"untracked_count":0,"obligations_declared":1,"disabled":false,"latest_receipt":{"tree_oid":"8b28ac435193b6db5bef426450301f80e894f8c0","status":"PASSED","context_id":"2fb9a256f7f4d81f592ae468d5a5b5b7257b752a8436d0298983e8d0d6dffafc","finished_at":"2026-11-09T19:19:46Z"},"pending_intents":0,"hint":"`flow run` verifies the INDEX tree (git add first); the worktree is never modified"}
+  left: 0
+ right: 0
+
+---- p0c_ref_moved_elsewhere_needs_reconciliation stdout ----
+
+thread 'p0c_ref_moved_elsewhere_needs_reconciliation' (7792) panicked at crates\flow\tests\cli.rs:812:5:
+assertion `left != right` failed: an ambiguous outcome is not a success: {"status":"RECONCILED","resolved":[{"id":"2026-11-09T19:19:47Z-f6f21ebd1ebd","ref":"refs/heads/main","observed":"ddff67fab3aab61278c89cf32f3744b02653c675","resolution":"NEEDS_RECONCILIATION"}],"note":"reconciliation never moves a ref: it only records what is observable"}
+  left: 0
+ right: 0
+
+
+failures:
+    p0a_case_colliding_tree_is_refused_not_certified
+    p0a_duplicate_or_unknown_obligation_ids_are_refused
+    p0a_selective_run_never_yields_a_publishable_receipt
+    p0a_symlink_rewritten_as_a_file_is_refused
+    p0b_a_tampered_receipt_is_not_publishable
+    p0b_a_timeout_override_is_never_publishable
+    p0b_adding_a_required_obligation_makes_the_receipt_stale
+    p0b_an_ambiguous_config_is_refused_not_guessed
+    p0b_changing_a_timeout_makes_the_receipt_stale
+    p0b_changing_the_policy_version_makes_the_receipt_stale
+    p0b_explicit_ref_must_name_a_branch
+    p0c_corrupt_journal_is_not_reported_as_reconciled
+    p0c_duplicate_intent_id_requires_a_human
+    p0c_one_outcome_cannot_close_two_intents
+    p0c_ref_moved_elsewhere_needs_reconciliation
+    p0c_status_refuses_to_guess_on_a_corrupt_journal
+
+test result: FAILED. 20 passed; 16 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.38s
+
+error: test failed, to rerun pass `--test cli`

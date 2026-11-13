@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace == with != in materialise_in
+@@ -186,17 +186,17 @@
+         abandon(&path, &repo_root);
+         return Err(format!(
+             "refusing scratch directory {}: path is not valid UTF-8",
+             path.display()
+         ));
+     };
+ 
+     match git.run(&["worktree", "add", "--detach", "--quiet", path_str, commit]) {
+-        Ok(add) if add.status == 0 => {}
++        Ok(add) if add.status != /* ~ changed by cargo-mutants ~ */ 0 => {}
+         Ok(add) => {
+             abandon(&path, &repo_root);
+             return Err(format!(
+                 "cannot materialise commit {commit} in {}: {}",
+                 path.display(),
+                 add.stderr.trim()
+             ));
+         }

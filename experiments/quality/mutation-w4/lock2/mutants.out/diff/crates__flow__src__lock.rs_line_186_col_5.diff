@@ -1,0 +1,34 @@
+--- crates/flow/src/lock.rs
++++ replace create_lock_file -> std::io::Result<()> with Ok(())
+@@ -178,30 +178,17 @@
+ ///
+ /// `create_new` followed by `write` exposes a window in which another process
+ /// reads an empty file — a real race that was observed on Linux with eight
+ /// concurrent publishers. Writing the record to a unique temporary file and then
+ /// hard-linking it makes the appearance of the lock atomic: the name never exists
+ /// without content, and the link fails if a lock already exists. The temporary
+ /// name is removed on every path.
+ fn create_lock_file(path: &Path, nonce: &str, purpose: &str) -> std::io::Result<()> {
+-    let tmp = path.with_file_name(format!("lock.{nonce}.tmp"));
+-    let line = format!(
+-        "{LOCK_SCHEMA} {} {} {nonce} {purpose}\n",
+-        std::process::id(),
+-        crate::state::unix_now()
+-    );
+-    {
+-        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;
+-        file.write_all(line.as_bytes())?;
+-        file.sync_all()?;
+-    }
+-    let linked = fs::hard_link(&tmp, path);
+-    let _ = fs::remove_file(&tmp);
+-    linked
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Read the lock record, tolerating a creator that is still writing it.
+ fn wait_for_record(path: &Path, first: String) -> Option<Owner> {
+     if let Some(owner) = parse(&first) {
+         return Some(owner);
+     }
+     let deadline = Instant::now() + CREATE_GRACE;

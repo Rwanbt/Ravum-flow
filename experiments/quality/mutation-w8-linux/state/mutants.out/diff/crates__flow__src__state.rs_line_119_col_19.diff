@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace != with == in Config::from_json
+@@ -111,17 +111,17 @@
+             ),
+             ("obligations", Json::Arr(obs)),
+             ("disabled", Json::Bool(self.disabled)),
+         ])
+     }
+ 
+     pub fn from_json(value: &Json) -> Result<Config, String> {
+         let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-        if schema != SCHEMA_CONFIG {
++        if schema == /* ~ changed by cargo-mutants ~ */ SCHEMA_CONFIG {
+             return Err(format!("unsupported config schema {schema:?}"));
+         }
+         let mut obligations = Vec::new();
+         if let Some(items) = value.get("obligations").and_then(Json::as_arr) {
+             for item in items {
+                 let id = item
+                     .get("id")
+                     .and_then(Json::as_str)

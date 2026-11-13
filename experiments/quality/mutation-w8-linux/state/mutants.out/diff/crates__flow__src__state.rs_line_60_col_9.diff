@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace <impl From<JournalError> for String>::from -> String with String::new()
+@@ -52,17 +52,17 @@
+             JournalError::Io(m) => write!(f, "journal unreadable: {m}"),
+             JournalError::Corrupt(m) => write!(f, "journal corrupt: {m}"),
+         }
+     }
+ }
+ 
+ impl From<JournalError> for String {
+     fn from(e: JournalError) -> String {
+-        e.to_string()
++        String::new() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Machine state reported when recovery cannot decide on its own.
+ pub const STATE_CORRUPT_JOURNAL: &str = "CORRUPT_JOURNAL";
+ pub const STATE_UNKNOWN_OUTCOME: &str = "UNKNOWN_OUTCOME";
+ pub const STATE_NEEDS_RECONCILIATION: &str = "NEEDS_RECONCILIATION";
+ 

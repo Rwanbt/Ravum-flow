@@ -1,0 +1,568 @@
+name: flow-ci
+
+# Push runs on every long-lived Flow branch, so a fix is verified before a PR is
+# even opened. Pull requests are verified for the whole stacked series:
+#   feat/flow-mvp-0.1 -> fix/flow-foundation-proof-gates -> feat/flow-verified-foundation -> dev -> main
+on:
+  push:
+    branches:
+      - feat/flow-production-candidate
+      - feat/flow-mvp-0.1
+      - fix/flow-foundation-proof-gates
+      - feat/flow-verified-foundation
+      # The promotion targets are verified too: a green feature branch says
+      # nothing about the branch the code is finally promoted to.
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+      - feat/flow-verified-foundation
+      - fix/flow-foundation-proof-gates
+      - feat/flow-mvp-0.1
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flow-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Pinned to a commit, so the toolchain is named explicitly: the action
+      # infers it from the ref name, and a SHA has none.
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.95.0
+          components: rustfmt, clippy
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      # Counting *executed* tests lets a deleted test pass silently. This step
+      # counts the tests that actually ran, refuses any `ignored` test (a skip is
+      # not a pass), and then requires every blocking gate to appear as
+      # `... ok` by name, so removing or renaming one fails the build.
+      - name: cargo test (unit + integration), executed and gated
+        shell: bash
+        run: |
+          set -o pipefail
+          set +e
+          cargo test --locked --all-targets 2>&1 | tee test-output.txt
+          test_status=$?
+          set -e
+          tr -d '\r' < test-output.txt > test-output.clean.txt
+          echo "--- suites ---"
+          grep -E '^(running|test result)' test-output.clean.txt || true
+          passed=$(grep -oE 'test result: ok\. [0-9]+ passed' test-output.clean.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          ignored=$(grep -oE '[0-9]+ ignored' test-output.clean.txt | grep -oE '[0-9]+' | awk '{s+=$1} END {print s+0}')
+          echo "executed_passed=$passed ignored=$ignored"
+          if [ "$test_status" -ne 0 ]; then
+            echo "::error::cargo test failed (exit $test_status)"
+            exit "$test_status"
+          fi
+          if [ "$ignored" -ne 0 ]; then
+            echo "::error::$ignored test(s) were ignored/skipped: a skipped test is not a pass"
+            exit 1
+          fi
+          # The Windows-only tests (PATH/PATHEXT shim resolution, the Windows
+          # junction-helper gate) do not run on Linux, and the Unix-only tests do
+          # not run on Windows, so the floor is per-platform rather than a single
+          # number that would silently shrink. Both numbers are measured, not
+          # projected: **480 on Windows and 477 on Linux** (2026-11-11, wave 9,
+          # the `executed_passed` line of each runner at head `00f87b7`), 0
+          # ignored. Wave 8 measured 468/470; wave 9 adds eight tests (six
+          # cross-platform, one Windows-only, one Windows-only `.git` retry), so
+          # the floors move with the measured counts.
+          minimum=477
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=480; fi
+          if [ "$passed" -lt "$minimum" ]; then
+            echo "::error::expected at least $minimum executed passing tests, got $passed"
+            exit 1
+          fi
+          missing=0
+          for gate in \
+            p0a_selective_run_never_yields_a_publishable_receipt \
+            p0a_duplicate_or_unknown_obligation_ids_are_refused \
+            p0a_full_run_with_one_failing_required_obligation_is_never_publishable \
+            p0a_an_optional_failing_obligation_does_not_mask_a_green_required_set \
+            p0b_adding_a_required_obligation_makes_the_receipt_stale \
+            p0b_changing_a_timeout_makes_the_receipt_stale \
+            p0b_changing_the_policy_version_makes_the_receipt_stale \
+            p0b_a_tampered_receipt_is_not_publishable \
+            p0b_a_timeout_override_is_never_publishable \
+            p0b_an_ambiguous_config_is_refused_not_guessed \
+            p0b_explicit_ref_must_name_a_branch \
+            p1_a_symbolic_ref_is_never_a_publication_target \
+            a_symlinked_journal_is_never_written_through \
+            a_converted_checkout_is_refused_not_certified \
+            a_local_info_attributes_conversion_is_refused_not_certified \
+            a_core_attributes_file_conversion_is_refused_not_certified \
+            a_hook_that_adds_a_file_is_refused_not_certified \
+            a_hook_that_rewrites_a_file_is_refused_not_certified \
+            a_hook_that_changes_the_executable_bit_is_refused_not_certified \
+            a_hook_file_named_like_a_scratch_marker_is_refused_not_certified \
+            a_hook_that_creates_an_empty_directory_is_refused_not_certified \
+            a_delayed_write_during_the_obligations_is_refused \
+            a_tree_path_that_is_not_valid_utf8_is_refused_with_its_own_reason \
+            a_boolean_flag_a_command_does_not_implement_is_a_usage_error \
+            a_hook_that_deletes_a_file_is_refused_not_certified \
+            a_faithful_checkout_is_still_certified \
+            a_local_smudge_filter_is_refused_not_certified \
+            propose_admits_a_patch_between_one_mebibyte_and_the_declared_bound \
+            run_refuses_a_scratch_base_the_host_redirected_into_the_repository \
+            run_refuses_a_scratch_whose_git_link_a_hook_removed \
+            publish_refuses_every_tampered_receipt_field_with_its_named_check \
+            an_unlisted_environment_variable_is_not_inherited_by_an_obligation \
+            a_secret_shaped_value_is_redacted_before_it_is_persisted \
+            a_run_killed_during_verification_leaves_no_proof_and_recovers \
+            unknown_and_valueless_options_are_usage_errors \
+            explain_refuses_a_path_instead_of_a_tree_id \
+            status_and_explain_qualify_a_tampered_receipt \
+            doctor_exits_nonzero_when_a_guarantee_is_broken \
+            status_reports_policy_provenance \
+            explain_reports_missing_logs_as_incomplete_evidence \
+            crash_before_intent_leaves_no_pending_intent \
+            m7_a_replacement_agent_resumes_from_the_immutable_artefacts \
+            m8_proposals_on_different_bases_are_refused_with_both_bases \
+            m9_a_hostile_cloned_repository_cannot_execute_or_escape \
+            m10_a_record_from_another_schema_is_refused \
+            a_non_finite_number_in_local_state_is_refused_not_printed \
+            a_hardlinked_journal_is_not_written_through \
+            obligation_ids_that_differ_only_by_case_are_refused \
+            a_cmd_shim_on_path_is_found_by_a_bare_program_name \
+            p0c_corrupt_journal_is_not_reported_as_reconciled \
+            p0c_duplicate_intent_id_requires_a_human \
+            p0c_ref_moved_elsewhere_needs_reconciliation \
+            p0c_reconcile_is_idempotent \
+            p0c_status_refuses_to_guess_on_a_corrupt_journal \
+            p0a_case_colliding_tree_is_refused_not_certified \
+            p0a_symlink_rewritten_as_a_file_is_refused \
+            p0c_one_outcome_cannot_close_two_intents \
+            two_concurrent_publishes_publish_at_most_once \
+            m1_two_disjoint_agents_publish_exactly_the_verified_tree \
+            m2_three_agents_collision_is_diagnosed_and_resolved_explicitly \
+            m3_stale_base_is_refused_and_a_rebased_proposal_succeeds \
+            m6_user_files_and_index_are_preserved_through_the_whole_cycle \
+            admission_is_idempotent_and_immutable \
+            proposals_outside_the_trusted_surface_are_refused \
+            assembly_reports_order_and_stays_deterministic \
+            publish_dry_run_plans_without_mutating_anything \
+            publishing_a_candidate_requires_a_verified_receipt \
+            binary_and_mode_changes_survive_the_cycle \
+            eight_concurrent_publishes_publish_at_most_once \
+            a_live_old_lock_is_never_stolen \
+            lock::tests::nonces_are_unique_and_file_safe \
+            lock::tests::a_lock_error_renders_its_message \
+            lock::tests::a_live_foreign_owner_is_waited_for_then_reported_held \
+            lock::tests::a_guard_never_removes_a_successors_lock \
+            paths::tests::canonical_within_returns_the_resolved_path \
+            paths::tests::canonical_within_refuses_a_link_that_leaves_the_root \
+            a_boolean_flag_with_an_inline_value_is_a_usage_error_before_any_mutation \
+            a_timeout_that_cannot_be_applied_is_a_usage_error \
+            an_unparseable_lock_is_refused_and_preserved \
+            a_dead_owners_lock_is_recovered \
+            obligation_stdout_is_bounded_through_the_cli \
+            nonblocking_hooks_are_dispatched_by_run_and_publish \
+            blocking_post_checkout_makes_run_refuse_the_scratch \
+            blocking_reference_transaction_aborts_publish_without_moving_the_ref \
+            hijacked_git_environment_does_not_redirect_the_cli \
+            missing_toolchain_is_unsupported_and_never_publishable \
+            init_shows_a_committed_policy_and_adopts_nothing_until_told_to \
+            init_refuses_a_committed_config_it_cannot_use_instead_of_adopting_a_default \
+            doctor_reports_corrupt_local_state_as_a_failed_guarantee \
+            doctor_discloses_hooks_attribute_sources_case_folding_and_a_live_lock \
+            publish_refuses_an_unusable_ref_name_before_taking_the_lock \
+            publish_reports_a_candidate_whose_tree_left_the_object_store \
+            reconcile_records_only_a_decisive_observation \
+            reconcile_diagnoses_a_shared_intent_id_instead_of_closing_both \
+            scratch::tests::cleanup_leaves_a_directory_it_did_not_mark_as_owned \
+            scratch::tests::cleanup_never_traverses_a_redirect_that_replaced_the_scratch \
+            lock::tests::a_lock_path_that_cannot_hold_a_record_is_unattributable_not_stolen \
+            a_symlink_entry_checked_out_as_a_regular_file_is_refused \
+            doctor_reads_hooks_from_an_absolute_hooks_path \
+            doctor_reports_toolchains_that_are_not_on_the_path \
+            status_ignores_a_receipt_path_it_cannot_read \
+            init_discloses_an_optional_obligation_as_optional \
+            init_adopt_policy_on_an_empty_flow_directory_still_refuses \
+            propose_refuses_a_patch_that_changes_nothing \
+            propose_accepts_a_patch_exactly_at_the_admission_bound \
+            propose_accepts_a_symlink_target_exactly_at_the_read_bound \
+            assemble_refuses_a_candidate_record_whose_proposal_list_changed \
+            commands::tests::cat_file_batch_never_panics_when_the_answer_ends_exactly_between_entries \
+            commands::tests::tree_entries_above_the_fidelity_budget_are_refused_not_truncated \
+            proposal::tests::two_edits_on_one_path_are_merged_only_when_they_are_plain_content_edits \
+            proposal::tests::identities_are_bounded_at_128_characters \
+            proposal::tests::a_temporary_index_is_removed_when_dropped \
+            scratch::tests::materialise_gives_up_after_the_bounded_number_of_collisions \
+            a_stream_below_the_retention_budget_is_kept_whole_and_not_flagged \
+            porcelain_status_reports_a_dirty_file_instead_of_an_empty_answer \
+            a_timed_out_obligation_kills_the_descendants_it_started \
+            tests::a_bare_double_dash_is_skipped_and_the_walk_terminates \
+            gitcli::tests::the_git_surface_reports_what_git_answers \
+            gitcli::tests::the_config_injection_families_are_scrubbed_by_prefix_not_only_by_name \
+            commands::tests::arbitrary_ls_tree_answers_are_parsed_or_refused_and_never_panic \
+            commands::tests::arbitrary_cat_file_answers_are_parsed_or_refused_and_never_panic \
+            proposal::tests::arbitrary_tree_listings_and_raw_diffs_are_parsed_or_refused_and_never_panic \
+            proposal::tests::identities_follow_the_bound_and_the_charset_on_random_input \
+            proposal::tests::symlink_targets_are_separator_symmetric_and_a_safe_target_stays_safe \
+            commands::tests::a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut \
+            commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_content_budget \
+            commands::tests::a_checkout_with_exactly_the_entry_budget_is_compared_not_refused \
+            state::tests::an_unreadable_journal_is_an_error_not_an_empty_journal \
+            state::tests::only_a_real_parent_directory_is_flushed_after_the_rename \
+            status_counts_an_intent_with_no_outcome_as_pending \
+            a_duplicate_intent_that_is_fully_closed_is_not_reported_as_pending \
+            a_ref_of_exactly_the_documented_limit_reaches_the_receipt_gate \
+            a_tree_with_a_gitlink_is_refused_with_its_own_reason \
+            explain_lists_only_the_journal_records_of_the_explained_tree \
+            a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused \
+            a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason \
+            a_symlink_entry_checked_out_as_a_symlink_is_certified \
+            a_hardlinked_adoption_record_is_refused_on_unix \
+            gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension \
+            gitcli::tests::resolve_program_reads_the_process_environment \
+            lock::tests::a_state_directory_that_is_a_file_is_an_io_error \
+            lock::tests::inspect_attributes_a_lock_to_a_dead_pid \
+            scratch::tests::detach_git_link_refuses_a_tree_without_a_git_link \
+            scratch::tests::detach_git_link_clears_a_read_only_git_file \
+            tests::a_value_walk_that_stops_advancing_is_caught; do
+            if [ "$gate" = "a_cmd_shim_on_path_is_found_by_a_bare_program_name" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
+            # Pinned to a Windows shape (PATHEXT resolution): Linux has no
+            # PATHEXT search, so claiming the gate there would be a false green.
+            if [ "$gate" = "gitcli::tests::program_resolution_appends_pathext_and_honours_an_explicit_extension" ] && [ "${RUNNER_OS}" != "Windows" ]; then
+              continue
+            fi
+            # Windows does not carry the Unix executable bit, so the mode gate is
+            # compiled out there; the Linux job runs it for real.
+            if [ "$gate" = "a_hook_that_changes_the_executable_bit_is_refused_not_certified" ] && [ "${RUNNER_OS}" = "Windows" ]; then
+              continue
+            fi
+            # Non-UTF-8 paths are representable on Unix only; the refusal is
+            # exercised for real on the Linux job.
+            if [ "$gate" = "a_tree_path_that_is_not_valid_utf8_is_refused_with_its_own_reason" ] && [ "${RUNNER_OS}" = "Windows" ]; then
+              continue
+            fi
+            # Windows only creates a file symlink with SeCreateSymbolicLinkPrivilege:
+            # the test prints SKIP and the gate is not claimed there. The Linux job
+            # runs it for real, and the cross-platform junction escapes are covered
+            # by the isolation tests.
+            if [ "$gate" = "a_symlinked_journal_is_never_written_through" ] && [ "${RUNNER_OS}" = "Windows" ]; then
+              continue
+            fi
+            # The wave-7/8 gates that pin Unix-only code (`#[cfg(unix)]` and
+            # `#[cfg(not(windows))]`): Windows does not compile the executable-bit
+            # proof, the link count, a real file symlink, or the directory-fsync
+            # parent rule. Claiming those gates on Windows would be a false green;
+            # the Linux job runs each of them for real.
+            if [ "${RUNNER_OS}" = "Windows" ]; then
+              case "$gate" in
+                a_hook_that_removes_the_executable_bit_from_a_declared_script_is_refused|a_hook_that_replaces_a_file_with_a_symlink_is_refused_with_its_own_reason|a_symlink_entry_checked_out_as_a_symlink_is_certified|a_hardlinked_adoption_record_is_refused_on_unix|state::tests::only_a_real_parent_directory_is_flushed_after_the_rename) continue ;;
+              esac
+            fi
+            # The wave-9 gates that pin Windows-only code: the program resolver
+            # reads PATH/PATHEXT and the `.git` unlink retry clears a read-only
+            # attribute the way DeleteFileW demands. Neither compiles on Linux, so
+            # claiming the gate there would be a false green; the Linux job keeps
+            # the equivalent paths honest through the junction/redirect tests.
+            if [ "${RUNNER_OS}" != "Windows" ]; then
+              case "$gate" in
+                gitcli::tests::resolve_program_reads_the_process_environment|scratch::tests::detach_git_link_clears_a_read_only_git_file) continue ;;
+              esac
+            fi
+            if ! grep -qE "^test ${gate} \.\.\. ok$" test-output.clean.txt; then
+              echo "::error::required gate '$gate' did not run or did not pass"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: build release
+        run: cargo build --locked --release
+
+      # Reproducibility, checked rather than claimed: two clean archives of the
+      # same commit, built in two different directories, must produce the same
+      # bytes. `/Brepro` and `codegen-units=1` remove the PE timestamp/PDB identity
+      # and the parallel-codegen ordering; `--remap-path-prefix` removes the build
+      # directory. Proved on Windows with rustc 1.95.0 (see the release checklist
+      # §5); the Linux side is not claimed because the linker flags differ.
+      - name: reproducible build (Windows, two clean archives)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          for n in a b; do
+            mkdir -p "$work/$n"
+            git archive HEAD | tar -x -C "$work/$n"
+            (
+              cd "$work/$n"
+              RUSTFLAGS="-C link-arg=/Brepro -C codegen-units=1 --remap-path-prefix=$work/$n= " \
+                cargo build --locked --release --offline > /dev/null
+            )
+          done
+          ha="$(sha256sum "$work/a/target/release/flow.exe" | cut -d' ' -f1)"
+          hb="$(sha256sum "$work/b/target/release/flow.exe" | cut -d' ' -f1)"
+          echo "archive a: $ha"
+          echo "archive b: $hb"
+          if [ "$ha" != "$hb" ]; then
+            echo "::error::the build is not reproducible ($ha vs $hb)"
+            exit 1
+          fi
+          echo "::notice::reproducible build: $ha"
+
+      # "Installable" has to be proved per OS, not only on the author's host. The
+      # install model is one self-contained binary in a private directory: no
+      # registry, no service, no writes outside `.flow/` in the repository it is
+      # pointed at. This runs on the same release binary the artefact is built
+      # from, and the smoke is the checklist's (§3) executed end to end.
+      - name: install smoke (private directory, no system-wide state)
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="${GITHUB_WORKSPACE}/target/release/flow"
+          if [ ! -x "$BIN" ] && [ -x "${BIN}.exe" ]; then BIN="${BIN}.exe"; fi
+          if [ ! -x "$BIN" ]; then echo "::error::release binary not found"; exit 1; fi
+          install_dir="$(mktemp -d)"
+          repo_dir="$(mktemp -d)"
+          trap 'rm -rf "$install_dir" "$repo_dir"' EXIT
+          cp "$BIN" "$install_dir/"
+          # MSYS resolves `flow` to `flow.exe` for `-x` and for exec, so the name
+          # that lands in the install directory is read from the directory itself
+          # instead of being assumed from the path.
+          binary_name="$(ls -A "$install_dir" | grep -E '^flow(\.exe)?$' | head -n1)"
+          if [ -z "$binary_name" ]; then
+            echo "::error::the installed copy is not named flow or flow.exe"
+            exit 1
+          fi
+          FLOW="$install_dir/$binary_name"
+          "$FLOW" version | tee "$install_dir/version.json"
+          grep -q 'flow 0\.2\.0-rc\.1' "$install_dir/version.json"
+          grep -q 'flow-receipt/2' "$install_dir/version.json"
+          cd "$repo_dir"
+          git init -q -b main .
+          git config user.name "Flow CI"
+          git config user.email "flow@example.invalid"
+          git config commit.gpgsign false
+          printf 'x\n' > a.txt
+          git add -A
+          git commit -qm seed
+          mkdir -p .flow
+          printf '%s' '{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":30}],"disabled":false}' > .flow/config.json
+          "$FLOW" init --adopt-policy | tee init.json
+          grep -q 'INITIALIZED' init.json
+          printf 'y\n' > b.txt
+          git add -A
+          "$FLOW" run | tee run.json
+          grep -q '"PASSED"' run.json
+          "$FLOW" publish | tee publish.json
+          grep -q '"PUBLISHED"' publish.json
+          echo "published head: $(git log --oneline -1)"
+          # The tool wrote nothing next to itself: the install directory still
+          # holds exactly the binary and this log.
+          extra="$(ls -A "$install_dir" | grep -v -x -e "$binary_name" -e version.json || true)"
+          if [ -n "$extra" ]; then
+            echo "::error::the install directory gained files: $extra"
+            exit 1
+          fi
+          rm -rf "$install_dir"
+          if [ -e "$install_dir" ]; then echo "::error::uninstall left something behind"; exit 1; fi
+
+      # A released binary must not honour the test crash hook. This is the only
+      # place the behaviour is observable, because `cargo test` uses the debug one.
+      - name: the release binary ignores the test crash hook
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN="${GITHUB_WORKSPACE}/target/release/flow"
+          if [ ! -x "$BIN" ] && [ -x "${BIN}.exe" ]; then BIN="${BIN}.exe"; fi
+          if [ ! -x "$BIN" ]; then echo "::error::release binary not found"; exit 1; fi
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          cd "$tmp"
+          git init -q -b main .
+          git config user.name "Flow CI"
+          git config user.email "flow@example.invalid"
+          git config commit.gpgsign false
+          printf 'x\n' > a.txt
+          git add -A
+          git commit -qm seed
+          mkdir -p .flow
+          printf '%s' '{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{"id":"green","program":"git","args":["--version"],"required":true,"timeout_s":30}],"disabled":false}' > .flow/config.json
+          "$BIN" init --adopt-policy > /dev/null
+          # The verified tree must differ from the ref's tree, otherwise the
+          # publication is ALREADY_PUBLISHED and proves nothing about the hook.
+          printf 'y\n' > b.txt
+          git add -A
+          "$BIN" run > /dev/null
+          set +e
+          FLOW_TEST_CRASH=after-intent "$BIN" publish > out.json 2>&1
+          code=$?
+          set -e
+          cat out.json
+          if [ "$code" -eq 89 ]; then
+            echo "::error::the release binary honoured FLOW_TEST_CRASH (exit 89)"
+            exit 1
+          fi
+          if [ "$code" -ne 0 ]; then
+            echo "::error::the release publish failed unexpectedly (exit $code)"
+            exit 1
+          fi
+          grep -q '"PUBLISHED"' out.json
+
+      - name: harness self-tests (R0-a)
+        if: runner.os == 'Linux'
+        run: python3 -m unittest discover -s experiments/r0a/tests -v
+
+      # The deliverable. The same scripts a human runs locally build the artefact
+      # from the exact commit of this run, record hashes/provenance/SBOM, and
+      # refuse to package a build they could not reproduce or a test log that
+      # reports a failure. No new dependency: git, cargo, tar, python3 (Linux) and
+      # PowerShell (Windows) are already used by the jobs above.
+      - name: package the release artefact (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: pwsh -NoProfile -File scripts/release/build-windows.ps1 -Sha "$GITHUB_SHA" -TestLog test-output.txt
+
+      - name: package the release artefact (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: RUN_TESTS=0 TEST_LOG=test-output.txt bash scripts/release/build-linux.sh "$GITHUB_SHA"
+
+      # Missing provenance must fail the job, not disappear behind a warning.
+      - name: keep the release artefact and its provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-release-${{ matrix.os }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: keep the test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-test-output-${{ matrix.os }}
+          path: test-output.txt
+          # Missing evidence must fail the job, not disappear behind a warning.
+          if-no-files-found: error
+
+  # The polyglot demo is the "a reader can reproduce it" gate: three offline
+  # fixtures plus a green run, a real publication, and a red edit that
+  # must be refused. It is a separate job so a fixture failure is unambiguous.
+  polyglot:
+    name: polyglot ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Pinned to a commit, so the toolchain is named explicitly: the action
+      # infers it from the ref name, and a SHA has none.
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.95.0
+          components: rustfmt, clippy
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      # The TypeScript fixture declares `tsc --noEmit`. The compiler is a pinned
+      # one-time prerequisite (it needs the network), not a runtime dependency:
+      # without it the required obligation fails closed instead of skipping.
+      - name: TypeScript compiler (polyglot TypeScript fixture)
+        run: npm install -g typescript@5.8.2
+
+      - name: polyglot demo (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bash examples/polyglot/run-demo.sh all
+
+      # The Rust fixture links a native test binary. Flow passes PATH through to
+      # obligations, so the job must put the real MSVC toolchain on PATH: on a
+      # bare Windows image a GNU `link.exe` from Git for Windows can shadow it and
+      # the obligation fails at link time (honest FAILED, never a false PASSED).
+      - name: MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+
+      - name: polyglot demo (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: pwsh -NoProfile -File examples/polyglot/run-demo.ps1 -Fixture all
+
+  # Coverage is measured where it can be enforced, once, on Linux: the Windows
+  # and Linux counters differ (platform-only code exists on each side), and a gate
+  # that silently averaged them would hide both. The measurement is product-only
+  # — llvm-cov also instruments the unit-test code that lives in `src/`, which
+  # would otherwise count the tests as covered product — and the thresholds are
+  # the ones a reviewer applies, not a number chosen after the fact.
+  #
+  # `--branch` is a nightly feature, so the nightly is pinned by date. The tool is
+  # pinned and built from source: no third-party action decides what is measured.
+  coverage:
+    name: coverage (product-only gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # nightly
+        with:
+          toolchain: nightly-2026-05-06
+          components: llvm-tools-preview
+
+      - name: install cargo-llvm-cov 0.9.1
+        run: cargo install cargo-llvm-cov --version 0.9.1 --locked
+
+      - name: measure (branch coverage, tests excluded)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +nightly-2026-05-06 llvm-cov clean --workspace
+          cargo +nightly-2026-05-06 llvm-cov --locked --offline --all-targets --branch \
+            --ignore-filename-regex '[\\/]tests[\\/]' --no-report
+          cargo +nightly-2026-05-06 llvm-cov report --branch \
+            --ignore-filename-regex '[\\/]tests[\\/]' \
+            --lcov --output-path coverage-lcov.info
+
+      - name: "gate (product-only: lines >= 95%, branches >= 90%)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/quality/analyze_lcov.py coverage-lcov.info \
+            --product-only \
+            --fail-under-lines 95 \
+            --fail-under-branches 90
+
+      - name: keep the coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flow-coverage-lcov
+          path: coverage-lcov.info
+          if-no-files-found: warn

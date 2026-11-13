@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace && with || in cmd_explain
+@@ -2360,17 +2360,17 @@
+                 (
+                     r.json.clone(),
+                     if integrity_ok {
+                         "INTEGRITY_OK"
+                     } else {
+                         "RECEIPT_INTEGRITY_INVALID"
+                     },
+                     display,
+-                    integrity_ok && missing.is_empty(),
++                    integrity_ok || /* ~ changed by cargo-mutants ~ */ missing.is_empty(),
+                     missing,
+                 )
+             }
+         };
+     Ok(Json::obj(vec![
+         ("status", Json::str("EXPLAIN")),
+         ("tree", Json::str(tree)),
+         (

@@ -1,0 +1,68 @@
+--- crates/flow/src/proposal.rs
++++ replace path_conflicts -> Option<Json> with None
+@@ -765,64 +765,17 @@
+ /// candidate, before any patch is applied.
+ ///
+ /// Rename/delete/mode/symlink collisions are diagnosed, never merged silently:
+ /// applying them in some order would produce a tree nobody agreed on, and a
+ /// symlink or a chmod changes what an obligation executes without changing the
+ /// bytes the patches mention. Split from `assemble` so every branch can be
+ /// pinned on constructed proposals instead of a repository dance.
+ fn path_conflicts(proposals: &[Proposal]) -> Option<Json> {
+-    let mut per_path: std::collections::BTreeMap<&str, Vec<&Proposal>> =
+-        std::collections::BTreeMap::new();
+-    for proposal in proposals {
+-        for change in &proposal.changes {
+-            per_path
+-                .entry(change.path.as_str())
+-                .or_default()
+-                .push(proposal);
+-        }
+-    }
+-    for (path, owners) in &per_path {
+-        if owners.len() < 2 {
+-            continue;
+-        }
+-        let ids: Vec<&str> = owners.iter().map(|p| p.proposal_id.as_str()).collect();
+-        let mut modes: std::collections::BTreeSet<(String, String)> =
+-            std::collections::BTreeSet::new();
+-        for proposal in owners {
+-            for change in proposal.changes.iter().filter(|c| &c.path == path) {
+-                if change.status != "M"
+-                    || change.new_mode == "120000"
+-                    || change.old_mode == "120000"
+-                {
+-                    return Some(refusal(
+-                        "PATH_OPERATION_CONFLICT",
+-                        format!(
+-                            "proposal {} performs {:?} on {path:?} while it is also changed by {}: rename/delete/mode/symlink collisions are diagnosed, never merged silently",
+-                            proposal.proposal_id,
+-                            change.status,
+-                            ids.join(", ")
+-                        ),
+-                    ));
+-                }
+-                modes.insert((change.old_mode.clone(), change.new_mode.clone()));
+-            }
+-        }
+-        if modes.len() > 1 {
+-            return Some(refusal(
+-                "PATH_OPERATION_CONFLICT",
+-                format!(
+-                    "proposals {} change the mode of {path:?} differently: {:?}",
+-                    ids.join(", "),
+-                    modes.into_iter().collect::<Vec<_>>()
+-                ),
+-            ));
+-        }
+-    }
+-    None
++    None /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
+     let git = Git::new(root);
+     if proposal_ids.is_empty() {
+         return Ok(refusal(
+             "NO_PROPOSAL",
+             "assemble needs at least one --proposal <id>",

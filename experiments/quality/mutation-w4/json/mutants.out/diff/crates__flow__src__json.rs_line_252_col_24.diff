@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace == with != in Parser<'a>::array
+@@ -244,17 +244,17 @@
+         }
+         Ok(Json::Obj(pairs))
+     }
+ 
+     fn array(&mut self) -> Result<Json, String> {
+         self.pos += 1;
+         let mut items = Vec::new();
+         self.ws();
+-        if self.peek() == Some(b']') {
++        if self.peek() != /* ~ changed by cargo-mutants ~ */ Some(b']') {
+             self.pos += 1;
+             return Ok(Json::Arr(items));
+         }
+         loop {
+             self.ws();
+             items.push(self.value()?);
+             self.ws();
+             match self.peek() {

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_init
+@@ -114,17 +114,17 @@
+         return Ok(value);
+     }
+ 
+     fs::create_dir_all(state::receipts_dir(root))
+         .map_err(|e| format!("cannot create receipts dir: {e}"))?;
+     fs::create_dir_all(state::logs_dir(root))
+         .map_err(|e| format!("cannot create logs dir: {e}"))?;
+     // Never truncate a journal, a receipt or a proposal: `init` is not a reset.
+-    if !state::journal_path(root).exists() {
++    if  /* ~ changed by cargo-mutants ~ */state::journal_path(root).exists() {
+         state::write_atomic(&state::journal_path(root), "")?;
+     }
+     // Flow's own state must never become part of the tree it verifies: if it
+     // did, every policy change would move the tree OID and a receipt could
+     // never be compared with "the same tree under a different policy".
+     let gitignore = dir.join(".gitignore");
+     if !gitignore.exists() {
+         state::write_atomic(&gitignore, "*\n")?;

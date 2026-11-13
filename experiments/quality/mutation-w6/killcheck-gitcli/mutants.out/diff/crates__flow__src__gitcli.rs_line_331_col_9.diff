@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace || with && in redirecting_env_name
+@@ -323,17 +323,17 @@
+ 
+ /// True when this variable name could redirect Git or its helpers. The
+ /// `GIT_CONFIG_KEY_*`/`GIT_CONFIG_VALUE_*` families are the documented way to inject
+ /// arbitrary configuration from the environment, so a prefix check is required in
+ /// addition to the fixed list. Kept as a pure predicate so the rule can be pinned
+ /// directly instead of only through a spawned process.
+ fn redirecting_env_name(upper: &str) -> bool {
+     SCRUBBED_GIT_ENV.contains(&upper)
+-        || upper.starts_with("GIT_CONFIG_KEY_") // survival-probe
++        && /* ~ changed by cargo-mutants ~ */ upper.starts_with("GIT_CONFIG_KEY_") // survival-probe
+         || upper.starts_with("GIT_CONFIG_VALUE_") // survival-probe
+ }
+ 
+ /// Remove every environment variable that could redirect Git, then set the
+ /// non-interactive, deterministic defaults. Host variables are inspected with
+ /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are
+ /// compared.
+ fn scrub_env(cmd: &mut Command) {

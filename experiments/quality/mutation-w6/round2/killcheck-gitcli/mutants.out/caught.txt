@@ -1,0 +1,18 @@
+crates/flow/src/gitcli.rs:425:51: replace * with +
+crates/flow/src/gitcli.rs:425:51: replace * with /
+crates/flow/src/gitcli.rs:425:44: replace * with +
+crates/flow/src/gitcli.rs:425:44: replace * with /
+crates/flow/src/gitcli.rs:436:5: replace read_capped_at -> Captured with Default::default()
+crates/flow/src/gitcli.rs:453:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at
+crates/flow/src/gitcli.rs:449:25: replace < with == in read_capped_at
+crates/flow/src/gitcli.rs:453:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with true in read_capped_at
+crates/flow/src/gitcli.rs:449:25: replace < with > in read_capped_at
+crates/flow/src/gitcli.rs:449:25: replace < with <= in read_capped_at
+crates/flow/src/gitcli.rs:727:5: replace redact -> String with String::new()
+crates/flow/src/gitcli.rs:727:5: replace redact -> String with "xyzzy".into()
+crates/flow/src/gitcli.rs:453:32: replace == with != in read_capped_at
+crates/flow/src/gitcli.rs:758:72: replace && with || in redact
+crates/flow/src/gitcli.rs:758:60: replace && with || in redact
+crates/flow/src/gitcli.rs:758:33: delete ! in redact
+crates/flow/src/gitcli.rs:758:65: replace != with == in redact
+crates/flow/src/gitcli.rs:758:77: replace != with == in redact

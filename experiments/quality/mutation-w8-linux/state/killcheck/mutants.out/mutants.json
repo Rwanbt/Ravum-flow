@@ -1,0 +1,418 @@
+[
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace guard_below_flow -> Result<(), String> with Ok(())\n@@ -284,73 +284,17 @@\n ///\n /// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:\n /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes\n /// Flow append outside the workspace. Every write below `.flow/` therefore checks\n /// that each existing component is a real directory and that the target is not a\n /// link. This is a check-then-write, so it is not a defence against a *concurrent*\n /// local attacker — that boundary is documented, and the local user is trusted.\n fn guard_below_flow(path: &Path) -> Result<(), String> {\n-    let mut anchor: Option<&Path> = None;\n-    for ancestor in path.ancestors() {\n-        if ancestor.file_name().map(|n| n == \".flow\").unwrap_or(false) {\n-            anchor = ancestor.parent();\n-            break;\n-        }\n-    }\n-    let Some(root) = anchor else {\n-        return Ok(());\n-    };\n-    let relative = path\n-        .strip_prefix(root)\n-        .map_err(|_| format!(\"{} is not below {}\", path.display(), root.display()))?;\n-    let mut current = root.to_path_buf();\n-    for component in relative.components() {\n-        current.push(component);\n-        match fs::symlink_metadata(&current) {\n-            Ok(meta) => {\n-                let kind = meta.file_type();\n-                let reparse = {\n-                    #[cfg(windows)]\n-                    {\n-                        use std::os::windows::fs::MetadataExt;\n-                        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n-                    }\n-                    #[cfg(not(windows))]\n-                    {\n-                        false\n-                    }\n-                };\n-                if kind.is_symlink() || reparse {\n-                    return Err(format!(\n-                        \"refusing to write {}: {} is a symbolic link or reparse point, so the write would escape the workspace\",\n-                        path.display(),\n-                        current.display()\n-                    ));\n-                }\n-            }\n-            Err(_) => break,\n-        }\n-    }\n-    // A hard link is indistinguishable from a regular file on Windows without\n-    // Win32, so the check exists where the metadata exposes it. It closes the\n-    // \"journal appended through a link to an outside file\" shape on Unix.\n-    #[cfg(unix)]\n-    if let Ok(meta) = fs::symlink_metadata(path) {\n-        use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 {\n-            return Err(format!(\n-                \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n-                path.display(),\n-                meta.nlink()\n-            ));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {\n     write_atomic_bytes(path, data.as_bytes())\n }\n \n /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be\n /// text and must never be round-tripped through `String`.\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 348
+      },
+      "start": {
+        "column": 5,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace != with == in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n+                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT == /* ~ changed by cargo-mutants ~ */ 0 // w8probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 81,
+        "line": 316
+      },
+      "start": {
+        "column": 79,
+        "line": 316
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace & with | in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n+                        meta.file_attributes() | /* ~ changed by cargo-mutants ~ */ FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow",
+    "package": "flow",
+    "replacement": "|",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 316
+      },
+      "start": {
+        "column": 48,
+        "line": 316
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace & with ^ in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n+                        meta.file_attributes() ^ /* ~ changed by cargo-mutants ~ */ FILE_ATTRIBUTE_REPARSE_POINT != 0 // w8probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow",
+    "package": "flow",
+    "replacement": "^",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 316
+      },
+      "start": {
+        "column": 48,
+        "line": 316
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace write_atomic_bytes -> Result<(), String> with Ok(())\n@@ -350,42 +350,17 @@\n \n pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {\n     write_atomic_bytes(path, data.as_bytes())\n }\n \n /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be\n /// text and must never be round-tripped through `String`.\n pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {\n-    guard_below_flow(path)?;\n-    // The temporary name carries the process id: two Flow processes writing\n-    // different files never fight over one shared scratch name.\n-    let tmp = path.with_extension(format!(\"tmp-flow-{}\", std::process::id()));\n-    {\n-        let mut file =\n-            File::create(&tmp).map_err(|e| format!(\"cannot create {}: {e}\", tmp.display()))?;\n-        file.write_all(data)\n-            .map_err(|e| format!(\"cannot write {}: {e}\", tmp.display()))?;\n-        file.sync_all()\n-            .map_err(|e| format!(\"cannot fsync {}: {e}\", tmp.display()))?;\n-    }\n-    fs::rename(&tmp, path).map_err(|e| format!(\"cannot rename into {}: {e}\", path.display()))?;\n-    // The rename is durable only once the containing directory is flushed. A\n-    // journal entry whose rename is lost after a power cut, while `update-ref`\n-    // already moved the ref, is precisely the state recovery must never have to\n-    // guess about. Windows exposes no directory fsync, so the claim there is\n-    // \"file fsynced before the rename\" and the README says so.\n-    #[cfg(not(windows))]\n-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w8probe\n-        let dir = File::open(parent)\n-            .map_err(|e| format!(\"cannot open {} for fsync: {e}\", parent.display()))?;\n-        dir.sync_all()\n-            .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n         if !pairs.iter().any(|(k, _)| k == \"schema\") { // w8probe\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "write_atomic_bytes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 384
+        },
+        "start": {
+          "column": 1,
+          "line": 355
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 383
+      },
+      "start": {
+        "column": 5,
+        "line": 358
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in write_atomic_bytes\n@@ -369,17 +369,17 @@\n     }\n     fs::rename(&tmp, path).map_err(|e| format!(\"cannot rename into {}: {e}\", path.display()))?;\n     // The rename is durable only once the containing directory is flushed. A\n     // journal entry whose rename is lost after a power cut, while `update-ref`\n     // already moved the ref, is precisely the state recovery must never have to\n     // guess about. Windows exposes no directory fsync, so the claim there is\n     // \"file fsynced before the rename\" and the README says so.\n     #[cfg(not(windows))]\n-    if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) { // w8probe\n+    if let Some(parent) = path.parent().filter(|p|  /* ~ changed by cargo-mutants ~ */p.as_os_str().is_empty()) { // w8probe\n         let dir = File::open(parent)\n             .map_err(|e| format!(\"cannot open {} for fsync: {e}\", parent.display()))?;\n         dir.sync_all()\n             .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n     }\n     Ok(())\n }\n \n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "write_atomic_bytes",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 384
+        },
+        "start": {
+          "column": 1,
+          "line": 355
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:377:52: delete ! in write_atomic_bytes",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 53,
+        "line": 377
+      },
+      "start": {
+        "column": 52,
+        "line": 377
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace append_journal -> Result<(), String> with Ok(())\n@@ -380,44 +380,17 @@\n         dir.sync_all()\n             .map_err(|e| format!(\"cannot fsync {}: {e}\", parent.display()))?;\n     }\n     Ok(())\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n-    let mut tagged = record.clone();\n-    if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w8probe\n-            pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n-        }\n-    }\n-    let path = journal_path(root);\n-    if let Some(parent) = path.parent() {\n-        fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n-    }\n-    guard_below_flow(&path)?;\n-    // The journal is rewritten and renamed rather than opened with `O_APPEND`.\n-    // A rename replaces the directory entry, so a *hard link* to an outside file\n-    // can no longer be written through — the case the `nlink > 1` check cannot see\n-    // on Windows. It also makes every append atomic: a torn line is impossible.\n-    // The cost is O(journal size) per append, which is bounded in practice and\n-    // documented; the alternative is a write primitive with worse failure modes.\n-    let mut content = match fs::read(&path) {\n-        Ok(bytes) => bytes,\n-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),\n-        Err(e) => return Err(format!(\"cannot read journal {}: {e}\", path.display())),\n-    };\n-    // `tagged`, not `record`: the schema stamp is what lets a future reader\n-    // refuse a record it does not understand.\n-    let mut line = tagged.to_string();\n-    line.push('\\n');\n-    content.extend_from_slice(line.as_bytes());\n-    write_atomic_bytes(&path, &content).map_err(|e| format!(\"cannot append journal: {e}\"))\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n /// Read every journal record.\n ///\n /// A missing journal is an empty journal (a fresh repository). Anything else\n /// that prevents a faithful read is an error — never silently an empty set.\n pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {\n     let path = journal_path(root);\n     if !path.exists() {\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:388:5: replace append_journal -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 91,
+        "line": 415
+      },
+      "start": {
+        "column": 5,
+        "line": 388
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ delete ! in append_journal\n@@ -382,17 +382,17 @@\n     }\n     Ok(())\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w8probe\n+        if  /* ~ changed by cargo-mutants ~ */pairs.iter().any(|(k, _)| k == \"schema\") { // w8probe\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n         }\n     }\n     let path = journal_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n     }\n     guard_below_flow(&path)?;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/state.rs:390:12: delete ! in append_journal",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 13,
+        "line": 390
+      },
+      "start": {
+        "column": 12,
+        "line": 390
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace == with != in append_journal\n@@ -382,17 +382,17 @@\n     }\n     Ok(())\n }\n \n pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {\n     // Every record carries its schema so a future reader can refuse a mismatch.\n     let mut tagged = record.clone();\n     if let Json::Obj(pairs) = &mut tagged {\n-        if !pairs.iter().any(|(k, _)| k == \"schema\") { // w8probe\n+        if !pairs.iter().any(|(k, _)| k != /* ~ changed by cargo-mutants ~ */ \"schema\") { // w8probe\n             pairs.insert(0, (\"schema\".to_string(), Json::str(SCHEMA_JOURNAL)));\n         }\n     }\n     let path = journal_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent).map_err(|e| format!(\"cannot create .flow: {e}\"))?;\n     }\n     guard_below_flow(&path)?;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "append_journal",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 416
+        },
+        "start": {
+          "column": 1,
+          "line": 386
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:390:41: replace == with != in append_journal",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 43,
+        "line": 390
+      },
+      "start": {
+        "column": 41,
+        "line": 390
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with String::new()\n@@ -649,32 +649,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w8probe\n-    let rem = secs % 86_400;\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 672
+      },
+      "start": {
+        "column": 5,
+        "line": 657
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace iso8601_now -> String with \"xyzzy\".into()\n@@ -649,32 +649,17 @@\n     Ok(path)\n }\n \n // The publication lock moved to `crate::lock` (contract `flow-lock/2`): its\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n-    let secs = SystemTime::now()\n-        .duration_since(UNIX_EPOCH)\n-        .map(|d| d.as_secs())\n-        .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w8probe\n-    let rem = secs % 86_400;\n-    let (year, month, day) = civil_from_days(days);\n-    format!(\n-        \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n-        year,\n-        month,\n-        day,\n-        rem / 3600,\n-        (rem % 3600) / 60,\n-        rem % 60\n-    )\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n fn civil_from_days(days: i64) -> (i64, u32, u32) {\n     // Howard Hinnant's algorithm, adapted from days since 1970-01-01.\n     let z = days + 719_468;\n     let era = if z >= 0 { z } else { z - 146_096 } / 146_097;\n     let doe = (z - era * 146_097) as u64;\n     let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:657:5: replace iso8601_now -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 672
+      },
+      "start": {
+        "column": 5,
+        "line": 657
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with % in iso8601_now\n@@ -653,17 +653,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w8probe\n+    let days = (secs % /* ~ changed by cargo-mutants ~ */ 86_400) as i64; // w8probe\n     let rem = secs % 86_400;\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:661:22: replace / with % in iso8601_now",
+    "package": "flow",
+    "replacement": "%",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 661
+      },
+      "start": {
+        "column": 22,
+        "line": 661
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace / with * in iso8601_now\n@@ -653,17 +653,17 @@\n // attribution rules are the whole point, and they live next to their tests.\n \n /// Civil date/time from the Unix epoch, UTC, without a dependency.\n pub fn iso8601_now() -> String {\n     let secs = SystemTime::now()\n         .duration_since(UNIX_EPOCH)\n         .map(|d| d.as_secs())\n         .unwrap_or(0);\n-    let days = (secs / 86_400) as i64; // w8probe\n+    let days = (secs * /* ~ changed by cargo-mutants ~ */ 86_400) as i64; // w8probe\n     let rem = secs % 86_400;\n     let (year, month, day) = civil_from_days(days);\n     format!(\n         \"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z\",\n         year,\n         month,\n         day,\n         rem / 3600,\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "iso8601_now",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 673
+        },
+        "start": {
+          "column": 1,
+          "line": 655
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:661:22: replace / with * in iso8601_now",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 661
+      },
+      "start": {
+        "column": 22,
+        "line": 661
+      }
+    }
+  }
+]

@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete ! in Parser<'a>::number
+@@ -327,17 +327,17 @@
+                 break;
+             }
+         }
+         let s = std::str::from_utf8(&self.bytes[start..self.pos]).map_err(|_| "bad number")?;
+         let value: f64 = s.parse().map_err(|_| format!("invalid number {:?}", s))?;
+         // JSON has no infinity and no NaN. Accepting `1e999` would make `7` print
+         // `inf`, i.e. output that is not JSON — a machine-contract break found by
+         // the seeded fuzzer.
+-        if !value.is_finite() {
++        if  /* ~ changed by cargo-mutants ~ */value.is_finite() {
+             return Err(format!(
+                 "number {s:?} is not finite; JSON has no infinity, so it is refused"
+             ));
+         }
+         Ok(Json::Num(value))
+     }
+ }
+ 
