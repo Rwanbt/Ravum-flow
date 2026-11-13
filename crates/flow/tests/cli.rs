@@ -1829,3 +1829,36 @@ fn a_hardlinked_adoption_record_is_refused_on_unix() {
     );
     let _ = fs::remove_file(&outside);
 }
+
+/// `flow gc` is opt-in by construction: a retention policy is stated or nothing
+/// happens, an unusable number is a usage error, and a stated policy reports its
+/// plan before it removes anything.
+#[test]
+fn gc_requires_an_explicit_policy_and_reports_its_plan() {
+    let repo = new_repo();
+    let (code, out) = flow(&repo.path, &["init"]);
+    assert_eq!(code, 0, "init: {out}");
+
+    let (code, out) = flow(&repo.path, &["gc"]);
+    assert_eq!(code, 2, "no policy is a usage error, not a default: {out}");
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("USAGE"),
+        "the refusal must name USAGE: {out}"
+    );
+
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "abc"]);
+    assert_eq!(code, 2, "an unusable count is a usage error: {out}");
+
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "3", "--dry-run"]);
+    assert_eq!(code, 0, "a plan is a success, not a mutation: {out}");
+    assert_eq!(status_of(&out), "GC");
+    assert_eq!(
+        out.get("dry_run").and_then(|value| match value {
+            Json::Bool(flag) => Some(*flag),
+            _ => None,
+        }),
+        Some(true),
+        "the plan must say it was a dry run: {out}"
+    );
+}

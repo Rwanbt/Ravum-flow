@@ -233,6 +233,10 @@ jobs:
             commands::tests::a_preview_keeps_exactly_the_limit_and_marks_only_what_it_cut \
             commands::tests::a_tree_is_compared_in_several_chunks_without_skipping_one \
             commands::tests::a_single_file_above_the_per_file_budget_is_refused_by_name \
+            commands::tests::gc_refuses_without_an_explicit_policy \
+            commands::tests::gc_keeps_the_newest_receipts_and_their_logs \
+            commands::tests::gc_refuses_while_a_publication_intent_is_unresolved \
+            gc_requires_an_explicit_policy_and_reports_its_plan \
             commands::tests::a_checkout_at_the_entry_budget_is_compared_and_one_over_is_refused \
             commands::tests::cat_file_batch_accepts_a_total_of_exactly_the_chunk_budget \
             commands::tests::cat_file_batch_accepts_an_ordinary_total_below_the_content_budget \
@@ -367,7 +371,7 @@ jobs:
           fi
           FLOW="$install_dir/$binary_name"
           "$FLOW" version | tee "$install_dir/version.json"
-          grep -q 'flow 0\.2\.0-rc\.1' "$install_dir/version.json"
+          grep -q 'flow 0\.2\.0-rc\.2' "$install_dir/version.json"
           grep -q 'flow-receipt/2' "$install_dir/version.json"
           cd "$repo_dir"
           git init -q -b main .
@@ -400,6 +404,16 @@ jobs:
 
       # A released binary must not honour the test crash hook. This is the only
       # place the behaviour is observable, because `cargo test` uses the debug one.
+      # Crash windows of the *shipped* binary. The product's own FLOW_TEST_CRASH hook
+      # is compiled out of release builds (proved by the step above), so the only
+      # honest way to crash the real binary at a known point is from outside:
+      # `run.sh` kills it at a counted rename/fsync and asserts the recovery
+      # contract (readable journal, a reconcile classification, a usable republish).
+      - name: crash points on the release binary (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: bash experiments/quality/crash-release/run.sh
+
       # A regression gate, not a benchmark: the budgets are wide enough that only a
       # pathological change (a startup wedge, an explosion of per-file Git calls, a
       # lost fast path) trips them. Performance *claims* stay in docs/BENCHMARK_S9.md.

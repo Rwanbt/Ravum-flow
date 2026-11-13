@@ -5,7 +5,7 @@ here is not a claim; a number that is here names its head, its platform and its 
 reports keep their own dated numbers on purpose (a record that follows the code is not a record).
 
 **Head of the merged line:** `447b0c6` (2026-11-13), plus the documentation commits on top.
-**Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.1`, zero runtime
+**Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.2`, zero runtime
 dependencies.
 
 ## 1. Tests executed
@@ -51,7 +51,33 @@ first full matrix. The workflow fails when a campaign *runs nothing* (that defec
 first dispatch: `--bins` was passed to `cargo-mutants` instead of `cargo test`, and the job
 reported success while mutating nothing).
 
-## 4. Real-project pilot (2026-11-13)
+## 4. Crash windows on the release binary (Linux)
+
+The product's own `FLOW_TEST_CRASH` hook is inert in release builds (checked in CI). The harness
+kills the **shipped** binary from outside, at a counted syscall, and asserts recovery. Raw output:
+[`experiments/quality/crash-release/REPORT.md`](../experiments/quality/crash-release/REPORT.md).
+
+| Case | Killed | Journal after | `reconcile` | Republish | Ref moved | Verdict |
+|---|---|---|---|---|---|---|
+| killed at the 1st `rename` (before the intent is durable) | exit 137 | readable | `RECONCILED` | `PUBLISHED` | no | PASS |
+| killed at the 2nd `rename` (after the ref moved) | exit 137 | readable | `RECONCILED` | `REFUSED(STALE_REF)` — the CAS correctly refuses the stale base | yes | PASS |
+| killed at the 1st `fsync` (before the rename) | exit 137 | readable | `RECONCILED` | `PUBLISHED` | no | PASS |
+
+Linux only: `LD_PRELOAD` has no Windows equivalent, so **Windows crash windows remain proved on the
+debug binary only**. That is a limit, not a claim.
+
+## 5. Retention (`flow gc`)
+
+Opt-in: `--keep N` and/or `--max-age-days D`, `--dry-run` to plan. Never collects the journal, the
+config, the adoption record or the proposals; refuses while a publication intent is unresolved.
+Covered by `gc_refuses_without_an_explicit_policy`, `gc_keeps_the_newest_receipts_and_their_logs`,
+`gc_dry_run_reports_the_same_plan_and_removes_nothing`,
+`gc_removes_old_evidence_and_keeps_fresh_evidence`,
+`gc_never_removes_a_file_it_cannot_name_or_a_link`,
+`gc_refuses_while_a_publication_intent_is_unresolved`, and the CLI gate
+`gc_requires_an_explicit_policy_and_reports_its_plan`.
+
+## 6. Real-project pilot (2026-11-13)
 
 Windows 11, 16 logical CPUs, release binary built from `447b0c6`. Raw results:
 [`experiments/pilot-2026-11-13/results.json`](../experiments/pilot-2026-11-13/results.json).
@@ -68,7 +94,7 @@ Scenario B is the point: the same operation was a **refusal** before this branch
 budget). Scenario A is the collaboration claim measured, not asserted: two attributed proposals on
 one immutable base produce one verified tree, and a real collision is refused by name.
 
-## 5. Performance (descriptive, not a benchmark)
+## 7. Performance (descriptive, not a benchmark)
 
 | Command | Measured | Gate |
 |---|---|---|
@@ -78,7 +104,7 @@ one immutable base produce one verified tree, and a real collision is refused by
 The CI budgets are regression tripwires, not performance claims. Productivity against other
 workflows stays `UNPROVEN` until `H4` fixes the S9 thresholds ([BENCHMARK_S9.md](BENCHMARK_S9.md)).
 
-## 6. Security and supply chain
+## 8. Security and supply chain
 
 | Item | State |
 |---|---|
@@ -89,7 +115,7 @@ workflows stays `UNPROVEN` until `H4` fixes the S9 thresholds ([BENCHMARK_S9.md]
 | Branch protection / required checks | **absent** ([verdict](reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) §3) |
 | Code signing | **none** (`"unsigned": true`) |
 
-## 7. Maintenance of this table
+## 9. Maintenance of this table
 
 Update it when a head changes the numbers, and cite the CI run id. Do not copy a number from this
 table into prose without its platform and its evidence: that is how four contradictory test counts
