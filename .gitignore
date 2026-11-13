@@ -83,3 +83,7 @@ dist/
 /experiments/quality/durability-w9/repo-*/
 /experiments/quality/durability-w9/*.so
 
+
+# Downloaded CI artefacts used to cut a release; never versioned.
+/dist-release/
+
