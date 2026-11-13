@@ -30,6 +30,8 @@ When a row names a test, `cargo test --locked --test <file> <name>` reproduces i
 | Durable intent/outcome journal, crash observation, non-destructive reconcile | `DEMONSTRATED` | `crash_*_intent`, `crash_after_ref_*`, `p0c_*`; CI | `FLOW_TEST_CRASH` exists only in debug builds |
 | Multi-agent proposals (attributed, immutable, idempotent) and exact-tree candidates | `DEMONSTRATED` | `m1`–`m10`, `proposal.rs`/`error_paths.rs` gates; CI | no LLM or network component; proposals are Git patches |
 | Killed verification leaves no proof and the repository recovers | `DEMONSTRATED` | `a_run_killed_during_verification_leaves_no_proof_and_recovers` | the killed process's disposable scratch directory is not removed |
+| **Crash windows of the release binary** | `DEMONSTRATED` (Linux) | `experiments/quality/crash-release/` — an `LD_PRELOAD` shim kills the shipped binary at a counted `rename`/`fsync`; CI runs three cases and asserts a readable journal, a `reconcile` classification and a usable republish | the shim is Linux-only; Windows still relies on `FLOW_TEST_CRASH`, which is compiled out of release builds (so **the Windows crash windows are not proved on a shipped binary**) |
+| **Bounded retention of Flow's own evidence** | `DEMONSTRATED` | `flow gc --keep/--max-age-days`, `gc_*` unit gates + `gc_requires_an_explicit_policy_and_reports_its_plan`, CI both OSes | there is **no default policy**: without `--keep`/`--max-age-days` it is a usage error; the journal, the config, the adoption record and the proposals are never collected; an entry's age is its mtime |
 
 ## 2. Trust boundary, secrets, confinement
 

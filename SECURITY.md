@@ -58,7 +58,7 @@ execution**, on the `local-trusted` boundary. It is **not**:
 | Obligation output kept | 1 MiB per stream | receipt/log size |
 | Ref name | 1 024 characters | Git's own practical bound |
 | Unsupported tree shapes | gitlinks/submodules, case collisions, non-UTF-8 paths, escaping symlinks | refused, never repaired |
-| Retention | **none** | `.flow/` grows with verifications; there is no GC, and deleting receipts by hand removes evidence |
+| Retention | **opt-in only** | no default policy: `.flow/` grows until the operator runs `flow gc --keep N` / `--max-age-days D`; deleting receipts by hand still removes evidence |
 
 `flow doctor` prints these non-guarantees for the repository it is run in. A receipt that names a
 limit is not a defect; a receipt that **hides** one would be.

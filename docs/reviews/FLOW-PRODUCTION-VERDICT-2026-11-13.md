@@ -45,7 +45,7 @@ Four more things became true, and none of them is a documentation change:
 | Works on a real repository, not only fixtures | **yes** — 2 705 files verified and published; 25 000 files verified and published | a repository **above 200 000 files** is still refused (a documented limit, not a bug) |
 | Cost of a verification cycle | **measured**: 28 s for 2 705 files with two real obligations; 172 s for 25 000 files with one no-op obligation | no performance claim beyond these points; no regression budget other than the 2 s/5 s tripwires |
 | Installable, verifiable artefact | **partly** — reproducible per host, provenance and SBOM produced by CI | **no tag, no Release, no code signature**, and `dist/` is a local build pinned to an older commit |
-| Safety net when things go wrong | **yes** — durable intent/outcome journal, `reconcile`, non-destructive rules, no `reset --hard` | no retention/GC: `.flow/` grows without bound |
+| Safety net when things go wrong | **yes** — durable intent/outcome journal, `reconcile`, non-destructive rules, no `reset --hard`; the crash windows are now also **executed on the release binary** (Linux, three kill points) | retention is opt-in (`flow gc`), not a default; the Windows crash windows are still proved on the debug binary only |
 | Supported platforms | Windows, Linux (tested + artefact), **macOS (tested, no artefact)** | macOS packaging; ARM Linux |
 | Governance around the code | **no** — no branch protection, no required checks, no `CODEOWNERS` | repository administration, out of a code change |
 
@@ -87,9 +87,9 @@ What is **not** claimed, and is the honest limit of the "advantage" claim:
 | `PA-B13` | S1 | Confirmatory S9 campaign (the productivity claim) | human decision + budget |
 | `PA-C1/C3/C5` | S2 | Release head: tag, Release with the CI artefacts, **code signature** | human decision (signing) |
 | `PA-B8` | S2 | Receipts are integrity, not signature; either a key model or a ratified limit | human decision |
-| `PA-B9` | S2 | No retention/GC of `.flow/` | engineering |
+| `PA-B9` | S2 | **done** — `flow gc --keep/--max-age-days`, opt-in; the journal, config, adoption record and proposals are never collected | — |
 | `PA-B2/B3` | S2 | Mutation in CI: armed, first full matrix pending; no threshold yet | engineering |
-| `PA-B6` | S2 | Crash harness on the **release** binary (the debug-only hook is not a proof) | engineering |
+| `PA-B6` | S2 | **done, Linux** — crash harness on the **release** binary (three kill points, recovery asserted); Windows still relies on the debug-only hook | — |
 | `PA-B7` | S3 | libFuzzer target | engineering |
 | `PA-A7` | S2 | `G10` independence: needs a reviewer outside the team | human |
 | `PA-D*` | S3 | Documentation drift — **closed for the current numbers** by [MEASUREMENTS.md](../MEASUREMENTS.md) | — |

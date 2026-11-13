@@ -2363,6 +2363,266 @@ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
     ]))
 }
 
+// ---------------------------------------------------------------------- gc
+
+/// Modification time of an entry: receipts and logs are written once, at the end
+/// of the run that produced them. Kept as a `SystemTime` so "newest first" keeps
+/// sub-second precision (a flat seconds key would tie every run of the same
+/// second and make "the newest N" arbitrary).
+fn entry_mtime(path: &Path) -> Option<std::time::SystemTime> {
+    fs::metadata(path).ok()?.modified().ok()
+}
+
+/// A plain file or a real directory. A link is never a removal target and a
+/// removal never traverses one, for the same reason every `.flow/` write refuses
+/// links: the repository may have arrived with one.
+fn is_plain_entry(path: &Path) -> bool {
+    fs::symlink_metadata(path)
+        .map(|m| m.file_type().is_file() || m.file_type().is_dir())
+        .unwrap_or(false)
+}
+
+fn directory_bytes(path: &Path) -> u64 {
+    let Ok(entries) = fs::read_dir(path) else {
+        return 0;
+    };
+    let mut total = 0u64;
+    for entry in entries.flatten() {
+        let Ok(meta) = entry.metadata() else {
+            continue;
+        };
+        if meta.is_dir() {
+            total += directory_bytes(&entry.path());
+        } else {
+            total += meta.len();
+        }
+    }
+    total
+}
+
+/// Apply an explicit retention policy to Flow's own evidence.
+///
+/// `.flow/` grows with every verification and an audit found no policy at all: a
+/// long-lived workspace accumulates receipts, logs and candidates without bound.
+/// `gc` is opt-in by construction — it requires at least one of `--keep` and
+/// `--max-age-days`, so no default ever deletes evidence — and it never touches
+/// the journal, the config, the adoption record or the proposals.
+///
+/// It refuses while a publication intent is unresolved: the journal and the
+/// receipts it names are the recovery record, not garbage.
+pub fn cmd_gc(
+    root: &Path,
+    keep: Option<usize>,
+    max_age_days: Option<u64>,
+    dry_run: bool,
+) -> Result<Json, String> {
+    if keep.is_none() && max_age_days.is_none() {
+        return Ok(crate::proposal::refusal(
+            "USAGE",
+            "flow gc needs an explicit retention policy: --keep <N> and/or --max-age-days <D> (add --dry-run to plan it)",
+        ));
+    }
+    state::load_config(root)?;
+    let pending = pending_intents(root)?;
+    if !pending.is_empty() {
+        return Ok(crate::proposal::refusal(
+            "PENDING_INTENTS",
+            format!(
+                "flow gc refuses while {} publication intent(s) are unresolved: run `flow reconcile` first. The journal, the receipts and the logs it names are the recovery record",
+                pending.len()
+            ),
+        ));
+    }
+
+    let max_age = max_age_days.map(|days| days.saturating_mul(86_400));
+    let now = std::time::SystemTime::now();
+    // With no age policy, `--keep` decides alone; with no keep policy, age does.
+    let expired = |path: &Path| -> bool {
+        let Some(limit) = max_age else {
+            return true;
+        };
+        match entry_mtime(path) {
+            // A future mtime is not old evidence: keep it.
+            Some(mtime) => now
+                .duration_since(mtime)
+                .map(|age| age.as_secs() >= limit)
+                .unwrap_or(false),
+            None => true,
+        }
+    };
+
+    let mut deleted: Vec<String> = Vec::new();
+    let mut skipped: Vec<String> = Vec::new();
+    let mut bytes_freed = 0u64;
+    let mut kept_receipts: BTreeSet<String> = BTreeSet::new();
+    let mut kept_partials = 0usize;
+    let mut kept_candidates = 0usize;
+
+    // Receipts. The `keep` newest complete receipts are the evidence the operator
+    // may still publish, so they survive regardless of age; the rest follow the
+    // age policy. A partial receipt is never publishable, so it is age-collected
+    // only and never displaces a complete one.
+    let receipts = state::receipts_dir(root);
+    let mut complete: Vec<PathBuf> = Vec::new();
+    let mut partial: Vec<PathBuf> = Vec::new();
+    if let Ok(entries) = fs::read_dir(&receipts) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let path = entry.path();
+            if !is_plain_entry(&path) {
+                skipped.push(format!("receipts/{name} (not a plain file)"));
+                continue;
+            }
+            let Some(stem) = name.strip_suffix(".json") else {
+                skipped.push(format!("receipts/{name} (not a receipt)"));
+                continue;
+            };
+            if stem.contains(".partial.") {
+                partial.push(path);
+            } else if crate::paths::is_object_id(stem) {
+                complete.push(path);
+            } else {
+                skipped.push(format!("receipts/{name} (not an object id)"));
+            }
+        }
+    }
+    complete.sort_by_key(|path| std::cmp::Reverse(entry_mtime(path)));
+    let keep_count = keep.unwrap_or(0);
+    for (index, path) in complete.iter().enumerate() {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let stem = name.strip_suffix(".json").unwrap_or(&name).to_string();
+        if index < keep_count || !expired(path) {
+            kept_receipts.insert(stem);
+            continue;
+        }
+        let size = fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+        if !dry_run {
+            fs::remove_file(path).map_err(|e| format!("cannot remove receipts/{name}: {e}"))?;
+        }
+        bytes_freed += size;
+        deleted.push(format!("receipts/{name}"));
+    }
+    for path in partial {
+        if !expired(&path) {
+            kept_partials += 1;
+            continue;
+        }
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let size = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+        if !dry_run {
+            fs::remove_file(&path).map_err(|e| format!("cannot remove receipts/{name}: {e}"))?;
+        }
+        bytes_freed += size;
+        deleted.push(format!("receipts/{name}"));
+    }
+
+    // Logs: one directory per tree. The logs of a kept receipt are kept with it,
+    // because they are the evidence that receipt names.
+    let logs = state::logs_dir(root);
+    if let Ok(entries) = fs::read_dir(&logs) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let path = entry.path();
+            if kept_receipts.contains(&name) || !expired(&path) {
+                continue;
+            }
+            if !is_plain_entry(&path) {
+                skipped.push(format!("logs/{name} (not a plain entry)"));
+                continue;
+            }
+            let size = directory_bytes(&path);
+            if !dry_run {
+                fs::remove_dir_all(&path).map_err(|e| format!("cannot remove logs/{name}: {e}"))?;
+            }
+            bytes_freed += size;
+            deleted.push(format!("logs/{name}/"));
+        }
+    }
+
+    // Candidates: an unanswered candidate record is not evidence of anything, so
+    // it follows the same policy. The proposals it names are left alone.
+    let candidates = state::candidates_dir(root);
+    if let Ok(entries) = fs::read_dir(&candidates) {
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            let path = entry.path();
+            let Some(stem) = name.strip_suffix(".json") else {
+                continue;
+            };
+            if !crate::paths::is_record_id(stem) || !is_plain_entry(&path) {
+                skipped.push(format!("candidates/{name} (not a record)"));
+                continue;
+            }
+            if !expired(&path) {
+                kept_candidates += 1;
+                continue;
+            }
+            let size = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+            if !dry_run {
+                fs::remove_file(&path)
+                    .map_err(|e| format!("cannot remove candidates/{name}: {e}"))?;
+            }
+            bytes_freed += size;
+            deleted.push(format!("candidates/{name}"));
+        }
+    }
+
+    Ok(Json::obj(vec![
+        ("status", Json::str("GC")),
+        ("schema", Json::str("flow-gc/1")),
+        ("dry_run", Json::Bool(dry_run)),
+        (
+            "policy",
+            Json::obj(vec![
+                (
+                    "keep",
+                    match keep {
+                        Some(n) => Json::Num(n as f64),
+                        None => Json::Null,
+                    },
+                ),
+                (
+                    "max_age_days",
+                    match max_age_days {
+                        Some(n) => Json::Num(n as f64),
+                        None => Json::Null,
+                    },
+                ),
+            ]),
+        ),
+        (
+            "kept",
+            Json::obj(vec![
+                ("receipts", Json::Num(kept_receipts.len() as f64)),
+                ("partial_receipts", Json::Num(kept_partials as f64)),
+                ("candidates", Json::Num(kept_candidates as f64)),
+            ]),
+        ),
+        ("deleted_count", Json::Num(deleted.len() as f64)),
+        ("bytes_freed", Json::Num(bytes_freed as f64)),
+        (
+            "deleted",
+            Json::Arr(deleted.into_iter().map(Json::str).collect()),
+        ),
+        (
+            "skipped",
+            Json::Arr(skipped.into_iter().map(Json::str).collect()),
+        ),
+        (
+            "never_deleted",
+            Json::str(
+                "journal.jsonl, config.json, adoption.json, proposals/, anything outside .flow/",
+            ),
+        ),
+    ]))
+}
+
 // ----------------------------------------------------------------- explain
 pub fn cmd_explain(
     root: &Path,
@@ -3130,6 +3390,225 @@ mod tests {
             .expect_err("above the per-file budget");
         assert!(reason.contains("\"huge.bin\""), "{reason}");
         assert!(reason.contains("single-file comparison budget"), "{reason}");
+    }
+
+    // ---------------------------------------------------------------- gc
+    const GC_CONFIG: &str = r#"{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[],"disabled":false}"#;
+
+    fn gc_repo(tag: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!(
+            "flow-gc-{tag}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(state::receipts_dir(&root)).unwrap();
+        fs::create_dir_all(state::logs_dir(&root)).unwrap();
+        fs::create_dir_all(state::candidates_dir(&root)).unwrap();
+        fs::write(state::config_path(&root), GC_CONFIG).unwrap();
+        fs::write(state::journal_path(&root), "").unwrap();
+        root
+    }
+
+    fn gc_tree_id(seed: usize) -> String {
+        let mut id = "0".repeat(38);
+        id.push_str(&format!("{seed:02x}"));
+        assert!(crate::paths::is_object_id(&id));
+        id
+    }
+
+    fn gc_receipt(root: &Path, seed: usize) -> PathBuf {
+        let path = state::receipt_path(root, &gc_tree_id(seed));
+        fs::write(&path, "{}").unwrap();
+        path
+    }
+
+    fn gc_log(root: &Path, seed: usize) -> PathBuf {
+        let dir = state::logs_dir(root).join(gc_tree_id(seed));
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("fmt.stdout.log"), "log\n").unwrap();
+        dir
+    }
+
+    fn gc_age_days(path: &Path, days: u64) {
+        let when = std::time::SystemTime::now() - std::time::Duration::from_secs(days * 86_400);
+        let file = fs::File::options().write(true).open(path).expect("open");
+        file.set_modified(when).expect("set mtime");
+    }
+
+    fn gc_deleted(value: &Json) -> Vec<String> {
+        value
+            .get("deleted")
+            .and_then(|v| match v {
+                Json::Arr(items) => Some(
+                    items
+                        .iter()
+                        .filter_map(|item| item.as_str().map(str::to_string))
+                        .collect(),
+                ),
+                _ => None,
+            })
+            .unwrap_or_default()
+    }
+
+    #[test]
+    fn gc_refuses_without_an_explicit_policy() {
+        let root = gc_repo("no-policy");
+        let value = cmd_gc(&root, None, None, true).expect("a refusal is a document");
+        assert_eq!(value.get("code").and_then(Json::as_str), Some("USAGE"));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_keeps_the_newest_receipts_and_their_logs() {
+        let root = gc_repo("keep");
+        // Three receipts, written oldest first so the mtime order is the seed
+        // order; the newest is seed 2.
+        for seed in [0usize, 1, 2] {
+            gc_receipt(&root, seed);
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            gc_log(&root, seed);
+        }
+        // An orphan log: no receipt names it, so nothing protects it.
+        let orphan = state::logs_dir(&root).join(gc_tree_id(9));
+        fs::create_dir_all(&orphan).unwrap();
+
+        let value = cmd_gc(&root, Some(1), None, false).expect("a plan");
+        assert_eq!(value.get("status").and_then(Json::as_str), Some("GC"));
+        let deleted = gc_deleted(&value);
+        assert!(
+            deleted.contains(&format!("receipts/{}.json", gc_tree_id(0))),
+            "{deleted:?}"
+        );
+        assert!(
+            deleted.contains(&format!("receipts/{}.json", gc_tree_id(1))),
+            "{deleted:?}"
+        );
+        assert!(
+            !deleted.contains(&format!("receipts/{}.json", gc_tree_id(2))),
+            "the newest is kept: {deleted:?}"
+        );
+        assert!(
+            deleted.contains(&format!("logs/{}/", gc_tree_id(0))),
+            "a deleted receipt takes its log: {deleted:?}"
+        );
+        assert!(
+            deleted.contains(&format!("logs/{}/", gc_tree_id(9))),
+            "the orphan log goes: {deleted:?}"
+        );
+        assert!(
+            state::receipt_path(&root, &gc_tree_id(2)).exists(),
+            "the kept receipt survives"
+        );
+        assert!(
+            state::logs_dir(&root).join(gc_tree_id(2)).exists(),
+            "the kept receipt keeps its log"
+        );
+        assert!(!state::receipt_path(&root, &gc_tree_id(0)).exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_dry_run_reports_the_same_plan_and_removes_nothing() {
+        let root = gc_repo("dry");
+        for seed in [0usize, 1] {
+            gc_receipt(&root, seed);
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        let plan = cmd_gc(&root, Some(0), None, true).expect("a plan");
+        assert_eq!(
+            plan.get("dry_run").and_then(|v| match v {
+                Json::Bool(b) => Some(*b),
+                _ => None,
+            }),
+            Some(true)
+        );
+        assert!(!gc_deleted(&plan).is_empty());
+        assert!(
+            state::receipt_path(&root, &gc_tree_id(0)).exists(),
+            "a dry run deletes nothing"
+        );
+        assert!(
+            state::receipt_path(&root, &gc_tree_id(1)).exists(),
+            "a dry run deletes nothing"
+        );
+        // The same policy without --dry-run deletes them, so the plan was not a lie.
+        let real = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        assert_eq!(gc_deleted(&real).len(), gc_deleted(&plan).len());
+        assert!(!state::receipt_path(&root, &gc_tree_id(0)).exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_removes_old_evidence_and_keeps_fresh_evidence() {
+        let root = gc_repo("age");
+        let old = gc_receipt(&root, 0);
+        gc_age_days(&old, 40);
+        let fresh = gc_receipt(&root, 1);
+        gc_age_days(&fresh, 1);
+        let candidate = state::candidates_dir(&root).join(format!("{}.json", "a".repeat(32)));
+        fs::write(&candidate, "{}").unwrap();
+        gc_age_days(&candidate, 40);
+
+        let value = cmd_gc(&root, None, Some(30), false).expect("a plan");
+        let deleted = gc_deleted(&value);
+        assert!(
+            deleted.contains(&format!("receipts/{}.json", gc_tree_id(0))),
+            "{deleted:?}"
+        );
+        assert!(
+            !deleted.contains(&format!("receipts/{}.json", gc_tree_id(1))),
+            "1 day old is fresh: {deleted:?}"
+        );
+        assert!(
+            deleted.iter().any(|item| item.starts_with("candidates/")),
+            "{deleted:?}"
+        );
+        assert!(fresh.exists());
+        assert!(!old.exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_never_removes_a_file_it_cannot_name_or_a_link() {
+        let root = gc_repo("foreign");
+        let notes = state::receipts_dir(&root).join("notes.txt");
+        fs::write(&notes, "not evidence").unwrap();
+        let value = cmd_gc(&root, Some(0), Some(1), false).expect("a plan");
+        assert!(
+            notes.exists(),
+            "a file that is not an object id is not Flow's to remove"
+        );
+        let skipped = value.get("skipped").and_then(|v| match v {
+            Json::Arr(items) => Some(items.len()),
+            _ => None,
+        });
+        assert!(
+            skipped.unwrap_or(0) >= 1,
+            "the refusal is reported, not silent"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_refuses_while_a_publication_intent_is_unresolved() {
+        let root = gc_repo("pending");
+        gc_receipt(&root, 0);
+        let intent = r#"{"schema":"flow-journal/1","id":"intent-1","event":"intent","ref":"refs/heads/main","old":"0","new":"1"}"#;
+        fs::write(state::journal_path(&root), format!("{intent}\n")).unwrap();
+        let value = cmd_gc(&root, Some(0), None, false).expect("a refusal is a document");
+        assert_eq!(
+            value.get("code").and_then(Json::as_str),
+            Some("PENDING_INTENTS")
+        );
+        assert!(
+            state::receipt_path(&root, &gc_tree_id(0)).exists(),
+            "nothing is deleted during recovery"
+        );
+        let _ = fs::remove_dir_all(&root);
     }
 
     // A deterministic, dependency-free generator. The crate is deliberately
