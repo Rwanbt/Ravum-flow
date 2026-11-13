@@ -1042,6 +1042,33 @@ fn verify_checkout_unchanged(git: &Git, scratch: &Path, tree: &str) -> Result<()
     verify_checkout_content(git, scratch, tree, &expected, "while the obligations ran")
 }
 
+/// The budgets that bound the byte comparison.
+///
+/// They are a value rather than three scattered constants so each boundary can
+/// be pinned with a tiny fixture instead of a 20 000-file checkout, and so the
+/// documented envelope is one constant instead of a sentence.
+#[derive(Clone, Copy, Debug)]
+struct ContentBudget {
+    /// Regular files compared in one run. Beyond this the run refuses.
+    entries: usize,
+    /// Declared bytes packed into one `git cat-file --batch` request. The
+    /// comparison is streamed chunk by chunk, so the total content of a
+    /// repository is no longer a memory bound.
+    chunk_bytes: u64,
+    /// One blob larger than this cannot be carried by the bounded Git capture,
+    /// so a tree that declares one is refused by the file's name.
+    single_blob_bytes: u64,
+}
+
+/// A real monorepo fits: 200 000 files, 32 MiB of declared content per request,
+/// and at most one 48 MiB file per request (the Git capture is capped at 64 MiB).
+/// Every refusal still happens *before* an obligation runs.
+const CONTENT_BUDGET: ContentBudget = ContentBudget {
+    entries: 200_000,
+    chunk_bytes: 32 * 1024 * 1024,
+    single_blob_bytes: 48 * 1024 * 1024,
+};
+
 /// Prove that the checkout holds the bytes the tree stores.
 ///
 /// `git worktree add` applies the repository's content filters
@@ -1052,12 +1079,12 @@ fn verify_checkout_unchanged(git: &Git, scratch: &Path, tree: &str) -> Result<()
 /// possible" guess is not one either, because the attribute sources include
 /// host-local files Flow cannot enumerate exhaustively. Every regular file is
 /// therefore compared, byte for byte, with the blob the tree names, read through
-/// one bounded `git cat-file --batch`.
+/// bounded `git cat-file --batch` requests.
 ///
-/// Above the entry or byte budget the comparison is **refused**, never skipped:
-/// a tree Flow cannot prove is a tree Flow does not certify. What this cannot
-/// detect is a filter whose output is byte-identical to the blob: then there is
-/// nothing to detect.
+/// Above the entry, chunk or per-file budget the comparison is **refused**, never
+/// skipped: a tree Flow cannot prove is a tree Flow does not certify. What this
+/// cannot detect is a filter whose output is byte-identical to the blob: then
+/// there is nothing to detect.
 ///
 /// `stage` names *when* the comparison runs (`during checkout` or `while the
 /// obligations ran`) so a refusal says what changed and when.
@@ -1068,47 +1095,87 @@ fn verify_checkout_content(
     expected: &[(String, String, String, u64)],
     stage: &str,
 ) -> Result<(), String> {
-    /// Beyond this entry count the comparison is refused, not skipped.
-    const CONTENT_ENTRIES: usize = 20_000;
+    verify_checkout_content_with(git, scratch, tree, expected, stage, CONTENT_BUDGET)
+}
 
-    let regular: Vec<(&str, &str)> = expected
+fn verify_checkout_content_with(
+    git: &Git,
+    scratch: &Path,
+    tree: &str,
+    expected: &[(String, String, String, u64)],
+    stage: &str,
+    budget: ContentBudget,
+) -> Result<(), String> {
+    let regular: Vec<(&str, &str, u64)> = expected
         .iter()
         .filter(|(mode, oid, _, _)| (mode == "100644" || mode == "100755") && !oid.is_empty())
-        .map(|(_, oid, path, _)| (oid.as_str(), path.as_str()))
+        .map(|(_, oid, path, size)| (oid.as_str(), path.as_str(), *size))
         .collect();
     if regular.is_empty() {
         return Ok(());
     }
-    if regular.len() > CONTENT_ENTRIES {
+    if regular.len() > budget.entries {
         return Err(format!(
-            "tree {tree} has {} regular files: above the {CONTENT_ENTRIES}-entry fidelity budget, so it cannot be certified",
-            regular.len()
+            "tree {tree} has {} regular files: above the {}-entry fidelity budget, so it cannot be certified",
+            regular.len(),
+            budget.entries
         ));
     }
-    let mut request = String::new();
-    for (oid, _) in &regular {
-        request.push_str(oid);
-        request.push('\n');
-    }
-    let out = git.run_bounded(&["cat-file", "--batch"], Some(request.as_bytes()), None)?;
-    if out.status != 0 {
-        return Err(format!(
-            "cannot read the tree content for {tree}: {}",
-            out.stderr.trim()
-        ));
-    }
-    let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;
-    for ((oid, path), blob) in regular.iter().zip(blobs) {
-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
-        let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
-        if disk != blob {
+    // The comparison is streamed one request at a time, so the total content of
+    // the repository is bounded by the disk, not by memory: a repository of up to
+    // `budget.entries` files is compared with at most `budget.chunk_bytes` held in
+    // memory per request. Nothing is skipped when a chunk is refused; the run
+    // stops with the reason.
+    let mut start = 0usize;
+    while start < regular.len() {
+        let mut end = start;
+        let mut chunk_bytes: u64 = 0;
+        while end < regular.len() {
+            let (_, path, size) = regular[end];
+            if size > budget.single_blob_bytes {
+                return Err(format!(
+                    "tree {tree} entry {path:?} declares {size} bytes, above the {}-byte single-file comparison budget: the bounded Git capture cannot read it, so the tree cannot be certified",
+                    budget.single_blob_bytes
+                ));
+            }
+            if end > start && chunk_bytes.saturating_add(size) > budget.chunk_bytes {
+                break;
+            }
+            chunk_bytes = chunk_bytes.saturating_add(size);
+            end += 1;
+        }
+        let chunk = &regular[start..end];
+        let pairs: Vec<(&str, &str)> = chunk.iter().map(|(oid, path, _)| (*oid, *path)).collect();
+        let mut request = String::new();
+        for (oid, _, _) in chunk {
+            request.push_str(oid);
+            request.push('\n');
+        }
+        let out = git.run_bounded(&["cat-file", "--batch"], Some(request.as_bytes()), None)?;
+        if out.status != 0 {
             return Err(format!(
-                "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
-                disk.len(),
-                blob.len(),
-                short(oid)
+                "cannot read the tree content for {tree}: {}",
+                out.stderr.trim()
             ));
         }
+        // A chunk can hold `chunk_bytes` of small files, or one file up to the
+        // per-file budget (the packer never puts a second file after it), so the
+        // ceiling of one answer is the larger of the two.
+        let ceiling = budget.chunk_bytes.max(budget.single_blob_bytes);
+        let blobs = parse_cat_file_batch_with_budget(tree, &pairs, &out.stdout_bytes, ceiling)?;
+        for ((oid, path, _), blob) in chunk.iter().zip(blobs) {
+            let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+            let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
+            if disk != blob {
+                return Err(format!(
+                    "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+                    disk.len(),
+                    blob.len(),
+                    short(oid)
+                ));
+            }
+        }
+        start = end;
     }
     Ok(())
 }
@@ -1122,17 +1189,28 @@ fn verify_checkout_content(
 /// guessed. Liveness is the point: every one of those is reachable from a
 /// corrupted object store or a Git that answers nonsense, and none of them may
 /// become a panic (a panic is not a refusal and could bypass cleanup).
+/// Test-only convenience: the default chunk budget, so a boundary test that does
+/// not care about the byte ceiling still exercises the real default.
+#[cfg(test)]
 fn parse_cat_file_batch<'e, 'b>(
     tree: &str,
     regular: &[(&'e str, &'e str)],
     bytes: &'b [u8],
 ) -> Result<Vec<&'b [u8]>, String> {
-    /// Retained bytes for the whole comparison, before refusing.
-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
+    parse_cat_file_batch_with_budget(tree, regular, bytes, CONTENT_BUDGET.chunk_bytes)
+}
 
+/// The budget is a parameter so the boundary can be pinned with a few bytes
+/// instead of a 32 MiB answer; the default is the documented chunk budget.
+fn parse_cat_file_batch_with_budget<'e, 'b>(
+    tree: &str,
+    regular: &[(&'e str, &'e str)],
+    bytes: &'b [u8],
+    budget_bytes: u64,
+) -> Result<Vec<&'b [u8]>, String> {
     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());
     let mut position = 0usize;
-    let mut total = 0usize;
+    let mut total: u64 = 0;
     for (oid, path) in regular {
         let rest = bytes
             .get(position..)
@@ -1161,10 +1239,10 @@ fn parse_cat_file_batch<'e, 'b>(
         let blob = bytes
             .get(start..end)
             .ok_or_else(|| format!("truncated cat-file batch in {path:?}"))?;
-        total += size;
-        if total > CONTENT_BUDGET {
+        total += size as u64;
+        if total > budget_bytes {
             return Err(format!(
-                "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
+                "tree {tree} exceeds the {budget_bytes}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
             ));
         }
         blobs.push(blob);
@@ -2611,9 +2689,9 @@ mod tests {
 
     #[test]
     fn cat_file_batch_accepts_an_ordinary_total_below_the_content_budget() {
-        // The budget is 64 MiB, not `64 + 1024 * 1024` and not `64 * 1024 + 1024`:
-        // an ordinary batch of two 600 KiB blobs must be accepted, so either
-        // collapsed constant turns this into a refusal.
+        // The default chunk budget is 32 MiB, not 32 + 1024 * 1024 and not
+        // 32 * 1024 + 1024: an ordinary batch of two 600 KiB blobs must be
+        // accepted, so either collapsed constant turns this into a refusal.
         let wanted = regular(&[("aaaa", "a.bin"), ("bbbb", "b.bin")]);
         let blob = vec![b'x'; 600 * 1024];
         let mut bytes = Vec::new();
@@ -2623,7 +2701,7 @@ mod tests {
             bytes.extend_from_slice(&blob);
             bytes.push(b'\n');
         }
-        let blobs = parse_cat_file_batch("t", &wanted, &bytes).expect("100 KiB is ordinary");
+        let blobs = parse_cat_file_batch("t", &wanted, &bytes).expect("1.2 MiB is ordinary");
         assert_eq!(blobs.len(), 2);
         assert_eq!(blobs[0].len(), blob.len());
     }
@@ -2685,7 +2763,8 @@ mod tests {
         let mut bytes = format!("aaaa blob {over}\n").into_bytes();
         bytes.extend(std::iter::repeat_n(b'x', over));
         bytes.push(b'\n');
-        let reason = parse_cat_file_batch("t", &wanted, &bytes).expect_err("over budget");
+        let reason = parse_cat_file_batch_with_budget("t", &wanted, &bytes, 64 * 1024 * 1024)
+            .expect_err("over budget");
         assert!(reason.contains("content-fidelity budget"), "{reason}");
     }
 
@@ -2741,14 +2820,39 @@ mod tests {
     fn content_proofs_refuse_a_tree_above_the_entry_budget() {
         let git = git_without_a_repository();
         let scratch = std::env::temp_dir();
-        let entries: Vec<(String, String, String, u64)> = (0..20_001)
-            .map(|i| ("100644".to_string(), "aaaa".to_string(), format!("f{i}"), 0))
+        // The documented envelope is one constant, asserted here; the boundary is
+        // exercised with a three-entry budget so the test does not build a
+        // 200 000-file checkout to prove an integer comparison.
+        assert_eq!(
+            CONTENT_BUDGET.entries, 200_000,
+            "the documented envelope is 200 000 regular files"
+        );
+        assert_eq!(CONTENT_BUDGET.chunk_bytes, 32 * 1024 * 1024);
+        assert_eq!(CONTENT_BUDGET.single_blob_bytes, 48 * 1024 * 1024);
+        let budget = ContentBudget {
+            entries: 3,
+            ..CONTENT_BUDGET
+        };
+        let entries: Vec<(String, String, String, u64)> = (0..4)
+            .map(|i| ("100644".to_string(), "aaaa".to_string(), format!("f{i}"), 4))
             .collect();
-        let reason = verify_checkout_content(&git, &scratch, "t", &entries, "during checkout")
-            .expect_err("above the entry budget");
+        let reason =
+            verify_checkout_content_with(&git, &scratch, "t", &entries, "during checkout", budget)
+                .expect_err("above the entry budget");
         assert!(
-            reason.contains("above the 20000-entry fidelity budget"),
+            reason.contains("above the 3-entry fidelity budget"),
             "{reason}"
+        );
+        // Exactly at the budget is compared, not refused: only the run below can
+        // tell `>` from `>=`, and it reaches Git (which refuses here because the
+        // directory is not a repository), so the entry check did not fire.
+        let at_budget = &entries[..3];
+        let reason =
+            verify_checkout_content_with(&git, &scratch, "t", at_budget, "during checkout", budget)
+                .expect_err("the budget itself is not the refusal");
+        assert!(
+            !reason.contains("entry fidelity budget"),
+            "the entry budget fired at exactly the budget: {reason}"
         );
     }
 
@@ -2836,31 +2940,36 @@ mod tests {
     }
 
     #[test]
-    fn cat_file_batch_accepts_a_total_of_exactly_the_content_budget() {
-        // 64 MiB is the documented ceiling for the retained comparison. A total
-        // exactly at the ceiling must be compared, not refused: `>` and `>=` (or
-        // `==`) differ only here, and no ordinary fixture reaches it.
-        const CHUNK: usize = 32 * 1024 * 1024;
+    fn cat_file_batch_accepts_a_total_of_exactly_the_chunk_budget() {
+        // The chunk ceiling must be compared, not refused: `>` and `>=` (or `==`)
+        // differ only at the boundary. The budget is a parameter so eight bytes
+        // prove it instead of 32 MiB.
+        const BUDGET: u64 = 16;
         let wanted = regular(&[("aaaa", "a.bin"), ("bbbb", "b.bin")]);
-        let mut bytes = Vec::with_capacity(2 * (CHUNK + 32));
+        let mut bytes = Vec::new();
         for (oid, _) in &wanted {
             bytes.extend_from_slice(oid.as_bytes());
-            bytes.extend_from_slice(format!(" blob {CHUNK}\n").as_bytes());
-            bytes.extend(std::iter::repeat_n(b'x', CHUNK));
+            bytes.extend_from_slice(b" blob 8\n");
+            bytes.extend_from_slice(b"12345678");
             bytes.push(b'\n');
         }
-        let blobs = parse_cat_file_batch("t", &wanted, &bytes)
-            .expect("exactly 64 MiB is the ceiling, not a refusal");
+        let blobs = parse_cat_file_batch_with_budget("t", &wanted, &bytes, BUDGET)
+            .expect("exactly the ceiling is not a refusal");
         assert_eq!(blobs.len(), 2);
-        assert_eq!(blobs[0].len(), CHUNK);
+        assert_eq!(blobs[0], b"12345678");
+
+        let reason = parse_cat_file_batch_with_budget("t", &wanted, &bytes, BUDGET - 1)
+            .expect_err("one byte over the ceiling is refused");
+        assert!(reason.contains("content-fidelity budget"), "{reason}");
     }
 
     #[test]
-    fn a_checkout_with_exactly_the_entry_budget_is_compared_not_refused() {
-        // 20 000 regular files is the documented ceiling of the byte comparison.
-        // The references all name one real blob, so the accepted answer also
-        // proves the comparison still reads and matches the checkout.
-        const ENTRIES: usize = 20_000;
+    fn a_checkout_at_the_entry_budget_is_compared_and_one_over_is_refused() {
+        // The references all name one real blob, so an accepted answer also proves
+        // the comparison still reads and matches the checkout. The budget is three
+        // entries: the boundary is the same integer comparison as 200 000, and the
+        // defaults are asserted in
+        // `content_proofs_refuse_a_tree_above_the_entry_budget`.
         let root = std::env::temp_dir().join(format!(
             "flow-content-budget-{}-{}",
             std::process::id(),
@@ -2893,18 +3002,134 @@ mod tests {
         .to_string();
         fs::write(root.join("scratch").join("a.txt"), "alpha\n").unwrap();
         let git = Git::new(&root);
-        let expected: Vec<(String, String, String, u64)> = (0..ENTRIES)
+        let budget = ContentBudget {
+            entries: 3,
+            ..CONTENT_BUDGET
+        };
+        let expected: Vec<(String, String, String, u64)> = (0..3)
             .map(|_| ("100644".to_string(), oid.clone(), "a.txt".to_string(), 6))
             .collect();
-        verify_checkout_content(
+        verify_checkout_content_with(
             &git,
             &root.join("scratch"),
             "t",
             &expected,
             "during checkout",
+            budget,
         )
-        .expect("exactly 20 000 regular files is the ceiling, not a refusal");
+        .expect("exactly the entry budget is compared, not refused");
+
+        let mut one_over = expected.clone();
+        one_over.push(("100644".to_string(), oid.clone(), "a.txt".to_string(), 6));
+        let reason = verify_checkout_content_with(
+            &git,
+            &root.join("scratch"),
+            "t",
+            &one_over,
+            "during checkout",
+            budget,
+        )
+        .expect_err("one entry over the budget");
+        assert!(
+            reason.contains("above the 3-entry fidelity budget"),
+            "{reason}"
+        );
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_tree_is_compared_in_several_chunks_without_skipping_one() {
+        // A chunk budget smaller than two declared files forces one `cat-file`
+        // request per file: if the chunk loop dropped or duplicated an entry, the
+        // comparison would pass on the wrong file set. Two real blobs, two
+        // chunks, both compared.
+        let root = std::env::temp_dir().join(format!(
+            "flow-content-chunks-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("scratch")).unwrap();
+        let init = std::process::Command::new("git")
+            .arg("init")
+            .arg("-q")
+            .arg(&root)
+            .status()
+            .expect("git runs");
+        assert!(init.success());
+        let mut expected: Vec<(String, String, String, u64)> = Vec::new();
+        for (name, content) in [("a.txt", "alpha\n"), ("b.txt", "bravo\n")] {
+            fs::write(root.join(name), content).unwrap();
+            let oid = String::from_utf8(
+                std::process::Command::new("git")
+                    .arg("-C")
+                    .arg(&root)
+                    .args(["hash-object", "-w", name])
+                    .output()
+                    .expect("git runs")
+                    .stdout,
+            )
+            .unwrap()
+            .trim()
+            .to_string();
+            fs::write(root.join("scratch").join(name), content).unwrap();
+            expected.push((
+                "100644".to_string(),
+                oid,
+                name.to_string(),
+                content.len() as u64,
+            ));
+        }
+        let git = Git::new(&root);
+        verify_checkout_content_with(
+            &git,
+            &root.join("scratch"),
+            "t",
+            &expected,
+            "during checkout",
+            ContentBudget {
+                chunk_bytes: 1,
+                ..CONTENT_BUDGET
+            },
+        )
+        .expect("two chunks, both compared");
+
+        // One wrong byte in the second chunk is still caught: the second request
+        // is not skipped.
+        fs::write(root.join("scratch").join("b.txt"), "BRAVO\n").unwrap();
+        let reason = verify_checkout_content_with(
+            &git,
+            &root.join("scratch"),
+            "t",
+            &expected,
+            "during checkout",
+            ContentBudget {
+                chunk_bytes: 1,
+                ..CONTENT_BUDGET
+            },
+        )
+        .expect_err("the second chunk is compared too");
+        assert!(reason.contains("\"b.txt\" changed"), "{reason}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_single_file_above_the_per_file_budget_is_refused_by_name() {
+        let git = git_without_a_repository();
+        let scratch = std::env::temp_dir();
+        let entries = vec![(
+            "100644".to_string(),
+            "aaaa".to_string(),
+            "huge.bin".to_string(),
+            49 * 1024 * 1024,
+        )];
+        let reason = verify_checkout_content(&git, &scratch, "t", &entries, "during checkout")
+            .expect_err("above the per-file budget");
+        assert!(reason.contains("\"huge.bin\""), "{reason}");
+        assert!(reason.contains("single-file comparison budget"), "{reason}");
     }
 
     // A deterministic, dependency-free generator. The crate is deliberately

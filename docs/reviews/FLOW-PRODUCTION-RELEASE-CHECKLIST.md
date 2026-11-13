@@ -12,22 +12,28 @@ the draft PR; `GO_PRODUCTION` is a separate human decision (§9).
 - Rebuilt from the delivered code head `997f983` after the second review, because the first artefact
   predated its P1/P2 fixes.
 
-## 2. Artefacts produced on this host
+## 2. Artefacts
 
-`dist/flow-0.2.0-rc.1-x86_64-pc-windows-msvc/` (git-ignored, uploaded as a CI artefact):
+`dist/` is **git-ignored** and is a *local* build directory, not the delivery: a clone does not contain
+it, and a `dist/` directory whose `PROVENANCE.json` names a commit other than the release tag must not be
+shipped. The qualified artefacts of a release are the ones the `test` job uploads for the release head
+(`flow-release-<os>`, containing the binary, `LICENSE`, `SHA256SUMS.txt`, `PROVENANCE.json` and
+`SBOM.json`), produced by `scripts/release/build-windows.ps1` / `build-linux.sh` from a clean
+`git archive` of that commit, with the reproducibility check above it.
 
-| File | Size | SHA-256 |
-|---|---|---|
-| `flow.exe` | 1 033 216 B | `bbde18c555821d571803bad1a7b6448b05230115a148468af4c7eca50a18264a` |
-| `LICENSE` | 17 100 B | copied verbatim from the repository |
-| `SHA256SUMS.txt` | — | the line above |
+**State of the local `dist/` on 2026-11-13 — superseded, not shippable.** It pins `f5bb271` (2026-11-10,
+232 Windows / 233 Linux tests) while the merged line is 140+ commits ahead and executes 482 / 479 / 479
+tests. Its own numbers are kept for the record:
 
-Verification: `Get-FileHash flow.exe -Algorithm SHA256` / `sha256sum -c SHA256SUMS.txt`.
+| File | Size | SHA-256 | Note |
+|---|---|---|---|
+| `flow.exe` | 1 055 232 B | `4fa86af5355ae7a2fa1b1bda617638c9df8051ca9ff587636c28eb3030966fb1` | local `dist/`, pinned `f5bb271` |
+| `flow` (Linux) | 1 188 368 B | see `dist/.../SHA256SUMS.txt` | local `dist/`, pinned `f5bb271` |
+| `dist/superseded/...-997f983/flow.exe` | 1 033 216 B | `bbde18c555821d571803bad1a7b6448b05230115a148468af4c7eca50a18264a` | **must not be shipped** (predates the P0 fidelity fix) |
 
-**Superseded artefact.** The first RC of this wave was `1 013 248 B`,
-`d6edbec03a29e3477be0ae3fffe9b9fda6ac5934699acf8cc40df464438d19bc`, built **before** the second
-review's fixes. It is kept in the record as history and must not be shipped: the P1
-(`--dry-run=true` published for real) is only fixed in the binary above.
+An earlier revision of this checklist presented the `997f983` binary as the current artefact of
+`dist/flow-0.2.0-rc.1-x86_64-pc-windows-msvc/`; the audit of 2026-11-13 found the drift and this table
+is the corrected record.
 
 
 ## 3. Install / uninstall smoke (executed)
