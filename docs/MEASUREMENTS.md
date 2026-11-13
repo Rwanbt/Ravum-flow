@@ -42,11 +42,14 @@ decimal — is what CI enforces.
 | Scope | Result | Evidence |
 |---|---|---|
 | Module subset, hand-measured (Windows/Linux) | `state` 140/140 · `commands` 96.7 % · `gitcli` 88.6 % · `main` 94.2 % (97.1 % adjudicated) · aggregate **95.4 %** | [wave 9 §3.5](reviews/FLOW-QUALITY-WAVE9.md) |
-| Per module on Linux, in CI | **armed, first run pending** | `.github/workflows/flow-mutation.yml` (scheduled, report mode) |
+| **`paths` on Linux, in CI** | **31/31 caught (100 %)** in 2 min | scheduled run [`43491500539`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43491500539), `cargo-mutants 27.1.0` |
+| Other modules on Linux, in CI | **campaign armed, runs scheduled**; no rate reported yet | `.github/workflows/flow-mutation.yml` (per-module matrix, report mode) |
 
 Scope is `--bins` (the unit suite): every rate above is a **lower bound**, never a crate-wide
 score. Mutation is measured, not yet enforcing a threshold — the threshold has to come from the
-first full matrix.
+first full matrix. The workflow fails when a campaign *runs nothing* (that defect was caught on its
+first dispatch: `--bins` was passed to `cargo-mutants` instead of `cargo test`, and the job
+reported success while mutating nothing).
 
 ## 4. Real-project pilot (2026-11-13)
 
