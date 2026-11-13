@@ -50,11 +50,19 @@ while [ "$#" -gt 0 ]; do
 done
 
 SHA="${POSITIONAL[0]:-}"
-VERSION="${POSITIONAL[1]:-0.2.0-rc.1}"
 TRIPLE="${POSITIONAL[2]:-x86_64-unknown-linux-gnu}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # All defaults are derived, so the script runs unchanged from a CI checkout.
 REPO="${REPO:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+# The crate manifest is the single source of the version. A hardcoded default made
+# every artefact and every PROVENANCE.json claim a stale version (found by the
+# 2026-11-13 release audit: the crate was 0.2.0-rc.2 and the scripts said rc.1).
+if [ -n "${POSITIONAL[1]:-}" ]; then
+    VERSION="${POSITIONAL[1]}"
+else
+    VERSION="$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$REPO/crates/flow/Cargo.toml" | head -n1)"
+    [ -n "$VERSION" ] || fail "cannot read the crate version from $REPO/crates/flow/Cargo.toml"
+fi
 SRC="${SRC:-${TMPDIR:-/tmp}/flow-linux-src}"
 TARGET_ROOT="${TARGET_ROOT:-${TMPDIR:-/tmp}/flow-target-release}"
 DIST="${DIST:-$REPO/dist}"
