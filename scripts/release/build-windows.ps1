@@ -24,7 +24,7 @@ param(
     # Empty defaults are resolved from this script's location and from
     # RUNNER_TEMP, so the script runs unchanged from a CI checkout.
     [string]$Repo = '',
-    [string]$Version = '0.2.0-rc.1',
+    [string]$Version = '',
     [string]$Triple = 'x86_64-pc-windows-msvc',
     [string]$WorkRoot = '',
     [string]$Dist = '',
@@ -39,6 +39,15 @@ param(
 $ErrorActionPreference = 'Stop'
 if (-not $Repo) { $Repo = Join-Path $PSScriptRoot '..\..' }
 $repo = (Resolve-Path $Repo).Path
+if (-not $Version) {
+    # The crate manifest is the single source of the version. A hardcoded default
+    # made every artefact and every PROVENANCE.json claim 0.2.0-rc.1 long after the
+    # crate had moved to 0.2.0-rc.2 (found by the 2026-11-13 release audit).
+    $manifest = Join-Path $repo 'crates/flow/Cargo.toml'
+    $found = Select-String -Path $manifest -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
+    if (-not $found) { throw "cannot read the crate version from $manifest" }
+    $Version = $found.Matches[0].Groups[1].Value
+}
 if (-not $WorkRoot) {
     $WorkRoot = if ($env:TEMP) { Join-Path $env:TEMP 'flow-release-work' } else { Join-Path $repo 'target\release-work' }
 }
