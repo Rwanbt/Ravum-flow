@@ -1,0 +1,98 @@
+[
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace abandon with ()\n@@ -335,18 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n-    prune_worktrees(repo_root);\n+    () /* ~ changed by cargo-mutants ~ */\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n     }\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/scratch.rs:343:5: replace abandon with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 344
+      },
+      "start": {
+        "column": 5,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with - in abandon\n@@ -335,17 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n+    remove_tree_bounded(path, Instant::now() - /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:343:46: replace + with - in abandon",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 343
+      },
+      "start": {
+        "column": 46,
+        "line": 343
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/scratch.rs\n+++ replace + with * in abandon\n@@ -335,17 +335,17 @@\n         // Windows refuses to unlink a read-only file; clear the bit, retry once.\n         make_writable(&link);\n         fs::remove_file(&link).map_err(|e| format!(\"cannot remove {}: {e}\", link.display()))?;\n     }\n     Ok(())\n }\n \n fn abandon(path: &Path, repo_root: &Path) {\n-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);\n+    remove_tree_bounded(path, Instant::now() * /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);\n     prune_worktrees(repo_root);\n }\n \n /// Best-effort, bounded prune of stale administrative worktree entries. Runs in\n /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.\n fn prune_worktrees(repo_root: &Path) {\n     if !repo_root.is_dir() {\n         return;\n",
+    "file": "crates/flow/src/scratch.rs",
+    "function": {
+      "function_name": "abandon",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 345
+        },
+        "start": {
+          "column": 1,
+          "line": 342
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/scratch.rs:343:46: replace + with * in abandon",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 47,
+        "line": 343
+      },
+      "start": {
+        "column": 46,
+        "line": 343
+      }
+    }
+  }
+]

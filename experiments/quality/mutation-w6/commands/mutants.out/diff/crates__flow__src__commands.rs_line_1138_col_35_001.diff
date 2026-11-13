@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace + with * in parse_cat_file_batch
+@@ -1130,17 +1130,17 @@
+     let mut total = 0usize;
+     for (oid, path) in regular {
+         let rest = bytes
+             .get(position..)
+             .ok_or_else(|| format!("truncated cat-file batch before {path:?}"))?;
+         let Some(offset) = rest.iter().position(|b| *b == b'\n') else {
+             return Err(format!("truncated cat-file batch before {path:?}"));
+         };
+-        let header_end = position + offset;
++        let header_end = position * /* ~ changed by cargo-mutants ~ */ offset;
+         let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();
+         let mut fields = header.split(' ');
+         let _echo = fields.next();
+         let kind = fields.next().unwrap_or("");
+         if kind != "blob" {
+             return Err(format!(
+                 "tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})"
+             ));

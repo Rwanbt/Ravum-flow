@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in admit
+@@ -663,17 +663,17 @@
+             seeded.stderr.trim()
+         ));
+     }
+     let applied = git.run_bounded(
+         &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+         Some(&patch),
+         Some(index.path()),
+     )?;
+-    if applied.status != 0 {
++    if applied.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Ok(refusal(
+             "PATCH_REFUSED",
+             format!(
+                 "the patch does not apply to base {base} in a temporary index: {}",
+                 applied.stderr.trim()
+             ),
+         ));
+     }

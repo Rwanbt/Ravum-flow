@@ -1,0 +1,22 @@
+--- crates/flow/src/state.rs
++++ replace partial_receipt_path -> PathBuf with Default::default()
+@@ -598,18 +598,17 @@
+                 .collect()
+         })
+         .unwrap_or_default()
+ }
+ 
+ /// Where a *partial* (selected) execution is recorded. Deliberately a different
+ /// file from the complete slot so the two can never shadow one another.
+ pub fn partial_receipt_path(root: &Path, tree_oid: &str, context_id: &str) -> PathBuf {
+-    let prefix: String = context_id.chars().take(12).collect();
+-    receipts_dir(root).join(format!("{tree_oid}.partial.{prefix}.json"))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
+     let tree = receipt
+         .get("tree_oid")
+         .and_then(Json::as_str)
+         .ok_or("receipt without tree_oid")?;
+     // The tree id becomes a file name here too: a receipt is loaded from disk as

@@ -1,0 +1,61 @@
+--- crates/flow/src/gitcli.rs
++++ replace redact -> String with "xyzzy".into()
+@@ -719,57 +719,17 @@
+ /// `PRIVATE_KEY`, `API_KEY`, `ACCESS_KEY`, `CREDENTIAL`, `AUTH`): over-redacting a
+ /// value that happens to equal a credential is harmless, while leaking one is not.
+ /// Shape matching covers the tokens that are recognisable without their variable
+ /// name (GitHub `ghp_`/`gho_`/`ghs_`/`github_pat_`, OpenAI `sk-`, AWS `AKIA`/`ASIA`
+ /// access-key ids). A secret that is printed from a file, with no matching
+ /// environment variable and no recognisable shape, is **not** covered — there is no
+ /// sandbox and no secret broker (documented non-guarantee).
+ pub fn redact(text: &str) -> String {
+-    let mut out = text.to_string();
+-    // `vars()` panics on a non-Unicode value, which on Unix is ordinary. The text
+-    // being redacted is already valid UTF-8, so a lossy view of the value matches
+-    // it exactly whenever the secret is actually present.
+-    for (name, value) in std::env::vars_os() {
+-        let upper = name.to_string_lossy().to_ascii_uppercase();
+-        let value = value.to_string_lossy();
+-        let looks_secret = [
+-            "SECRET",
+-            "TOKEN",
+-            "PASSWORD",
+-            "PASSWD",
+-            "PRIVATE_KEY",
+-            "API_KEY",
+-            "APIKEY",
+-            "ACCESS_KEY",
+-            "SECRET_KEY",
+-            "CREDENTIAL",
+-            "AUTH_TOKEN",
+-        ]
+-        .iter()
+-        .any(|needle| upper.contains(needle));
+-        if looks_secret && value.len() >= 8 && out.contains(value.as_ref()) {
+-            out = out.replace(value.as_ref(), "[REDACTED]");
+-        }
+-    }
+-    // Prefixes of token families whose value is recognisable on its own. `AKIA`
+-    // and `ASIA` are AWS access-key ids; the rest are GitHub/OpenAI token shapes.
+-    for shape in ["ghp_", "gho_", "ghs_", "github_pat_", "sk-", "AKIA", "ASIA"] {
+-        while let Some(idx) = out.find(shape) {
+-            let end = out[idx..]
+-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-') // survival-probe
+-                .map(|off| idx + off)
+-                .unwrap_or(out.len());
+-            if end <= idx + shape.len() {
+-                break;
+-            }
+-            out.replace_range(idx..end, "[REDACTED]");
+-        }
+-    }
+-    out
++    "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn redacts_secret_env_value() {

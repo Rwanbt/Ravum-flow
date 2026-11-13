@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace > with < in cmd_reconcile
+@@ -2185,17 +2185,17 @@
+                 resolved.push(Json::obj(vec![
+                     ("id", Json::str(id)),
+                     ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                     ("reason", Json::str("DUPLICATE_INTENT_ID")),
+                 ]));
+             }
+             continue;
+         }
+-        if outcomes_for_id > 0 {
++        if outcomes_for_id < /* ~ changed by cargo-mutants ~ */ 0 {
+             continue;
+         }
+         let field = |k: &str| {
+             intent
+                 .get(k)
+                 .and_then(Json::as_str)
+                 .unwrap_or("")
+                 .to_string()

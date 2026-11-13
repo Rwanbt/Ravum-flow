@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in verify_checkout_modes
+@@ -992,17 +992,17 @@
+     scratch: &Path,
+     tree: &str,
+     expected: &[(String, String, String, u64)],
+ ) -> Result<(), String> {
+     #[cfg(unix)] // survival-probe
+     {
+         use std::os::unix::fs::PermissionsExt;
+         for (mode, _, path, _) in expected {
+-            if mode != "100644" && mode != "100755" { // survival-probe
++            if mode != "100644" && mode == /* ~ changed by cargo-mutants ~ */ "100755" { // survival-probe
+                 continue;
+             }
+             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+             let meta = fs::symlink_metadata(&full)
+                 .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+             let executable = meta.permissions().mode() & 0o111 != 0; // survival-probe
+             if executable != (mode == "100755") { // survival-probe
+                 return Err(format!(

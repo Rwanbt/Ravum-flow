@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_run
+@@ -1262,17 +1262,17 @@
+                 if !seen.insert(id.as_str()) {
+                     return Ok(refused_code(
+                         "DUPLICATE_OBLIGATION_ID",
+                         format!(
+                             "obligation {id:?} is requested more than once: a selection is a set"
+                         ),
+                     ));
+                 }
+-                if !effective.iter().any(|o| &o.id == id) {
++                if  /* ~ changed by cargo-mutants ~ */effective.iter().any(|o| &o.id == id) {
+                     return Ok(refused_code(
+                         "UNKNOWN_OBLIGATION_ID",
+                         format!("obligation {id:?} is not declared in .flow/config.json"),
+                     ));
+                 }
+             }
+             Some(
+                 effective

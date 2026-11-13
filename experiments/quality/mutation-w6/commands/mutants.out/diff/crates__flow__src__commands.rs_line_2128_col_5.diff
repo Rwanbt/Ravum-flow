@@ -1,0 +1,42 @@
+--- crates/flow/src/commands.rs
++++ replace journal_failure -> Json with Default::default()
+@@ -2120,38 +2120,17 @@
+             pending.push(record);
+         }
+     }
+     Ok(pending)
+ }
+ 
+ /// The explicit state of "we could not even read the journal".
+ fn journal_failure(root: &Path, err: state::JournalError) -> Json {
+-    let (status, code) = match &err {
+-        state::JournalError::Io(_) => (state::STATE_UNKNOWN_OUTCOME, "JOURNAL_UNREADABLE"),
+-        state::JournalError::Corrupt(_) => (state::STATE_CORRUPT_JOURNAL, "JOURNAL_CORRUPT"),
+-    };
+-    Json::obj(vec![
+-        ("status", Json::str(status)),
+-        ("code", Json::str(code)),
+-        ("error", Json::str(err.to_string())),
+-        (
+-            "journal_path",
+-            Json::str(state::journal_path(root).to_string_lossy().to_string()),
+-        ),
+-        ("journal_preserved", Json::Bool(true)),
+-        ("manual_required", Json::Bool(true)),
+-        ("resolved", Json::Arr(Vec::new())),
+-        (
+-            "note",
+-            Json::str(
+-                "recovery refuses to guess: the journal was not rewritten and no ref was moved",
+-            ),
+-        ),
+-    ])
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
+     let git = Git::new(root);
+     let _lock = match crate::lock::acquire_lock(root, "reconcile") {
+         Ok(guard) => guard,
+         Err(e) => return Ok(lock_refusal(root, e)),
+     };

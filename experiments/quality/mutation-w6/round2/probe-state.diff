@@ -1,0 +1,10 @@
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index 9a711b5..ad4da6d 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -662 +662 @@ pub fn iso8601_now() -> String {
+-    let rem = secs % 86_400;
++    let rem = secs % 86_400; // survival-probe
+@@ -680 +680 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
+-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
++    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365; // survival-probe

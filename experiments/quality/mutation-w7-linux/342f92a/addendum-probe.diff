@@ -1,0 +1,10 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 635164d..9fc2556 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -873 +873 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-            "120000" if !meta.file_type().is_symlink() => {
++            "120000" if !meta.file_type().is_symlink() => { // w7probe
+@@ -878 +878 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-            "100644" | "100755" if !meta.is_file() => {
++            "100644" | "100755" if !meta.is_file() => { // w7probe

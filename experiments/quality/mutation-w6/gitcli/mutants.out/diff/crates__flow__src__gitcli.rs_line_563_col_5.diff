@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace resolve_program -> Option<PathBuf> with Some(Default::default())
+@@ -555,17 +555,17 @@
+             }
+         }
+     }
+     None
+ }
+ 
+ #[cfg(not(windows))]
+ fn resolve_program(_program: &str) -> Option<PathBuf> {
+-    None
++    Some(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+     let started = Instant::now();
+     // A resolved absolute path is used when PATH+PATHEXT finds one; otherwise the
+     // declared name is kept, so the message names what the policy asked for.
+     let program: PathBuf =
+         resolve_program(&ob.program).unwrap_or_else(|| PathBuf::from(&ob.program));

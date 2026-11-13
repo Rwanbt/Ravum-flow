@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace + with - in save_config
+@@ -272,17 +272,17 @@
+     Config::from_json(&json::parse(&text)?)
+ }
+ 
+ pub fn save_config(root: &Path, config: &Config) -> Result<(), String> {
+     let path = config_path(root);
+     if let Some(parent) = path.parent() {
+         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
+     }
+-    write_atomic(&path, &(config.to_json().to_string_pretty() + "\n"))
++    write_atomic(&path, &(config.to_json().to_string_pretty() - /* ~ changed by cargo-mutants ~ */ "\n"))
+ }
+ 
+ /// Refuse to write through a symlink or a Windows reparse point (junction).
+ ///
+ /// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:
+ /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes
+ /// Flow append outside the workspace. Every write below `.flow/` therefore checks
+ /// that each existing component is a real directory and that the target is not a

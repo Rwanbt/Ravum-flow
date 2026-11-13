@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace > with == in validate_path
+@@ -450,17 +450,17 @@
+             return Err(refusal(
+                 "SYMLINK_UNREADABLE",
+                 format!(
+                     "cannot read the symlink target of {path:?}: {}",
+                     out.stderr.trim()
+                 ),
+             ));
+         }
+-        if out.stdout.len() > MAX_SYMLINK_TARGET_BYTES {
++        if out.stdout.len() == /* ~ changed by cargo-mutants ~ */ MAX_SYMLINK_TARGET_BYTES {
+             return Err(refusal(
+                 "SYMLINK_UNREADABLE",
+                 format!("the symlink target of {path:?} is above {MAX_SYMLINK_TARGET_BYTES} bytes"),
+             ));
+         }
+         let target = out.stdout.trim_end_matches(['\n', '\r']);
+         if symlink_target_escapes(target) {
+             return Err(refusal(

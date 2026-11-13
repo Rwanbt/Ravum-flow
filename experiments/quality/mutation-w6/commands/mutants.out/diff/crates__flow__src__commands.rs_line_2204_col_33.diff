@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace || with && in cmd_reconcile
+@@ -2196,17 +2196,17 @@
+         let field = |k: &str| {
+             intent
+                 .get(k)
+                 .and_then(Json::as_str)
+                 .unwrap_or("")
+                 .to_string()
+         };
+         let (reference, old, new) = (field("ref"), field("old"), field("new"));
+-        if reference.is_empty() || old.is_empty() || new.is_empty() {
++        if reference.is_empty() && /* ~ changed by cargo-mutants ~ */ old.is_empty() || new.is_empty() {
+             needs_human = true;
+             resolved.push(Json::obj(vec![
+                 ("id", Json::str(id)),
+                 ("resolution", Json::str(state::STATE_NEEDS_RECONCILIATION)),
+                 ("reason", Json::str("INCOMPLETE_INTENT")),
+             ]));
+             continue;
+         }

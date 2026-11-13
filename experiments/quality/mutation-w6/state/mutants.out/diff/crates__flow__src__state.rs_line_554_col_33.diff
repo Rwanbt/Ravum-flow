@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace != with == in without_field
+@@ -546,17 +546,17 @@
+         }))
+     }
+ }
+ 
+ /// Remove one top-level field, keeping every other pair in order.
+ fn without_field(value: &Json, key: &str) -> Json {
+     let mut out = value.clone();
+     if let Json::Obj(pairs) = &mut out {
+-        pairs.retain(|(k, _)| k != key);
++        pairs.retain(|(k, _)| k == /* ~ changed by cargo-mutants ~ */ key);
+     }
+     out
+ }
+ 
+ /// Bind a receipt to its own content.
+ ///
+ /// This detects accidental corruption and casual editing of a receipt on disk.
+ /// It is **not** a signature and **not** protection against an attacker who can

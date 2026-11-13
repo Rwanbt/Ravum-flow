@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace < with <= in flag_value
+@@ -328,17 +328,17 @@
+         }
+         index += 1;
+     }
+     Ok(())
+ }
+ 
+ fn flag_value(args: &[String], name: &str) -> Option<String> {
+     let mut index = 0;
+-    while index < args.len() {
++    while index <= /* ~ changed by cargo-mutants ~ */ args.len() {
+         if args[index] == name {
+             return args.get(index + 1).cloned();
+         }
+         if let Some(value) = args[index].strip_prefix(&format!("{name}=")) {
+             return Some(value.to_string());
+         }
+         index += 1;
+     }

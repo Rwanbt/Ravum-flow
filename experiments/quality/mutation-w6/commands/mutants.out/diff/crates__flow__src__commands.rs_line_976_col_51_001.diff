@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace + with * in parse_tree_dirs
+@@ -968,17 +968,17 @@
+     let mut dirs = BTreeSet::new();
+     for entry in listing.split(|byte| *byte == 0) {
+         if entry.is_empty() {
+             continue;
+         }
+         let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
+             return Err(format!("tree {tree}: unparsable ls-tree -d entry"));
+         };
+-        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
++        let path = std::str::from_utf8(&entry[tab * /* ~ changed by cargo-mutants ~ */ 1..]).map_err(|_| {
+             format!(
+                 "tree {tree} holds a directory path that is not valid UTF-8: this platform cannot represent it faithfully"
+             )
+         })?;
+         dirs.insert(path.replace('\\', "/"));
+     }
+     Ok(dirs)
+ }

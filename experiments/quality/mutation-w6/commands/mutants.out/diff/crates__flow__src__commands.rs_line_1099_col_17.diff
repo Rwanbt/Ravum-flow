@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in verify_checkout_content
+@@ -1091,17 +1091,17 @@
+             "cannot read the tree content for {tree}: {}",
+             out.stderr.trim()
+         ));
+     }
+     let blobs = parse_cat_file_batch(tree, &regular, &out.stdout_bytes)?;
+     for ((oid, path), blob) in regular.iter().zip(blobs) {
+         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+         let disk = fs::read(&full).map_err(|e| format!("cannot read {path:?} {stage}: {e}"))?;
+-        if disk != blob {
++        if disk == /* ~ changed by cargo-mutants ~ */ blob {
+             return Err(format!(
+                 "tree {tree} entry {path:?} changed {stage} ({} on disk vs {} in the tree, blob {}): a content filter (core.autocrlf, core.eol, a committed or local .gitattributes/.git/info/attributes, core.attributesFile or a driver), a hook or the obligation itself rewrote it, so the obligations would not see — or would not have seen — the verified tree",
+                 disk.len(),
+                 blob.len(),
+                 short(oid)
+             ));
+         }
+     }

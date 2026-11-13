@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm Json::Str(s) in Json::as_str
+@@ -24,17 +24,17 @@
+         match self {
+             Json::Obj(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+             _ => None,
+         }
+     }
+ 
+     pub fn as_str(&self) -> Option<&str> {
+         match self {
+-            Json::Str(s) => Some(s),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ 
+     pub fn as_bool(&self) -> Option<bool> {
+         match self {
+             Json::Bool(b) => Some(*b),
+             _ => None,

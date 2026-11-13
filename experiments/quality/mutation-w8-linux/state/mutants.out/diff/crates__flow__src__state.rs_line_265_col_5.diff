@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace receipt_path -> PathBuf with Default::default()
+@@ -257,17 +257,17 @@
+         ("policy_version", Json::str(adoption.policy_version.clone())),
+         ("approved_at", Json::str(adoption.approved_at.clone())),
+         ("source", Json::str(adoption.source.clone())),
+     ]);
+     write_atomic(&adoption_path(root), &(value.to_string_pretty() + "\n"))
+ }
+ 
+ pub fn receipt_path(root: &Path, tree_oid: &str) -> PathBuf {
+-    receipts_dir(root).join(format!("{tree_oid}.json"))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn load_config(root: &Path) -> Result<Config, String> {
+     let path = config_path(root);
+     let text = fs::read_to_string(&path)
+         .map_err(|e| format!("not initialized: cannot read {}: {e}", path.display()))?;
+     Config::from_json(&json::parse(&text)?)
+ }

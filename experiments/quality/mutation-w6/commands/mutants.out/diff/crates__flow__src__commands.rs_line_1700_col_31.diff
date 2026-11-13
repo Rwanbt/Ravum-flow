@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1692,17 +1692,17 @@
+             "STALE_POLICY",
+             format!(
+                 "the receipt proves policy {} but the current policy is {}: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+                 short(&receipt.policy_digest),
+                 short(&expected_digest)
+             ),
+         ));
+     }
+-    if receipt.policy_version != config.policy_version {
++    if receipt.policy_version == /* ~ changed by cargo-mutants ~ */ config.policy_version {
+         return Ok(refused_code(
+             "POLICY_VERSION_MISMATCH",
+             format!(
+                 "receipt policy_version {:?} != current {:?}",
+                 receipt.policy_version, config.policy_version
+             ),
+         ));
+     }

@@ -1,0 +1,118 @@
+--- crates/flow/src/commands.rs
++++ replace verify_checkout_fidelity -> Result<(), String> with Ok(())
+@@ -778,114 +778,17 @@
+ /// not the verified tree while the receipt claims the tree was checked, which is
+ /// a false `PASSED` with no tampering involved.
+ ///
+ /// This is a statement about the checkout **at the moment it is checked**: a hook
+ /// (or an obligation) can change it afterwards. `verify_checkout_unchanged` runs
+ /// the same byte and mode proof again after the last obligation and refuses a run
+ /// whose declared files changed meanwhile.
+ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
+-    let expected = ls_tree_entries(git, tree)?;
+-
+-    // Two paths differing only by case cannot both exist on a case-insensitive
+-    // filesystem: the checkout silently keeps one of them.
+-    let mut folded: BTreeMap<String, usize> = BTreeMap::new();
+-    for (_, _, path, _) in &expected {
+-        *folded.entry(path.to_lowercase()).or_insert(0) += 1; // survival-probe
+-    }
+-    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) { // survival-probe
+-        return Err(format!(
+-            "tree {tree} holds {count} paths that differ only by case (for example {name:?}): this host cannot represent them faithfully, so the obligations would not see the verified tree"
+-        ));
+-    }
+-
+-    // Everything the tree names must actually exist on disk, and nothing else may
+-    // be present. `git worktree add` runs the repository's `post-checkout` hook
+-    // (including one reached through `core.hooksPath` pointing at a directory the
+-    // tree itself ships), so the checkout can gain files and directories after it
+-    // was written. An extra path is not cosmetic: a toolchain file, a
+-    // `.cargo/config.toml`, an empty cache directory or a test found by a glob
+-    // changes what an obligation sees without touching a byte the tree declares.
+-    let mut actual_files: Vec<String> = Vec::new();
+-    let mut actual_dirs: Vec<String> = Vec::new();
+-    collect_entries(scratch, scratch, &mut actual_files, &mut actual_dirs)?;
+-    let present: BTreeSet<&str> = actual_files.iter().map(String::as_str).collect();
+-    let mut missing: Vec<&str> = expected
+-        .iter()
+-        .map(|(_, _, path, _)| path.as_str())
+-        .filter(|path| !present.contains(path))
+-        .collect();
+-    if !missing.is_empty() {
+-        missing.sort_unstable();
+-        return Err(format!(
+-            "the checkout is missing {} of {} tree entries (for example {:?}): the obligations would not see the verified tree",
+-            missing.len(),
+-            expected.len(),
+-            &missing[..missing.len().min(3)]
+-        ));
+-    }
+-    let declared: BTreeSet<&str> = expected
+-        .iter()
+-        .map(|(_, _, path, _)| path.as_str())
+-        .collect();
+-    let mut unexpected: Vec<&str> = present
+-        .iter()
+-        .copied()
+-        .filter(|path| !declared.contains(path))
+-        .collect();
+-    if !unexpected.is_empty() {
+-        unexpected.sort_unstable();
+-        return Err(format!(
+-            "the checkout holds {} file(s) the tree does not declare (for example {:?}): a hook or the host created them, so the obligations would not see exactly the verified tree",
+-            unexpected.len(),
+-            &unexpected[..unexpected.len().min(3)]
+-        ));
+-    }
+-    let declared_dirs = ls_tree_dirs(git, tree)?;
+-    let mut unexpected_dirs: Vec<&str> = actual_dirs
+-        .iter()
+-        .map(String::as_str)
+-        .filter(|dir| !declared_dirs.contains(*dir))
+-        .collect();
+-    if !unexpected_dirs.is_empty() {
+-        unexpected_dirs.sort_unstable();
+-        return Err(format!(
+-            "the checkout holds {} directory(ies) the tree does not declare (for example {:?}): a hook or the host created them, and an empty directory can change what an obligation discovers",
+-            unexpected_dirs.len(),
+-            &unexpected_dirs[..unexpected_dirs.len().min(3)]
+-        ));
+-    }
+-
+-    // And each entry must have the type the tree declares.
+-    for (mode, _, path, _) in &expected {
+-        let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+-        let meta = fs::symlink_metadata(&full)
+-            .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+-        match mode.as_str() {
+-            "120000" if !meta.file_type().is_symlink() => { // survival-probe
+-                return Err(format!(
+-                    "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
+-                ));
+-            }
+-            "160000" => { // survival-probe
+-                return Err(format!(
+-                    "tree {tree} entry {path:?} is a gitlink: submodule content is not materialised, so the tree cannot be verified"
+-                ));
+-            }
+-            "100644" | "100755" if !meta.is_file() => { // survival-probe
+-                return Err(format!(
+-                    "tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file"
+-                ));
+-            }
+-            _ => {}
+-        }
+-    }
+-
+-    verify_checkout_modes(scratch, tree, &expected)?;
+-    verify_checkout_content(git, scratch, tree, &expected, "during checkout")
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The tree's entries: `(mode, blob oid, path, size)`, from one bounded
+ /// `ls-tree -r -l -z`. A path that is not valid UTF-8 is refused with an explicit
+ /// reason instead of being lossily folded into `U+FFFD` (two different paths would
+ /// then look like a case collision, which is a misleading diagnosis).
+ fn ls_tree_entries(git: &Git, tree: &str) -> Result<Vec<(String, String, String, u64)>, String> {
+     // The listing comes from the source repository: the checkout deliberately

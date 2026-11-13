@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1651,17 +1651,17 @@
+                 state::SCHEMA_RECEIPT
+             ),
+         ));
+     }
+     if let Err(e) = state::verify_receipt_integrity(&receipt.json) {
+         return Ok(refused_code("RECEIPT_INTEGRITY", e));
+     }
+     // 2. it must name this tree, and cover the whole declared policy.
+-    if receipt.tree_oid != tree {
++    if receipt.tree_oid == /* ~ changed by cargo-mutants ~ */ tree {
+         return Ok(refused_code(
+             "TREE_MISMATCH",
+             format!(
+                 "receipt integrity error: file for {tree} names tree {:?}",
+                 receipt.tree_oid
+             ),
+         ));
+     }

@@ -1,0 +1,15 @@
+{
+  "schema": "flow-config/1",
+  "policy_version": "FLOW-POLICY-1",
+  "execution_boundary": "local-trusted",
+  "obligations": [
+    {
+      "id": "unittest",
+      "program": "python",
+      "args": ["-m", "unittest", "discover", "-v"],
+      "required": true,
+      "timeout_s": 120
+    }
+  ],
+  "disabled": false
+}

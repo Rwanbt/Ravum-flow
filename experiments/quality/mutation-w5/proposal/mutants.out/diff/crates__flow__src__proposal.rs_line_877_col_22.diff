@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in assemble
+@@ -869,17 +869,17 @@
+     // Incompatible operations on one path are refused *before* any patch is
+     // applied, so the diagnostic does not depend on application order.
+     if let Some(refusal) = path_conflicts(&proposals) {
+         return Ok(refusal);
+     }
+ 
+     let index = TempIndex::new();
+     let seeded = git.run_bounded(&["read-tree", &base_tree], None, Some(index.path()))?;
+-    if seeded.status != 0 {
++    if seeded.status == /* ~ changed by cargo-mutants ~ */ 0 {
+         return Err(format!(
+             "cannot seed a temporary index from {base_tree}: {}",
+             seeded.stderr.trim()
+         ));
+     }
+     for proposal in &proposals {
+         let patch = match fs::read(Proposal::patch_path(root, &proposal.proposal_id)) {
+             Ok(bytes) => bytes,

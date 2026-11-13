@@ -1,0 +1,86 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 5ac42df..900826a 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -217 +217 @@ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+-    let digest = policy_digest(&effective_policy(config, &config.obligations));
++    let digest = policy_digest(&effective_policy(config, &config.obligations)); // survival-probe
+@@ -223 +223 @@ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code(
++        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // survival-probe
+@@ -506 +506 @@ fn program_on_path(program: &str) -> bool {
+-    let exts: Vec<String> = if cfg!(windows) {
++    let exts: Vec<String> = if cfg!(windows) { // survival-probe
+@@ -539 +539 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
+-    let dirty = status.iter().filter(|l| !l.starts_with("??")).count();
++    let dirty = status.iter().filter(|l| !l.starts_with("??")).count(); // survival-probe
+@@ -792 +792 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-        *folded.entry(path.to_lowercase()).or_insert(0) += 1;
++        *folded.entry(path.to_lowercase()).or_insert(0) += 1; // survival-probe
+@@ -794 +794 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) {
++    if let Some((name, count)) = folded.iter().find(|(_, count)| **count > 1) { // survival-probe
+@@ -863 +863 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-            "120000" if !meta.file_type().is_symlink() => {
++            "120000" if !meta.file_type().is_symlink() => { // survival-probe
+@@ -868 +868 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-            "160000" => {
++            "160000" => { // survival-probe
+@@ -873 +873 @@ fn verify_checkout_fidelity(git: &Git, scratch: &Path, tree: &str) -> Result<(),
+-            "100644" | "100755" if !meta.is_file() => {
++            "100644" | "100755" if !meta.is_file() => { // survival-probe
+@@ -942 +942 @@ fn parse_tree_entries(
+-    if expected.len() > MAX_ENTRIES {
++    if expected.len() > MAX_ENTRIES { // survival-probe
+@@ -996 +996 @@ fn verify_checkout_modes(
+-    #[cfg(unix)]
++    #[cfg(unix)] // survival-probe
+@@ -1000 +1000 @@ fn verify_checkout_modes(
+-            if mode != "100644" && mode != "100755" {
++            if mode != "100644" && mode != "100755" { // survival-probe
+@@ -1006,2 +1006,2 @@ fn verify_checkout_modes(
+-            let executable = meta.permissions().mode() & 0o111 != 0;
+-            if executable != (mode == "100755") {
++            let executable = meta.permissions().mode() & 0o111 != 0; // survival-probe
++            if executable != (mode == "100755") { // survival-probe
+@@ -1077 +1077 @@ fn verify_checkout_content(
+-    if regular.len() > CONTENT_ENTRIES {
++    if regular.len() > CONTENT_ENTRIES { // survival-probe
+@@ -1126 +1126 @@ fn parse_cat_file_batch<'e, 'b>(
+-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
++    const CONTENT_BUDGET: usize = 64 * 1024 * 1024; // survival-probe
+@@ -1160 +1160 @@ fn parse_cat_file_batch<'e, 'b>(
+-        if total > CONTENT_BUDGET {
++        if total > CONTENT_BUDGET { // survival-probe
+@@ -1262 +1262 @@ pub fn cmd_run(
+-                if !seen.insert(id.as_str()) {
++                if !seen.insert(id.as_str()) { // survival-probe
+@@ -1530,2 +1530,2 @@ fn preview(text: &str, limit: usize) -> String {
+-    let mut out: String = text.chars().take(limit).collect();
+-    if text.chars().count() > limit {
++    let mut out: String = text.chars().take(limit).collect(); // survival-probe
++    if text.chars().count() > limit { // survival-probe
+@@ -1587 +1587 @@ pub fn cmd_publish(
+-    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') {
++    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') { // survival-probe
+@@ -1746 +1746 @@ pub fn cmd_publish(
+-            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => {
++            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => { // survival-probe
+@@ -1773 +1773 @@ pub fn cmd_publish(
+-    if !receipt.commit_oid.is_empty() {
++    if !receipt.commit_oid.is_empty() { // survival-probe
+@@ -1819 +1819 @@ pub fn cmd_publish(
+-        if record.base_commit != old {
++        if record.base_commit != old { // survival-probe
+@@ -2116 +2116 @@ fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
+-            *slot += 1;
++            *slot += 1; // survival-probe
+@@ -2119 +2119 @@ fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
+-        if position >= outcomes.get(&id).copied().unwrap_or(0) {
++        if position >= outcomes.get(&id).copied().unwrap_or(0) { // survival-probe
+@@ -2183 +2183 @@ pub fn cmd_reconcile(root: &Path) -> Result<Json, String> {
+-            if intents_for_id > outcomes_for_id {
++            if intents_for_id > outcomes_for_id { // survival-probe
+@@ -2311 +2311 @@ pub fn cmd_explain(
+-        .filter(|r| r.get("tree").and_then(Json::as_str) == Some(tree.as_str()))
++        .filter(|r| r.get("tree").and_then(Json::as_str) == Some(tree.as_str())) // survival-probe

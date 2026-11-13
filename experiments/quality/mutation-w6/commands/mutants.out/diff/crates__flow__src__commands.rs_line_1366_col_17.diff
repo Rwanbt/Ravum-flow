@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete match arm "TIMEOUT" in cmd_run
+@@ -1358,17 +1358,17 @@
+         )?;
+         logs.push(stdout_rel);
+         logs.push(stderr_rel);
+         if ob.required {
+             // A status outside this list is an unknown outcome: never a pass.
+             match outcome.status {
+                 "PASSED" => {}
+                 "FAILED" => failed = true,
+-                "TIMEOUT" => timed_out = true,
++                 /* ~ changed by cargo-mutants ~ */
+                 _ => unsupported = true,
+             }
+         }
+         outcomes.push(Json::obj(vec![
+             ("id", Json::str(ob.id.clone())),
+             ("status", Json::str(outcome.status)),
+             ("required", Json::Bool(ob.required)),
+             (

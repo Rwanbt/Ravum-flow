@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_init
+@@ -71,17 +71,17 @@
+                     format!("a .flow/config.json is present but cannot be used: {e}"),
+                 ))
+             }
+         }
+     } else {
+         Config::default()
+     };
+     if let Err(reason) = validate_obligations(&config.obligations) {
+-        if !config.obligations.is_empty() {
++        if  /* ~ changed by cargo-mutants ~ */config.obligations.is_empty() {
+             return Ok(refused_code("INVALID_POLICY", reason));
+         }
+     }
+     let policy_digest = policy_digest(&effective_policy(&config, &config.obligations));
+     let adopted_already = state::load_adoption(root)?
+         .map(|a| a.policy_digest == policy_digest)
+         .unwrap_or(false);
+ 

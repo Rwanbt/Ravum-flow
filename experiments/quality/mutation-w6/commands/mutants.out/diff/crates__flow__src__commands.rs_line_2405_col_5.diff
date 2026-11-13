@@ -1,0 +1,30 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_set_disabled -> Result<Json, String> with Ok(Default::default())
+@@ -2397,26 +2397,17 @@
+             Json::Arr(missing_logs.into_iter().map(Json::str).collect()),
+         ),
+         ("journal", Json::Arr(related)),
+     ]))
+ }
+ 
+ // --------------------------------------------------------------- disable
+ pub fn cmd_set_disabled(root: &Path, disabled: bool) -> Result<Json, String> {
+-    let mut config = state::load_config(root)?;
+-    config.disabled = disabled;
+-    state::save_config(root, &config)?;
+-    Ok(Json::obj(vec![
+-        (
+-            "status",
+-            Json::str(if disabled { "DISABLED" } else { "ENABLED" }),
+-        ),
+-        ("disabled", Json::Bool(disabled)),
+-    ]))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // --------------------------------------------------------------- proposals
+ pub fn cmd_propose(
+     root: &Path,
+     agent: Option<String>,
+     task: Option<String>,
+     base: Option<String>,

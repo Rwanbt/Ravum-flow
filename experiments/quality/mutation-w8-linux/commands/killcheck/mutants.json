@@ -1,0 +1,610 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace adoption_gate -> Result<Option<Json>, String> with Ok(None)\n@@ -209,32 +209,17 @@\n             \"note\",\n             Json::str(\"this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`\"),\n         ),\n     ]))\n }\n \n /// The adoption gate: a policy that this working copy never approved is not run.\n fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {\n-    let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe\n-    match state::load_adoption(root)? {\n-        None => Ok(Some(refused_code(\n-            \"POLICY_NOT_ADOPTED\",\n-            \"this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy\",\n-        ))),\n-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe\n-            \"POLICY_NOT_APPROVED\",\n-            format!(\n-                \".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`\",\n-                short(&adoption.policy_digest),\n-                short(&digest)\n-            ),\n-        ))),\n-        Some(_) => Ok(None),\n-    }\n+    Ok(None) /* ~ changed by cargo-mutants ~ */\n }\n \n // ----------------------------------------------------------------- doctor\n pub fn cmd_doctor(root: &Path) -> Result<Json, String> {\n     let git = Git::new(root);\n     let mut checks: Vec<Json> = Vec::new();\n     let mut push = |id: &str, status: &str, detail: String| {\n         checks.push(Json::obj(vec![\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "adoption_gate",
+      "return_type": "-> Result<Option<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 233
+        },
+        "start": {
+          "column": 1,
+          "line": 215
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(None)",
+    "package": "flow",
+    "replacement": "Ok(None)",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 232
+      },
+      "start": {
+        "column": 5,
+        "line": 217
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace adoption_gate -> Result<Option<Json>, String> with Ok(Some(Default::default()))\n@@ -209,32 +209,17 @@\n             \"note\",\n             Json::str(\"this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`\"),\n         ),\n     ]))\n }\n \n /// The adoption gate: a policy that this working copy never approved is not run.\n fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {\n-    let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe\n-    match state::load_adoption(root)? {\n-        None => Ok(Some(refused_code(\n-            \"POLICY_NOT_ADOPTED\",\n-            \"this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy\",\n-        ))),\n-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe\n-            \"POLICY_NOT_APPROVED\",\n-            format!(\n-                \".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`\",\n-                short(&adoption.policy_digest),\n-                short(&digest)\n-            ),\n-        ))),\n-        Some(_) => Ok(None),\n-    }\n+    Ok(Some(Default::default())) /* ~ changed by cargo-mutants ~ */\n }\n \n // ----------------------------------------------------------------- doctor\n pub fn cmd_doctor(root: &Path) -> Result<Json, String> {\n     let git = Git::new(root);\n     let mut checks: Vec<Json> = Vec::new();\n     let mut push = |id: &str, status: &str, detail: String| {\n         checks.push(Json::obj(vec![\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "adoption_gate",
+      "return_type": "-> Result<Option<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 233
+        },
+        "start": {
+          "column": 1,
+          "line": 215
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(Some(Default::default()))",
+    "package": "flow",
+    "replacement": "Ok(Some(Default::default()))",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 232
+      },
+      "start": {
+        "column": 5,
+        "line": 217
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard adoption.policy_digest != digest with true in adoption_gate\n@@ -215,17 +215,17 @@\n /// The adoption gate: a policy that this working copy never approved is not run.\n fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {\n     let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe\n     match state::load_adoption(root)? {\n         None => Ok(Some(refused_code(\n             \"POLICY_NOT_ADOPTED\",\n             \"this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy\",\n         ))),\n-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe\n+        Some(adoption) if true /* ~ changed by cargo-mutants ~ */ => Ok(Some(refused_code( // w8probe\n             \"POLICY_NOT_APPROVED\",\n             format!(\n                 \".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`\",\n                 short(&adoption.policy_digest),\n                 short(&digest)\n             ),\n         ))),\n         Some(_) => Ok(None),\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "adoption_gate",
+      "return_type": "-> Result<Option<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 233
+        },
+        "start": {
+          "column": 1,
+          "line": 215
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:223:27: replace match guard adoption.policy_digest != digest with true in adoption_gate",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 223
+      },
+      "start": {
+        "column": 27,
+        "line": 223
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard adoption.policy_digest != digest with false in adoption_gate\n@@ -215,17 +215,17 @@\n /// The adoption gate: a policy that this working copy never approved is not run.\n fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {\n     let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe\n     match state::load_adoption(root)? {\n         None => Ok(Some(refused_code(\n             \"POLICY_NOT_ADOPTED\",\n             \"this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy\",\n         ))),\n-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe\n+        Some(adoption) if false /* ~ changed by cargo-mutants ~ */ => Ok(Some(refused_code( // w8probe\n             \"POLICY_NOT_APPROVED\",\n             format!(\n                 \".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`\",\n                 short(&adoption.policy_digest),\n                 short(&digest)\n             ),\n         ))),\n         Some(_) => Ok(None),\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "adoption_gate",
+      "return_type": "-> Result<Option<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 233
+        },
+        "start": {
+          "column": 1,
+          "line": 215
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:223:27: replace match guard adoption.policy_digest != digest with false in adoption_gate",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 223
+      },
+      "start": {
+        "column": 27,
+        "line": 223
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in adoption_gate\n@@ -215,17 +215,17 @@\n /// The adoption gate: a policy that this working copy never approved is not run.\n fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {\n     let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe\n     match state::load_adoption(root)? {\n         None => Ok(Some(refused_code(\n             \"POLICY_NOT_ADOPTED\",\n             \"this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy\",\n         ))),\n-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe\n+        Some(adoption) if adoption.policy_digest == /* ~ changed by cargo-mutants ~ */ digest => Ok(Some(refused_code( // w8probe\n             \"POLICY_NOT_APPROVED\",\n             format!(\n                 \".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`\",\n                 short(&adoption.policy_digest),\n                 short(&digest)\n             ),\n         ))),\n         Some(_) => Ok(None),\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "adoption_gate",
+      "return_type": "-> Result<Option<Json>, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 233
+        },
+        "start": {
+          "column": 1,
+          "line": 215
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:223:50: replace != with == in adoption_gate",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 52,
+        "line": 223
+      },
+      "start": {
+        "column": 50,
+        "line": 223
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_doctor -> Result<Json, String> with Ok(Default::default())\n@@ -229,282 +229,17 @@\n             ),\n         ))),\n         Some(_) => Ok(None),\n     }\n }\n \n // ----------------------------------------------------------------- doctor\n pub fn cmd_doctor(root: &Path) -> Result<Json, String> {\n-    let git = Git::new(root);\n-    let mut checks: Vec<Json> = Vec::new();\n-    let mut push = |id: &str, status: &str, detail: String| {\n-        checks.push(Json::obj(vec![\n-            (\"id\", Json::str(id)),\n-            (\"status\", Json::str(status)),\n-            (\"detail\", Json::str(detail)),\n-        ]));\n-    };\n-    let version = git.version();\n-    let git_ok = version.starts_with(\"git version\");\n-    push(\"git\", if git_ok { \"OK\" } else { \"FAILED\" }, version);\n-\n-    push(\"repository\", \"OK\", format!(\"toplevel {}\", root.display()));\n-\n-    let initialized = state::config_path(root).exists();\n-    push(\n-        \"flow_initialized\",\n-        if initialized { \"OK\" } else { \"WARN\" },\n-        if initialized {\n-            \"config present\".to_string()\n-        } else {\n-            \"run `flow init`\".to_string()\n-        },\n-    );\n-\n-    // A policy is executed only after this working copy adopted it. `doctor`\n-    // states which of the three situations the repository is in.\n-    if initialized {\n-        match (state::load_config(root), state::load_adoption(root)) {\n-            (Ok(config), Ok(Some(adoption))) => {\n-                let digest = policy_digest(&effective_policy(&config, &config.obligations));\n-                if digest == adoption.policy_digest {\n-                    push(\n-                        \"policy_adopted\",\n-                        \"OK\",\n-                        format!(\n-                            \"{} obligation(s) approved by {} at {}\",\n-                            config.obligations.len(),\n-                            adoption.source,\n-                            adoption.approved_at\n-                        ),\n-                    );\n-                } else {\n-                    push(\n-                        \"policy_adopted\",\n-                        \"WARN\",\n-                        \"the policy changed since it was approved: `flow approve` after reviewing .flow/config.json\".to_string(),\n-                    );\n-                }\n-            }\n-            (Ok(_), Ok(None)) => push(\n-                \"policy_adopted\",\n-                \"WARN\",\n-                \"no adoption record: nothing in .flow/config.json will run until `flow init --adopt-policy` or `flow approve`\".to_string(),\n-            ),\n-            (Err(e), _) => push(\"policy_adopted\", \"FAILED\", e),\n-            (_, Err(e)) => push(\"policy_adopted\", \"FAILED\", e),\n-        }\n-    }\n-\n-    let lock = crate::lock::inspect(root);\n-    push(\n-        \"publication_lock\",\n-        match lock.attribution {\n-            \"absent\" | \"dead\" => \"OK\",\n-            \"live\" => \"WARN\",\n-            _ => \"FAILED\",\n-        },\n-        if !lock.present {\n-            \"no lock file\".to_string()\n-        } else {\n-            format!(\n-                \"present, owner attribution {}, purpose {:?}{}{}\",\n-                lock.attribution,\n-                lock.purpose,\n-                lock.pid.map(|p| format!(\", pid {p}\")).unwrap_or_default(),\n-                lock.age_s\n-                    .map(|a| format!(\", {a}s old\"))\n-                    .unwrap_or_default()\n-            )\n-        },\n-    );\n-\n-    // Hooks: the MVP does not execute them; the user must know.\n-    let hooks_dir = PathBuf::from(git.capture(&[\"rev-parse\", \"--git-path\", \"hooks\"])?);\n-    let hooks_dir = if hooks_dir.is_absolute() {\n-        hooks_dir\n-    } else {\n-        root.join(hooks_dir)\n-    };\n-    let mut hooks: Vec<String> = Vec::new();\n-    if let Ok(entries) = fs::read_dir(&hooks_dir) {\n-        for entry in entries.flatten() {\n-            let name = entry.file_name().to_string_lossy().to_string();\n-            if !name.ends_with(\".sample\") {\n-                hooks.push(name);\n-            }\n-        }\n-    }\n-    hooks.sort();\n-    push(\n-        \"hooks\",\n-        if hooks.is_empty() { \"OK\" } else { \"WARN\" },\n-        if hooks.is_empty() {\n-            \"no hook installed. Flow dispatches no hook of its own; the Git plumbing it calls can still run post-checkout and reference-transaction if you add them\".to_string()\n-        } else {\n-            format!(\n-                \"hooks present ({}): Flow dispatches none of its own, but the Git plumbing it calls runs post-checkout on `worktree add` and reference-transaction on `update-ref`, and a blocking reference-transaction hook aborts publish. Obligations are declared in .flow/config.json\",\n-                hooks.join(\", \")\n-            )\n-        },\n-    );\n-\n-    let longpaths = git\n-        .run(&[\"config\", \"--get\", \"core.longpaths\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    push(\n-        \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // w8probe\n-            \"WARN\"\n-        } else {\n-            \"OK\"\n-        },\n-        format!(\"core.longpaths={longpaths:?}\"),\n-    );\n-\n-    let ignorecase = git\n-        .run(&[\"config\", \"--get\", \"core.ignorecase\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    push(\n-        \"case_sensitivity\",\n-        if ignorecase == \"true\" { \"WARN\" } else { \"OK\" },\n-        format!(\n-            \"core.ignorecase={ignorecase:?}: a case-insensitive worktree cannot hold two paths differing only by case\"\n-        ),\n-    );\n-\n-    // Attribute sources that can rewrite a checkout. They are enumerated here for\n-    // disclosure only: `flow run` no longer guesses whether a conversion \"can\"\n-    // apply, it compares every regular file against its blob and refuses a\n-    // checkout that differs, so no attribute source (committed or host-local) is\n-    // a bypass. The list tells an operator *why* a refusal may have happened.\n-    let mut attribute_sources: Vec<String> = Vec::new();\n-    if root.join(\".gitattributes\").exists() {\n-        attribute_sources.push(\".gitattributes (in the working tree)\".to_string());\n-    }\n-    if root.join(\".git\").join(\"info\").join(\"attributes\").exists() {\n-        attribute_sources.push(\".git/info/attributes (local, not in the tree)\".to_string());\n-    }\n-    let attributes_file = git\n-        .run(&[\"config\", \"--get\", \"core.attributesFile\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    if !attributes_file.is_empty() {\n-        attribute_sources.push(format!(\"core.attributesFile={attributes_file}\"));\n-    }\n-    push(\n-        \"gitattributes\",\n-        if attribute_sources.is_empty() {\n-            \"OK\"\n-        } else {\n-            \"WARN\"\n-        },\n-        if attribute_sources.is_empty() {\n-            \"no content-attribute source present\".to_string()\n-        } else {\n-            format!(\n-                \"content-attribute source(s) present ({}): eol/filter rules can rewrite a checkout; `flow run` compares every regular file with the blob the tree names and refuses a checkout that differs, so this is a disclosure, not a bypass\",\n-                attribute_sources.join(\", \")\n-            )\n-        },\n-    );\n-\n-    let mut tools = Vec::new();\n-    for program in [\"cargo\", \"rustc\", \"node\", \"python\", \"python3\"] {\n-        tools.push(format!(\n-            \"{program}={}\",\n-            if program_on_path(program) {\n-                \"found\"\n-            } else {\n-                \"missing\"\n-            }\n-        ));\n-    }\n-    push(\"toolchains\", \"OK\", tools.join(\" \"));\n-\n-    push(\n-        \"execution_boundary\",\n-        \"WARN\",\n-        \"local-trusted: obligations run with your user rights, with a scrubbed environment, but WITHOUT an OS sandbox. Untrusted code execution is UNSUPPORTED.\".to_string(),\n-    );\n-    push(\n-        \"platform\",\n-        if cfg!(windows) { \"WARN\" } else { \"OK\" },\n-        format!(\n-            \"os={}: AppContainer/Job Object containment is not qualified for rustc/cargo/node\",\n-            std::env::consts::OS\n-        ),\n-    );\n-    let disabled = state::load_config(root)\n-        .map(|c| c.disabled)\n-        .unwrap_or(false);\n-    push(\n-        \"disabled\",\n-        if disabled { \"WARN\" } else { \"OK\" },\n-        format!(\"disabled={disabled}\"),\n-    );\n-\n-    let journal = match state::read_journal(root) {\n-        Ok(records) => Json::obj(vec![\n-            (\"status\", Json::str(\"OK\")),\n-            (\"records\", Json::Num(records.len() as f64)),\n-        ]),\n-        Err(e) => Json::obj(vec![\n-            (\"status\", Json::str(\"FAILED\")),\n-            (\"detail\", Json::str(e.to_string())),\n-        ]),\n-    };\n-    push(\n-        \"journal\",\n-        journal\n-            .get(\"status\")\n-            .and_then(Json::as_str)\n-            .unwrap_or(\"FAILED\"),\n-        journal\n-            .get(\"detail\")\n-            .and_then(Json::as_str)\n-            .map(str::to_string)\n-            .or_else(|| {\n-                journal\n-                    .get(\"records\")\n-                    .and_then(Json::as_num)\n-                    .map(|n| format!(\"{n} records readable\"))\n-            })\n-            .unwrap_or_else(|| \"unreadable\".to_string()),\n-    );\n-\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(\"REPORT\")),\n-        (\"overall\", Json::str(if checks.iter().any(|c| c.get(\"status\").and_then(Json::as_str) == Some(\"FAILED\")) { \"FAILED\" } else { \"OK\" })),\n-        (\"exit_contract\", Json::str(\"0 when overall=OK, 1 when overall=FAILED (a diagnostic that found a broken guarantee is not a success)\")),\n-        (\"checks\", Json::Arr(checks)),\n-        (\n-            \"guarantees\",\n-            Json::Arr(vec![\n-                Json::str(\"receipts bind an exact Git tree OID and one effective policy digest\"),\n-                Json::str(\"publication uses ref CAS with a durable intent/outcome journal\"),\n-                Json::str(\"the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory (Flow's own scratch ownership marker excepted) — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)\"),\n-                Json::str(\"a required obligation that cannot run makes the result UNSUPPORTED, never PASSED\"),\n-                Json::str(\"a selective run is recorded as PARTIAL and is never publishable\"),\n-            ]),\n-        ),\n-        (\n-            \"non_guarantees\",\n-            Json::Arr(vec![\n-                Json::str(\"no OS-level isolation of obligations\"),\n-                Json::str(\"hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A change already present when the checkout is checked is refused, and a change to a declared file while the obligations run is caught by a re-check after the last obligation; a hook that writes outside the checkout, a write reverted before the re-check, or a write after it is not detected. A blocking reference-transaction aborts publish\"),\n-                Json::str(\"no completeness proof of the build context\"),\n-                Json::str(\"no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one\"),\n-                Json::str(\"a checkout that cannot reproduce the tree is refused, not repaired\"),\n-            ]),\n-        ),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn program_on_path(program: &str) -> bool {\n     let exts: Vec<String> = if cfg!(windows) {\n         std::env::var(\"PATHEXT\")\n             .unwrap_or_else(|_| \".EXE;.CMD;.BAT\".into())\n             .split(';')\n             .map(|s| s.to_ascii_lowercase())\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:237:5: replace cmd_doctor -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 502
+      },
+      "start": {
+        "column": 5,
+        "line": 237
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace && with || in cmd_doctor\n@@ -349,17 +349,17 @@\n     );\n \n     let longpaths = git\n         .run(&[\"config\", \"--get\", \"core.longpaths\"])\n         .map(|o| o.stdout.trim().to_string())\n         .unwrap_or_default();\n     push(\n         \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // w8probe\n+        if cfg!(windows) || /* ~ changed by cargo-mutants ~ */ longpaths != \"true\" { // w8probe\n             \"WARN\"\n         } else {\n             \"OK\"\n         },\n         format!(\"core.longpaths={longpaths:?}\"),\n     );\n \n     let ignorecase = git\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:357:26: replace && with || in cmd_doctor",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 357
+      },
+      "start": {
+        "column": 26,
+        "line": 357
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in cmd_doctor\n@@ -349,17 +349,17 @@\n     );\n \n     let longpaths = git\n         .run(&[\"config\", \"--get\", \"core.longpaths\"])\n         .map(|o| o.stdout.trim().to_string())\n         .unwrap_or_default();\n     push(\n         \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // w8probe\n+        if cfg!(windows) && longpaths == /* ~ changed by cargo-mutants ~ */ \"true\" { // w8probe\n             \"WARN\"\n         } else {\n             \"OK\"\n         },\n         format!(\"core.longpaths={longpaths:?}\"),\n     );\n \n     let ignorecase = git\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:357:39: replace != with == in cmd_doctor",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 357
+      },
+      "start": {
+        "column": 39,
+        "line": 357
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_publish -> Result<Json, String> with Ok(Default::default())\n@@ -1543,512 +1543,17 @@\n pub fn cmd_publish(\n     root: &Path,\n     reference: Option<String>,\n     expected_old: Option<String>,\n     message: Option<String>,\n     candidate: Option<String>,\n     dry_run: bool,\n ) -> Result<Json, String> {\n-    let config = state::load_config(root)?;\n-    if config.disabled {\n-        return Ok(refused_code(\n-            \"DISABLED\",\n-            \"Flow is disabled in this repository\",\n-        ));\n-    }\n-    if let Err(reason) = validate_obligations(&config.obligations) {\n-        return Ok(refused_code(\"INVALID_POLICY\", reason));\n-    }\n-    if let Some(refusal) = adoption_gate(root, &config)? {\n-        return Ok(refusal);\n-    }\n-    let git = Git::new(root);\n-    let candidate_record = match candidate.as_deref() {\n-        None => None,\n-        Some(id) => match crate::proposal::Candidate::load(root, id)? {\n-            Some(record) => Some(record),\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_CANDIDATE\",\n-                    format!(\"no candidate {id:?} in .flow/candidates/\"),\n-                ))\n-            }\n-        },\n-    };\n-\n-    // Publish to a branch only. `HEAD`, a tag or a remote ref is either\n-    // ambiguous or the wrong object to move for \"this tree is verified\".\n-    let reference = match reference {\n-        Some(r) => {\n-            if !r.starts_with(\"refs/heads/\") {\n-                return Ok(refused_code(\n-                    \"REF_NOT_ALLOWED\",\n-                    format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n-                ));\n-            }\n-            r\n-        }\n-        None => current_ref(&git)?,\n-    };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n-        return Ok(refused_code(\n-            \"REF_NOT_ALLOWED\",\n-            format!(\"--ref {reference:?} is not a usable ref name\"),\n-        ));\n-    }\n-    if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n-        return Ok(refused_code(\n-            \"REF_NOT_ALLOWED\",\n-            format!(\"--ref {reference:?} is not a valid ref name (git check-ref-format)\"),\n-        ));\n-    }\n-    // A symbolic ref would move its target while this command reports the name\n-    // the operator passed: they would believe the commit landed on `alias` when\n-    // it landed on something else. Refuse rather than report a misleading name.\n-    let symref = git.run(&[\"symbolic-ref\", \"-q\", &reference])?;\n-    if symref.status == 0 {\n-        return Ok(refused_code(\n-            \"REF_IS_SYMREF\",\n-            format!(\n-                \"--ref {reference:?} is a symbolic ref to {:?}: publish to the real branch ref\",\n-                symref.stdout.trim()\n-            ),\n-        ));\n-    }\n-\n-    let _lock = match crate::lock::acquire_lock(root, \"publish\") {\n-        Ok(guard) => guard,\n-        Err(e) => return Ok(lock_refusal(root, e)),\n-    };\n-\n-    // Publish exactly the tree that `run` verified: the candidate's tree when\n-    // `--candidate` is given, the index tree otherwise.\n-    let tree = match &candidate_record {\n-        Some(record) => record.tree_oid.clone(),\n-        None => git.write_tree()?,\n-    };\n-    if candidate_record.is_some() {\n-        let present =\n-            git.run_bounded(&[\"cat-file\", \"-e\", &format!(\"{tree}^{{tree}}\")], None, None)?;\n-        if present.status != 0 {\n-            return Ok(refused_code(\n-                \"CANDIDATE_TREE_MISSING\",\n-                format!(\"candidate tree {tree} is no longer in the object store: nothing coherent can be published\"),\n-            ));\n-        }\n-    }\n-    let receipt = match Receipt::load(root, &tree)? {\n-        Some(r) => r,\n-        None => {\n-            return Ok(refused_code(\n-                \"NO_RECEIPT\",\n-                format!(\"no complete receipt for tree {tree}: run `flow run` on this exact index tree first (a selective run never produces one)\"),\n-            ))\n-        }\n-    };\n-\n-    // 1. the receipt must be written by this version, unaltered.\n-    if receipt.schema != state::SCHEMA_RECEIPT {\n-        return Ok(refused_code(\n-            \"RECEIPT_SCHEMA_STALE\",\n-            format!(\n-                \"receipt schema {:?} is not {}: re-run `flow run`\",\n-                receipt.schema,\n-                state::SCHEMA_RECEIPT\n-            ),\n-        ));\n-    }\n-    if let Err(e) = state::verify_receipt_integrity(&receipt.json) {\n-        return Ok(refused_code(\"RECEIPT_INTEGRITY\", e));\n-    }\n-    // 2. it must name this tree, and cover the whole declared policy.\n-    if receipt.tree_oid != tree {\n-        return Ok(refused_code(\n-            \"TREE_MISMATCH\",\n-            format!(\n-                \"receipt integrity error: file for {tree} names tree {:?}\",\n-                receipt.tree_oid\n-            ),\n-        ));\n-    }\n-    if receipt.scope_mode != \"complete\" {\n-        return Ok(refused_code(\n-            \"SCOPE_INCOMPLETE\",\n-            format!(\n-                \"receipt scope is {:?}: a selective run is diagnostic and never publishable\",\n-                receipt.scope_mode\n-            ),\n-        ));\n-    }\n-    if !receipt.missing_required.is_empty() {\n-        return Ok(refused_code(\n-            \"MISSING_REQUIRED\",\n-            format!(\n-                \"receipt does not cover required obligations {:?}\",\n-                receipt.missing_required\n-            ),\n-        ));\n-    }\n-    // 3. the policy must still be the policy the receipt proves. This is\n-    //    recomputed from the current configuration, never read from the receipt.\n-    let policy = effective_policy(&config, &config.obligations);\n-    let expected_digest = policy_digest(&policy);\n-    if receipt.policy_digest != expected_digest {\n-        return Ok(refused_code(\n-            \"STALE_POLICY\",\n-            format!(\n-                \"the receipt proves policy {} but the current policy is {}: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides\",\n-                short(&receipt.policy_digest),\n-                short(&expected_digest)\n-            ),\n-        ));\n-    }\n-    if receipt.policy_version != config.policy_version {\n-        return Ok(refused_code(\n-            \"POLICY_VERSION_MISMATCH\",\n-            format!(\n-                \"receipt policy_version {:?} != current {:?}\",\n-                receipt.policy_version, config.policy_version\n-            ),\n-        ));\n-    }\n-    if receipt.execution_boundary != config.execution_boundary {\n-        return Ok(refused_code(\n-            \"EXECUTION_BOUNDARY_MISMATCH\",\n-            format!(\n-                \"receipt execution_boundary {:?} != current {:?}\",\n-                receipt.execution_boundary, config.execution_boundary\n-            ),\n-        ));\n-    }\n-    // The context covers the toolchain and platform the run actually used; a Git\n-    // upgrade between run and publish changes it, and the receipt is then no\n-    // longer a statement about the tool that would publish.\n-    let expected_context = build_context_id(&git, &tree, &policy);\n-    if receipt.context_id != expected_context {\n-        return Ok(refused_code(\n-            \"CONTEXT_MISMATCH\",\n-            format!(\n-                \"the receipt context is {} but this environment now computes {}: the toolchain or platform changed since the run\",\n-                short(&receipt.context_id),\n-                short(&expected_context)\n-            ),\n-        ));\n-    }\n-    // 4. every currently required obligation must be present *and* passed. The\n-    //    global status alone is not enough: a missing entry is not a pass.\n-    for ob in config.obligations.iter().filter(|o| o.required) {\n-        match receipt\n-            .obligations\n-            .iter()\n-            .find(|x| x.get(\"id\").and_then(Json::as_str) == Some(ob.id.as_str()))\n-        {\n-            None => {\n-                return Ok(refused_code(\n-                    \"MISSING_REQUIRED\",\n-                    format!(\"required obligation {:?} is absent from the receipt\", ob.id),\n-                ))\n-            }\n-            Some(entry) if entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") => { // w8probe\n-                return Ok(refused_code(\n-                    \"REQUIRED_NOT_PASSED\",\n-                    format!(\n-                        \"required obligation {:?} has status {:?}\",\n-                        ob.id,\n-                        entry\n-                            .get(\"status\")\n-                            .and_then(Json::as_str)\n-                            .unwrap_or(\"UNKNOWN\")\n-                    ),\n-                ))\n-            }\n-            Some(_) => {}\n-        }\n-    }\n-    if receipt.status != \"PASSED\" {\n-        return Ok(refused_code(\n-            \"STATUS_NOT_PASSED\",\n-            format!(\n-                \"receipt status is {}: a non-PASSED receipt is never publishable\",\n-                receipt.status\n-            ),\n-        ));\n-    }\n-    // 5. the verification commit must still describe the same tree, when the\n-    //    object still exists (it may have been pruned; absence is not a failure).\n-    if !receipt.commit_oid.is_empty() { // w8probe\n-        if let Ok(t) = git.capture(&[\"rev-parse\", &format!(\"{}^{{tree}}\", receipt.commit_oid)]) {\n-            if t != tree {\n-                return Ok(refused_code(\n-                    \"RECEIPT_COMMIT_MISMATCH\",\n-                    format!(\n-                        \"receipt commit {} carries tree {t}, not the verified {tree}\",\n-                        receipt.commit_oid\n-                    ),\n-                ));\n-            }\n-        }\n-    }\n-\n-    let old = match expected_old {\n-        Some(o) => o,\n-        None => match git.show_ref(&reference)? {\n-            Some(o) => o,\n-            None => {\n-                return Ok(refused_code(\n-                    \"UNKNOWN_REF\",\n-                    format!(\"cannot resolve {reference}\"),\n-                ))\n-            }\n-        },\n-    };\n-    let current = git.show_ref(&reference)?;\n-    if current.as_deref() != Some(old.as_str()) {\n-        return Ok(refused_code(\n-            \"STALE_REF\",\n-            format!(\"stale expected old OID: ref is {current:?}, expected {old}\"),\n-        ));\n-    }\n-    // Publishing a tree the ref already carries would only add an empty commit.\n-    if let Ok(current_tree) = git.capture(&[\"rev-parse\", &format!(\"{old}^{{tree}}\")]) {\n-        if current_tree == tree {\n-            return Ok(refused_code(\n-                \"ALREADY_PUBLISHED\",\n-                format!(\"{reference} already points at a commit whose tree is {tree}: nothing to publish\"),\n-            ));\n-        }\n-    }\n-\n-    // A candidate is a statement about \"base + these proposals\". Publishing it on\n-    // top of a different commit would silently claim a merge Flow never made.\n-    if let Some(record) = &candidate_record {\n-        if record.base_commit != old { // w8probe\n-            return Ok(refused_code(\n-                \"BASE_MISMATCH\",\n-                format!(\n-                    \"candidate {} was assembled on base {} but this publication would land on {}: re-assemble on the new base and re-run, or pass the matching --expected-old\",\n-                    record.candidate_id, record.base_commit, old\n-                ),\n-            ));\n-        }\n-    }\n-    if dry_run {\n-        // Everything above is the same preflight a real publication performs.\n-        // Nothing below this point has happened yet: no commit object, no ref\n-        // movement, no journal line.\n-        return Ok(Json::obj(vec![\n-            (\"status\", Json::str(\"PLAN\")),\n-            (\"schema\", Json::str(state::SCHEMA_PLAN)),\n-            (\"dry_run\", Json::Bool(true)),\n-            (\"ref\", Json::str(reference)),\n-            (\"old\", Json::str(old)),\n-            (\"tree\", Json::str(tree.clone())),\n-            (\n-                \"candidate_id\",\n-                match &candidate_record {\n-                    Some(record) => Json::str(record.candidate_id.clone()),\n-                    None => Json::Null,\n-                },\n-            ),\n-            (\"context_id\", Json::str(receipt.context_id.clone())),\n-            (\"policy_digest\", Json::str(receipt.policy_digest.clone())),\n-            (\"policy_version\", Json::str(receipt.policy_version.clone())),\n-            (\n-                \"execution_boundary\",\n-                Json::str(receipt.execution_boundary.clone()),\n-            ),\n-            (\n-                \"obligations\",\n-                Json::Arr(\n-                    receipt\n-                        .obligations\n-                        .iter()\n-                        .filter_map(|o| o.get(\"id\").and_then(Json::as_str).map(Json::str))\n-                        .collect(),\n-                ),\n-            ),\n-            (\n-                \"changes\",\n-                match &candidate_record {\n-                    Some(record) => {\n-                        Json::Arr(record.changes.iter().map(|c| c.to_json()).collect())\n-                    }\n-                    None => Json::Arr(Vec::new()),\n-                },\n-            ),\n-            (\n-                \"journal\",\n-                Json::str(state::journal_path(root).to_string_lossy().to_string()),\n-            ),\n-            (\n-                \"note\",\n-                Json::str(\"plan only: no commit was created, no ref was moved, no journal record was appended\"),\n-            ),\n-        ]));\n-    }\n-    let message = message.unwrap_or_else(|| format!(\"flow: publish verified tree {tree}\"));\n-    let commit = git.commit_tree(&tree, &old, &message)?;\n-    // The commit we are about to publish must carry exactly the qualified tree.\n-    let prepared_tree = git.capture(&[\"rev-parse\", &format!(\"{commit}^{{tree}}\")])?;\n-    if prepared_tree != tree {\n-        return Ok(refused_code(\n-            \"COMMIT_TREE_MISMATCH\",\n-            format!(\n-                \"prepared commit {commit} carries tree {prepared_tree}, not the verified {tree}\"\n-            ),\n-        ));\n-    }\n-    let id = format!(\n-        \"{}-{}-{}\",\n-        state::iso8601_now(),\n-        &commit[..12.min(commit.len())],\n-        state::unique_suffix()\n-    );\n-    if crash_point(\"before-intent\") {\n-        std::process::exit(89);\n-    }\n-    state::append_journal(\n-        root,\n-        &Json::obj(vec![\n-            (\"event\", Json::str(\"intent\")),\n-            (\"id\", Json::str(id.clone())),\n-            (\"ref\", Json::str(reference.clone())),\n-            (\"old\", Json::str(old.clone())),\n-            (\"new\", Json::str(commit.clone())),\n-            (\"tree\", Json::str(tree.clone())),\n-            (\"at\", Json::str(state::iso8601_now())),\n-        ]),\n-    )?;\n-    if crash_point(\"after-intent\") {\n-        std::process::exit(89);\n-    }\n-    let recheck = git.show_ref(&reference)?;\n-    if recheck.as_deref() != Some(old.as_str()) {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(\"REFUSED_STALE\")),\n-                (\"observed\", Json::str(recheck.unwrap_or_default())),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"REF_MOVED\",\n-            \"ref moved between intent and CAS: nothing was published\",\n-        ));\n-    }\n-    let res = git.update_ref(&reference, &commit, &old)?;\n-    if res.status != 0 {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(\"REFUSED\")),\n-                (\"stderr\", Json::str(gitcli::redact(res.stderr.trim()))),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"UPDATE_REF_REFUSED\",\n-            format!(\"git update-ref refused: {}\", res.stderr.trim()),\n-        ));\n-    }\n-    if crash_point(\"after-ref\") {\n-        std::process::exit(89);\n-    }\n-    // Post-CAS observation: the ref must now carry exactly the prepared commit.\n-    // Anything else is an outcome Flow did not plan, so it is reported as needing\n-    // reconciliation rather than as a success.\n-    let observed = git.show_ref(&reference)?;\n-    if observed.as_deref() != Some(commit.as_str()) {\n-        state::append_journal(\n-            root,\n-            &Json::obj(vec![\n-                (\"event\", Json::str(\"outcome\")),\n-                (\"id\", Json::str(id)),\n-                (\"status\", Json::str(state::STATE_NEEDS_RECONCILIATION)),\n-                (\"observed\", Json::str(observed.unwrap_or_default())),\n-                (\"at\", Json::str(state::iso8601_now())),\n-            ]),\n-        )?;\n-        return Ok(refused_code(\n-            \"NEEDS_RECONCILIATION\",\n-            format!(\"update-ref reported success but {reference} does not carry {commit}: inspect with `flow reconcile`\"),\n-        ));\n-    }\n-    state::append_journal(\n-        root,\n-        &Json::obj(vec![\n-            (\"event\", Json::str(\"outcome\")),\n-            (\"id\", Json::str(id)),\n-            (\"status\", Json::str(\"PUBLISHED\")),\n-            (\"commit\", Json::str(commit.clone())),\n-            (\"at\", Json::str(state::iso8601_now())),\n-        ]),\n-    )?;\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(\"PUBLISHED\")),\n-        (\n-            \"candidate_id\",\n-            match &candidate_record {\n-                Some(record) => Json::str(record.candidate_id.clone()),\n-                None => Json::Null,\n-            },\n-        ),\n-        (\"ref\", Json::str(reference)),\n-        (\"old\", Json::str(old)),\n-        (\"commit\", Json::str(commit)),\n-        (\"tree\", Json::str(tree)),\n-        (\"context_id\", Json::str(receipt.context_id.clone())),\n-        (\"policy_digest\", Json::str(receipt.policy_digest.clone())),\n-        (\"policy_version\", Json::str(receipt.policy_version.clone())),\n-        (\n-            \"execution_boundary\",\n-            Json::str(receipt.execution_boundary.clone()),\n-        ),\n-        (\"receipt_logs\", Json::Num(receipt.logs.len() as f64)),\n-        (\"receipt_started_at\", Json::str(receipt.started_at.clone())),\n-        (\n-            \"receipt_finished_at\",\n-            Json::str(receipt.finished_at.clone()),\n-        ),\n-        (\"receipt_commit\", Json::str(receipt.commit_oid.clone())),\n-        (\n-            \"obligations\",\n-            Json::Arr(\n-                receipt\n-                    .obligations\n-                    .iter()\n-                    .filter_map(|o| {\n-                        o.get(\"id\")\n-                            .and_then(Json::as_str)\n-                            .map(|id| Json::str(id.to_string()))\n-                    })\n-                    .collect(),\n-            ),\n-        ),\n-        (\n-            \"worktree_diff\",\n-            Json::Arr(\n-                receipt\n-                    .worktree_diff\n-                    .iter()\n-                    .map(|p| Json::str(p.clone()))\n-                    .collect(),\n-            ),\n-        ),\n-        (\n-            \"note\",\n-            Json::str(\"only refs were moved; the working tree was not modified and may now differ\"),\n-        ),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n // -------------------------------------------------------------- reconcile\n /// Count journal records by `id` for one event kind.\n /// A lock refusal carries its own code: a held lock and an unattributable one\n /// have different remedies, and the second must never look like \"try again\".\n fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {\n     match err {\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:1551:5: replace cmd_publish -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 2046
+      },
+      "start": {
+        "column": 5,
+        "line": 1551
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace || with && in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n+    if reference.len() > 1024 || reference.contains('\\0') && /* ~ changed by cargo-mutants ~ */ reference.contains(' ') { // w8probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:59: replace || with && in cmd_publish",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 1592
+      },
+      "start": {
+        "column": 59,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace || with && in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n+    if reference.len() > 1024 && /* ~ changed by cargo-mutants ~ */ reference.contains('\\0') || reference.contains(' ') { // w8probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:31: replace || with && in cmd_publish",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 1592
+      },
+      "start": {
+        "column": 31,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with == in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n+    if reference.len() == /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with == in cmd_publish",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with < in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n+    if reference.len() < /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with < in cmd_publish",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace > with >= in cmd_publish\n@@ -1584,17 +1584,17 @@\n                     \"REF_NOT_ALLOWED\",\n                     format!(\"--ref {r:?} must be a full branch ref under refs/heads/\"),\n                 ));\n             }\n             r\n         }\n         None => current_ref(&git)?,\n     };\n-    if reference.len() > 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n+    if reference.len() >= /* ~ changed by cargo-mutants ~ */ 1024 || reference.contains('\\0') || reference.contains(' ') { // w8probe\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n             format!(\"--ref {reference:?} is not a usable ref name\"),\n         ));\n     }\n     if git.run(&[\"check-ref-format\", &reference])?.status != 0 {\n         return Ok(refused_code(\n             \"REF_NOT_ALLOWED\",\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1592:24: replace > with >= in cmd_publish",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 25,
+        "line": 1592
+      },
+      "start": {
+        "column": 24,
+        "line": 1592
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") with true in cmd_publish\n@@ -1743,17 +1743,17 @@\n             .find(|x| x.get(\"id\").and_then(Json::as_str) == Some(ob.id.as_str()))\n         {\n             None => {\n                 return Ok(refused_code(\n                     \"MISSING_REQUIRED\",\n                     format!(\"required obligation {:?} is absent from the receipt\", ob.id),\n                 ))\n             }\n-            Some(entry) if entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") => { // w8probe\n+            Some(entry) if true /* ~ changed by cargo-mutants ~ */ => { // w8probe\n                 return Ok(refused_code(\n                     \"REQUIRED_NOT_PASSED\",\n                     format!(\n                         \"required obligation {:?} has status {:?}\",\n                         ob.id,\n                         entry\n                             .get(\"status\")\n                             .and_then(Json::as_str)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:1751:28: replace match guard entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") with true in cmd_publish",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 88,
+        "line": 1751
+      },
+      "start": {
+        "column": 28,
+        "line": 1751
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace match guard entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") with false in cmd_publish\n@@ -1743,17 +1743,17 @@\n             .find(|x| x.get(\"id\").and_then(Json::as_str) == Some(ob.id.as_str()))\n         {\n             None => {\n                 return Ok(refused_code(\n                     \"MISSING_REQUIRED\",\n                     format!(\"required obligation {:?} is absent from the receipt\", ob.id),\n                 ))\n             }\n-            Some(entry) if entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") => { // w8probe\n+            Some(entry) if false /* ~ changed by cargo-mutants ~ */ => { // w8probe\n                 return Ok(refused_code(\n                     \"REQUIRED_NOT_PASSED\",\n                     format!(\n                         \"required obligation {:?} has status {:?}\",\n                         ob.id,\n                         entry\n                             .get(\"status\")\n                             .and_then(Json::as_str)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/commands.rs:1751:28: replace match guard entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") with false in cmd_publish",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 88,
+        "line": 1751
+      },
+      "start": {
+        "column": 28,
+        "line": 1751
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in cmd_publish\n@@ -1743,17 +1743,17 @@\n             .find(|x| x.get(\"id\").and_then(Json::as_str) == Some(ob.id.as_str()))\n         {\n             None => {\n                 return Ok(refused_code(\n                     \"MISSING_REQUIRED\",\n                     format!(\"required obligation {:?} is absent from the receipt\", ob.id),\n                 ))\n             }\n-            Some(entry) if entry.get(\"status\").and_then(Json::as_str) != Some(\"PASSED\") => { // w8probe\n+            Some(entry) if entry.get(\"status\").and_then(Json::as_str) == /* ~ changed by cargo-mutants ~ */ Some(\"PASSED\") => { // w8probe\n                 return Ok(refused_code(\n                     \"REQUIRED_NOT_PASSED\",\n                     format!(\n                         \"required obligation {:?} has status {:?}\",\n                         ob.id,\n                         entry\n                             .get(\"status\")\n                             .and_then(Json::as_str)\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1751:71: replace != with == in cmd_publish",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 1751
+      },
+      "start": {
+        "column": 71,
+        "line": 1751
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ delete ! in cmd_publish\n@@ -1770,17 +1770,17 @@\n             format!(\n                 \"receipt status is {}: a non-PASSED receipt is never publishable\",\n                 receipt.status\n             ),\n         ));\n     }\n     // 5. the verification commit must still describe the same tree, when the\n     //    object still exists (it may have been pruned; absence is not a failure).\n-    if !receipt.commit_oid.is_empty() { // w8probe\n+    if  /* ~ changed by cargo-mutants ~ */receipt.commit_oid.is_empty() { // w8probe\n         if let Ok(t) = git.capture(&[\"rev-parse\", &format!(\"{}^{{tree}}\", receipt.commit_oid)]) {\n             if t != tree {\n                 return Ok(refused_code(\n                     \"RECEIPT_COMMIT_MISMATCH\",\n                     format!(\n                         \"receipt commit {} carries tree {t}, not the verified {tree}\",\n                         receipt.commit_oid\n                     ),\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/commands.rs:1778:8: delete ! in cmd_publish",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 1778
+      },
+      "start": {
+        "column": 8,
+        "line": 1778
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in cmd_publish\n@@ -1816,17 +1816,17 @@\n                 format!(\"{reference} already points at a commit whose tree is {tree}: nothing to publish\"),\n             ));\n         }\n     }\n \n     // A candidate is a statement about \"base + these proposals\". Publishing it on\n     // top of a different commit would silently claim a merge Flow never made.\n     if let Some(record) = &candidate_record {\n-        if record.base_commit != old { // w8probe\n+        if record.base_commit == /* ~ changed by cargo-mutants ~ */ old { // w8probe\n             return Ok(refused_code(\n                 \"BASE_MISMATCH\",\n                 format!(\n                     \"candidate {} was assembled on base {} but this publication would land on {}: re-assemble on the new base and re-run, or pass the matching --expected-old\",\n                     record.candidate_id, record.base_commit, old\n                 ),\n             ));\n         }\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_publish",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 2047
+        },
+        "start": {
+          "column": 1,
+          "line": 1543
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:1824:31: replace != with == in cmd_publish",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 33,
+        "line": 1824
+      },
+      "start": {
+        "column": 31,
+        "line": 1824
+      }
+    }
+  }
+]

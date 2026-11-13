@@ -1,0 +1,30 @@
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index 7175ef1..ab75387 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -153 +153 @@ impl Git {
+-            status: exit.unwrap_or(-1),
++            status: exit.unwrap_or(-1), // w8probe
+@@ -354 +354 @@ fn allowed_env() -> Vec<(OsString, OsString)> {
+-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect();
++    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect(); // w8probe
+@@ -523 +523 @@ fn resolve_program(program: &str) -> Option<PathBuf> {
+-    resolve_program_in(
++    resolve_program_in( // w8probe
+@@ -539 +539 @@ fn resolve_program_in(
+-    let path = path?;
++    let path = path?; // w8probe
+@@ -543 +543 @@ fn resolve_program_in(
+-        .filter(|e| !e.is_empty())
++        .filter(|e| !e.is_empty()) // w8probe
+@@ -623 +623 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+-                if started.elapsed() > deadline {
++                if started.elapsed() > deadline { // w8probe
+@@ -640 +640 @@ pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {
+-    let reader_deadline = Instant::now() + READER_GRACE;
++    let reader_deadline = Instant::now() + READER_GRACE; // w8probe
+@@ -666,2 +666,2 @@ fn reap_bounded(child: &mut Child) {
+-    let deadline = Instant::now() + REAP_GRACE;
+-    while Instant::now() < deadline {
++    let deadline = Instant::now() + REAP_GRACE; // w8probe
++    while Instant::now() < deadline { // w8probe

@@ -1,0 +1,28 @@
+--- crates/flow/src/lock.rs
++++ replace nonce -> String with String::new()
+@@ -155,24 +155,17 @@
+         }
+     }
+ }
+ 
+ /// A process-unique, non-cryptographic nonce. It only has to distinguish two
+ /// Flow lock writers, not to resist an attacker (the lock is not a security
+ /// boundary against a local writer with the same rights).
+ fn nonce() -> String {
+-    use std::sync::atomic::{AtomicU64, Ordering};
+-    static COUNTER: AtomicU64 = AtomicU64::new(0);
+-    let nanos = std::time::SystemTime::now()
+-        .duration_since(std::time::UNIX_EPOCH)
+-        .map(|d| d.as_nanos())
+-        .unwrap_or(0);
+-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);
+-    format!("{:x}-{:x}-{:x}", std::process::id(), nanos, n)
++    String::new() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// How long a reader waits for a concurrent creator to finish writing the lock
+ /// record before concluding that the file is unattributable.
+ const CREATE_GRACE: Duration = Duration::from_millis(750);
+ 
+ /// Create the lock file **with its full content** in one atomic step.
+ ///

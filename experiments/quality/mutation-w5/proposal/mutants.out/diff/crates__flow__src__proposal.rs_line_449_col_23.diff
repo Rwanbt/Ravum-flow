@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in validate_path
+@@ -441,17 +441,17 @@
+     }
+     if change.new_mode == "120000" && change.status != "D" && !change.new_oid.is_empty() {
+         // A symlink whose target escapes the tree makes the checkout write
+         // through it, so the materialised tree is no longer the verified tree.
+         // Refuse at admission, where the agent can still correct its proposal.
+         let out = git
+             .run_bounded(&["cat-file", "blob", &change.new_oid], None, None)
+             .map_err(|e| refusal("SYMLINK_UNREADABLE", e))?;
+-        if out.status != 0 {
++        if out.status == /* ~ changed by cargo-mutants ~ */ 0 {
+             return Err(refusal(
+                 "SYMLINK_UNREADABLE",
+                 format!(
+                     "cannot read the symlink target of {path:?}: {}",
+                     out.stderr.trim()
+                 ),
+             ));
+         }

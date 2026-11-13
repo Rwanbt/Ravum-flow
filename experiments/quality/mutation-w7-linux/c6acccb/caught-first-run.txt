@@ -1,0 +1,14 @@
+crates/flow/src/commands.rs:996:5: replace verify_checkout_modes -> Result<(), String> with Ok(())
+crates/flow/src/commands.rs:1000:33: replace && with || in verify_checkout_modes
+crates/flow/src/commands.rs:1000:21: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1006:64: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1006:56: replace & with | in verify_checkout_modes
+crates/flow/src/commands.rs:1006:56: replace & with ^ in verify_checkout_modes
+crates/flow/src/commands.rs:1007:27: replace != with == in verify_checkout_modes
+crates/flow/src/commands.rs:1007:36: replace == with != in verify_checkout_modes
+crates/flow/src/gitcli.rs:571:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:340:27: replace && with || in guard_below_flow
+crates/flow/src/state.rs:340:43: replace > with == in guard_below_flow
+crates/flow/src/state.rs:340:43: replace > with >= in guard_below_flow
+crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace * with / in parse_cat_file_batch
+@@ -1118,17 +1118,17 @@
+ /// corrupted object store or a Git that answers nonsense, and none of them may
+ /// become a panic (a panic is not a refusal and could bypass cleanup).
+ fn parse_cat_file_batch<'e, 'b>(
+     tree: &str,
+     regular: &[(&'e str, &'e str)],
+     bytes: &'b [u8],
+ ) -> Result<Vec<&'b [u8]>, String> {
+     /// Retained bytes for the whole comparison, before refusing.
+-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
++    const CONTENT_BUDGET: usize = 64 / /* ~ changed by cargo-mutants ~ */ 1024 * 1024;
+ 
+     let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());
+     let mut position = 0usize;
+     let mut total = 0usize;
+     for (oid, path) in regular {
+         let rest = bytes
+             .get(position..)
+             .ok_or_else(|| format!("truncated cat-file batch before {path:?}"))?;

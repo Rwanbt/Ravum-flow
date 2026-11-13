@@ -1,0 +1,36 @@
+--- crates/flow/src/commands.rs
++++ replace adoption_gate -> Result<Option<Json>, String> with Ok(Some(Default::default()))
+@@ -209,32 +209,17 @@
+             "note",
+             Json::str("this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`"),
+         ),
+     ]))
+ }
+ 
+ /// The adoption gate: a policy that this working copy never approved is not run.
+ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+-    let digest = policy_digest(&effective_policy(config, &config.obligations)); // survival-probe
+-    match state::load_adoption(root)? {
+-        None => Ok(Some(refused_code(
+-            "POLICY_NOT_ADOPTED",
+-            "this working copy has no adoption record for .flow/config.json: nothing in it will be executed. Run `flow init --adopt-policy` (or `flow approve`) after reading the policy",
+-        ))),
+-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // survival-probe
+-            "POLICY_NOT_APPROVED",
+-            format!(
+-                ".flow/config.json changed since it was approved (approved {}, current {}): review it, then run `flow approve`",
+-                short(&adoption.policy_digest),
+-                short(&digest)
+-            ),
+-        ))),
+-        Some(_) => Ok(None),
+-    }
++    Ok(Some(Default::default())) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ----------------------------------------------------------------- doctor
+ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
+     let git = Git::new(root);
+     let mut checks: Vec<Json> = Vec::new();
+     let mut push = |id: &str, status: &str, detail: String| {
+         checks.push(Json::obj(vec![

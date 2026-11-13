@@ -1,0 +1,3 @@
+crates/flow/src/commands.rs:1000:41: replace != with == in verify_checkout_modes
+crates/flow/src/state.rs:340:43: replace > with < in guard_below_flow
+crates/flow/src/state.rs:377:52: delete ! in write_atomic_bytes

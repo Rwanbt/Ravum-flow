@@ -1,0 +1,27 @@
+--- crates/flow/src/state.rs
++++ replace seal_receipt -> Json with Default::default()
+@@ -558,23 +558,17 @@
+ 
+ /// Bind a receipt to its own content.
+ ///
+ /// This detects accidental corruption and casual editing of a receipt on disk.
+ /// It is **not** a signature and **not** protection against an attacker who can
+ /// rewrite both the config and the receipt: that would require a key the Flow
+ /// process does not have. The honest boundary is documented in the report.
+ pub fn seal_receipt(value: &Json) -> Json {
+-    let body = without_field(value, "integrity");
+-    let digest = crate::sha256::sha256_hex(body.to_string().as_bytes());
+-    let mut sealed = body;
+-    if let Json::Obj(pairs) = &mut sealed {
+-        pairs.push(("integrity".to_string(), Json::str(digest)));
+-    }
+-    sealed
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn verify_receipt_integrity(value: &Json) -> Result<(), String> {
+     let recorded = value
+         .get("integrity")
+         .and_then(Json::as_str)
+         .ok_or("receipt carries no integrity digest")?;
+     let body = without_field(value, "integrity");

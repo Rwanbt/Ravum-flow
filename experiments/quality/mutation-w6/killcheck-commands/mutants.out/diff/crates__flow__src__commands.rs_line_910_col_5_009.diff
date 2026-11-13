@@ -1,0 +1,59 @@
+--- crates/flow/src/commands.rs
++++ replace parse_tree_entries -> Result<Vec<(String, String, String, u64)>, String> with Ok(vec![("xyzzy".into(), String::new(), String::new(), 0)])
+@@ -902,55 +902,17 @@
+ 
+ /// The parsing half of [`ls_tree_entries`], separated so every refusal can be
+ /// pinned against a crafted Git answer (a hostile or broken Git is an input, not
+ /// an oracle): the walk never panics, and an entry it cannot read is refused.
+ fn parse_tree_entries(
+     tree: &str,
+     listing: &[u8],
+ ) -> Result<Vec<(String, String, String, u64)>, String> {
+-    /// A tree beyond this size is not a realistic verification target; refusing
+-    /// keeps the walk bounded.
+-    const MAX_ENTRIES: usize = 200_000;
+-
+-    let mut expected: Vec<(String, String, String, u64)> = Vec::new();
+-    for entry in listing.split(|byte| *byte == 0) {
+-        if entry.is_empty() {
+-            continue;
+-        }
+-        let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
+-            return Err(format!("tree {tree}: unparsable ls-tree entry"));
+-        };
+-        let meta = String::from_utf8_lossy(&entry[..tab]).to_string();
+-        let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
+-            format!(
+-                "tree {tree} holds a path that is not valid UTF-8: this platform cannot represent it faithfully, so the tree cannot be verified"
+-            )
+-        })?;
+-        if path.is_empty() {
+-            continue;
+-        }
+-        let mut fields = meta.split_whitespace();
+-        let mode = fields.next().unwrap_or("").to_string();
+-        let _kind = fields.next().unwrap_or("");
+-        let oid = fields.next().unwrap_or("").to_string();
+-        // `ls-tree -l` prints the object size, right-aligned, before the tab.
+-        let size = fields
+-            .next()
+-            .and_then(|v| v.parse::<u64>().ok())
+-            .unwrap_or(0);
+-        expected.push((mode, oid, path.replace('\\', "/"), size));
+-    }
+-    if expected.len() > MAX_ENTRIES { // survival-probe
+-        return Err(format!(
+-            "tree {tree} has {} entries, above the {MAX_ENTRIES}-entry fidelity budget",
+-            expected.len()
+-        ));
+-    }
+-    Ok(expected)
++    Ok(vec![("xyzzy".into(), String::new(), String::new(), 0)]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The directories the tree declares (`ls-tree -r -d`), so an **empty** directory
+ /// created by a hook is visible: Git does not represent empty directories, but an
+ /// obligation that discovers directories can still see one.
+ fn ls_tree_dirs(git: &Git, tree: &str) -> Result<BTreeSet<String>, String> {
+     let listing = git.run(&["ls-tree", "-r", "-d", "-z", tree])?;
+     if listing.status != 0 {

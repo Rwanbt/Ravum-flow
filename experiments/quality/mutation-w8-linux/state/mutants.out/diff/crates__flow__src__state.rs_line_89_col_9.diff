@@ -1,0 +1,46 @@
+--- crates/flow/src/state.rs
++++ replace Config::to_json -> Json with Default::default()
+@@ -81,42 +81,17 @@
+             obligations: Vec::new(),
+             disabled: false,
+         }
+     }
+ }
+ 
+ impl Config {
+     pub fn to_json(&self) -> Json {
+-        let obs = self
+-            .obligations
+-            .iter()
+-            .map(|o| {
+-                Json::obj(vec![
+-                    ("id", Json::str(o.id.clone())),
+-                    ("program", Json::str(o.program.clone())),
+-                    (
+-                        "args",
+-                        Json::Arr(o.args.iter().map(|a| Json::str(a.clone())).collect()),
+-                    ),
+-                    ("required", Json::Bool(o.required)),
+-                    ("timeout_s", Json::Num(o.timeout_s as f64)),
+-                ])
+-            })
+-            .collect();
+-        Json::obj(vec![
+-            ("schema", Json::str(SCHEMA_CONFIG)),
+-            ("policy_version", Json::str(self.policy_version.clone())),
+-            (
+-                "execution_boundary",
+-                Json::str(self.execution_boundary.clone()),
+-            ),
+-            ("obligations", Json::Arr(obs)),
+-            ("disabled", Json::Bool(self.disabled)),
+-        ])
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn from_json(value: &Json) -> Result<Config, String> {
+         let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+         if schema != SCHEMA_CONFIG {
+             return Err(format!("unsupported config schema {schema:?}"));
+         }
+         let mut obligations = Vec::new();

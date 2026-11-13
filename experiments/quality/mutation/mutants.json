@@ -1,0 +1,2082 @@
+[
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace LockError::message -> &str with \"\"\n@@ -41,19 +41,17 @@\n     /// Ownership cannot be established at all: a human must inspect the file.\n     Unknown(String),\n     /// The lock file could not be created or removed.\n     Io(String),\n }\n \n impl LockError {\n     pub fn message(&self) -> &str {\n-        match self {\n-            LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n-        }\n+        \"\" /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "LockError::message",
+      "return_type": "-> &str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 52
+        },
+        "start": {
+          "column": 5,
+          "line": 48
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:49:9: replace LockError::message -> &str with \"\"",
+    "package": "flow",
+    "replacement": "\"\"",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 51
+      },
+      "start": {
+        "column": 9,
+        "line": 49
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace LockError::message -> &str with \"xyzzy\"\n@@ -41,19 +41,17 @@\n     /// Ownership cannot be established at all: a human must inspect the file.\n     Unknown(String),\n     /// The lock file could not be created or removed.\n     Io(String),\n }\n \n impl LockError {\n     pub fn message(&self) -> &str {\n-        match self {\n-            LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n-        }\n+        \"xyzzy\" /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "LockError::message",
+      "return_type": "-> &str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 52
+        },
+        "start": {
+          "column": 5,
+          "line": 48
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:49:9: replace LockError::message -> &str with \"xyzzy\"",
+    "package": "flow",
+    "replacement": "\"xyzzy\"",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 51
+      },
+      "start": {
+        "column": 9,
+        "line": 49
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())\n@@ -49,17 +49,17 @@\n         match self {\n             LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n         }\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n-        f.write_str(self.message())\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n         e.to_string()\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl std::fmt::Display for LockError>::fmt",
+      "return_type": "-> std::fmt::Result",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 58
+        },
+        "start": {
+          "column": 5,
+          "line": 56
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:57:9: replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 57
+      },
+      "start": {
+        "column": 9,
+        "line": 57
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl From<LockError> for String>::from -> String with String::new()\n@@ -55,17 +55,17 @@\n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n-        e.to_string()\n+        String::new() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n     crate::state::flow_dir(root).join(\"lock\")\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl From<LockError> for String>::from",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 64
+        },
+        "start": {
+          "column": 5,
+          "line": 62
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:63:9: replace <impl From<LockError> for String>::from -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 63
+      },
+      "start": {
+        "column": 9,
+        "line": 63
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl From<LockError> for String>::from -> String with \"xyzzy\".into()\n@@ -55,17 +55,17 @@\n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n-        e.to_string()\n+        \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n     crate::state::flow_dir(root).join(\"lock\")\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl From<LockError> for String>::from",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 64
+        },
+        "start": {
+          "column": 5,
+          "line": 62
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:63:9: replace <impl From<LockError> for String>::from -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 63
+      },
+      "start": {
+        "column": 9,
+        "line": 63
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace lock_path -> PathBuf with Default::default()\n@@ -60,17 +60,17 @@\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n         e.to_string()\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n-    crate::state::flow_dir(root).join(\"lock\")\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n #[derive(Debug, Clone)]\n pub struct LockInfo {\n     pub present: bool,\n     pub pid: Option<u32>,\n     pub age_s: Option<u64>,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "lock_path",
+      "return_type": "-> PathBuf",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 67
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:68:5: replace lock_path -> PathBuf with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 68
+      },
+      "start": {
+        "column": 5,
+        "line": 68
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace parse -> Option<Owner> with None\n@@ -82,27 +82,17 @@\n struct Owner {\n     pid: u32,\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n-    let mut parts = text.split_whitespace();\n-    let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n-        return None;\n-    }\n-    Some(Owner {\n-        pid: parts.next()?.parse().ok()?,\n-        at: parts.next()?.parse().ok()?,\n-        nonce: parts.next()?.to_string(),\n-        purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n-    })\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n     let path = lock_path(root);\n     let Ok(text) = fs::read_to_string(&path) else {\n         return LockInfo {\n             present: false,\n             pid: None,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 101
+        },
+        "start": {
+          "column": 1,
+          "line": 89
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:90:5: replace parse -> Option<Owner> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 100
+      },
+      "start": {
+        "column": 5,
+        "line": 90
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace parse -> Option<Owner> with Some(Default::default())\n@@ -82,27 +82,17 @@\n struct Owner {\n     pid: u32,\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n-    let mut parts = text.split_whitespace();\n-    let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n-        return None;\n-    }\n-    Some(Owner {\n-        pid: parts.next()?.parse().ok()?,\n-        at: parts.next()?.parse().ok()?,\n-        nonce: parts.next()?.to_string(),\n-        purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n-    })\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n     let path = lock_path(root);\n     let Ok(text) = fs::read_to_string(&path) else {\n         return LockInfo {\n             present: false,\n             pid: None,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 101
+        },
+        "start": {
+          "column": 1,
+          "line": 89
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:90:5: replace parse -> Option<Owner> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 100
+      },
+      "start": {
+        "column": 5,
+        "line": 90
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace != with == in parse\n@@ -84,17 +84,17 @@\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n     let mut parts = text.split_whitespace();\n     let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n+    if schema == /* ~ changed by cargo-mutants ~ */ LOCK_SCHEMA {\n         return None;\n     }\n     Some(Owner {\n         pid: parts.next()?.parse().ok()?,\n         at: parts.next()?.parse().ok()?,\n         nonce: parts.next()?.to_string(),\n         purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n     })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 101
+        },
+        "start": {
+          "column": 1,
+          "line": 89
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:92:15: replace != with == in parse",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 92
+      },
+      "start": {
+        "column": 15,
+        "line": 92
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace inspect -> LockInfo with Default::default()\n@@ -96,49 +96,17 @@\n         pid: parts.next()?.parse().ok()?,\n         at: parts.next()?.parse().ok()?,\n         nonce: parts.next()?.to_string(),\n         purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n     })\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n-    let path = lock_path(root);\n-    let Ok(text) = fs::read_to_string(&path) else {\n-        return LockInfo {\n-            present: false,\n-            pid: None,\n-            age_s: None,\n-            purpose: String::new(),\n-            attribution: \"absent\",\n-        };\n-    };\n-    match parse(&text) {\n-        Some(owner) => {\n-            let attribution = match pid_alive(owner.pid) {\n-                Some(true) => \"live\",\n-                Some(false) => \"dead\",\n-                None => \"unknown\",\n-            };\n-            LockInfo {\n-                present: true,\n-                pid: Some(owner.pid),\n-                age_s: Some(crate::state::unix_now().saturating_sub(owner.at)),\n-                purpose: owner.purpose,\n-                attribution,\n-            }\n-        }\n-        None => LockInfo {\n-            present: true,\n-            pid: None,\n-            age_s: None,\n-            purpose: String::new(),\n-            attribution: \"unparseable\",\n-        },\n-    }\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n #[derive(Debug)]\n pub struct LockGuard {\n     path: PathBuf,\n     nonce: String,\n }\n \n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "inspect",
+      "return_type": "-> LockInfo",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 137
+        },
+        "start": {
+          "column": 1,
+          "line": 103
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:104:5: replace inspect -> LockInfo with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 136
+      },
+      "start": {
+        "column": 5,
+        "line": 104
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl Drop for LockGuard>::drop with ()\n@@ -141,21 +141,17 @@\n     path: PathBuf,\n     nonce: String,\n }\n \n impl Drop for LockGuard {\n     fn drop(&mut self) {\n         // Only remove the lock this guard owns: a successor's lock must never be\n         // deleted by a slow predecessor's destructor.\n-        if let Ok(text) = fs::read_to_string(&self.path) {\n-            if parse(&text).map(|o| o.nonce).as_deref() == Some(self.nonce.as_str()) {\n-                let _ = fs::remove_file(&self.path);\n-            }\n-        }\n+        () /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n     use std::sync::atomic::{AtomicU64, Ordering};\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl Drop for LockGuard>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 154
+        },
+        "start": {
+          "column": 5,
+          "line": 146
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:149:9: replace <impl Drop for LockGuard>::drop with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 153
+      },
+      "start": {
+        "column": 9,
+        "line": 149
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in <impl Drop for LockGuard>::drop\n@@ -142,17 +142,17 @@\n     nonce: String,\n }\n \n impl Drop for LockGuard {\n     fn drop(&mut self) {\n         // Only remove the lock this guard owns: a successor's lock must never be\n         // deleted by a slow predecessor's destructor.\n         if let Ok(text) = fs::read_to_string(&self.path) {\n-            if parse(&text).map(|o| o.nonce).as_deref() == Some(self.nonce.as_str()) {\n+            if parse(&text).map(|o| o.nonce).as_deref() != /* ~ changed by cargo-mutants ~ */ Some(self.nonce.as_str()) {\n                 let _ = fs::remove_file(&self.path);\n             }\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl Drop for LockGuard>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 154
+        },
+        "start": {
+          "column": 5,
+          "line": 146
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:150:57: replace == with != in <impl Drop for LockGuard>::drop",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 150
+      },
+      "start": {
+        "column": 57,
+        "line": 150
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace nonce -> String with String::new()\n@@ -153,24 +153,17 @@\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n-    use std::sync::atomic::{AtomicU64, Ordering};\n-    static COUNTER: AtomicU64 = AtomicU64::new(0);\n-    let nanos = std::time::SystemTime::now()\n-        .duration_since(std::time::UNIX_EPOCH)\n-        .map(|d| d.as_nanos())\n-        .unwrap_or(0);\n-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);\n-    format!(\"{:x}-{:x}-{:x}\", std::process::id(), nanos, n)\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n /// How long a reader waits for a concurrent creator to finish writing the lock\n /// record before concluding that the file is unattributable.\n const CREATE_GRACE: Duration = Duration::from_millis(750);\n \n /// Create the lock file **with its full content** in one atomic step.\n ///\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "nonce",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 169
+        },
+        "start": {
+          "column": 1,
+          "line": 157
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:161:5: replace nonce -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 168
+      },
+      "start": {
+        "column": 5,
+        "line": 161
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace nonce -> String with \"xyzzy\".into()\n@@ -153,24 +153,17 @@\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n-    use std::sync::atomic::{AtomicU64, Ordering};\n-    static COUNTER: AtomicU64 = AtomicU64::new(0);\n-    let nanos = std::time::SystemTime::now()\n-        .duration_since(std::time::UNIX_EPOCH)\n-        .map(|d| d.as_nanos())\n-        .unwrap_or(0);\n-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);\n-    format!(\"{:x}-{:x}-{:x}\", std::process::id(), nanos, n)\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n /// How long a reader waits for a concurrent creator to finish writing the lock\n /// record before concluding that the file is unattributable.\n const CREATE_GRACE: Duration = Duration::from_millis(750);\n \n /// Create the lock file **with its full content** in one atomic step.\n ///\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "nonce",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 169
+        },
+        "start": {
+          "column": 1,
+          "line": 157
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:161:5: replace nonce -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 168
+      },
+      "start": {
+        "column": 5,
+        "line": 161
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace create_lock_file -> std::io::Result<()> with Ok(())\n@@ -176,30 +176,17 @@\n ///\n /// `create_new` followed by `write` exposes a window in which another process\n /// reads an empty file — a real race that was observed on Linux with eight\n /// concurrent publishers. Writing the record to a unique temporary file and then\n /// hard-linking it makes the appearance of the lock atomic: the name never exists\n /// without content, and the link fails if a lock already exists. The temporary\n /// name is removed on every path.\n fn create_lock_file(path: &Path, nonce: &str, purpose: &str) -> std::io::Result<()> {\n-    let tmp = path.with_file_name(format!(\"lock.{nonce}.tmp\"));\n-    let line = format!(\n-        \"{LOCK_SCHEMA} {} {} {nonce} {purpose}\\n\",\n-        std::process::id(),\n-        crate::state::unix_now()\n-    );\n-    {\n-        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;\n-        file.write_all(line.as_bytes())?;\n-        file.sync_all()?;\n-    }\n-    let linked = fs::hard_link(&tmp, path);\n-    let _ = fs::remove_file(&tmp);\n-    linked\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "create_lock_file",
+      "return_type": "-> std::io::Result<()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 198
+        },
+        "start": {
+          "column": 1,
+          "line": 175
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:184:5: replace create_lock_file -> std::io::Result<()> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 197
+      },
+      "start": {
+        "column": 5,
+        "line": 184
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace wait_for_record -> Option<Owner> with None\n@@ -194,30 +194,17 @@\n     }\n     let linked = fs::hard_link(&tmp, path);\n     let _ = fs::remove_file(&tmp);\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n-    if let Some(owner) = parse(&first) {\n-        return Some(owner);\n-    }\n-    let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n-        std::thread::sleep(POLL_INTERVAL);\n-        let Ok(text) = fs::read_to_string(path) else {\n-            return None;\n-        };\n-        if let Some(owner) = parse(&text) {\n-            return Some(owner);\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:202:5: replace wait_for_record -> Option<Owner> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 215
+      },
+      "start": {
+        "column": 5,
+        "line": 202
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace wait_for_record -> Option<Owner> with Some(Default::default())\n@@ -194,30 +194,17 @@\n     }\n     let linked = fs::hard_link(&tmp, path);\n     let _ = fs::remove_file(&tmp);\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n-    if let Some(owner) = parse(&first) {\n-        return Some(owner);\n-    }\n-    let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n-        std::thread::sleep(POLL_INTERVAL);\n-        let Ok(text) = fs::read_to_string(path) else {\n-            return None;\n-        };\n-        if let Some(owner) = parse(&text) {\n-            return Some(owner);\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:202:5: replace wait_for_record -> Option<Owner> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 215
+      },
+      "start": {
+        "column": 5,
+        "line": 202
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with - in wait_for_record\n@@ -197,17 +197,17 @@\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n-    let deadline = Instant::now() + CREATE_GRACE;\n+    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ CREATE_GRACE;\n     while Instant::now() < deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:205:35: replace + with - in wait_for_record",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 205
+      },
+      "start": {
+        "column": 35,
+        "line": 205
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with * in wait_for_record\n@@ -197,17 +197,17 @@\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n-    let deadline = Instant::now() + CREATE_GRACE;\n+    let deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ CREATE_GRACE;\n     while Instant::now() < deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:205:35: replace + with * in wait_for_record",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 205
+      },
+      "start": {
+        "column": 35,
+        "line": 205
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with == in wait_for_record\n@@ -198,17 +198,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() == /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:206:26: replace < with == in wait_for_record",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 206
+      },
+      "start": {
+        "column": 26,
+        "line": 206
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with > in wait_for_record\n@@ -198,17 +198,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() > /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:206:26: replace < with > in wait_for_record",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 206
+      },
+      "start": {
+        "column": 26,
+        "line": 206
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with <= in wait_for_record\n@@ -198,17 +198,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() <= /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 216
+        },
+        "start": {
+          "column": 1,
+          "line": 200
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:206:26: replace < with <= in wait_for_record",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 206
+      },
+      "start": {
+        "column": 26,
+        "line": 206
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())\n@@ -211,114 +211,17 @@\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n     None\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n-    let path = lock_path(root);\n-    if let Some(parent) = path.parent() {\n-        fs::create_dir_all(parent)\n-            .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n-    }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n-    loop {\n-        let ours = nonce();\n-        match create_lock_file(&path, &ours, purpose) {\n-            Ok(()) => {\n-                return Ok(LockGuard {\n-                    path: path.clone(),\n-                    nonce: ours,\n-                })\n-            }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n-                let text = match fs::read_to_string(&path) {\n-                    Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n-                    Err(err) => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n-                            path.display()\n-                        )))\n-                    }\n-                };\n-                // A creator may have created the file and not finished writing it\n-                // yet. Wait for the record to appear before concluding anything:\n-                // \"empty right now\" is not \"unattributable forever\".\n-                let owner = match wait_for_record(&path, text) {\n-                    Some(owner) => owner,\n-                    None => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it\",\n-                            path.display(),\n-                            LOCK_SCHEMA,\n-                            path.display()\n-                        )))\n-                    }\n-                };\n-                if owner.pid == std::process::id() {\n-                    return Err(LockError::Held(format!(\n-                        \"this process already holds {} for {:?}\",\n-                        path.display(),\n-                        owner.purpose\n-                    )));\n-                }\n-                match pid_alive(owner.pid) {\n-                    // A live owner is never displaced, whatever the age says.\n-                    Some(true) => {\n-                        if Instant::now() >= deadline {\n-                            return Err(LockError::Held(format!(\n-                                \"another flow process (pid {}, purpose {:?}, {}s old) holds {}\",\n-                                owner.pid,\n-                                owner.purpose,\n-                                crate::state::unix_now().saturating_sub(owner.at),\n-                                path.display()\n-                            )));\n-                        }\n-                    }\n-                    None => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"cannot establish whether pid {} (purpose {:?}) is alive on this host, so {} is not stolen\",\n-                            owner.pid,\n-                            owner.purpose,\n-                            path.display()\n-                        )))\n-                    }\n-                    Some(false) => {\n-                        // Provably dead owner: steal only if the file still\n-                        // carries the nonce that was observed, so a concurrent\n-                        // successor is never removed.\n-                        match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n-                                match fs::remove_file(&path) {\n-                                    Ok(()) => continue,\n-                                    Err(err) => {\n-                                        return Err(LockError::Io(format!(\n-                                            \"cannot remove the dead lock {}: {err}\",\n-                                            path.display()\n-                                        )))\n-                                    }\n-                                }\n-                            }\n-                            _ => continue,\n-                        }\n-                    }\n-                }\n-                std::thread::sleep(POLL_INTERVAL);\n-            }\n-            Err(e) => {\n-                return Err(LockError::Io(format!(\n-                    \"cannot create {}: {e}\",\n-                    path.display()\n-                )))\n-            }\n-        }\n-    }\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:219:5: replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 316
+      },
+      "start": {
+        "column": 5,
+        "line": 219
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with - in acquire_lock\n@@ -216,17 +216,17 @@\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n+    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ ACQUIRE_BUDGET;\n     loop {\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:224:35: replace + with - in acquire_lock",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 224
+      },
+      "start": {
+        "column": 35,
+        "line": 224
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with * in acquire_lock\n@@ -216,17 +216,17 @@\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n+    let deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ ACQUIRE_BUDGET;\n     loop {\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:224:35: replace + with * in acquire_lock",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 224
+      },
+      "start": {
+        "column": 35,
+        "line": 224
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with true in acquire_lock\n@@ -226,17 +226,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if true /* ~ changed by cargo-mutants ~ */ => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:234:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 68,
+        "line": 234
+      },
+      "start": {
+        "column": 23,
+        "line": 234
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock\n@@ -226,17 +226,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if false /* ~ changed by cargo-mutants ~ */ => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:234:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 68,
+        "line": 234
+      },
+      "start": {
+        "column": 23,
+        "line": 234
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -226,17 +226,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:234:32: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 234
+      },
+      "start": {
+        "column": 32,
+        "line": 234
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock\n@@ -229,17 +229,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if true /* ~ changed by cargo-mutants ~ */ => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:237:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 237
+      },
+      "start": {
+        "column": 33,
+        "line": 237
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard err.kind() == std::io::ErrorKind::NotFound with false in acquire_lock\n@@ -229,17 +229,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if false /* ~ changed by cargo-mutants ~ */ => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:237:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 237
+      },
+      "start": {
+        "column": 33,
+        "line": 237
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -229,17 +229,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if err.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:237:44: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 237
+      },
+      "start": {
+        "column": 44,
+        "line": 237
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -251,17 +251,17 @@\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it\",\n                             path.display(),\n                             LOCK_SCHEMA,\n                             path.display()\n                         )))\n                     }\n                 };\n-                if owner.pid == std::process::id() {\n+                if owner.pid != /* ~ changed by cargo-mutants ~ */ std::process::id() {\n                     return Err(LockError::Held(format!(\n                         \"this process already holds {} for {:?}\",\n                         path.display(),\n                         owner.purpose\n                     )));\n                 }\n                 match pid_alive(owner.pid) {\n                     // A live owner is never displaced, whatever the age says.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:259:30: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 259
+      },
+      "start": {
+        "column": 30,
+        "line": 259
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace >= with < in acquire_lock\n@@ -261,17 +261,17 @@\n                         \"this process already holds {} for {:?}\",\n                         path.display(),\n                         owner.purpose\n                     )));\n                 }\n                 match pid_alive(owner.pid) {\n                     // A live owner is never displaced, whatever the age says.\n                     Some(true) => {\n-                        if Instant::now() >= deadline {\n+                        if Instant::now() < /* ~ changed by cargo-mutants ~ */ deadline {\n                             return Err(LockError::Held(format!(\n                                 \"another flow process (pid {}, purpose {:?}, {}s old) holds {}\",\n                                 owner.pid,\n                                 owner.purpose,\n                                 crate::state::unix_now().saturating_sub(owner.at),\n                                 path.display()\n                             )));\n                         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:269:43: replace >= with < in acquire_lock",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 269
+      },
+      "start": {
+        "column": 43,
+        "line": 269
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true in acquire_lock\n@@ -284,17 +284,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if true /* ~ changed by cargo-mutants ~ */ => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:292:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 101,
+        "line": 292
+      },
+      "start": {
+        "column": 42,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock\n@@ -284,17 +284,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if false /* ~ changed by cargo-mutants ~ */ => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:292:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 101,
+        "line": 292
+      },
+      "start": {
+        "column": 42,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -284,17 +284,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if parse(&again).map(|o| o.nonce) != /* ~ changed by cargo-mutants ~ */ Some(owner.nonce.clone()) => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 317
+        },
+        "start": {
+          "column": 1,
+          "line": 218
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:292:73: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 292
+      },
+      "start": {
+        "column": 73,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with None\n@@ -313,25 +313,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let status = std::process::Command::new(\"kill\")\n         .args([\"-0\", &pid.to_string()])\n         .status()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 330
+        },
+        "start": {
+          "column": 1,
+          "line": 319
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 329
+      },
+      "start": {
+        "column": 5,
+        "line": 321
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(true)\n@@ -313,25 +313,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let status = std::process::Command::new(\"kill\")\n         .args([\"-0\", &pid.to_string()])\n         .status()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 330
+        },
+        "start": {
+          "column": 1,
+          "line": 319
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 329
+      },
+      "start": {
+        "column": 5,
+        "line": 321
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(false)\n@@ -313,25 +313,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let status = std::process::Command::new(\"kill\")\n         .args([\"-0\", &pid.to_string()])\n         .status()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 330
+        },
+        "start": {
+          "column": 1,
+          "line": 319
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:321:5: replace pid_alive -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 329
+      },
+      "start": {
+        "column": 5,
+        "line": 321
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ delete ! in pid_alive\n@@ -317,17 +317,17 @@\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n-    if !out.status.success() {\n+    if  /* ~ changed by cargo-mutants ~ */out.status.success() {\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n     Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 330
+        },
+        "start": {
+          "column": 1,
+          "line": 319
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/lock.rs:325:8: delete ! in pid_alive",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 325
+      },
+      "start": {
+        "column": 8,
+        "line": 325
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace || with && in pid_alive\n@@ -321,17 +321,17 @@\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n     if !out.status.success() {\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) && /* ~ changed by cargo-mutants ~ */ text.contains(&format!(\",{pid},\")))\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let status = std::process::Command::new(\"kill\")\n         .args([\"-0\", &pid.to_string()])\n         .status()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 330
+        },
+        "start": {
+          "column": 1,
+          "line": 319
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:329:47: replace || with && in pid_alive",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 329
+      },
+      "start": {
+        "column": 47,
+        "line": 329
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with None\n@@ -326,21 +326,17 @@\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n     Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let status = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .status()\n-        .ok()?;\n-    Some(status.success())\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 339
+        },
+        "start": {
+          "column": 1,
+          "line": 332
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:334:5: replace pid_alive -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 338
+      },
+      "start": {
+        "column": 5,
+        "line": 334
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(true)\n@@ -326,21 +326,17 @@\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n     Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let status = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .status()\n-        .ok()?;\n-    Some(status.success())\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 339
+        },
+        "start": {
+          "column": 1,
+          "line": 332
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:334:5: replace pid_alive -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 338
+      },
+      "start": {
+        "column": 5,
+        "line": 334
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(false)\n@@ -326,21 +326,17 @@\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n     Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n }\n \n #[cfg(not(windows))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let status = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .status()\n-        .ok()?;\n-    Some(status.success())\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 339
+        },
+        "start": {
+          "column": 1,
+          "line": 332
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:334:5: replace pid_alive -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 338
+      },
+      "start": {
+        "column": 5,
+        "line": 334
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace validate_relative -> Result<(), String> with Ok(())\n@@ -12,65 +12,17 @@\n \n const RESERVED: &[&str] = &[\n     \"CON\", \"PRN\", \"AUX\", \"NUL\", \"COM1\", \"COM2\", \"COM3\", \"COM4\", \"COM5\", \"COM6\", \"COM7\", \"COM8\",\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n-    if path.is_empty() {\n-        return Err(\"empty path\".into());\n-    }\n-    if path.len() > 4096 {\n-        return Err(\"path longer than 4096 bytes\".into());\n-    }\n-    if path.bytes().any(|b| b < 0x20) {\n-        return Err(\"control character in path\".into());\n-    }\n-    if path.starts_with('/') || path.starts_with('\\\\') {\n-        return Err(\"absolute path is not allowed\".into());\n-    }\n-    let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n-        return Err(\"drive-qualified path is not allowed\".into());\n-    }\n-    for component in path.split(['/', '\\\\']) {\n-        if component.is_empty() {\n-            return Err(\"empty path component\".into());\n-        }\n-        if component == \".\" || component == \"..\" {\n-            return Err(format!(\n-                \"path traversal component {component:?} is not allowed\"\n-            ));\n-        }\n-        if component.len() > 255 {\n-            return Err(\"path component longer than 255 bytes\".into());\n-        }\n-        // Conservative portability rule: a colon is a drive separator or an NTFS\n-        // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n-        // receipts portable across platforms instead of silently rewriting them.\n-        if component.contains(':') {\n-            return Err(format!(\"colon in component {component:?} is not portable\"));\n-        }\n-        if component.ends_with('.') || component.ends_with(' ') {\n-            return Err(format!(\n-                \"component {component:?} ends with a dot or space (not representable on Windows)\"\n-            ));\n-        }\n-        let stem = component\n-            .split('.')\n-            .next()\n-            .unwrap_or(component)\n-            .to_ascii_uppercase();\n-        if RESERVED.contains(&stem.as_str()) {\n-            return Err(format!(\"reserved device name {component:?}\"));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Resolve `candidate` (which may not exist yet) and require it to stay under `root`.\n pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String> {\n     let root = root\n         .canonicalize()\n         .map_err(|e| format!(\"cannot canonicalise root {}: {e}\", root.display()))?;\n     let mut probe = candidate.to_path_buf();\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:20:5: replace validate_relative -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 68
+      },
+      "start": {
+        "column": 5,
+        "line": 20
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with == in validate_relative\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() == /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:19: replace > with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 23
+      },
+      "start": {
+        "column": 19,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with < in validate_relative\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() < /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:19: replace > with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 23
+      },
+      "start": {
+        "column": 19,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with >= in validate_relative\n@@ -15,17 +15,17 @@\n     \"COM9\", \"LPT1\", \"LPT2\", \"LPT3\", \"LPT4\", \"LPT5\", \"LPT6\", \"LPT7\", \"LPT8\", \"LPT9\",\n ];\n \n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n-    if path.len() > 4096 {\n+    if path.len() >= /* ~ changed by cargo-mutants ~ */ 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:23:19: replace > with >= in validate_relative",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 20,
+        "line": 23
+      },
+      "start": {
+        "column": 19,
+        "line": 23
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with == in validate_relative\n@@ -18,17 +18,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b == /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:26:31: replace < with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 26
+      },
+      "start": {
+        "column": 31,
+        "line": 26
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with > in validate_relative\n@@ -18,17 +18,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b > /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:26:31: replace < with > in validate_relative",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 26
+      },
+      "start": {
+        "column": 31,
+        "line": 26
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace < with <= in validate_relative\n@@ -18,17 +18,17 @@\n /// Validate a repository-relative path as written in a receipt or config.\n pub fn validate_relative(path: &str) -> Result<(), String> {\n     if path.is_empty() {\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n-    if path.bytes().any(|b| b < 0x20) {\n+    if path.bytes().any(|b| b <= /* ~ changed by cargo-mutants ~ */ 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:26:31: replace < with <= in validate_relative",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 26
+      },
+      "start": {
+        "column": 31,
+        "line": 26
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -21,17 +21,17 @@\n         return Err(\"empty path\".into());\n     }\n     if path.len() > 4096 {\n         return Err(\"path longer than 4096 bytes\".into());\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n-    if path.starts_with('/') || path.starts_with('\\\\') {\n+    if path.starts_with('/') && /* ~ changed by cargo-mutants ~ */ path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:29:30: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 29
+      },
+      "start": {
+        "column": 30,
+        "line": 29
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -25,17 +25,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() || /* ~ changed by cargo-mutants ~ */ bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:33:59: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 61,
+        "line": 33
+      },
+      "start": {
+        "column": 59,
+        "line": 33
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace && with || in validate_relative\n@@ -25,17 +25,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 || /* ~ changed by cargo-mutants ~ */ bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:33:25: replace && with || in validate_relative",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 33
+      },
+      "start": {
+        "column": 25,
+        "line": 33
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace >= with < in validate_relative\n@@ -25,17 +25,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() < /* ~ changed by cargo-mutants ~ */ 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:33:20: replace >= with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 33
+      },
+      "start": {
+        "column": 20,
+        "line": 33
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -25,17 +25,17 @@\n     }\n     if path.bytes().any(|b| b < 0x20) {\n         return Err(\"control character in path\".into());\n     }\n     if path.starts_with('/') || path.starts_with('\\\\') {\n         return Err(\"absolute path is not allowed\".into());\n     }\n     let bytes = path.as_bytes();\n-    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] != /* ~ changed by cargo-mutants ~ */ b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:33:71: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 73,
+        "line": 33
+      },
+      "start": {
+        "column": 71,
+        "line": 33
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -32,17 +32,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" && /* ~ changed by cargo-mutants ~ */ component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:40:29: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 31,
+        "line": 40
+      },
+      "start": {
+        "column": 29,
+        "line": 40
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -32,17 +32,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component != /* ~ changed by cargo-mutants ~ */ \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:40:22: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 24,
+        "line": 40
+      },
+      "start": {
+        "column": 22,
+        "line": 40
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace == with != in validate_relative\n@@ -32,17 +32,17 @@\n     let bytes = path.as_bytes();\n     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {\n         return Err(\"drive-qualified path is not allowed\".into());\n     }\n     for component in path.split(['/', '\\\\']) {\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n-        if component == \".\" || component == \"..\" {\n+        if component == \".\" || component != /* ~ changed by cargo-mutants ~ */ \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n         if component.len() > 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:40:42: replace == with != in validate_relative",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 44,
+        "line": 40
+      },
+      "start": {
+        "column": 42,
+        "line": 40
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with == in validate_relative\n@@ -37,17 +37,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() == /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:45:28: replace > with == in validate_relative",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 45
+      },
+      "start": {
+        "column": 28,
+        "line": 45
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with < in validate_relative\n@@ -37,17 +37,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() < /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:45:28: replace > with < in validate_relative",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 45
+      },
+      "start": {
+        "column": 28,
+        "line": 45
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace > with >= in validate_relative\n@@ -37,17 +37,17 @@\n         if component.is_empty() {\n             return Err(\"empty path component\".into());\n         }\n         if component == \".\" || component == \"..\" {\n             return Err(format!(\n                 \"path traversal component {component:?} is not allowed\"\n             ));\n         }\n-        if component.len() > 255 {\n+        if component.len() >= /* ~ changed by cargo-mutants ~ */ 255 {\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:45:28: replace > with >= in validate_relative",
+    "package": "flow",
+    "replacement": ">=",
+    "span": {
+      "end": {
+        "column": 29,
+        "line": 45
+      },
+      "start": {
+        "column": 28,
+        "line": 45
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace || with && in validate_relative\n@@ -46,17 +46,17 @@\n             return Err(\"path component longer than 255 bytes\".into());\n         }\n         // Conservative portability rule: a colon is a drive separator or an NTFS\n         // alternate-data-stream marker on Windows. Refusing it everywhere keeps\n         // receipts portable across platforms instead of silently rewriting them.\n         if component.contains(':') {\n             return Err(format!(\"colon in component {component:?} is not portable\"));\n         }\n-        if component.ends_with('.') || component.ends_with(' ') {\n+        if component.ends_with('.') && /* ~ changed by cargo-mutants ~ */ component.ends_with(' ') {\n             return Err(format!(\n                 \"component {component:?} ends with a dot or space (not representable on Windows)\"\n             ));\n         }\n         let stem = component\n             .split('.')\n             .next()\n             .unwrap_or(component)\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "validate_relative",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 69
+        },
+        "start": {
+          "column": 1,
+          "line": 18
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/paths.rs:54:37: replace || with && in validate_relative",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 39,
+        "line": 54
+      },
+      "start": {
+        "column": 37,
+        "line": 54
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())\n@@ -65,49 +65,17 @@\n             return Err(format!(\"reserved device name {component:?}\"));\n         }\n     }\n     Ok(())\n }\n \n /// Resolve `candidate` (which may not exist yet) and require it to stay under `root`.\n pub fn canonical_within(root: &Path, candidate: &Path) -> Result<PathBuf, String> {\n-    let root = root\n-        .canonicalize()\n-        .map_err(|e| format!(\"cannot canonicalise root {}: {e}\", root.display()))?;\n-    let mut probe = candidate.to_path_buf();\n-    let mut suffix: Vec<std::ffi::OsString> = Vec::new();\n-    loop {\n-        if probe.exists() {\n-            let mut resolved = probe\n-                .canonicalize()\n-                .map_err(|e| format!(\"cannot canonicalise {}: {e}\", probe.display()))?;\n-            for part in suffix.iter().rev() {\n-                resolved.push(part);\n-            }\n-            if !resolved.starts_with(&root) {\n-                return Err(format!(\n-                    \"path {} escapes {} (symlink or junction)\",\n-                    resolved.display(),\n-                    root.display()\n-                ));\n-            }\n-            return Ok(resolved);\n-        }\n-        match probe.file_name().map(|n| n.to_os_string()) {\n-            Some(name) => {\n-                suffix.push(name);\n-                probe = probe\n-                    .parent()\n-                    .ok_or_else(|| \"path has no existing ancestor\".to_string())?\n-                    .to_path_buf();\n-            }\n-            None => return Err(\"path has no file name\".into()),\n-        }\n-    }\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// True when `candidate` is lexically inside `root`, used only by tests now:\n /// containment is enforced by `scratch::materialise`, which also resolves the\n /// canonical path (a lexical check alone does not see a junction).\n #[cfg(test)]\n pub fn lexically_inside(root: &Path, candidate: &Path) -> bool {\n     let mut depth: i32 = 0;\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "canonical_within",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 106
+        },
+        "start": {
+          "column": 1,
+          "line": 71
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/paths.rs:73:5: replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 105
+      },
+      "start": {
+        "column": 5,
+        "line": 73
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/paths.rs\n+++ delete ! in canonical_within\n@@ -78,17 +78,17 @@\n     loop {\n         if probe.exists() {\n             let mut resolved = probe\n                 .canonicalize()\n                 .map_err(|e| format!(\"cannot canonicalise {}: {e}\", probe.display()))?;\n             for part in suffix.iter().rev() {\n                 resolved.push(part);\n             }\n-            if !resolved.starts_with(&root) {\n+            if  /* ~ changed by cargo-mutants ~ */resolved.starts_with(&root) {\n                 return Err(format!(\n                     \"path {} escapes {} (symlink or junction)\",\n                     resolved.display(),\n                     root.display()\n                 ));\n             }\n             return Ok(resolved);\n         }\n",
+    "file": "crates/flow/src/paths.rs",
+    "function": {
+      "function_name": "canonical_within",
+      "return_type": "-> Result<PathBuf, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 106
+        },
+        "start": {
+          "column": 1,
+          "line": 71
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/paths.rs:86:16: delete ! in canonical_within",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 86
+      },
+      "start": {
+        "column": 16,
+        "line": 86
+      }
+    }
+  }
+]

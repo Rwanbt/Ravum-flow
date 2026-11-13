@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ delete ! in materialise_in
+@@ -126,17 +126,17 @@
+     base: &Path,
+     git: &Git,
+     commit: &str,
+     repo_root: &Path,
+ ) -> Result<Scratch, String> {
+     // An object id, not an option and not a path: `git worktree add` must never
+     // see a value beginning with `-`, and commands.rs only ever passes the
+     // hexadecimal OID returned by `commit-tree`.
+-    if !is_hex_object_id(commit) {
++    if  /* ~ changed by cargo-mutants ~ */is_hex_object_id(commit) {
+         return Err(format!(
+             "refusing to materialise {commit:?}: expected a hexadecimal object id"
+         ));
+     }
+ 
+     let repo_root = canonical_dir(repo_root, "repository root")?;
+     let base_display = base.to_path_buf();
+     let base_canonical = canonical_dir(&base_display, "scratch base")?;

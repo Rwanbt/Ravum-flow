@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace + with - in reap_bounded
+@@ -658,17 +658,17 @@
+         stderr: stderr.0,
+         stdout_truncated: stdout.1,
+         stderr_truncated: stderr.1,
+     }
+ }
+ 
+ /// Wait, bounded, for a killed child to be reaped so no zombie accumulates.
+ fn reap_bounded(child: &mut Child) {
+-    let deadline = Instant::now() + REAP_GRACE; // w8probe
++    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ REAP_GRACE; // w8probe
+     while Instant::now() < deadline { // w8probe
+         match child.try_wait() {
+             Ok(Some(_)) | Err(_) => return,
+             Ok(None) => std::thread::sleep(POLL_INTERVAL),
+         }
+     }
+ }
+ 

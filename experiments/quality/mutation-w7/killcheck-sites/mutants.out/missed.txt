@@ -1,0 +1,2 @@
+crates/flow/src/commands.rs:873:25: replace match guard !meta.file_type().is_symlink() with true in verify_checkout_fidelity
+crates/flow/src/commands.rs:878:36: replace match guard !meta.is_file() with false in verify_checkout_fidelity

@@ -1,0 +1,36 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_propose -> Result<Json, String> with Ok(Default::default())
+@@ -2418,32 +2418,17 @@
+ pub fn cmd_propose(
+     root: &Path,
+     agent: Option<String>,
+     task: Option<String>,
+     base: Option<String>,
+     patch: Option<String>,
+     key: Option<String>,
+ ) -> Result<Json, String> {
+-    let git = Git::new(root);
+-    let (Some(agent), Some(task), Some(base), Some(patch)) = (agent, task, base, patch) else {
+-        return Ok(crate::proposal::refusal(
+-            "USAGE",
+-            "flow propose --agent <A> --task <T> --base <commit> --patch <file> [--key <key>]",
+-        ));
+-    };
+-    crate::proposal::admit(
+-        &git,
+-        root,
+-        &agent,
+-        &task,
+-        &base,
+-        Path::new(&patch),
+-        key.as_deref(),
+-    )
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cmd_proposals(root: &Path, show: Option<String>) -> Result<Json, String> {
+     match show {
+         Some(id) => match crate::proposal::Proposal::load(root, &id)? {
+             Some(proposal) => Ok(proposal.json),
+             None => Ok(crate::proposal::refusal(
+                 "UNKNOWN_PROPOSAL",

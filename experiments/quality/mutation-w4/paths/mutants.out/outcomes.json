@@ -1,0 +1,2085 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 4.2808204,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2303451,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with true",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 5
+            },
+            "end": {
+              "line": 23,
+              "column": 93
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_5.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0165738,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.4248250000000002,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with false",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 5
+            },
+            "end": {
+              "line": 23,
+              "column": 93
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_5_001.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 5.3843946,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3760275,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:46: replace && with || in is_object_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 46
+            },
+            "end": {
+              "line": 23,
+              "column": 48
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_46.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_46.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.4860781,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3778745,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:24: replace || with && in is_object_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 24
+            },
+            "end": {
+              "line": 23,
+              "column": 26
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_24.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_24.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.2606331,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.325829,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:18: replace == with != in is_object_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 18
+            },
+            "end": {
+              "line": 23,
+              "column": 20
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_18.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_18.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.3621151,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.224578,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:23:39: replace == with != in is_object_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_object_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 18,
+                "column": 1
+              },
+              "end": {
+                "line": 24,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 23,
+              "column": 39
+            },
+            "end": {
+              "line": 23,
+              "column": 41
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_23_col_39.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_23_col_39.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0089053,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2762423,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with true",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_record_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 26,
+                "column": 1
+              },
+              "end": {
+                "line": 31,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 30,
+              "column": 5
+            },
+            "end": {
+              "line": 30,
+              "column": 70
+            }
+          },
+          "replacement": "true",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_30_col_5.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_30_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.1106361,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.4264498,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with false",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_record_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 26,
+                "column": 1
+              },
+              "end": {
+                "line": 31,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 30,
+              "column": 5
+            },
+            "end": {
+              "line": 30,
+              "column": 70
+            }
+          },
+          "replacement": "false",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_30_col_5_001.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_30_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0593867,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3600640999999998,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:30:23: replace && with || in is_record_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_record_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 26,
+                "column": 1
+              },
+              "end": {
+                "line": 31,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 30,
+              "column": 23
+            },
+            "end": {
+              "line": 30,
+              "column": 25
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_30_col_23.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_30_col_23.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.0586495,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3753438,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:30:17: replace == with != in is_record_id",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "is_record_id",
+            "return_type": "-> bool",
+            "span": {
+              "start": {
+                "line": 26,
+                "column": 1
+              },
+              "end": {
+                "line": 31,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 30,
+              "column": 17
+            },
+            "end": {
+              "line": 30,
+              "column": 19
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_30_col_17.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_30_col_17.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8589354,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.4271,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:35:5: replace validate_relative -> Result<(), String> with Ok(())",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 35,
+              "column": 5
+            },
+            "end": {
+              "line": 83,
+              "column": 11
+            }
+          },
+          "replacement": "Ok(())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_35_col_5.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_35_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.6160464,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2787924,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:38:19: replace > with == in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 38,
+              "column": 19
+            },
+            "end": {
+              "line": 38,
+              "column": 20
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_38_col_19.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_38_col_19.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7562511,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2253704,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:38:19: replace > with < in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 38,
+              "column": 19
+            },
+            "end": {
+              "line": 38,
+              "column": 20
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_38_col_19_001.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_38_col_19_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9097039,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.226426,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:38:19: replace > with >= in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 38,
+              "column": 19
+            },
+            "end": {
+              "line": 38,
+              "column": 20
+            }
+          },
+          "replacement": ">=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_38_col_19_002.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_38_col_19_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8075725,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3763688,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:41:31: replace < with == in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 41,
+              "column": 31
+            },
+            "end": {
+              "line": 41,
+              "column": 32
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_41_col_31.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_41_col_31.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8070751,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.223271,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:41:31: replace < with > in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 41,
+              "column": 31
+            },
+            "end": {
+              "line": 41,
+              "column": 32
+            }
+          },
+          "replacement": ">",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_41_col_31_001.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_41_col_31_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8075084,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2761078,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:41:31: replace < with <= in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 41,
+              "column": 31
+            },
+            "end": {
+              "line": 41,
+              "column": 32
+            }
+          },
+          "replacement": "<=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_41_col_31_002.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_41_col_31_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8066006,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2737134,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:44:30: replace || with && in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 44,
+              "column": 30
+            },
+            "end": {
+              "line": 44,
+              "column": 32
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_44_col_30.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_44_col_30.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7573782,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2263805,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:48:59: replace && with || in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 59
+            },
+            "end": {
+              "line": 48,
+              "column": 61
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_48_col_59.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_48_col_59.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8088025,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3294808,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:48:25: replace && with || in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 25
+            },
+            "end": {
+              "line": 48,
+              "column": 27
+            }
+          },
+          "replacement": "||",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_48_col_25.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_48_col_25.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7581213,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2745897,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:48:20: replace >= with < in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 20
+            },
+            "end": {
+              "line": 48,
+              "column": 22
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_48_col_20.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_48_col_20.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7573101,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2221062,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:48:71: replace == with != in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 48,
+              "column": 71
+            },
+            "end": {
+              "line": 48,
+              "column": 73
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_48_col_71.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_48_col_71.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7564223,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2799423,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:55:29: replace || with && in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 55,
+              "column": 29
+            },
+            "end": {
+              "line": 55,
+              "column": 31
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "MissedMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_55_col_29.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_55_col_29.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7570188,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2777412,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:55:22: replace == with != in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 55,
+              "column": 22
+            },
+            "end": {
+              "line": 55,
+              "column": 24
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_55_col_22.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_55_col_22.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7067499,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.1752524,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:55:42: replace == with != in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 55,
+              "column": 42
+            },
+            "end": {
+              "line": 55,
+              "column": 44
+            }
+          },
+          "replacement": "!=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_55_col_42.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_55_col_42.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7574395,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2746668,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:60:28: replace > with == in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 60,
+              "column": 28
+            },
+            "end": {
+              "line": 60,
+              "column": 29
+            }
+          },
+          "replacement": "==",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_60_col_28.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_60_col_28.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7055115,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.224737,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:60:28: replace > with < in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 60,
+              "column": 28
+            },
+            "end": {
+              "line": 60,
+              "column": 29
+            }
+          },
+          "replacement": "<",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_60_col_28_001.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_60_col_28_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.7572593,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.3252741,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:60:28: replace > with >= in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 60,
+              "column": 28
+            },
+            "end": {
+              "line": 60,
+              "column": 29
+            }
+          },
+          "replacement": ">=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_60_col_28_002.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_60_col_28_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.9593315,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2252338,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:69:37: replace || with && in validate_relative",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "validate_relative",
+            "return_type": "-> Result<(), String>",
+            "span": {
+              "start": {
+                "line": 33,
+                "column": 1
+              },
+              "end": {
+                "line": 84,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 69,
+              "column": 37
+            },
+            "end": {
+              "line": 69,
+              "column": 39
+            }
+          },
+          "replacement": "&&",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_69_col_37.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_69_col_37.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.858833,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.2218323,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:88:5: replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "canonical_within",
+            "return_type": "-> Result<PathBuf, String>",
+            "span": {
+              "start": {
+                "line": 86,
+                "column": 1
+              },
+              "end": {
+                "line": 121,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 88,
+              "column": 5
+            },
+            "end": {
+              "line": 120,
+              "column": 6
+            }
+          },
+          "replacement": "Ok(Default::default())",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_88_col_5.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_88_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.1092874,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.1793164,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/paths.rs:101:16: delete ! in canonical_within",
+          "package": "flow",
+          "file": "crates/flow/src/paths.rs",
+          "function": {
+            "function_name": "canonical_within",
+            "return_type": "-> Result<PathBuf, String>",
+            "span": {
+              "start": {
+                "line": 86,
+                "column": 1
+              },
+              "end": {
+                "line": 121,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 101,
+              "column": 16
+            },
+            "end": {
+              "line": 101,
+              "column": 17
+            }
+          },
+          "replacement": "",
+          "genre": "UnaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__paths.rs_line_101_col_16.log",
+      "diff_path": "diff/crates__flow__src__paths.rs_line_101_col_16.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.8061884,
+          "process_status": "Success",
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 3.1764101,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "C:\\Users\\barat\\.rustup\\toolchains\\1.95.0-x86_64-pc-windows-msvc\\bin\\cargo.exe",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 31,
+  "missed": 3,
+  "caught": 28,
+  "timeout": 0,
+  "unviable": 0,
+  "success": 0,
+  "start_time": "2026-11-10T17:17:33.3254999Z",
+  "end_time": "2026-11-10T17:18:50.7193734Z",
+  "cargo_mutants_version": "27.1.0"
+}

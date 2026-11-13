@@ -1,0 +1,196 @@
+[
+  {
+    "id": "TREE-01",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:tree-imports (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\tree-imports status --porcelain",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\tree-imports check-ignore -v gen/values.py",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m unittest -q test_app",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\tree-imports worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\tree01-clean HEAD",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m unittest -q test_app"
+    ],
+    "observation": "Le test passe dans le worktree (rc=0) parce qu'il importe `local_config.py` non suivi et `gen/values.py` ignoré ; le même test échoue (rc!=0) dans un export propre du tree via `git worktree add --detach HEAD`. Le tree OID ne contient aucune de ces deux entrées.",
+    "scope": "Git 2.51.1 for Windows, local NTFS, native Python unittest. Does not cover Linux, other languages, or Ravum's own verification path.",
+    "evidence": "logs/TREE-01.log"
+  },
+  {
+    "id": "TREE-02",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:tree-mutation (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\tree02 status --porcelain",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\tree02 diff --stat",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m unittest -q test_calc",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\tree02 worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\tree02-clean HEAD",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m unittest -q test_calc"
+    ],
+    "observation": "Tree OID inchangé (9f4f0974bc59a75829f668e9617d52c50f054f73) alors que `calc.py` est muté dans le worktree (sha256 d3fe37235936→865086861917) : le test passe sur les octets mutés (rc=0) mais échoue sur le tree exporté (rc!=0). Un reçu portant ce tree OID serait donc faux.",
+    "scope": "Git 2.51.1 for Windows, local NTFS. Demonstrates the local false-receipt window only; does not model Flow's receipt format.",
+    "evidence": "logs/TREE-02.log"
+  },
+  {
+    "id": "HOOK-02a",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f2-hooks/mutate (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02a commit -q -m hook mutate",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02a ls-tree -r --name-only HEAD",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02a show --stat --oneline --format=%H %s HEAD",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02a cat-file blob HEAD:extra.txt"
+    ],
+    "observation": "Avec `git commit` natif, le fichier ajouté à l'index par `pre-commit` (`git add extra.txt`) EST dans le tree committé : l'arbre est écrit après les hooks. C'est exactement ce que le plumbing de Ravum (write-tree avant hooks) ne peut pas produire.",
+    "scope": "Git 2.51.1 native `git commit` only. Ravum's inverted order is CODE_READ from the documentary phase and was NOT executed here.",
+    "evidence": "logs/HOOK-02a.log"
+  },
+  {
+    "id": "HOOK-02b",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:hook-isolate (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02b commit -q -m hook isolation",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02b status --porcelain",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02b show --name-only --format= HEAD"
+    ],
+    "observation": "Le `pre-commit` s'exécute avec cwd = racine du worktree utilisateur et réécrit un fichier sale non stagé (`dirty.txt` devient b'dirty user edit\\nhooked\\n') : aucun isolat. Le commit ne contient que le fichier stagé ; la modification du hook reste comme salissure utilisateur.",
+    "scope": "Git 2.51.1 native `git commit` on Windows. Shows absence of hook isolation; does not cover a sandboxed runner or a disposable worktree copy.",
+    "evidence": "logs/HOOK-02b.log"
+  },
+  {
+    "id": "HOOK-02c",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f2-hooks/order (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02c commit -q -m hook order"
+    ],
+    "observation": "Ordre observé : pre-commit → prepare-commit-msg → commit-msg → post-commit (attendu pre-commit → prepare-commit-msg → commit-msg → post-commit). Le message contient aussi `prepared-by-hook`, donc `prepare-commit-msg` peut éditer le message — mais il tourne APRÈS `pre-commit`, contrairement au prototype Ravum.",
+    "scope": "Git 2.51.1 native `git commit` on Windows, POSIX sh hooks. Git for Windows only; no other OS or hook runner tested.",
+    "evidence": "logs/HOOK-02c.log"
+  },
+  {
+    "id": "HOOK-02d",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f2-hooks/refuse (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02d commit -q -m must be refused",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\hook02d fsck --unreachable --no-reflogs"
+    ],
+    "observation": "Refus traçable (stderr du hook, rc!=0), HEAD et le nombre de commits inchangés, index toujours stagé, et `git fsck --unreachable` ne montre ni commit ni tree orphelin : le refus ne laisse aucun objet partiel.",
+    "scope": "Git 2.51.1 native `git commit`. Checks reachable commits and staged index only; unreachable object inspection is limited to `git fsck --unreachable`.",
+    "evidence": "logs/HOOK-02d.log"
+  },
+  {
+    "id": "HOOK-GITDIR-19",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:gitdir-main (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\gitdir-main worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked HEAD",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked rev-parse --git-dir --git-common-dir",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked config r0b.shared written-from-linked",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\gitdir-main config --get r0b.shared",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked commit --allow-empty -q -m linked-commit",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-linked update-ref refs/heads/moved b2da58b6b60a4b731818a4a22f276bd0499b8ec6",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-private-copy config r0b.shared only-in-copy",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\gitdir-private-copy update-ref refs/heads/copyref 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\gitdir-main config --get r0b.shared"
+    ],
+    "observation": "Depuis le worktree lié (<REPO>/experiments/r0b/git/fixtures/gitdir-main/.git/worktrees/gitdir-linked), `git config` écrit dans le `.git/config` commun (visible depuis le dépôt principal) et `git update-ref` déplace une ref du dépôt principal (b2da58b6b60a…). Une copie privée complète n'a aucun de ces effets sur l'original : seule la copie est isolée.",
+    "scope": "Git 2.51.1 for Windows, local NTFS. Shows shared control files of a linked worktree; does not claim a sandbox escape or a privilege boundary bypass.",
+    "evidence": "logs/HOOK-GITDIR-19.log"
+  },
+  {
+    "id": "REF-10",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:refcas (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x d2aca5a262c3c2db2ce0ea16de6445f247f277b8 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 7940136b9e3efeb57c8d388632bd4d5d6c492cb3 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\refcas update-ref refs/heads/x 7940136b9e3efeb57c8d388632bd4d5d6c492cb3 d2aca5a262c3c2db2ce0ea16de6445f247f277b8"
+    ],
+    "observation": "CAS à trois arguments : l'ancien OID périmé est refusé sans déplacer la ref ; le CAS avec l'ancien OID courant réussit. La comparaison porte sur la valeur courante de la ref.",
+    "scope": "Git 2.51.1 `update-ref` CAS semantics on local refs. Does not cover packed-refs races, reflog-less setups, or network filesystems.",
+    "evidence": "logs/REF-10.log"
+  },
+  {
+    "id": "FENCE-07a",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:fence-a (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main e3f4a8ca57762e86d019b446a3690bf8d8fbc46e 1e1b4ed85f661b51529511d35d74647fab4b93b0",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07a update-ref refs/heads/main 7d87ebdc0c07cea8e1787877b67a53402bbbb136 1e1b4ed85f661b51529511d35d74647fab4b93b0"
+    ],
+    "observation": "L'écrivain périmé (même `old`) est refusé après qu'un autre écrivain a publié : le CAS de ref suffit entre écrivains coopérants. Aucun epoch n'est nécessaire pour ce cas.",
+    "scope": "Two cooperating writers using `git update-ref` CAS. Shows only that the stale writer is refused; does not implement an epoch or a lease.",
+    "evidence": "logs/FENCE-07a.log"
+  },
+  {
+    "id": "FENCE-07b",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:fence-b (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b commit -q --allow-empty -m external-writer",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b update-ref refs/heads/main 90cb48fa738b555da59e9957996524ef9a93850a 94fa76249a4a3970c7aec610a82409a7c4ca7979",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\fence07b merge-base --is-ancestor 90cb48fa738b555da59e9957996524ef9a93850a refs/heads/main"
+    ],
+    "observation": "Un `git commit` externe réussit entre la lecture de l'ancien OID et notre CAS ; notre CAS refuse ensuite et notre candidat devient inatteignable. Le contournement n'est pas empêché : il est seulement détecté (trop tard).",
+    "scope": "Shows that an external `git` writer bypasses any Flow-side lock/epoch. The external write is deliberately successful; no prevention mechanism is tested because none exists.",
+    "evidence": "logs/FENCE-07b.log"
+  },
+  {
+    "id": "FENCE-07c",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f5-crash (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\fence07c\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\fence07c after-ref fence07c"
+    ],
+    "observation": "Après crash post-CAS : la ref a bougé, le journal n'a qu'un INTENT. La relecture de la ref classe l'issue comme PUBLISHED (état publié identifiable) ; le guard n'écrit qu'un OUTCOME de récupération et ne republie pas. L'ambiguïté est résolue par la ref, pas par le journal.",
+    "scope": "Single writer, local FS: the crash window after `update-ref` and before the outcome record. Recovery classifies from the journal + ref; it does not prove crash consistency on other filesystems.",
+    "evidence": "logs/FENCE-07c.log"
+  },
+  {
+    "id": "CRASH-11",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f5-crash (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-intent\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-intent before-intent crash-before-intent",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-intent-naive\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-intent-naive none naive-replay",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-intent\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-intent after-intent crash-after-intent",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-intent-naive\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-intent-naive none naive-replay",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-ref\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-ref after-ref crash-after-ref",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-ref-naive\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-after-ref-naive none naive-replay",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-outcome\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-outcome before-outcome crash-before-outcome",
+      "<HOME>\\AppData\\Local\\Programs\\Python\\Python313\\python.exe <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-outcome-naive\\publisher.py <REPO>\\experiments\\r0b\\git\\scratch\\crash11-before-outcome-naive none naive-replay"
+    ],
+    "observation": "Matrice : before-intent → journal vide ; after-intent → INTENT sans outcome, ref=old (NOT_PUBLISHED) ; after-ref → ref bougée sans outcome, récupérée en PUBLISHED (l'ambiguïté est résolue par la relecture de la ref, pas par le journal) ; before-outcome → l'outcome est déjà écrit avant le crash (point mal nommé, récupération triviale). Rejeu naïf sans clé d'idempotence : after-intent produit deux INTENT et deux commits distincts pour le même tree ; after-ref publie un second commit par-dessus le commit déjà publié. La garde de récupération est donc nécessaire.",
+    "scope": "Four driven crash points on a single local writer, Windows/NTFS. os._exit(70) approximates a kill; it does not cover power loss, fsync semantics of the OS, or a second process.",
+    "evidence": "logs/CRASH-11.log"
+  },
+  {
+    "id": "FILE-09",
+    "verdict": "REPRODUCED",
+    "fixture": "r0b-local:f3-filetypes/{base,link,case} (R0-a fixtures absent)",
+    "os": "Windows 11 (win32); git version 2.51.1.windows.1",
+    "commands": [
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\base diff -M --summary f51aa1a389da7a3a598ecd8791b2ae5f7ec95f6d 506c749fc06dc0db41a1cd25ddb85fe905e3a397",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\link worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\file09-link HEAD",
+      "git -C <REPO>\\experiments\\r0b\\git\\fixtures\\f3-filetypes\\case worktree add --detach <REPO>\\experiments\\r0b\\git\\scratch\\file09-case HEAD",
+      "git -C <REPO>\\experiments\\r0b\\git\\scratch\\file09-case status --porcelain"
+    ],
+    "observation": "Modes/tree : script.sh=100755, b.bin=100644 (blob identique aux octets du worktree), rename détecté (rename keep.txt => renamed.txt (100%)), delete.txt absent. Le blob de crlf.txt contient des CRLF : False (attribut `text` → octets du tree normalisés LF, différents du disque). link.txt=120000 : checkout rc=0, symlink réel sur cet hôte=True, lecture=b'' — la cible du blob inclut un saut de ligne, donc le lien est pendant. Casse : ['Case.txt', 'case.txt', 'seed.txt'] dans le tree mais ['.git', 'case.txt', 'seed.txt'] sur disque, `git status`='M Case.txt' : une entrée est écrasée et le worktree sort modifié.",
+    "scope": "Git 2.51.1 for Windows on NTFS (case-insensitive, core.filemode=false, core.symlinks effectively false). Mode/bytes in the tree are exact; worktree restrictions are documented, not fixed.",
+    "evidence": "logs/FILE-09.log"
+  }
+]

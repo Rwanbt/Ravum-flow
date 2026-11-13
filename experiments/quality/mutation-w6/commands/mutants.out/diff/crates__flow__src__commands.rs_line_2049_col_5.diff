@@ -1,0 +1,35 @@
+--- crates/flow/src/commands.rs
++++ replace lock_refusal -> Json with Default::default()
+@@ -2041,31 +2041,17 @@
+     ]))
+ }
+ 
+ // -------------------------------------------------------------- reconcile
+ /// Count journal records by `id` for one event kind.
+ /// A lock refusal carries its own code: a held lock and an unattributable one
+ /// have different remedies, and the second must never look like "try again".
+ fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {
+-    match err {
+-        crate::lock::LockError::Held(why) => refused_code("LOCKED", why),
+-        crate::lock::LockError::Unknown(why) => {
+-            let mut value = refused_code("LOCK_UNKNOWN", why);
+-            if let Json::Obj(pairs) = &mut value {
+-                pairs.push(("manual_required".into(), Json::Bool(true)));
+-                pairs.push((
+-                    "lock_path".into(),
+-                    Json::str(crate::lock::lock_path(root).to_string_lossy().to_string()),
+-                ));
+-            }
+-            value
+-        }
+-        crate::lock::LockError::Io(why) => refused_code("LOCK_IO", why),
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Crash-injection point, **debug builds only**.
+ ///
+ /// The test suite needs to interrupt a publication between its durable steps.
+ /// A released binary must not honour an environment variable that can skip the
+ /// outcome record, so the variable is ignored outside `debug_assertions` — and a
+ /// CI step proves it on the release binary.

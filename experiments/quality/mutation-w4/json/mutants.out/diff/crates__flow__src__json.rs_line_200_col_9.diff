@@ -1,0 +1,26 @@
+--- crates/flow/src/json.rs
++++ replace Parser<'a>::literal -> Result<Json, String> with Ok(Default::default())
+@@ -192,22 +192,17 @@
+             Some(b'n') => self.literal("null", Json::Null),
+             Some(c) if c == b'-' || c.is_ascii_digit() => self.number(),
+             Some(c) => Err(format!("unexpected byte {:?} at {}", c as char, self.pos)),
+             None => Err("unexpected end of input".into()),
+         }
+     }
+ 
+     fn literal(&mut self, word: &str, value: Json) -> Result<Json, String> {
+-        if self.bytes[self.pos..].starts_with(word.as_bytes()) {
+-            self.pos += word.len();
+-            Ok(value)
+-        } else {
+-            Err(format!("invalid literal at {}", self.pos))
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn object(&mut self) -> Result<Json, String> {
+         self.pos += 1;
+         let mut pairs = Vec::new();
+         self.ws();
+         if self.peek() == Some(b'}') {
+             self.pos += 1;

@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace adoption_path -> PathBuf with Default::default()
+@@ -200,17 +200,17 @@
+     flow_dir(root).join("proposals")
+ }
+ 
+ pub fn candidates_dir(root: &Path) -> PathBuf {
+     flow_dir(root).join("candidates")
+ }
+ 
+ pub fn adoption_path(root: &Path) -> PathBuf {
+-    flow_dir(root).join("adopted.json")
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The local approval of a repository policy.
+ ///
+ /// `.flow/config.json` can arrive with a clone. Nothing in this file is executed
+ /// until this record names its policy digest: a committed config is a claim, not
+ /// a consent.
+ pub struct Adoption {

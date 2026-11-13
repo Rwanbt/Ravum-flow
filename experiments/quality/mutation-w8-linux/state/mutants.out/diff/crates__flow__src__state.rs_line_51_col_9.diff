@@ -1,0 +1,24 @@
+--- crates/flow/src/state.rs
++++ replace <impl std::fmt::Display for JournalError>::fmt -> std::fmt::Result with Ok(Default::default())
+@@ -43,20 +43,17 @@
+     /// The journal could not be opened or read: the outcome is genuinely unknown.
+     Io(String),
+     /// A line was read but is not a valid record: the journal is corrupt.
+     Corrupt(String),
+ }
+ 
+ impl std::fmt::Display for JournalError {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+-        match self {
+-            JournalError::Io(m) => write!(f, "journal unreadable: {m}"),
+-            JournalError::Corrupt(m) => write!(f, "journal corrupt: {m}"),
+-        }
++        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl From<JournalError> for String {
+     fn from(e: JournalError) -> String {
+         e.to_string()
+     }
+ }

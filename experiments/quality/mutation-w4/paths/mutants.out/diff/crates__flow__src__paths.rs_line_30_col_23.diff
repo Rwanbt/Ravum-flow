@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace && with || in is_record_id
+@@ -22,17 +22,17 @@
+ pub fn is_object_id(value: &str) -> bool {
+     (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
+ }
+ 
+ /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.
+ /// Hex case is not significant: the ids this crate writes are lowercase, and
+ /// accepting an uppercase spelling only widens what can be *read*.
+ pub fn is_record_id(value: &str) -> bool {
+-    value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())
++    value.len() == 32 || /* ~ changed by cargo-mutants ~ */ value.chars().all(|c| c.is_ascii_hexdigit())
+ }
+ 
+ /// Validate a repository-relative path as written in a receipt or config.
+ pub fn validate_relative(path: &str) -> Result<(), String> {
+     if path.is_empty() {
+         return Err("empty path".into());
+     }
+     if path.len() > 4096 {

@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace next_sequence -> u64 with 0
+@@ -228,17 +228,17 @@
+         canonical,
+         repo_root,
+     })
+ }
+ 
+ /// The next name sequence value. Exposed to the test crate so the collision
+ /// path can be exercised against the exact path the next attempt would use.
+ pub(crate) fn next_sequence() -> u64 {
+-    COUNTER.fetch_add(1, Ordering::Relaxed)
++    0 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The path of the `seq`-th candidate under `base` (before collision retries).
+ pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {
+     base.join(format!("{NAME_PREFIX}-{}-{seq}", std::process::id()))
+ }
+ 
+ /// True for a hexadecimal object id as `git worktree add` will accept it.

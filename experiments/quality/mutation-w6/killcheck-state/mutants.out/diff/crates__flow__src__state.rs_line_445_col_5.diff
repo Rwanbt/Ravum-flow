@@ -1,0 +1,24 @@
+--- crates/flow/src/state.rs
++++ replace unix_now -> u64 with 0
+@@ -437,20 +437,17 @@
+         })?;
+         records.push(record);
+     }
+     Ok(records)
+ }
+ 
+ /// Epoch seconds, used for lock ages.
+ pub fn unix_now() -> u64 {
+-    SystemTime::now() // survival-probe
+-        .duration_since(UNIX_EPOCH)
+-        .map(|d| d.as_secs())
+-        .unwrap_or(0)
++    0 /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Nanosecond-resolution suffix for journal intent ids.
+ ///
+ /// The id used to be `second + commit prefix`. Two publications of the same
+ /// tree to two refs within one second produce the same commit (same tree, same
+ /// parent, same default message), hence the same id, and one of the two intents
+ /// could then be closed by the other's outcome.

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_run
+@@ -1298,17 +1298,17 @@
+         None => git.write_tree()?,
+     };
+     // A candidate tree must still be in the object store: a pruned candidate is
+     // not verifiable, and verifying something else while naming it would be a
+     // false receipt.
+     if candidate_record.is_some() {
+         let present =
+             git.run_bounded(&["cat-file", "-e", &format!("{tree}^{{tree}}")], None, None)?;
+-        if present.status != 0 {
++        if present.status == /* ~ changed by cargo-mutants ~ */ 0 {
+             return Ok(refused_code(
+                 "CANDIDATE_TREE_MISSING",
+                 format!("candidate tree {tree} is no longer in the object store: re-run `flow assemble`"),
+             ));
+         }
+     }
+     let started_at = state::iso8601_now();
+ 

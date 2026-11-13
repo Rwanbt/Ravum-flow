@@ -1,0 +1,75 @@
+--- crates/flow/src/state.rs
++++ replace Receipt::load -> Result<Option<Receipt>, String> with Ok(Some(Default::default()))
+@@ -484,71 +484,17 @@
+ 
+ impl Receipt {
+     /// Load the **complete** receipt for `tree_oid`.
+     ///
+     /// Selected (partial) executions are written to a different file, so a
+     /// partial run can never be mistaken for — or overwrite — a complete proof.
+     pub fn load(root: &Path, tree_oid: &str) -> Result<Option<Receipt>, String> {
+         // The tree id becomes a file name. It must be an object id, never a path.
+-        if !crate::paths::is_object_id(tree_oid) {
+-            return Err(format!(
+-                "INVALID_TREE_ID: {tree_oid:?} is not a 40- or 64-character hex object id, so it cannot name a receipt"
+-            ));
+-        }
+-        let path = receipt_path(root, tree_oid);
+-        if !path.exists() {
+-            return Ok(None);
+-        }
+-        let text = fs::read_to_string(&path).map_err(|e| format!("cannot read receipt: {e}"))?;
+-        let value = json::parse(&text)?;
+-        let get = |key: &str| {
+-            value
+-                .get(key)
+-                .and_then(Json::as_str)
+-                .unwrap_or("")
+-                .to_string()
+-        };
+-        let scope = value.get("verification_scope");
+-        let scope_mode = scope
+-            .and_then(|s| s.get("mode"))
+-            .and_then(Json::as_str)
+-            .unwrap_or("")
+-            .to_string();
+-        Ok(Some(Receipt {
+-            schema: get("schema"),
+-            tree_oid: get("tree_oid"),
+-            commit_oid: get("commit_oid"),
+-            context_id: get("context_id"),
+-            policy_digest: get("policy_digest"),
+-            policy_version: get("policy_version"),
+-            execution_boundary: get("execution_boundary"),
+-            status: get("status"),
+-            scope_mode,
+-            missing_required: scope
+-                .and_then(|s| s.get("missing_required"))
+-                .and_then(Json::as_arr)
+-                .map(|items| {
+-                    items
+-                        .iter()
+-                        .filter_map(|v| v.as_str().map(str::to_string))
+-                        .collect()
+-                })
+-                .unwrap_or_default(),
+-            started_at: get("started_at"),
+-            finished_at: get("finished_at"),
+-            obligations: value
+-                .get("obligations")
+-                .and_then(Json::as_arr)
+-                .map(<[Json]>::to_vec)
+-                .unwrap_or_default(),
+-            logs: string_list(&value, "logs"),
+-            worktree_diff: string_list(&value, "worktree_diff"),
+-            json: value,
+-        }))
++        Ok(Some(Default::default())) /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Remove one top-level field, keeping every other pair in order.
+ fn without_field(value: &Json, key: &str) -> Json {
+     let mut out = value.clone();
+     if let Json::Obj(pairs) = &mut out {
+         pairs.retain(|(k, _)| k != key);

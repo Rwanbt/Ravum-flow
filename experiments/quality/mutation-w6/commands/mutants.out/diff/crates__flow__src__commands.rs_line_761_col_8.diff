@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in validate_obligations
+@@ -753,17 +753,17 @@
+         if let Some(other) = folded.get(&ob.id.to_lowercase()) {
+             return Err(format!(
+                 "obligation ids {:?} and {:?} differ only by case: their log files would collide on a case-insensitive filesystem",
+                 other, ob.id
+             ));
+         }
+         folded.insert(ob.id.to_lowercase(), ob.id.clone());
+     }
+-    if !obligations.iter().any(|o| o.required) {
++    if  /* ~ changed by cargo-mutants ~ */obligations.iter().any(|o| o.required) {
+         return Err(
+             "the policy declares no required obligation: nothing would be proven, so no receipt is publishable"
+                 .into(),
+         );
+     }
+     Ok(())
+ }
+ 

@@ -1,0 +1,4 @@
+warning: in the working copy of 'crates/flow/src/main.rs', LF will be replaced by CRLF the next time Git touches it
+Found 6 mutants to test
+ok       Unmutated baseline
+6 mutants tested: 6 caught

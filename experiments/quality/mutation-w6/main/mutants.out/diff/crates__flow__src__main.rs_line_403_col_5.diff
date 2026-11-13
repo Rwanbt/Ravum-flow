@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace emit with ()
+@@ -395,17 +395,17 @@
+         | Some("RECONCILED") | Some("EXPLAIN") | Some("STATUS") | Some("DISABLED")
+         | Some("ENABLED") | Some("REPORT") => 0,
+         Some(_) => 1,
+         None => 1,
+     }
+ }
+ 
+ fn emit(value: Json) {
+-    println!("{}", value.to_string_pretty());
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn emit_error(message: &str) {
+     emit(Json::obj(vec![
+         ("status", Json::str("ERROR")),
+         ("error", Json::str(message)),
+     ]));
+ }

@@ -1,0 +1,23 @@
+--- crates/flow/src/lock.rs
++++ replace LockError::message -> &str with "xyzzy"
+@@ -43,19 +43,17 @@
+     /// Ownership cannot be established at all: a human must inspect the file.
+     Unknown(String),
+     /// The lock file could not be created or removed.
+     Io(String),
+ }
+ 
+ impl LockError {
+     pub fn message(&self) -> &str {
+-        match self {
+-            LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,
+-        }
++        "xyzzy" /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl std::fmt::Display for LockError {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         f.write_str(self.message())
+     }
+ }

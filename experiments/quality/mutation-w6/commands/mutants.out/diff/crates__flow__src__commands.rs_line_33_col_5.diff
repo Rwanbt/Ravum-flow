@@ -1,0 +1,25 @@
+--- crates/flow/src/commands.rs
++++ replace refused_code -> Json with Default::default()
+@@ -25,21 +25,17 @@
+         ("reason", Json::str(why.into())),
+     ])
+ }
+ 
+ /// A refusal that carries a stable machine-readable code. The `status` stays
+ /// `REFUSED` so callers (and the exit-code contract) never have to special-case
+ /// the reason, while tests and operators can assert on the precise cause.
+ fn refused_code(code: &str, why: impl Into<String>) -> Json {
+-    Json::obj(vec![
+-        ("status", Json::str("REFUSED")),
+-        ("code", Json::str(code)),
+-        ("reason", Json::str(why.into())),
+-    ])
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn short(digest: &str) -> String {
+     digest.chars().take(12).collect()
+ }
+ 
+ fn current_ref(git: &Git) -> Result<String, String> {
+     let out = git.run(&["symbolic-ref", "-q", "HEAD"])?;

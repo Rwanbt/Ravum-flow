@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1912,17 +1912,17 @@
+             ("tree", Json::str(tree.clone())),
+             ("at", Json::str(state::iso8601_now())),
+         ]),
+     )?;
+     if crash_point("after-intent") {
+         std::process::exit(89);
+     }
+     let recheck = git.show_ref(&reference)?;
+-    if recheck.as_deref() != Some(old.as_str()) {
++    if recheck.as_deref() == /* ~ changed by cargo-mutants ~ */ Some(old.as_str()) {
+         state::append_journal(
+             root,
+             &Json::obj(vec![
+                 ("event", Json::str("outcome")),
+                 ("id", Json::str(id)),
+                 ("status", Json::str("REFUSED_STALE")),
+                 ("observed", Json::str(recheck.unwrap_or_default())),
+                 ("at", Json::str(state::iso8601_now())),

@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in verify_checkout_fidelity
+@@ -838,17 +838,17 @@
+             unexpected.len(),
+             &unexpected[..unexpected.len().min(3)]
+         ));
+     }
+     let declared_dirs = ls_tree_dirs(git, tree)?;
+     let mut unexpected_dirs: Vec<&str> = actual_dirs
+         .iter()
+         .map(String::as_str)
+-        .filter(|dir| !declared_dirs.contains(*dir))
++        .filter(|dir|  /* ~ changed by cargo-mutants ~ */declared_dirs.contains(*dir))
+         .collect();
+     if !unexpected_dirs.is_empty() {
+         unexpected_dirs.sort_unstable();
+         return Err(format!(
+             "the checkout holds {} directory(ies) the tree does not declare (for example {:?}): a hook or the host created them, and an empty directory can change what an obligation discovers",
+             unexpected_dirs.len(),
+             &unexpected_dirs[..unexpected_dirs.len().min(3)]
+         ));

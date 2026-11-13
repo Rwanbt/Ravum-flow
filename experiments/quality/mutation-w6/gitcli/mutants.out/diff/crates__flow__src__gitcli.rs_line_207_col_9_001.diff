@@ -1,0 +1,23 @@
+--- crates/flow/src/gitcli.rs
++++ replace Git::version -> String with "xyzzy".into()
+@@ -199,19 +199,17 @@
+     }
+ 
+     pub fn status_porcelain(&self) -> Result<Vec<String>, String> {
+         let out = self.capture(&["status", "--porcelain=v1", "-uall"])?;
+         Ok(out.lines().map(str::to_string).collect())
+     }
+ 
+     pub fn version(&self) -> String {
+-        self.run(&["--version"])
+-            .map(|o| o.stdout.trim().to_string())
+-            .unwrap_or_else(|e| format!("UNKNOWN: {e}"))
++        "xyzzy".into() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ /// Locate the repository root, refusing to run outside a Git work tree.
+ ///
+ /// The command is built with the same scrubbed environment as every other Git
+ /// invocation: a host `GIT_DIR`/`GIT_WORK_TREE` cannot make this answer come
+ /// from somewhere else.

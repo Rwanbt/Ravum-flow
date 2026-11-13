@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace + with - in <impl Drop for Scratch>::drop
+@@ -99,17 +99,17 @@
+ impl Drop for Scratch {
+     /// Bounded, idempotent, non-panicking cleanup.
+     ///
+     /// The directory is removed only while it is provably still the one this
+     /// value created; the administrative worktree entry is pruned with a
+     /// bounded `git worktree prune`.
+     fn drop(&mut self) {
+         if self.still_owned() {
+-            remove_tree_bounded(&self.path, Instant::now() + CLEANUP_BUDGET);
++            remove_tree_bounded(&self.path, Instant::now() - /* ~ changed by cargo-mutants ~ */ CLEANUP_BUDGET);
+         }
+         prune_worktrees(&self.repo_root);
+     }
+ }
+ 
+ /// Materialise `commit`'s tree in a NEW unique directory outside the repository.
+ ///
+ /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves

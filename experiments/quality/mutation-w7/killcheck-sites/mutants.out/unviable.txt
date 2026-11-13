@@ -1,0 +1,4 @@
+crates/flow/src/commands.rs:1551:5: replace cmd_publish -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:2105:5: replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![Default::default()])
+crates/flow/src/commands.rs:2158:5: replace cmd_reconcile -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:2294:5: replace cmd_explain -> Result<Json, String> with Ok(Default::default())

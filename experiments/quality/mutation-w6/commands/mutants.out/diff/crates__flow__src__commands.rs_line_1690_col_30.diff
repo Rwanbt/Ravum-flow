@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1682,17 +1682,17 @@
+                 receipt.missing_required
+             ),
+         ));
+     }
+     // 3. the policy must still be the policy the receipt proves. This is
+     //    recomputed from the current configuration, never read from the receipt.
+     let policy = effective_policy(&config, &config.obligations);
+     let expected_digest = policy_digest(&policy);
+-    if receipt.policy_digest != expected_digest {
++    if receipt.policy_digest == /* ~ changed by cargo-mutants ~ */ expected_digest {
+         return Ok(refused_code(
+             "STALE_POLICY",
+             format!(
+                 "the receipt proves policy {} but the current policy is {}: any edit to .flow/config.json, and any `--timeout` override at run time, changes the proven policy - re-run `flow run` without overrides",
+                 short(&receipt.policy_digest),
+                 short(&expected_digest)
+             ),
+         ));

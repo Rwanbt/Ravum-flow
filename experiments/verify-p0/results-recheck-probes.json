@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "post": "C:\\Users\\barat\\AppData\\Local\\Temp\\flow-recheck-target\\debug\\flow.exe",
+    "sha256": "661f5d5f364e6f78e8cc6c041a1750cd23ef86326e67c465ca6e84d0f2ad09c8"
+  },
+  "probes": {
+    "clean_receipt": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 1793
+      },
+      "receipt_written": true,
+      "receipt_status": "PASSED",
+      "receipt_keys": [
+        "candidate_id",
+        "commit_oid",
+        "context_id",
+        "execution_boundary",
+        "finished_at",
+        "integrity",
+        "logs",
+        "obligations",
+        "parent_oid",
+        "policy",
+        "policy_digest",
+        "policy_version",
+        "schema",
+        "scope_note",
+        "started_at",
+        "status",
+        "tree_oid",
+        "verification_scope",
+        "worktree_diff"
+      ],
+      "checkout_recheck_present": false,
+      "checkout_recheck_value": null,
+      "checkout_unchanged_present": false
+    },
+    "flags": {
+      "run_dry_run": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 158
+      },
+      "status_force": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 142
+      },
+      "doctor_adopt_policy": {
+        "exit": 2,
+        "status": "ERROR",
+        "code": null,
+        "reason": "",
+        "duration_ms": 99
+      },
+      "receipt_written": false,
+      "obligation_logs_written": false,
+      "ref_unchanged": true,
+      "publish_dry_run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "NO_RECEIPT",
+        "reason": "no complete receipt for tree 42d4c5245460645340a0b5b189f055b93cca0f7e: run `flow run` on this exact index tree first (a selective run never produces one)",
+        "duration_ms": 533
+      }
+    },
+    "doctor": {
+      "guarantees": [
+        "receipts bind an exact Git tree OID and one effective policy digest",
+        "publication uses ref CAS with a durable intent/outcome journal",
+        "the verification checkout equals the verified tree exactly: every regular file byte for byte, no missing file, no extra file",
+        "a required obligation that cannot run makes the result UNSUPPORTED, never PASSED",
+        "a selective run is recorded as PARTIAL and is never publishable"
+      ],
+      "non_guarantees": [
+        "no OS-level isolation of obligations",
+        "hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A post-checkout that changes the disposable checkout is detected and refused (bytes and file set), not prevented; a blocking reference-transaction aborts publish",
+        "no completeness proof of the build context",
+        "no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one",
+        "a checkout that cannot reproduce the tree is refused, not repaired"
+      ],
+      "gitattributes_status": "WARN",
+      "gitattributes_detail": "content-attribute source(s) present (.git/info/attributes (local, not in the tree), core.attributesFile=C:\\Users\\barat\\AppData\\Local\\Temp\\flow-recheck-probes-w0og71zz\\host-attributes): eol/filter rules can rewrite a checkout; `flow run` compares every regular file with the blob the tree names and refuses a checkout that differs, so this is a disclosure, not a bypass"
+    },
+    "non_utf8": {
+      "update_index": {
+        "exit": 0,
+        "status": null,
+        "code": null,
+        "reason": "",
+        "duration_ms": 63
+      },
+      "run": {
+        "exit": 1,
+        "status": "REFUSED",
+        "code": "UNSUPPORTED_CHECKOUT",
+        "reason": "the checkout is missing 1 of 2 tree entries (for example [\"bad�.txt\"]): the obligations would not see the verified tree",
+        "duration_ms": 1392
+      },
+      "tree": "1a252586329ba4e8e6e57a8ceb5a2e469460446e",
+      "receipt": false,
+      "ls_tree_hex": "31303036343420626c6f62203461353830303730353261363566626332666333663931306632383535663435613430353865373409612e7478740031303036343420626c6f62206332393831613939333162333833623565623132386463356533353035363534616235323639623609626164efbfbd2e74"
+    },
+    "delayed_write": {
+      "run": {
+        "exit": 0,
+        "status": "PASSED",
+        "code": null,
+        "reason": "",
+        "duration_ms": 12369
+      },
+      "receipt_written": true,
+      "obligation_log": "content_hex=414c5048410a"
+    }
+  }
+}

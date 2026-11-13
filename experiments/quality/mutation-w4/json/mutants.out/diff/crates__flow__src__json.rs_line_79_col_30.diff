@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace == with != in Json::write
+@@ -71,17 +71,17 @@
+         out
+     }
+ 
+     fn write(&self, out: &mut String, indent: Option<usize>, level: usize) {
+         match self {
+             Json::Null => out.push_str("null"),
+             Json::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+             Json::Num(n) => {
+-                if n.fract() == 0.0 && n.abs() < 9.0e15 {
++                if n.fract() != /* ~ changed by cargo-mutants ~ */ 0.0 && n.abs() < 9.0e15 {
+                     out.push_str(&format!("{}", *n as i64));
+                 } else {
+                     out.push_str(&format!("{}", n));
+                 }
+             }
+             Json::Str(s) => write_string(out, s),
+             Json::Arr(items) => {
+                 if items.is_empty() {

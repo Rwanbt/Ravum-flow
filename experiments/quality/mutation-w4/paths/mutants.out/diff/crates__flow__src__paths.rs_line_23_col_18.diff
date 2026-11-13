@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace == with != in is_object_id
+@@ -15,17 +15,17 @@
+     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+ ];
+ 
+ /// True for a Git object id this build accepts: 40 or 64 hexadecimal characters.
+ ///
+ /// Used wherever an identifier becomes a file name (`receipts/<tree>.json`): a
+ /// raw `../` or an absolute path must never reach the filesystem.
+ pub fn is_object_id(value: &str) -> bool {
+-    (value.len() == 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
++    (value.len() != /* ~ changed by cargo-mutants ~ */ 40 || value.len() == 64) && value.chars().all(|c| c.is_ascii_hexdigit())
+ }
+ 
+ /// True for a Flow record id (proposal / candidate): 32 hexadecimal characters.
+ /// Hex case is not significant: the ids this crate writes are lowercase, and
+ /// accepting an uppercase spelling only widens what can be *read*.
+ pub fn is_record_id(value: &str) -> bool {
+     value.len() == 32 && value.chars().all(|c| c.is_ascii_hexdigit())
+ }

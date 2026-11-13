@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in parse_tree_dirs
+@@ -965,17 +965,17 @@
+ /// The parsing half of [`ls_tree_dirs`], separated for the same reason as
+ /// [`parse_tree_entries`]: crafted bytes can pin every refusal directly.
+ fn parse_tree_dirs(tree: &str, listing: &[u8]) -> Result<BTreeSet<String>, String> {
+     let mut dirs = BTreeSet::new();
+     for entry in listing.split(|byte| *byte == 0) {
+         if entry.is_empty() {
+             continue;
+         }
+-        let Some(tab) = entry.iter().position(|byte| *byte == b'\t') else {
++        let Some(tab) = entry.iter().position(|byte| *byte != /* ~ changed by cargo-mutants ~ */ b'\t') else {
+             return Err(format!("tree {tree}: unparsable ls-tree -d entry"));
+         };
+         let path = std::str::from_utf8(&entry[tab + 1..]).map_err(|_| {
+             format!(
+                 "tree {tree} holds a directory path that is not valid UTF-8: this platform cannot represent it faithfully"
+             )
+         })?;
+         dirs.insert(path.replace('\\', "/"));

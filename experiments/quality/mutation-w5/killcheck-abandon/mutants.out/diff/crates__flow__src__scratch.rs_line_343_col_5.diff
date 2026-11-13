@@ -1,0 +1,22 @@
+--- crates/flow/src/scratch.rs
++++ replace abandon with ()
+@@ -335,18 +335,17 @@
+         // Windows refuses to unlink a read-only file; clear the bit, retry once.
+         make_writable(&link);
+         fs::remove_file(&link).map_err(|e| format!("cannot remove {}: {e}", link.display()))?;
+     }
+     Ok(())
+ }
+ 
+ fn abandon(path: &Path, repo_root: &Path) {
+-    remove_tree_bounded(path, Instant::now() + CLEANUP_BUDGET);
+-    prune_worktrees(repo_root);
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Best-effort, bounded prune of stale administrative worktree entries. Runs in
+ /// a timeout-bounded obligation so a hostile hook/config cannot hang `Drop`.
+ fn prune_worktrees(repo_root: &Path) {
+     if !repo_root.is_dir() {
+         return;
+     }

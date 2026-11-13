@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ delete ! in detach_git_link
+@@ -320,17 +320,17 @@
+         Err(e) => return Err(format!("cannot inspect {}: {e}", link.display())),
+     };
+     if meta.file_type().is_symlink() {
+         return Err(format!(
+             "refusing {}: .git is a symlink/reparse point",
+             link.display()
+         ));
+     }
+-    if !meta.is_file() {
++    if  /* ~ changed by cargo-mutants ~ */meta.is_file() {
+         return Err(format!(
+             "refusing {}: .git is not a regular file",
+             link.display()
+         ));
+     }
+     if fs::remove_file(&link).is_err() {
+         // Windows refuses to unlink a read-only file; clear the bit, retry once.
+         make_writable(&link);

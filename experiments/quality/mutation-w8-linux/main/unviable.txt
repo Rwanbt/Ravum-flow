@@ -1,0 +1,4 @@
+crates/flow/src/main.rs:71:5: replace main -> ExitCode with Default::default()
+crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 1
+crates/flow/src/main.rs:77:5: replace dispatch -> u8 with 0
+crates/flow/src/main.rs:276:5: replace validate_flags -> Result<(), String> with Ok(())

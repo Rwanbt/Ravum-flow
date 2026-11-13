@@ -1,0 +1,117 @@
+--- crates/flow/src/scratch.rs
++++ replace materialise_in -> Result<Scratch, String> with Ok(Default::default())
+@@ -126,113 +126,17 @@
+     base: &Path,
+     git: &Git,
+     commit: &str,
+     repo_root: &Path,
+ ) -> Result<Scratch, String> {
+     // An object id, not an option and not a path: `git worktree add` must never
+     // see a value beginning with `-`, and commands.rs only ever passes the
+     // hexadecimal OID returned by `commit-tree`.
+-    if !is_hex_object_id(commit) {
+-        return Err(format!(
+-            "refusing to materialise {commit:?}: expected a hexadecimal object id"
+-        ));
+-    }
+-
+-    let repo_root = canonical_dir(repo_root, "repository root")?;
+-    let base_display = base.to_path_buf();
+-    let base_canonical = canonical_dir(&base_display, "scratch base")?;
+-    if is_within(&repo_root, &base_canonical) {
+-        return Err(refusal_message(&base_canonical, &repo_root));
+-    }
+-
+-    // `create_dir` is the uniqueness primitive: it fails atomically if the name
+-    // already exists, and a pre-existing path is never adopted or removed.
+-    let mut created: Option<(PathBuf, PathBuf)> = None;
+-    for _ in 0..MAX_ATTEMPTS {
+-        let seq = next_sequence();
+-        let display = candidate_path(&base_display, seq);
+-        let canonical = candidate_path(&base_canonical, seq);
+-        if is_within(&repo_root, &canonical) {
+-            return Err(refusal_message(&canonical, &repo_root));
+-        }
+-        match fs::create_dir(&display) {
+-            Ok(()) => {
+-                created = Some((display, canonical));
+-                break;
+-            }
+-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+-            Err(e) => {
+-                return Err(format!(
+-                    "cannot create scratch directory {}: {e}",
+-                    display.display()
+-                ))
+-            }
+-        }
+-    }
+-    let Some((path, canonical)) = created else {
+-        return Err(format!(
+-            "cannot create a unique scratch directory under {} after {MAX_ATTEMPTS} attempts",
+-            base_canonical.display()
+-        ));
+-    };
+-
+-    // A path we just created must be a real directory at the identity we
+-    // recorded; anything else (redirect, race) is a refusal, not a cleanup.
+-    if let Err(reason) = verify_created_dir(&path, &canonical) {
+-        let _ = fs::remove_dir(&path);
+-        return Err(reason);
+-    }
+-
+-    let Some(path_str) = path.to_str() else {
+-        abandon(&path, &repo_root);
+-        return Err(format!(
+-            "refusing scratch directory {}: path is not valid UTF-8",
+-            path.display()
+-        ));
+-    };
+-
+-    match git.run(&["worktree", "add", "--detach", "--quiet", path_str, commit]) {
+-        Ok(add) if add.status == 0 => {}
+-        Ok(add) => {
+-            abandon(&path, &repo_root);
+-            return Err(format!(
+-                "cannot materialise commit {commit} in {}: {}",
+-                path.display(),
+-                add.stderr.trim()
+-            ));
+-        }
+-        Err(e) => {
+-            abandon(&path, &repo_root);
+-            return Err(e);
+-        }
+-    }
+-
+-    if let Err(reason) = detach_git_link(&path) {
+-        abandon(&path, &repo_root);
+-        return Err(reason);
+-    }
+-
+-    let marker = format!(
+-        "{NAME_PREFIX}\ncommit {commit}\npid {}\n",
+-        std::process::id()
+-    );
+-    if let Err(e) = fs::write(path.join(OWNED_MARKER), marker) {
+-        abandon(&path, &repo_root);
+-        return Err(format!(
+-            "cannot mark scratch directory {} as owned: {e}",
+-            path.display()
+-        ));
+-    }
+-
+-    Ok(Scratch {
+-        path,
+-        canonical,
+-        repo_root,
+-    })
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// The next name sequence value. Exposed to the test crate so the collision
+ /// path can be exercised against the exact path the next attempt would use.
+ pub(crate) fn next_sequence() -> u64 {
+     COUNTER.fetch_add(1, Ordering::Relaxed)
+ }
+ 

@@ -1,0 +1,64 @@
+--- crates/flow/src/commands.rs
++++ replace parse_cat_file_batch -> Result<Vec<&'b[u8]>, String> with Ok(vec![Vec::leak(Vec::new())])
+@@ -1117,60 +1117,17 @@
+ /// guessed. Liveness is the point: every one of those is reachable from a
+ /// corrupted object store or a Git that answers nonsense, and none of them may
+ /// become a panic (a panic is not a refusal and could bypass cleanup).
+ fn parse_cat_file_batch<'e, 'b>(
+     tree: &str,
+     regular: &[(&'e str, &'e str)],
+     bytes: &'b [u8],
+ ) -> Result<Vec<&'b [u8]>, String> {
+-    /// Retained bytes for the whole comparison, before refusing.
+-    const CONTENT_BUDGET: usize = 64 * 1024 * 1024;
+-
+-    let mut blobs: Vec<&'b [u8]> = Vec::with_capacity(regular.len());
+-    let mut position = 0usize;
+-    let mut total = 0usize;
+-    for (oid, path) in regular {
+-        let rest = bytes
+-            .get(position..)
+-            .ok_or_else(|| format!("truncated cat-file batch before {path:?}"))?;
+-        let Some(offset) = rest.iter().position(|b| *b == b'\n') else {
+-            return Err(format!("truncated cat-file batch before {path:?}"));
+-        };
+-        let header_end = position + offset;
+-        let header = String::from_utf8_lossy(&bytes[position..header_end]).to_string();
+-        let mut fields = header.split(' ');
+-        let _echo = fields.next();
+-        let kind = fields.next().unwrap_or("");
+-        if kind != "blob" {
+-            return Err(format!(
+-                "tree {tree} entry {path:?} resolved to {kind:?}, not a blob (blob {oid})"
+-            ));
+-        }
+-        let size: usize = fields
+-            .next()
+-            .and_then(|v| v.parse().ok())
+-            .ok_or_else(|| format!("unparsable cat-file header {header:?}"))?;
+-        let start = header_end + 1;
+-        let end = start
+-            .checked_add(size)
+-            .ok_or_else(|| format!("cat-file header {header:?} overflows a size"))?;
+-        let blob = bytes
+-            .get(start..end)
+-            .ok_or_else(|| format!("truncated cat-file batch in {path:?}"))?;
+-        total += size;
+-        if total > CONTENT_BUDGET {
+-            return Err(format!(
+-                "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
+-            ));
+-        }
+-        blobs.push(blob);
+-        position = end + 1;
+-    }
+-    Ok(blobs)
++    Ok(vec![Vec::leak(Vec::new())]) /* ~ changed by cargo-mutants ~ */
+ }
+ fn collect_entries(
+     root: &Path,
+     dir: &Path,
+     files: &mut Vec<String>,
+     dirs: &mut Vec<String>,
+ ) -> Result<(), String> {
+     let entries = fs::read_dir(dir).map_err(|e| format!("cannot read {}: {e}", dir.display()))?;

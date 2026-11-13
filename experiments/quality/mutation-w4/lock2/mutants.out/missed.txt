@@ -1,0 +1,14 @@
+crates/flow/src/lock.rs:208:26: replace < with <= in wait_for_record
+crates/flow/src/lock.rs:236:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with true in acquire_lock
+crates/flow/src/lock.rs:239:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with false in acquire_lock
+crates/flow/src/lock.rs:294:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true in acquire_lock
+crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with None
+crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with Some(false)
+crates/flow/src/lock.rs:351:44: replace || with && in kill_liveness
+crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with None
+crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with Some(false)
+crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with None
+crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with Some(false)

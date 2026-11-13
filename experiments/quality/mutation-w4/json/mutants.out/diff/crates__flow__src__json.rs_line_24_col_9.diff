@@ -1,0 +1,24 @@
+--- crates/flow/src/json.rs
++++ replace Json::get -> Option<&Json> with None
+@@ -16,20 +16,17 @@
+         Json::Obj(pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+     }
+ 
+     pub fn str(s: impl Into<String>) -> Json {
+         Json::Str(s.into())
+     }
+ 
+     pub fn get(&self, key: &str) -> Option<&Json> {
+-        match self {
+-            Json::Obj(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+-            _ => None,
+-        }
++        None /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     pub fn as_str(&self) -> Option<&str> {
+         match self {
+             Json::Str(s) => Some(s),
+             _ => None,
+         }
+     }

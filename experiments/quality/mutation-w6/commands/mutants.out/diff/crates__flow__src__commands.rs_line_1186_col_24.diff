@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace && with || in collect_entries
+@@ -1178,17 +1178,17 @@
+         let path = entry.path();
+         let name = entry.file_name().to_string_lossy().to_string();
+         // Only Flow's own scratch ownership marker is not part of the verified
+         // tree. The `.git` link is removed by `materialise` before this check, so a
+         // `.git` entry here is a file the tree did not declare — a hook that
+         // recreates it after the unlink must be refused, not ignored. Any other
+         // root entry, including one whose name merely starts with `.flow-scratch`,
+         // is an extra file.
+-        if dir == root && name == ".flow-scratch-owned" {
++        if dir == root || /* ~ changed by cargo-mutants ~ */ name == ".flow-scratch-owned" {
+             continue;
+         }
+         let Ok(meta) = fs::symlink_metadata(&path) else {
+             continue;
+         };
+         if meta.is_dir() && !meta.file_type().is_symlink() {
+             let rel = path
+                 .strip_prefix(root)

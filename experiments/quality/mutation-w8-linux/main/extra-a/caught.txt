@@ -1,0 +1,8 @@
+crates/flow/src/main.rs:382:5: replace has_flag -> bool with true
+crates/flow/src/main.rs:382:5: replace has_flag -> bool with false
+crates/flow/src/main.rs:382:27: replace == with != in has_flag
+crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 0
+crates/flow/src/main.rs:389:5: replace exit_code_for -> u8 with 1
+crates/flow/src/main.rs:389:49: replace == with != in exit_code_for
+crates/flow/src/main.rs:403:5: replace emit with ()
+crates/flow/src/main.rs:407:5: replace emit_error with ()

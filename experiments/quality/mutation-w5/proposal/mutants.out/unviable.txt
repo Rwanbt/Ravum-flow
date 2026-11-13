@@ -1,0 +1,18 @@
+crates/flow/src/proposal.rs:43:5: replace refusal -> Json with Default::default()
+crates/flow/src/proposal.rs:64:9: replace Change::to_json -> Json with Default::default()
+crates/flow/src/proposal.rs:96:9: replace Proposal::load -> Result<Option<Proposal>, String> with Ok(Some(Default::default()))
+crates/flow/src/proposal.rs:121:9: replace Proposal::list -> Result<Vec<Proposal>, String> with Ok(vec![Default::default()])
+crates/flow/src/proposal.rs:142:9: replace Proposal::from_json -> Proposal with Default::default()
+crates/flow/src/proposal.rs:215:9: replace Candidate::load -> Result<Option<Candidate>, String> with Ok(Some(Default::default()))
+crates/flow/src/proposal.rs:318:9: replace TempIndex::path -> &Path with Box::leak(Box::new(Default::default()))
+crates/flow/src/proposal.rs:353:5: replace parse_raw_diff -> Result<Vec<Change>, String> with Ok(vec![Default::default()])
+crates/flow/src/proposal.rs:386:5: replace diff_changes -> Result<Vec<Change>, String> with Ok(vec![Default::default()])
+crates/flow/src/proposal.rs:562:28: replace > with < in read_patch
+crates/flow/src/proposal.rs:589:5: replace admit -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/proposal.rs:737:37: replace + with - in admit
+crates/flow/src/proposal.rs:737:37: replace + with * in admit
+crates/flow/src/proposal.rs:746:5: replace apply_patch -> Result<crate::gitcli::Output, String> with Ok(Default::default())
+crates/flow/src/proposal.rs:773:5: replace path_conflicts -> Option<Json> with Some(Default::default())
+crates/flow/src/proposal.rs:824:5: replace assemble -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/proposal.rs:982:64: replace + with - in assemble
+crates/flow/src/proposal.rs:982:64: replace + with * in assemble

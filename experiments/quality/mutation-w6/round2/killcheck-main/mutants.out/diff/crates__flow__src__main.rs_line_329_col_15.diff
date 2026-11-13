@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with -= in validate_flags
+@@ -321,17 +321,17 @@
+                     "unknown option {name:?} for `flow {command}` (see `flow help`)"
+                 ));
+             }
+         } else if command != "proposals" {
+             return Err(format!(
+                 "unexpected argument {arg:?} for `flow {command}` (see `flow help`)"
+             ));
+         }
+-        index += 1; // survival-probe
++        index -= /* ~ changed by cargo-mutants ~ */ 1; // survival-probe
+     }
+     Ok(())
+ }
+ 
+ fn flag_value(args: &[String], name: &str) -> Option<String> {
+     let mut index = 0;
+     while index < args.len() {
+         if args[index] == name {

@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace || with && in Config::from_json
+@@ -127,17 +127,17 @@
+                     .and_then(Json::as_str)
+                     .unwrap_or("")
+                     .to_string();
+                 let program = item
+                     .get("program")
+                     .and_then(Json::as_str)
+                     .unwrap_or("")
+                     .to_string();
+-                if id.is_empty() || program.is_empty() {
++                if id.is_empty() && /* ~ changed by cargo-mutants ~ */ program.is_empty() {
+                     return Err("obligation needs a non-empty id and program".into());
+                 }
+                 let args = item
+                     .get("args")
+                     .and_then(Json::as_arr)
+                     .map(|a| {
+                         a.iter()
+                             .filter_map(|v| v.as_str().map(str::to_string))

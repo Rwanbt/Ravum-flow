@@ -1,0 +1,41 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_proposals -> Result<Json, String> with Ok(Default::default())
+@@ -2437,37 +2437,17 @@
+         &task,
+         &base,
+         Path::new(&patch),
+         key.as_deref(),
+     )
+ }
+ 
+ pub fn cmd_proposals(root: &Path, show: Option<String>) -> Result<Json, String> {
+-    match show {
+-        Some(id) => match crate::proposal::Proposal::load(root, &id)? {
+-            Some(proposal) => Ok(proposal.json),
+-            None => Ok(crate::proposal::refusal(
+-                "UNKNOWN_PROPOSAL",
+-                format!("no admitted proposal {id:?} in .flow/proposals/"),
+-            )),
+-        },
+-        None => {
+-            let proposals = crate::proposal::Proposal::list(root)?;
+-            Ok(Json::obj(vec![
+-                ("status", Json::str("RECORD")),
+-                ("schema", Json::str(crate::state::SCHEMA_PROPOSAL_LIST)),
+-                (
+-                    "proposals",
+-                    Json::Arr(proposals.iter().map(|p| p.json.clone()).collect()),
+-                ),
+-                ("count", Json::Num(proposals.len() as f64)),
+-            ]))
+-        }
+-    }
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ pub fn cmd_assemble(root: &Path, proposals: &[String]) -> Result<Json, String> {
+     crate::proposal::assemble(root, proposals)
+ }
+ 
+ #[cfg(test)]
+ mod tests {

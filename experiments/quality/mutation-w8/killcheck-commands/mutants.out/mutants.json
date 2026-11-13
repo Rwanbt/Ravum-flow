@@ -1,0 +1,98 @@
+[
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace cmd_doctor -> Result<Json, String> with Ok(Default::default())\n@@ -229,282 +229,17 @@\n             ),\n         ))),\n         Some(_) => Ok(None),\n     }\n }\n \n // ----------------------------------------------------------------- doctor\n pub fn cmd_doctor(root: &Path) -> Result<Json, String> {\n-    let git = Git::new(root);\n-    let mut checks: Vec<Json> = Vec::new();\n-    let mut push = |id: &str, status: &str, detail: String| {\n-        checks.push(Json::obj(vec![\n-            (\"id\", Json::str(id)),\n-            (\"status\", Json::str(status)),\n-            (\"detail\", Json::str(detail)),\n-        ]));\n-    };\n-    let version = git.version();\n-    let git_ok = version.starts_with(\"git version\");\n-    push(\"git\", if git_ok { \"OK\" } else { \"FAILED\" }, version);\n-\n-    push(\"repository\", \"OK\", format!(\"toplevel {}\", root.display()));\n-\n-    let initialized = state::config_path(root).exists();\n-    push(\n-        \"flow_initialized\",\n-        if initialized { \"OK\" } else { \"WARN\" },\n-        if initialized {\n-            \"config present\".to_string()\n-        } else {\n-            \"run `flow init`\".to_string()\n-        },\n-    );\n-\n-    // A policy is executed only after this working copy adopted it. `doctor`\n-    // states which of the three situations the repository is in.\n-    if initialized {\n-        match (state::load_config(root), state::load_adoption(root)) {\n-            (Ok(config), Ok(Some(adoption))) => {\n-                let digest = policy_digest(&effective_policy(&config, &config.obligations));\n-                if digest == adoption.policy_digest {\n-                    push(\n-                        \"policy_adopted\",\n-                        \"OK\",\n-                        format!(\n-                            \"{} obligation(s) approved by {} at {}\",\n-                            config.obligations.len(),\n-                            adoption.source,\n-                            adoption.approved_at\n-                        ),\n-                    );\n-                } else {\n-                    push(\n-                        \"policy_adopted\",\n-                        \"WARN\",\n-                        \"the policy changed since it was approved: `flow approve` after reviewing .flow/config.json\".to_string(),\n-                    );\n-                }\n-            }\n-            (Ok(_), Ok(None)) => push(\n-                \"policy_adopted\",\n-                \"WARN\",\n-                \"no adoption record: nothing in .flow/config.json will run until `flow init --adopt-policy` or `flow approve`\".to_string(),\n-            ),\n-            (Err(e), _) => push(\"policy_adopted\", \"FAILED\", e),\n-            (_, Err(e)) => push(\"policy_adopted\", \"FAILED\", e),\n-        }\n-    }\n-\n-    let lock = crate::lock::inspect(root);\n-    push(\n-        \"publication_lock\",\n-        match lock.attribution {\n-            \"absent\" | \"dead\" => \"OK\",\n-            \"live\" => \"WARN\",\n-            _ => \"FAILED\",\n-        },\n-        if !lock.present {\n-            \"no lock file\".to_string()\n-        } else {\n-            format!(\n-                \"present, owner attribution {}, purpose {:?}{}{}\",\n-                lock.attribution,\n-                lock.purpose,\n-                lock.pid.map(|p| format!(\", pid {p}\")).unwrap_or_default(),\n-                lock.age_s\n-                    .map(|a| format!(\", {a}s old\"))\n-                    .unwrap_or_default()\n-            )\n-        },\n-    );\n-\n-    // Hooks: the MVP does not execute them; the user must know.\n-    let hooks_dir = PathBuf::from(git.capture(&[\"rev-parse\", \"--git-path\", \"hooks\"])?);\n-    let hooks_dir = if hooks_dir.is_absolute() {\n-        hooks_dir\n-    } else {\n-        root.join(hooks_dir)\n-    };\n-    let mut hooks: Vec<String> = Vec::new();\n-    if let Ok(entries) = fs::read_dir(&hooks_dir) {\n-        for entry in entries.flatten() {\n-            let name = entry.file_name().to_string_lossy().to_string();\n-            if !name.ends_with(\".sample\") {\n-                hooks.push(name);\n-            }\n-        }\n-    }\n-    hooks.sort();\n-    push(\n-        \"hooks\",\n-        if hooks.is_empty() { \"OK\" } else { \"WARN\" },\n-        if hooks.is_empty() {\n-            \"no hook installed. Flow dispatches no hook of its own; the Git plumbing it calls can still run post-checkout and reference-transaction if you add them\".to_string()\n-        } else {\n-            format!(\n-                \"hooks present ({}): Flow dispatches none of its own, but the Git plumbing it calls runs post-checkout on `worktree add` and reference-transaction on `update-ref`, and a blocking reference-transaction hook aborts publish. Obligations are declared in .flow/config.json\",\n-                hooks.join(\", \")\n-            )\n-        },\n-    );\n-\n-    let longpaths = git\n-        .run(&[\"config\", \"--get\", \"core.longpaths\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    push(\n-        \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // survival-probe\n-            \"WARN\"\n-        } else {\n-            \"OK\"\n-        },\n-        format!(\"core.longpaths={longpaths:?}\"),\n-    );\n-\n-    let ignorecase = git\n-        .run(&[\"config\", \"--get\", \"core.ignorecase\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    push(\n-        \"case_sensitivity\",\n-        if ignorecase == \"true\" { \"WARN\" } else { \"OK\" },\n-        format!(\n-            \"core.ignorecase={ignorecase:?}: a case-insensitive worktree cannot hold two paths differing only by case\"\n-        ),\n-    );\n-\n-    // Attribute sources that can rewrite a checkout. They are enumerated here for\n-    // disclosure only: `flow run` no longer guesses whether a conversion \"can\"\n-    // apply, it compares every regular file against its blob and refuses a\n-    // checkout that differs, so no attribute source (committed or host-local) is\n-    // a bypass. The list tells an operator *why* a refusal may have happened.\n-    let mut attribute_sources: Vec<String> = Vec::new();\n-    if root.join(\".gitattributes\").exists() {\n-        attribute_sources.push(\".gitattributes (in the working tree)\".to_string());\n-    }\n-    if root.join(\".git\").join(\"info\").join(\"attributes\").exists() {\n-        attribute_sources.push(\".git/info/attributes (local, not in the tree)\".to_string());\n-    }\n-    let attributes_file = git\n-        .run(&[\"config\", \"--get\", \"core.attributesFile\"])\n-        .map(|o| o.stdout.trim().to_string())\n-        .unwrap_or_default();\n-    if !attributes_file.is_empty() {\n-        attribute_sources.push(format!(\"core.attributesFile={attributes_file}\"));\n-    }\n-    push(\n-        \"gitattributes\",\n-        if attribute_sources.is_empty() {\n-            \"OK\"\n-        } else {\n-            \"WARN\"\n-        },\n-        if attribute_sources.is_empty() {\n-            \"no content-attribute source present\".to_string()\n-        } else {\n-            format!(\n-                \"content-attribute source(s) present ({}): eol/filter rules can rewrite a checkout; `flow run` compares every regular file with the blob the tree names and refuses a checkout that differs, so this is a disclosure, not a bypass\",\n-                attribute_sources.join(\", \")\n-            )\n-        },\n-    );\n-\n-    let mut tools = Vec::new();\n-    for program in [\"cargo\", \"rustc\", \"node\", \"python\", \"python3\"] {\n-        tools.push(format!(\n-            \"{program}={}\",\n-            if program_on_path(program) {\n-                \"found\"\n-            } else {\n-                \"missing\"\n-            }\n-        ));\n-    }\n-    push(\"toolchains\", \"OK\", tools.join(\" \"));\n-\n-    push(\n-        \"execution_boundary\",\n-        \"WARN\",\n-        \"local-trusted: obligations run with your user rights, with a scrubbed environment, but WITHOUT an OS sandbox. Untrusted code execution is UNSUPPORTED.\".to_string(),\n-    );\n-    push(\n-        \"platform\",\n-        if cfg!(windows) { \"WARN\" } else { \"OK\" },\n-        format!(\n-            \"os={}: AppContainer/Job Object containment is not qualified for rustc/cargo/node\",\n-            std::env::consts::OS\n-        ),\n-    );\n-    let disabled = state::load_config(root)\n-        .map(|c| c.disabled)\n-        .unwrap_or(false);\n-    push(\n-        \"disabled\",\n-        if disabled { \"WARN\" } else { \"OK\" },\n-        format!(\"disabled={disabled}\"),\n-    );\n-\n-    let journal = match state::read_journal(root) {\n-        Ok(records) => Json::obj(vec![\n-            (\"status\", Json::str(\"OK\")),\n-            (\"records\", Json::Num(records.len() as f64)),\n-        ]),\n-        Err(e) => Json::obj(vec![\n-            (\"status\", Json::str(\"FAILED\")),\n-            (\"detail\", Json::str(e.to_string())),\n-        ]),\n-    };\n-    push(\n-        \"journal\",\n-        journal\n-            .get(\"status\")\n-            .and_then(Json::as_str)\n-            .unwrap_or(\"FAILED\"),\n-        journal\n-            .get(\"detail\")\n-            .and_then(Json::as_str)\n-            .map(str::to_string)\n-            .or_else(|| {\n-                journal\n-                    .get(\"records\")\n-                    .and_then(Json::as_num)\n-                    .map(|n| format!(\"{n} records readable\"))\n-            })\n-            .unwrap_or_else(|| \"unreadable\".to_string()),\n-    );\n-\n-    Ok(Json::obj(vec![\n-        (\"status\", Json::str(\"REPORT\")),\n-        (\"overall\", Json::str(if checks.iter().any(|c| c.get(\"status\").and_then(Json::as_str) == Some(\"FAILED\")) { \"FAILED\" } else { \"OK\" })),\n-        (\"exit_contract\", Json::str(\"0 when overall=OK, 1 when overall=FAILED (a diagnostic that found a broken guarantee is not a success)\")),\n-        (\"checks\", Json::Arr(checks)),\n-        (\n-            \"guarantees\",\n-            Json::Arr(vec![\n-                Json::str(\"receipts bind an exact Git tree OID and one effective policy digest\"),\n-                Json::str(\"publication uses ref CAS with a durable intent/outcome journal\"),\n-                Json::str(\"the verification checkout equals the verified tree exactly when it is checked: every regular file byte for byte, executable bit on Unix, no missing file, no extra file or directory (Flow's own scratch ownership marker excepted) — and the declared files are re-proved unchanged after the obligations ran (a change refuses the run)\"),\n-                Json::str(\"a required obligation that cannot run makes the result UNSUPPORTED, never PASSED\"),\n-                Json::str(\"a selective run is recorded as PARTIAL and is never publishable\"),\n-            ]),\n-        ),\n-        (\n-            \"non_guarantees\",\n-            Json::Arr(vec![\n-                Json::str(\"no OS-level isolation of obligations\"),\n-                Json::str(\"hooks are not suppressed: `git worktree add` runs post-checkout and `git update-ref` runs reference-transaction. A change already present when the checkout is checked is refused, and a change to a declared file while the obligations run is caught by a re-check after the last obligation; a hook that writes outside the checkout, a write reverted before the re-check, or a write after it is not detected. A blocking reference-transaction aborts publish\"),\n-                Json::str(\"no completeness proof of the build context\"),\n-                Json::str(\"no cryptographic protection of a receipt: anyone who can write .flow/receipts can forge one\"),\n-                Json::str(\"a checkout that cannot reproduce the tree is refused, not repaired\"),\n-            ]),\n-        ),\n-    ]))\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n fn program_on_path(program: &str) -> bool {\n     let exts: Vec<String> = if cfg!(windows) {\n         std::env::var(\"PATHEXT\")\n             .unwrap_or_else(|_| \".EXE;.CMD;.BAT\".into())\n             .split(';')\n             .map(|s| s.to_ascii_lowercase())\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/commands.rs:237:5: replace cmd_doctor -> Result<Json, String> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 8,
+        "line": 502
+      },
+      "start": {
+        "column": 5,
+        "line": 237
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace && with || in cmd_doctor\n@@ -349,17 +349,17 @@\n     );\n \n     let longpaths = git\n         .run(&[\"config\", \"--get\", \"core.longpaths\"])\n         .map(|o| o.stdout.trim().to_string())\n         .unwrap_or_default();\n     push(\n         \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // survival-probe\n+        if cfg!(windows) || /* ~ changed by cargo-mutants ~ */ longpaths != \"true\" { // survival-probe\n             \"WARN\"\n         } else {\n             \"OK\"\n         },\n         format!(\"core.longpaths={longpaths:?}\"),\n     );\n \n     let ignorecase = git\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:357:26: replace && with || in cmd_doctor",
+    "package": "flow",
+    "replacement": "||",
+    "span": {
+      "end": {
+        "column": 28,
+        "line": 357
+      },
+      "start": {
+        "column": 26,
+        "line": 357
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/commands.rs\n+++ replace != with == in cmd_doctor\n@@ -349,17 +349,17 @@\n     );\n \n     let longpaths = git\n         .run(&[\"config\", \"--get\", \"core.longpaths\"])\n         .map(|o| o.stdout.trim().to_string())\n         .unwrap_or_default();\n     push(\n         \"longpaths\",\n-        if cfg!(windows) && longpaths != \"true\" { // survival-probe\n+        if cfg!(windows) && longpaths == /* ~ changed by cargo-mutants ~ */ \"true\" { // survival-probe\n             \"WARN\"\n         } else {\n             \"OK\"\n         },\n         format!(\"core.longpaths={longpaths:?}\"),\n     );\n \n     let ignorecase = git\n",
+    "file": "crates/flow/src/commands.rs",
+    "function": {
+      "function_name": "cmd_doctor",
+      "return_type": "-> Result<Json, String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 503
+        },
+        "start": {
+          "column": 1,
+          "line": 236
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/commands.rs:357:39: replace != with == in cmd_doctor",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 41,
+        "line": 357
+      },
+      "start": {
+        "column": 39,
+        "line": 357
+      }
+    }
+  }
+]

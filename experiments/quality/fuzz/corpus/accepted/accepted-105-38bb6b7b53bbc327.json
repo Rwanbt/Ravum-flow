@@ -1,0 +1,1 @@
+{"schema":"flow-1onfig/1","poliby_version":"FLOW-POLICY-c","obligationi":[{"id":"green","program":"gst","args":["--version"],"required":true,"timeout_s":30}]}

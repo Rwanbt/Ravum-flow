@@ -1,0 +1,21 @@
+--- crates/flow/src/paths.rs
++++ replace == with != in validate_relative
+@@ -47,17 +47,17 @@
+     let bytes = path.as_bytes();
+     if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
+         return Err("drive-qualified path is not allowed".into());
+     }
+     for component in path.split(['/', '\\']) {
+         if component.is_empty() {
+             return Err("empty path component".into());
+         }
+-        if component == "." || component == ".." {
++        if component == "." || component != /* ~ changed by cargo-mutants ~ */ ".." {
+             return Err(format!(
+                 "path traversal component {component:?} is not allowed"
+             ));
+         }
+         if component.len() > 255 {
+             return Err("path component longer than 255 bytes".into());
+         }
+         // Conservative portability rule: a colon is a drive separator or an NTFS

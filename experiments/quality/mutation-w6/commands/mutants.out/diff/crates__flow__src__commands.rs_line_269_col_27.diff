@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace == with != in cmd_doctor
+@@ -261,17 +261,17 @@
+     );
+ 
+     // A policy is executed only after this working copy adopted it. `doctor`
+     // states which of the three situations the repository is in.
+     if initialized {
+         match (state::load_config(root), state::load_adoption(root)) {
+             (Ok(config), Ok(Some(adoption))) => {
+                 let digest = policy_digest(&effective_policy(&config, &config.obligations));
+-                if digest == adoption.policy_digest {
++                if digest != /* ~ changed by cargo-mutants ~ */ adoption.policy_digest {
+                     push(
+                         "policy_adopted",
+                         "OK",
+                         format!(
+                             "{} obligation(s) approved by {} at {}",
+                             config.obligations.len(),
+                             adoption.source,
+                             adoption.approved_at

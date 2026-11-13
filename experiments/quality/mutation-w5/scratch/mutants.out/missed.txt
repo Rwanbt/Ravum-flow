@@ -1,0 +1,7 @@
+crates/flow/src/scratch.rs:86:42: replace || with && in Scratch::still_owned
+crates/flow/src/scratch.rs:162:23: replace match guard e.kind() == io::ErrorKind::AlreadyExists with true in materialise_in
+crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with true in materialise_in
+crates/flow/src/scratch.rs:314:19: replace match guard e.kind() == io::ErrorKind::NotFound with true in detach_git_link
+crates/flow/src/scratch.rs:343:46: replace + with - in abandon
+crates/flow/src/scratch.rs:383:19: replace += with *= in remove_tree_bounded
+crates/flow/src/scratch.rs:402:5: replace make_writable with ()

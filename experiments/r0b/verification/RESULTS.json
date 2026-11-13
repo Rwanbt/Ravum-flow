@@ -1,0 +1,97 @@
+[
+  {
+    "id": "E2E-12",
+    "verdict": "REPRODUCED",
+    "fixture": "f4-e2e (scratch copy)",
+    "os": "win32 / Windows-11 / Python 3.13.7",
+    "commands": [
+      "git worktree add --detach <scratch>/worktrees/green <green>",
+      "git worktree add --detach <scratch>/worktrees/breaking <breaking>",
+      "<PYTHON> -m unittest discover -q  (cwd=green worktree)",
+      "<PYTHON> -m unittest discover -q  (cwd=breaking worktree)",
+      "<PYTHON> tools/naive_gate.py <breaking worktree>",
+      "<PYTHON> tools/strict_gate.py <breaking worktree>",
+      "cmd /c python -m unittest discover -q & exit /b 0"
+    ],
+    "observation": "green rc=0, breaking rc=1 on the same consumer; naive gate rc=0 while the suite failed (false green); strict gate rc=1 blocks; cmd '& exit /b 0' rc=0 with tests actually run=True.",
+    "scope": "single Python fixture, unittest only; demonstrates that ignoring a return code yields a false green and that a return-code gate blocks. Not a general claim about every CI.",
+    "evidence": [
+      "logs/E2E-12.log",
+      "logs/E2E-12.json"
+    ]
+  },
+  {
+    "id": "CACHE-13",
+    "verdict": "REPRODUCED",
+    "fixture": "f7-context (scratch copy)",
+    "os": "win32 / Windows-11 / Python 3.13.7",
+    "commands": [
+      "<PYTHON> tools/build.py  (tool.bin v1)",
+      "<PYTHON> tools/build.py  (tool.bin v2, declared inputs unchanged)",
+      "<PYTHON> tools/build.py  (inputs/flags.txt -O1 -> -O2)",
+      "git status --porcelain / --ignored"
+    ],
+    "observation": "context_id unchanged (729ce6e5c199...) when .cache/tool.bin changes, while artifact sha changes 6a83140514a6 -> d231d9bf8081; a declared change (flags) does change context_id (7b8a48760d2e...). Same context_id, different artifact = cache poisoning class.",
+    "scope": "one Python build script; the scratch variant intentionally reads the git-ignored .cache/tool.bin while its context_id stays declared-only. The unmodified r0a f7 build script does not consume that cache, so the original fixture alone cannot demonstrate the poisoning: this scratch deviation is the test object, not a change to r0a. Demonstrates key insufficiency, not a specific Flow cache.",
+    "evidence": [
+      "logs/CACHE-13.log",
+      "logs/CACHE-13.json"
+    ]
+  },
+  {
+    "id": "CONTEXT-03",
+    "verdict": "REPRODUCED",
+    "fixture": "f7-context-completeness (scratch copy)",
+    "os": "win32 / Windows-11 / Python 3.13.7",
+    "commands": [
+      "<PYTHON> tools/build.py  (baseline)",
+      "<PYTHON> tools/build.py  (after creating .cache/tool.bin)",
+      "<PYTHON> tools/build.py  (FLOW_HIDDEN_INPUT=hidden-variant)"
+    ],
+    "observation": "three runs share one context_id but produce three distinct artifacts because two inputs (ignored file, undeclared env) are read outside the declared set; no in-tool signal can prove the declared set is complete, so the validation scope is indeterminable without an enforced boundary.",
+    "scope": "structural demonstration on one script: absence of evidence of extra inputs is not evidence of completeness. The scratch variant reads the ignored file and an undeclared env var on purpose (the unmodified r0a build does not); not a theorem about every build tool.",
+    "evidence": [
+      "logs/CONTEXT-03.log",
+      "logs/CONTEXT-03.json"
+    ]
+  },
+  {
+    "id": "LEGACY-06",
+    "verdict": "REPRODUCED",
+    "fixture": "legacy06 (scratch repo)",
+    "os": "win32 / Windows-11 / Python 3.13.7",
+    "commands": [
+      "git diff main semantic-break -- api.py > patch",
+      "git apply --check patch",
+      "git apply patch",
+      "<PYTHON> -c \"compile(open('api.py').read(), 'api.py', 'exec')\"",
+      "<PYTHON> -m unittest discover -q"
+    ],
+    "observation": "git apply --check rc=0, git apply rc=0, in-memory compile() rc=0, tests rc=1: the patch is textually applicable and syntactically plausible, yet the unchanged consumer breaks. A textual AUTO_SAFE label would promote it.",
+    "scope": "single rename patch; demonstrates the mapping AUTO_SAFE/TEXTUALLY_APPLICABLE != VALIDATED_FOR_SCOPE. It does not enumerate every semantic break class.",
+    "evidence": [
+      "logs/LEGACY-06.log",
+      "logs/LEGACY-06.json"
+    ]
+  },
+  {
+    "id": "RECOVERY-16",
+    "verdict": "REPRODUCED",
+    "fixture": "f5-crash (scratch copy)",
+    "os": "win32 / Windows-11 / Python 3.13.7",
+    "commands": [
+      "<PYTHON> publisher.py <repo> none r0b-payload",
+      "truncate .git/flow-journal.jsonl mid final line (no trailing newline)",
+      "<PYTHON> tools/reader_naive_strict.py <repo>",
+      "<PYTHON> tools/reader_naive_skip.py <repo>",
+      "<PYTHON> tools/reader_robust.py <repo>",
+      "restore a valid intent-only journal and re-read with the robust reader"
+    ],
+    "observation": "truncated final line: naive strict reader rc=1 (uncaught JSON error), naive skip reader rc=0 with would_republish=true (silent recovery), robust reader rc=2 REFUSED_CORRUPT_JOURNAL; intact journal rc=0 COMPLETE; valid intent-only journal rc=0 RECONCILED_PUBLISHED_FROM_REF.",
+    "scope": "fixture-local JSONL journal. Shows the required reader behaviour (refuse on partial line) and the two naive failure modes; not a crash-consistency proof of any Flow store.",
+    "evidence": [
+      "logs/RECOVERY-16.log",
+      "logs/RECOVERY-16.json"
+    ]
+  }
+]

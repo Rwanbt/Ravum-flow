@@ -1,0 +1,31 @@
+--- crates/flow/src/main.rs
++++ replace flag_value -> Option<String> with Some("xyzzy".into())
+@@ -327,27 +327,17 @@
+             ));
+         }
+         index += 1;
+     }
+     Ok(())
+ }
+ 
+ fn flag_value(args: &[String], name: &str) -> Option<String> {
+-    let mut index = 0;
+-    while index < args.len() {
+-        if args[index] == name {
+-            return args.get(index + 1).cloned();
+-        }
+-        if let Some(value) = args[index].strip_prefix(&format!("{name}=")) {
+-            return Some(value.to_string());
+-        }
+-        index += 1;
+-    }
+-    None
++    Some("xyzzy".into()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Collect every occurrence of any of `names`, in command-line order.
+ /// `--name value` and `--name=value` are both accepted; a repeated flag keeps
+ /// its order, which is the assembly order of a candidate.
+ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+     let mut out = Vec::new();
+     let mut index = 0;

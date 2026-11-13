@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace || with && in scrub_env
+@@ -325,17 +325,17 @@
+ /// non-interactive, deterministic defaults. Host variables are inspected with
+ /// `vars_os` so a non-UTF-8 value cannot panic the CLI; only the *names* are
+ /// compared.
+ fn scrub_env(cmd: &mut Command) {
+     for (name, _) in std::env::vars_os() {
+         let upper = name.to_string_lossy().to_ascii_uppercase();
+         let redirects = SCRUBBED_GIT_ENV.contains(&upper.as_str())
+             || upper.starts_with("GIT_CONFIG_KEY_")
+-            || upper.starts_with("GIT_CONFIG_VALUE_");
++            && /* ~ changed by cargo-mutants ~ */ upper.starts_with("GIT_CONFIG_VALUE_");
+         if redirects {
+             cmd.env_remove(&name);
+         }
+     }
+     cmd.env("GIT_TERMINAL_PROMPT", "0")
+         .env("GIT_PAGER", "cat")
+         .env("GIT_EDITOR", "true")
+         .env("GIT_CONFIG_NOSYSTEM", "1")

@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace is_hex_object_id -> bool with true
+@@ -244,17 +244,17 @@
+ /// True for a hexadecimal object id as `git worktree add` will accept it.
+ ///
+ /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an
+ /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to
+ /// name a tree. The value still may not begin with `-` (it is hex) and never
+ /// reaches a file name, so the wider length is a convenience, not a widening of
+ /// the identifier-to-path rule used for receipts.
+ fn is_hex_object_id(value: &str) -> bool {
+-    (4..=64).contains(&value.len()) && value.bytes().all(|byte| byte.is_ascii_hexdigit())
++    true /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn canonical_dir(path: &Path, what: &str) -> Result<PathBuf, String> {
+     let resolved = path
+         .canonicalize()
+         .map_err(|e| format!("cannot canonicalise {what} {}: {e}", path.display()))?;
+     if !resolved.is_dir() {
+         return Err(format!("{what} {} is not a directory", resolved.display()));

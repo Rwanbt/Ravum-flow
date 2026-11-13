@@ -1,0 +1,16 @@
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index 04eb04f..54ec8e8 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -425 +425 @@ struct Captured {
+-pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024;
++pub const MAX_GIT_STREAM_BYTES: usize = 64 * 1024 * 1024; // survival-probe
+@@ -449 +449 @@ fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
+-                if take < n {
++                if take < n { // survival-probe
+@@ -453 +453 @@ fn read_capped_at<R: Read>(mut pipe: R, cap: usize) -> Captured {
+-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
++            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue, // survival-probe
+@@ -758 +758 @@ pub fn redact(text: &str) -> String {
+-                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
++                .find(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-') // survival-probe

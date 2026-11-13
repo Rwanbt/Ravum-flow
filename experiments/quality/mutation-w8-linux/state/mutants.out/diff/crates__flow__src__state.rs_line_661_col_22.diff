@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace / with % in iso8601_now
+@@ -653,17 +653,17 @@
+ // attribution rules are the whole point, and they live next to their tests.
+ 
+ /// Civil date/time from the Unix epoch, UTC, without a dependency.
+ pub fn iso8601_now() -> String {
+     let secs = SystemTime::now()
+         .duration_since(UNIX_EPOCH)
+         .map(|d| d.as_secs())
+         .unwrap_or(0);
+-    let days = (secs / 86_400) as i64;
++    let days = (secs % /* ~ changed by cargo-mutants ~ */ 86_400) as i64;
+     let rem = secs % 86_400;
+     let (year, month, day) = civil_from_days(days);
+     format!(
+         "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+         year,
+         month,
+         day,
+         rem / 3600,

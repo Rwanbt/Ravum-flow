@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace + with * in Json::write
+@@ -89,17 +89,17 @@
+                     return;
+                 }
+                 out.push('[');
+                 for (i, item) in items.iter().enumerate() {
+                     if i > 0 {
+                         out.push(',');
+                     }
+                     newline(out, indent, level + 1);
+-                    item.write(out, indent, level + 1);
++                    item.write(out, indent, level * /* ~ changed by cargo-mutants ~ */ 1);
+                 }
+                 newline(out, indent, level);
+                 out.push(']');
+             }
+             Json::Obj(pairs) => {
+                 if pairs.is_empty() {
+                     out.push_str("{}");
+                     return;

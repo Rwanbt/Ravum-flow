@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace || with && in kill_liveness
+@@ -343,17 +343,17 @@
+         .args(["-0", &pid.to_string()])
+         .env("LC_ALL", "C")
+         .output()
+         .ok()?;
+     if out.status.success() {
+         return Some(true);
+     }
+     let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();
+-    if message.contains("no such process") || message.contains("does not exist") {
++    if message.contains("no such process") && /* ~ changed by cargo-mutants ~ */ message.contains("does not exist") {
+         Some(false)
+     } else {
+         None
+     }
+ }
+ 
+ /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while
+ /// the pid exists, and it cannot confuse "gone" with "not mine". Only when the

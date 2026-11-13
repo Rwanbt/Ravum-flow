@@ -1,0 +1,7 @@
+diff --git a/crates/flow/src/state.rs b/crates/flow/src/state.rs
+index db4f5cc..1785259 100644
+--- a/crates/flow/src/state.rs
++++ b/crates/flow/src/state.rs
+@@ -407 +407 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
+-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
++        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(), // survival-probe

@@ -1,0 +1,381 @@
+{
+  "outcomes": [
+    {
+      "scenario": "Baseline",
+      "summary": "Success",
+      "log_path": "log/baseline.log",
+      "diff_path": null,
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 3.608908366,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.050932734,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with None",
+          "package": "flow",
+          "file": "crates/flow/src/main.rs",
+          "function": {
+            "function_name": "collect_values",
+            "return_type": "-> Option<Vec<String>>",
+            "span": {
+              "start": {
+                "line": 348,
+                "column": 1
+              },
+              "end": {
+                "line": 379,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 352,
+              "column": 5
+            },
+            "end": {
+              "line": 378,
+              "column": 6
+            }
+          },
+          "replacement": "None",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__main.rs_line_352_col_5.log",
+      "diff_path": "diff/crates__flow__src__main.rs_line_352_col_5.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.765042572,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.05170622,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![String::new()])",
+          "package": "flow",
+          "file": "crates/flow/src/main.rs",
+          "function": {
+            "function_name": "collect_values",
+            "return_type": "-> Option<Vec<String>>",
+            "span": {
+              "start": {
+                "line": 348,
+                "column": 1
+              },
+              "end": {
+                "line": 379,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 352,
+              "column": 5
+            },
+            "end": {
+              "line": 378,
+              "column": 6
+            }
+          },
+          "replacement": "Some(vec![String::new()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__main.rs_line_352_col_5_002.log",
+      "diff_path": "diff/crates__flow__src__main.rs_line_352_col_5_002.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 1.110492695,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.051235787,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![\"xyzzy\".into()])",
+          "package": "flow",
+          "file": "crates/flow/src/main.rs",
+          "function": {
+            "function_name": "collect_values",
+            "return_type": "-> Option<Vec<String>>",
+            "span": {
+              "start": {
+                "line": 348,
+                "column": 1
+              },
+              "end": {
+                "line": 379,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 352,
+              "column": 5
+            },
+            "end": {
+              "line": 378,
+              "column": 6
+            }
+          },
+          "replacement": "Some(vec![\"xyzzy\".into()])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__main.rs_line_352_col_5_003.log",
+      "diff_path": "diff/crates__flow__src__main.rs_line_352_col_5_003.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.908513599,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.050988671,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/main.rs:352:5: replace collect_values -> Option<Vec<String>> with Some(vec![])",
+          "package": "flow",
+          "file": "crates/flow/src/main.rs",
+          "function": {
+            "function_name": "collect_values",
+            "return_type": "-> Option<Vec<String>>",
+            "span": {
+              "start": {
+                "line": 348,
+                "column": 1
+              },
+              "end": {
+                "line": 379,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 352,
+              "column": 5
+            },
+            "end": {
+              "line": 378,
+              "column": 6
+            }
+          },
+          "replacement": "Some(vec![])",
+          "genre": "FnValue"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__main.rs_line_352_col_5_001.log",
+      "diff_path": "diff/crates__flow__src__main.rs_line_352_col_5_001.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 4.144352492,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.051346995,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": {
+        "Mutant": {
+          "name": "crates/flow/src/main.rs:360:19: replace += with -= in collect_values",
+          "package": "flow",
+          "file": "crates/flow/src/main.rs",
+          "function": {
+            "function_name": "collect_values",
+            "return_type": "-> Option<Vec<String>>",
+            "span": {
+              "start": {
+                "line": 348,
+                "column": 1
+              },
+              "end": {
+                "line": 379,
+                "column": 2
+              }
+            }
+          },
+          "span": {
+            "start": {
+              "line": 360,
+              "column": 19
+            },
+            "end": {
+              "line": 360,
+              "column": 21
+            }
+          },
+          "replacement": "-=",
+          "genre": "BinaryOperator"
+        }
+      },
+      "summary": "CaughtMutant",
+      "log_path": "log/crates__flow__src__main.rs_line_360_col_19.log",
+      "diff_path": "diff/crates__flow__src__main.rs_line_360_col_19.diff",
+      "phase_results": [
+        {
+          "phase": "Build",
+          "duration": 0.758033951,
+          "process_status": "Success",
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--no-run",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1"
+          ]
+        },
+        {
+          "phase": "Test",
+          "duration": 0.051082418,
+          "process_status": {
+            "Failure": 101
+          },
+          "argv": [
+            "/home/aes/.rustup/toolchains/1.95.0-x86_64-unknown-linux-gnu/bin/cargo",
+            "test",
+            "--verbose",
+            "--package=flow@0.2.0-rc.1",
+            "--bins",
+            "repeated_and_inline_values_keep_their_order"
+          ]
+        }
+      ]
+    }
+  ],
+  "total_mutants": 5,
+  "missed": 0,
+  "caught": 5,
+  "timeout": 0,
+  "unviable": 0,
+  "success": 0,
+  "start_time": "2026-11-11T13:47:36.253995507Z",
+  "end_time": null,
+  "cargo_mutants_version": "27.1.0"
+}

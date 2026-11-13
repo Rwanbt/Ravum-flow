@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with *= in collect_values
+@@ -364,17 +364,17 @@
+         for name in names {
+             if let Some(value) = arg.strip_prefix(&format!("{name}=")) {
+                 out.push(value.to_string());
+                 matched = true;
+                 break;
+             }
+         }
+         let _ = matched;
+-        index += 1; // w9probe
++        index *= /* ~ changed by cargo-mutants ~ */ 1; // w9probe
+     }
+     if out.is_empty() {
+         None
+     } else {
+         Some(out)
+     }
+ }
+ 

@@ -1,0 +1,1634 @@
+[
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace LockError::message -> &str with \"\"\n@@ -43,19 +43,17 @@\n     /// Ownership cannot be established at all: a human must inspect the file.\n     Unknown(String),\n     /// The lock file could not be created or removed.\n     Io(String),\n }\n \n impl LockError {\n     pub fn message(&self) -> &str {\n-        match self {\n-            LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n-        }\n+        \"\" /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "LockError::message",
+      "return_type": "-> &str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 54
+        },
+        "start": {
+          "column": 5,
+          "line": 50
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with \"\"",
+    "package": "flow",
+    "replacement": "\"\"",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 53
+      },
+      "start": {
+        "column": 9,
+        "line": 51
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace LockError::message -> &str with \"xyzzy\"\n@@ -43,19 +43,17 @@\n     /// Ownership cannot be established at all: a human must inspect the file.\n     Unknown(String),\n     /// The lock file could not be created or removed.\n     Io(String),\n }\n \n impl LockError {\n     pub fn message(&self) -> &str {\n-        match self {\n-            LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n-        }\n+        \"xyzzy\" /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "LockError::message",
+      "return_type": "-> &str",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 54
+        },
+        "start": {
+          "column": 5,
+          "line": 50
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with \"xyzzy\"",
+    "package": "flow",
+    "replacement": "\"xyzzy\"",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 53
+      },
+      "start": {
+        "column": 9,
+        "line": 51
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())\n@@ -51,17 +51,17 @@\n         match self {\n             LockError::Held(m) | LockError::Unknown(m) | LockError::Io(m) => m,\n         }\n     }\n }\n \n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n-        f.write_str(self.message())\n+        Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n         e.to_string()\n     }\n }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl std::fmt::Display for LockError>::fmt",
+      "return_type": "-> std::fmt::Result",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 60
+        },
+        "start": {
+          "column": 5,
+          "line": 58
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:59:9: replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 59
+      },
+      "start": {
+        "column": 9,
+        "line": 59
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl From<LockError> for String>::from -> String with String::new()\n@@ -57,17 +57,17 @@\n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n-        e.to_string()\n+        String::new() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n     crate::state::flow_dir(root).join(\"lock\")\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl From<LockError> for String>::from",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 66
+        },
+        "start": {
+          "column": 5,
+          "line": 64
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 65
+      },
+      "start": {
+        "column": 9,
+        "line": 65
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl From<LockError> for String>::from -> String with \"xyzzy\".into()\n@@ -57,17 +57,17 @@\n impl std::fmt::Display for LockError {\n     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n         f.write_str(self.message())\n     }\n }\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n-        e.to_string()\n+        \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n     crate::state::flow_dir(root).join(\"lock\")\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl From<LockError> for String>::from",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 66
+        },
+        "start": {
+          "column": 5,
+          "line": 64
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 65
+      },
+      "start": {
+        "column": 9,
+        "line": 65
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace lock_path -> PathBuf with Default::default()\n@@ -62,17 +62,17 @@\n \n impl From<LockError> for String {\n     fn from(e: LockError) -> String {\n         e.to_string()\n     }\n }\n \n pub fn lock_path(root: &Path) -> PathBuf {\n-    crate::state::flow_dir(root).join(\"lock\")\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n /// What an inspection can honestly say about the lock currently on disk.\n #[derive(Debug, Clone)]\n pub struct LockInfo {\n     pub present: bool,\n     pub pid: Option<u32>,\n     pub age_s: Option<u64>,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "lock_path",
+      "return_type": "-> PathBuf",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 71
+        },
+        "start": {
+          "column": 1,
+          "line": 69
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:70:5: replace lock_path -> PathBuf with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 70
+      },
+      "start": {
+        "column": 5,
+        "line": 70
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace parse -> Option<Owner> with None\n@@ -84,27 +84,17 @@\n struct Owner {\n     pid: u32,\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n-    let mut parts = text.split_whitespace();\n-    let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n-        return None;\n-    }\n-    Some(Owner {\n-        pid: parts.next()?.parse().ok()?,\n-        at: parts.next()?.parse().ok()?,\n-        nonce: parts.next()?.to_string(),\n-        purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n-    })\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n     let path = lock_path(root);\n     let Ok(text) = fs::read_to_string(&path) else {\n         return LockInfo {\n             present: false,\n             pid: None,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 103
+        },
+        "start": {
+          "column": 1,
+          "line": 91
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:92:5: replace parse -> Option<Owner> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 102
+      },
+      "start": {
+        "column": 5,
+        "line": 92
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace parse -> Option<Owner> with Some(Default::default())\n@@ -84,27 +84,17 @@\n struct Owner {\n     pid: u32,\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n-    let mut parts = text.split_whitespace();\n-    let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n-        return None;\n-    }\n-    Some(Owner {\n-        pid: parts.next()?.parse().ok()?,\n-        at: parts.next()?.parse().ok()?,\n-        nonce: parts.next()?.to_string(),\n-        purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n-    })\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n     let path = lock_path(root);\n     let Ok(text) = fs::read_to_string(&path) else {\n         return LockInfo {\n             present: false,\n             pid: None,\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 103
+        },
+        "start": {
+          "column": 1,
+          "line": 91
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:92:5: replace parse -> Option<Owner> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 7,
+        "line": 102
+      },
+      "start": {
+        "column": 5,
+        "line": 92
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace != with == in parse\n@@ -86,17 +86,17 @@\n     at: u64,\n     nonce: String,\n     purpose: String,\n }\n \n fn parse(text: &str) -> Option<Owner> {\n     let mut parts = text.split_whitespace();\n     let schema = parts.next()?;\n-    if schema != LOCK_SCHEMA {\n+    if schema == /* ~ changed by cargo-mutants ~ */ LOCK_SCHEMA {\n         return None;\n     }\n     Some(Owner {\n         pid: parts.next()?.parse().ok()?,\n         at: parts.next()?.parse().ok()?,\n         nonce: parts.next()?.to_string(),\n         purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n     })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "parse",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 103
+        },
+        "start": {
+          "column": 1,
+          "line": 91
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:94:15: replace != with == in parse",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 17,
+        "line": 94
+      },
+      "start": {
+        "column": 15,
+        "line": 94
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace inspect -> LockInfo with Default::default()\n@@ -98,49 +98,17 @@\n         pid: parts.next()?.parse().ok()?,\n         at: parts.next()?.parse().ok()?,\n         nonce: parts.next()?.to_string(),\n         purpose: parts.next().unwrap_or(\"unknown\").to_string(),\n     })\n }\n \n pub fn inspect(root: &Path) -> LockInfo {\n-    let path = lock_path(root);\n-    let Ok(text) = fs::read_to_string(&path) else {\n-        return LockInfo {\n-            present: false,\n-            pid: None,\n-            age_s: None,\n-            purpose: String::new(),\n-            attribution: \"absent\",\n-        };\n-    };\n-    match parse(&text) {\n-        Some(owner) => {\n-            let attribution = match pid_alive(owner.pid) {\n-                Some(true) => \"live\",\n-                Some(false) => \"dead\",\n-                None => \"unknown\",\n-            };\n-            LockInfo {\n-                present: true,\n-                pid: Some(owner.pid),\n-                age_s: Some(crate::state::unix_now().saturating_sub(owner.at)),\n-                purpose: owner.purpose,\n-                attribution,\n-            }\n-        }\n-        None => LockInfo {\n-            present: true,\n-            pid: None,\n-            age_s: None,\n-            purpose: String::new(),\n-            attribution: \"unparseable\",\n-        },\n-    }\n+    Default::default() /* ~ changed by cargo-mutants ~ */\n }\n \n #[derive(Debug)]\n pub struct LockGuard {\n     path: PathBuf,\n     nonce: String,\n }\n \n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "inspect",
+      "return_type": "-> LockInfo",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 139
+        },
+        "start": {
+          "column": 1,
+          "line": 105
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:106:5: replace inspect -> LockInfo with Default::default()",
+    "package": "flow",
+    "replacement": "Default::default()",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 138
+      },
+      "start": {
+        "column": 5,
+        "line": 106
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace <impl Drop for LockGuard>::drop with ()\n@@ -143,21 +143,17 @@\n     path: PathBuf,\n     nonce: String,\n }\n \n impl Drop for LockGuard {\n     fn drop(&mut self) {\n         // Only remove the lock this guard owns: a successor's lock must never be\n         // deleted by a slow predecessor's destructor.\n-        if let Ok(text) = fs::read_to_string(&self.path) {\n-            if parse(&text).map(|o| o.nonce).as_deref() == Some(self.nonce.as_str()) {\n-                let _ = fs::remove_file(&self.path);\n-            }\n-        }\n+        () /* ~ changed by cargo-mutants ~ */\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n     use std::sync::atomic::{AtomicU64, Ordering};\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl Drop for LockGuard>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 156
+        },
+        "start": {
+          "column": 5,
+          "line": 148
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:151:9: replace <impl Drop for LockGuard>::drop with ()",
+    "package": "flow",
+    "replacement": "()",
+    "span": {
+      "end": {
+        "column": 10,
+        "line": 155
+      },
+      "start": {
+        "column": 9,
+        "line": 151
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in <impl Drop for LockGuard>::drop\n@@ -144,17 +144,17 @@\n     nonce: String,\n }\n \n impl Drop for LockGuard {\n     fn drop(&mut self) {\n         // Only remove the lock this guard owns: a successor's lock must never be\n         // deleted by a slow predecessor's destructor.\n         if let Ok(text) = fs::read_to_string(&self.path) {\n-            if parse(&text).map(|o| o.nonce).as_deref() == Some(self.nonce.as_str()) {\n+            if parse(&text).map(|o| o.nonce).as_deref() != /* ~ changed by cargo-mutants ~ */ Some(self.nonce.as_str()) {\n                 let _ = fs::remove_file(&self.path);\n             }\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "<impl Drop for LockGuard>::drop",
+      "return_type": "",
+      "span": {
+        "end": {
+          "column": 6,
+          "line": 156
+        },
+        "start": {
+          "column": 5,
+          "line": 148
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:152:57: replace == with != in <impl Drop for LockGuard>::drop",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 59,
+        "line": 152
+      },
+      "start": {
+        "column": 57,
+        "line": 152
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace nonce -> String with String::new()\n@@ -155,24 +155,17 @@\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n-    use std::sync::atomic::{AtomicU64, Ordering};\n-    static COUNTER: AtomicU64 = AtomicU64::new(0);\n-    let nanos = std::time::SystemTime::now()\n-        .duration_since(std::time::UNIX_EPOCH)\n-        .map(|d| d.as_nanos())\n-        .unwrap_or(0);\n-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);\n-    format!(\"{:x}-{:x}-{:x}\", std::process::id(), nanos, n)\n+    String::new() /* ~ changed by cargo-mutants ~ */\n }\n \n /// How long a reader waits for a concurrent creator to finish writing the lock\n /// record before concluding that the file is unattributable.\n const CREATE_GRACE: Duration = Duration::from_millis(750);\n \n /// Create the lock file **with its full content** in one atomic step.\n ///\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "nonce",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 171
+        },
+        "start": {
+          "column": 1,
+          "line": 159
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:163:5: replace nonce -> String with String::new()",
+    "package": "flow",
+    "replacement": "String::new()",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 170
+      },
+      "start": {
+        "column": 5,
+        "line": 163
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace nonce -> String with \"xyzzy\".into()\n@@ -155,24 +155,17 @@\n         }\n     }\n }\n \n /// A process-unique, non-cryptographic nonce. It only has to distinguish two\n /// Flow lock writers, not to resist an attacker (the lock is not a security\n /// boundary against a local writer with the same rights).\n fn nonce() -> String {\n-    use std::sync::atomic::{AtomicU64, Ordering};\n-    static COUNTER: AtomicU64 = AtomicU64::new(0);\n-    let nanos = std::time::SystemTime::now()\n-        .duration_since(std::time::UNIX_EPOCH)\n-        .map(|d| d.as_nanos())\n-        .unwrap_or(0);\n-    let n = COUNTER.fetch_add(1, Ordering::SeqCst);\n-    format!(\"{:x}-{:x}-{:x}\", std::process::id(), nanos, n)\n+    \"xyzzy\".into() /* ~ changed by cargo-mutants ~ */\n }\n \n /// How long a reader waits for a concurrent creator to finish writing the lock\n /// record before concluding that the file is unattributable.\n const CREATE_GRACE: Duration = Duration::from_millis(750);\n \n /// Create the lock file **with its full content** in one atomic step.\n ///\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "nonce",
+      "return_type": "-> String",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 171
+        },
+        "start": {
+          "column": 1,
+          "line": 159
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:163:5: replace nonce -> String with \"xyzzy\".into()",
+    "package": "flow",
+    "replacement": "\"xyzzy\".into()",
+    "span": {
+      "end": {
+        "column": 60,
+        "line": 170
+      },
+      "start": {
+        "column": 5,
+        "line": 163
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace create_lock_file -> std::io::Result<()> with Ok(())\n@@ -178,30 +178,17 @@\n ///\n /// `create_new` followed by `write` exposes a window in which another process\n /// reads an empty file — a real race that was observed on Linux with eight\n /// concurrent publishers. Writing the record to a unique temporary file and then\n /// hard-linking it makes the appearance of the lock atomic: the name never exists\n /// without content, and the link fails if a lock already exists. The temporary\n /// name is removed on every path.\n fn create_lock_file(path: &Path, nonce: &str, purpose: &str) -> std::io::Result<()> {\n-    let tmp = path.with_file_name(format!(\"lock.{nonce}.tmp\"));\n-    let line = format!(\n-        \"{LOCK_SCHEMA} {} {} {nonce} {purpose}\\n\",\n-        std::process::id(),\n-        crate::state::unix_now()\n-    );\n-    {\n-        let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp)?;\n-        file.write_all(line.as_bytes())?;\n-        file.sync_all()?;\n-    }\n-    let linked = fs::hard_link(&tmp, path);\n-    let _ = fs::remove_file(&tmp);\n-    linked\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "create_lock_file",
+      "return_type": "-> std::io::Result<()>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 200
+        },
+        "start": {
+          "column": 1,
+          "line": 177
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:186:5: replace create_lock_file -> std::io::Result<()> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 199
+      },
+      "start": {
+        "column": 5,
+        "line": 186
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace wait_for_record -> Option<Owner> with None\n@@ -196,30 +196,17 @@\n     }\n     let linked = fs::hard_link(&tmp, path);\n     let _ = fs::remove_file(&tmp);\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n-    if let Some(owner) = parse(&first) {\n-        return Some(owner);\n-    }\n-    let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n-        std::thread::sleep(POLL_INTERVAL);\n-        let Ok(text) = fs::read_to_string(path) else {\n-            return None;\n-        };\n-        if let Some(owner) = parse(&text) {\n-            return Some(owner);\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:204:5: replace wait_for_record -> Option<Owner> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 217
+      },
+      "start": {
+        "column": 5,
+        "line": 204
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace wait_for_record -> Option<Owner> with Some(Default::default())\n@@ -196,30 +196,17 @@\n     }\n     let linked = fs::hard_link(&tmp, path);\n     let _ = fs::remove_file(&tmp);\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n-    if let Some(owner) = parse(&first) {\n-        return Some(owner);\n-    }\n-    let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n-        std::thread::sleep(POLL_INTERVAL);\n-        let Ok(text) = fs::read_to_string(path) else {\n-            return None;\n-        };\n-        if let Some(owner) = parse(&text) {\n-            return Some(owner);\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:204:5: replace wait_for_record -> Option<Owner> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 217
+      },
+      "start": {
+        "column": 5,
+        "line": 204
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with - in wait_for_record\n@@ -199,17 +199,17 @@\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n-    let deadline = Instant::now() + CREATE_GRACE;\n+    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ CREATE_GRACE;\n     while Instant::now() < deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:207:35: replace + with - in wait_for_record",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 207
+      },
+      "start": {
+        "column": 35,
+        "line": 207
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with * in wait_for_record\n@@ -199,17 +199,17 @@\n     linked\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n-    let deadline = Instant::now() + CREATE_GRACE;\n+    let deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ CREATE_GRACE;\n     while Instant::now() < deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:207:35: replace + with * in wait_for_record",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 207
+      },
+      "start": {
+        "column": 35,
+        "line": 207
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with == in wait_for_record\n@@ -200,17 +200,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() == /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:208:26: replace < with == in wait_for_record",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 208
+      },
+      "start": {
+        "column": 26,
+        "line": 208
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with > in wait_for_record\n@@ -200,17 +200,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() > /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:208:26: replace < with > in wait_for_record",
+    "package": "flow",
+    "replacement": ">",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 208
+      },
+      "start": {
+        "column": 26,
+        "line": 208
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace < with <= in wait_for_record\n@@ -200,17 +200,17 @@\n }\n \n /// Read the lock record, tolerating a creator that is still writing it.\n fn wait_for_record(path: &Path, first: String) -> Option<Owner> {\n     if let Some(owner) = parse(&first) {\n         return Some(owner);\n     }\n     let deadline = Instant::now() + CREATE_GRACE;\n-    while Instant::now() < deadline {\n+    while Instant::now() <= /* ~ changed by cargo-mutants ~ */ deadline {\n         std::thread::sleep(POLL_INTERVAL);\n         let Ok(text) = fs::read_to_string(path) else {\n             return None;\n         };\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "wait_for_record",
+      "return_type": "-> Option<Owner>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 218
+        },
+        "start": {
+          "column": 1,
+          "line": 202
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:208:26: replace < with <= in wait_for_record",
+    "package": "flow",
+    "replacement": "<=",
+    "span": {
+      "end": {
+        "column": 27,
+        "line": 208
+      },
+      "start": {
+        "column": 26,
+        "line": 208
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())\n@@ -213,114 +213,17 @@\n         if let Some(owner) = parse(&text) {\n             return Some(owner);\n         }\n     }\n     None\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n-    let path = lock_path(root);\n-    if let Some(parent) = path.parent() {\n-        fs::create_dir_all(parent)\n-            .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n-    }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n-    loop {\n-        let ours = nonce();\n-        match create_lock_file(&path, &ours, purpose) {\n-            Ok(()) => {\n-                return Ok(LockGuard {\n-                    path: path.clone(),\n-                    nonce: ours,\n-                })\n-            }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n-                let text = match fs::read_to_string(&path) {\n-                    Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n-                    Err(err) => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n-                            path.display()\n-                        )))\n-                    }\n-                };\n-                // A creator may have created the file and not finished writing it\n-                // yet. Wait for the record to appear before concluding anything:\n-                // \"empty right now\" is not \"unattributable forever\".\n-                let owner = match wait_for_record(&path, text) {\n-                    Some(owner) => owner,\n-                    None => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it\",\n-                            path.display(),\n-                            LOCK_SCHEMA,\n-                            path.display()\n-                        )))\n-                    }\n-                };\n-                if owner.pid == std::process::id() {\n-                    return Err(LockError::Held(format!(\n-                        \"this process already holds {} for {:?}\",\n-                        path.display(),\n-                        owner.purpose\n-                    )));\n-                }\n-                match pid_alive(owner.pid) {\n-                    // A live owner is never displaced, whatever the age says.\n-                    Some(true) => {\n-                        if Instant::now() >= deadline {\n-                            return Err(LockError::Held(format!(\n-                                \"another flow process (pid {}, purpose {:?}, {}s old) holds {}\",\n-                                owner.pid,\n-                                owner.purpose,\n-                                crate::state::unix_now().saturating_sub(owner.at),\n-                                path.display()\n-                            )));\n-                        }\n-                    }\n-                    None => {\n-                        return Err(LockError::Unknown(format!(\n-                            \"cannot establish whether pid {} (purpose {:?}) is alive on this host, so {} is not stolen\",\n-                            owner.pid,\n-                            owner.purpose,\n-                            path.display()\n-                        )))\n-                    }\n-                    Some(false) => {\n-                        // Provably dead owner: steal only if the file still\n-                        // carries the nonce that was observed, so a concurrent\n-                        // successor is never removed.\n-                        match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n-                                match fs::remove_file(&path) {\n-                                    Ok(()) => continue,\n-                                    Err(err) => {\n-                                        return Err(LockError::Io(format!(\n-                                            \"cannot remove the dead lock {}: {err}\",\n-                                            path.display()\n-                                        )))\n-                                    }\n-                                }\n-                            }\n-                            _ => continue,\n-                        }\n-                    }\n-                }\n-                std::thread::sleep(POLL_INTERVAL);\n-            }\n-            Err(e) => {\n-                return Err(LockError::Io(format!(\n-                    \"cannot create {}: {e}\",\n-                    path.display()\n-                )))\n-            }\n-        }\n-    }\n+    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:221:5: replace acquire_lock -> Result<LockGuard, LockError> with Ok(Default::default())",
+    "package": "flow",
+    "replacement": "Ok(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 318
+      },
+      "start": {
+        "column": 5,
+        "line": 221
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with - in acquire_lock\n@@ -218,17 +218,17 @@\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n+    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ ACQUIRE_BUDGET;\n     loop {\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:226:35: replace + with - in acquire_lock",
+    "package": "flow",
+    "replacement": "-",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 226
+      },
+      "start": {
+        "column": 35,
+        "line": 226
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace + with * in acquire_lock\n@@ -218,17 +218,17 @@\n }\n \n pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {\n     let path = lock_path(root);\n     if let Some(parent) = path.parent() {\n         fs::create_dir_all(parent)\n             .map_err(|e| LockError::Io(format!(\"cannot create .flow: {e}\")))?;\n     }\n-    let deadline = Instant::now() + ACQUIRE_BUDGET;\n+    let deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ ACQUIRE_BUDGET;\n     loop {\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:226:35: replace + with * in acquire_lock",
+    "package": "flow",
+    "replacement": "*",
+    "span": {
+      "end": {
+        "column": 36,
+        "line": 226
+      },
+      "start": {
+        "column": 35,
+        "line": 226
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with true in acquire_lock\n@@ -228,17 +228,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if true /* ~ changed by cargo-mutants ~ */ => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:236:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 68,
+        "line": 236
+      },
+      "start": {
+        "column": 23,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock\n@@ -228,17 +228,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if false /* ~ changed by cargo-mutants ~ */ => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:236:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 68,
+        "line": 236
+      },
+      "start": {
+        "column": 23,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -228,17 +228,17 @@\n         let ours = nonce();\n         match create_lock_file(&path, &ours, purpose) {\n             Ok(()) => {\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n+            Err(e) if e.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:236:32: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 34,
+        "line": 236
+      },
+      "start": {
+        "column": 32,
+        "line": 236
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock\n@@ -231,17 +231,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if true /* ~ changed by cargo-mutants ~ */ => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:239:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 239
+      },
+      "start": {
+        "column": 33,
+        "line": 239
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard err.kind() == std::io::ErrorKind::NotFound with false in acquire_lock\n@@ -231,17 +231,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if false /* ~ changed by cargo-mutants ~ */ => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:239:33: replace match guard err.kind() == std::io::ErrorKind::NotFound with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 239
+      },
+      "start": {
+        "column": 33,
+        "line": 239
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -231,17 +231,17 @@\n                 return Ok(LockGuard {\n                     path: path.clone(),\n                     nonce: ours,\n                 })\n             }\n             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {\n                 let text = match fs::read_to_string(&path) {\n                     Ok(t) => t,\n-                    Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,\n+                    Err(err) if err.kind() != /* ~ changed by cargo-mutants ~ */ std::io::ErrorKind::NotFound => continue,\n                     Err(err) => {\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} exists but cannot be read ({err}): ownership cannot be established, remove it by hand only if you are certain no flow process is running\",\n                             path.display()\n                         )))\n                     }\n                 };\n                 // A creator may have created the file and not finished writing it\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:239:44: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 239
+      },
+      "start": {
+        "column": 44,
+        "line": 239
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -253,17 +253,17 @@\n                         return Err(LockError::Unknown(format!(\n                             \"lock file {} is not a {} record (empty, truncated or foreign): ownership cannot be established, so it is never stolen. Inspect {} and remove it by hand only if no flow process holds it\",\n                             path.display(),\n                             LOCK_SCHEMA,\n                             path.display()\n                         )))\n                     }\n                 };\n-                if owner.pid == std::process::id() {\n+                if owner.pid != /* ~ changed by cargo-mutants ~ */ std::process::id() {\n                     return Err(LockError::Held(format!(\n                         \"this process already holds {} for {:?}\",\n                         path.display(),\n                         owner.purpose\n                     )));\n                 }\n                 match pid_alive(owner.pid) {\n                     // A live owner is never displaced, whatever the age says.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:261:30: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 32,
+        "line": 261
+      },
+      "start": {
+        "column": 30,
+        "line": 261
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace >= with < in acquire_lock\n@@ -263,17 +263,17 @@\n                         \"this process already holds {} for {:?}\",\n                         path.display(),\n                         owner.purpose\n                     )));\n                 }\n                 match pid_alive(owner.pid) {\n                     // A live owner is never displaced, whatever the age says.\n                     Some(true) => {\n-                        if Instant::now() >= deadline {\n+                        if Instant::now() < /* ~ changed by cargo-mutants ~ */ deadline {\n                             return Err(LockError::Held(format!(\n                                 \"another flow process (pid {}, purpose {:?}, {}s old) holds {}\",\n                                 owner.pid,\n                                 owner.purpose,\n                                 crate::state::unix_now().saturating_sub(owner.at),\n                                 path.display()\n                             )));\n                         }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:271:43: replace >= with < in acquire_lock",
+    "package": "flow",
+    "replacement": "<",
+    "span": {
+      "end": {
+        "column": 45,
+        "line": 271
+      },
+      "start": {
+        "column": 43,
+        "line": 271
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true in acquire_lock\n@@ -286,17 +286,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if true /* ~ changed by cargo-mutants ~ */ => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:294:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with true in acquire_lock",
+    "package": "flow",
+    "replacement": "true",
+    "span": {
+      "end": {
+        "column": 101,
+        "line": 294
+      },
+      "start": {
+        "column": 42,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock\n@@ -286,17 +286,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if false /* ~ changed by cargo-mutants ~ */ => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "MatchArmGuard",
+    "name": "crates/flow/src/lock.rs:294:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock",
+    "package": "flow",
+    "replacement": "false",
+    "span": {
+      "end": {
+        "column": 101,
+        "line": 294
+      },
+      "start": {
+        "column": 42,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace == with != in acquire_lock\n@@ -286,17 +286,17 @@\n                             path.display()\n                         )))\n                     }\n                     Some(false) => {\n                         // Provably dead owner: steal only if the file still\n                         // carries the nonce that was observed, so a concurrent\n                         // successor is never removed.\n                         match fs::read_to_string(&path) {\n-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {\n+                            Ok(again) if parse(&again).map(|o| o.nonce) != /* ~ changed by cargo-mutants ~ */ Some(owner.nonce.clone()) => {\n                                 match fs::remove_file(&path) {\n                                     Ok(()) => continue,\n                                     Err(err) => {\n                                         return Err(LockError::Io(format!(\n                                             \"cannot remove the dead lock {}: {err}\",\n                                             path.display()\n                                         )))\n                                     }\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "acquire_lock",
+      "return_type": "-> Result<LockGuard, LockError>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 319
+        },
+        "start": {
+          "column": 1,
+          "line": 220
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:294:73: replace == with != in acquire_lock",
+    "package": "flow",
+    "replacement": "!=",
+    "span": {
+      "end": {
+        "column": 75,
+        "line": 294
+      },
+      "start": {
+        "column": 73,
+        "line": 294
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with None\n@@ -315,25 +315,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 321
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 331
+      },
+      "start": {
+        "column": 5,
+        "line": 323
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(true)\n@@ -315,25 +315,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 321
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 331
+      },
+      "start": {
+        "column": 5,
+        "line": 323
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(false)\n@@ -315,25 +315,17 @@\n                 )))\n             }\n         }\n     }\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"tasklist\")\n-        .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n-        .output()\n-        .ok()?;\n-    if !out.status.success() {\n-        return None;\n-    }\n-    let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 321
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 85,
+        "line": 331
+      },
+      "start": {
+        "column": 5,
+        "line": 323
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ delete ! in pid_alive\n@@ -319,17 +319,17 @@\n }\n \n #[cfg(windows)]\n fn pid_alive(pid: u32) -> Option<bool> {\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n-    if !out.status.success() {\n+    if  /* ~ changed by cargo-mutants ~ */out.status.success() {\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n     Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n }\n \n /// Ask `kill -0` and read its message.\n ///\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 321
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/lock.rs:327:8: delete ! in pid_alive",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 327
+      },
+      "start": {
+        "column": 8,
+        "line": 327
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace || with && in pid_alive\n@@ -323,17 +323,17 @@\n     let out = std::process::Command::new(\"tasklist\")\n         .args([\"/FI\", &format!(\"PID eq {pid}\"), \"/NH\", \"/FO\", \"CSV\"])\n         .output()\n         .ok()?;\n     if !out.status.success() {\n         return None;\n     }\n     let text = String::from_utf8_lossy(&out.stdout);\n-    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) || text.contains(&format!(\",{pid},\")))\n+    Some(text.contains(&format!(\"\\\"{pid}\\\"\")) && /* ~ changed by cargo-mutants ~ */ text.contains(&format!(\",{pid},\")))\n }\n \n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 332
+        },
+        "start": {
+          "column": 1,
+          "line": 321
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:331:47: replace || with && in pid_alive",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 331
+      },
+      "start": {
+        "column": 47,
+        "line": 331
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace kill_liveness -> Option<bool> with None\n@@ -334,30 +334,17 @@\n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n #[cfg(not(windows))]\n fn kill_liveness(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .env(\"LC_ALL\", \"C\")\n-        .output()\n-        .ok()?;\n-    if out.status.success() {\n-        return Some(true);\n-    }\n-    let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();\n-    if message.contains(\"no such process\") || message.contains(\"does not exist\") {\n-        Some(false)\n-    } else {\n-        None\n-    }\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "kill_liveness",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 356
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 355
+      },
+      "start": {
+        "column": 5,
+        "line": 342
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace kill_liveness -> Option<bool> with Some(true)\n@@ -334,30 +334,17 @@\n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n #[cfg(not(windows))]\n fn kill_liveness(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .env(\"LC_ALL\", \"C\")\n-        .output()\n-        .ok()?;\n-    if out.status.success() {\n-        return Some(true);\n-    }\n-    let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();\n-    if message.contains(\"no such process\") || message.contains(\"does not exist\") {\n-        Some(false)\n-    } else {\n-        None\n-    }\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "kill_liveness",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 356
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 355
+      },
+      "start": {
+        "column": 5,
+        "line": 342
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace kill_liveness -> Option<bool> with Some(false)\n@@ -334,30 +334,17 @@\n /// Ask `kill -0` and read its message.\n ///\n /// The exit status alone cannot answer the question: it is non-zero both for a\n /// process that is gone (ESRCH) and for a live process owned by another user\n /// (EPERM). Liveness is only \"provable\" when the message says the process does\n /// not exist; anything else is unknown, and unknown is never stolen.\n #[cfg(not(windows))]\n fn kill_liveness(pid: u32) -> Option<bool> {\n-    let out = std::process::Command::new(\"kill\")\n-        .args([\"-0\", &pid.to_string()])\n-        .env(\"LC_ALL\", \"C\")\n-        .output()\n-        .ok()?;\n-    if out.status.success() {\n-        return Some(true);\n-    }\n-    let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();\n-    if message.contains(\"no such process\") || message.contains(\"does not exist\") {\n-        Some(false)\n-    } else {\n-        None\n-    }\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "kill_liveness",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 356
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:342:5: replace kill_liveness -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 355
+      },
+      "start": {
+        "column": 5,
+        "line": 342
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace || with && in kill_liveness\n@@ -343,17 +343,17 @@\n         .args([\"-0\", &pid.to_string()])\n         .env(\"LC_ALL\", \"C\")\n         .output()\n         .ok()?;\n     if out.status.success() {\n         return Some(true);\n     }\n     let message = String::from_utf8_lossy(&out.stderr).to_ascii_lowercase();\n-    if message.contains(\"no such process\") || message.contains(\"does not exist\") {\n+    if message.contains(\"no such process\") && /* ~ changed by cargo-mutants ~ */ message.contains(\"does not exist\") {\n         Some(false)\n     } else {\n         None\n     }\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "kill_liveness",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 356
+        },
+        "start": {
+          "column": 1,
+          "line": 334
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/lock.rs:351:44: replace || with && in kill_liveness",
+    "package": "flow",
+    "replacement": "&&",
+    "span": {
+      "end": {
+        "column": 46,
+        "line": 351
+      },
+      "start": {
+        "column": 44,
+        "line": 351
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with None\n@@ -355,20 +355,17 @@\n     }\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    if Path::new(&format!(\"/proc/{pid}\")).exists() {\n-        return Some(true);\n-    }\n-    kill_liveness(pid)\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     kill_liveness(pid)\n }\n \n #[cfg(test)]\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 367
+        },
+        "start": {
+          "column": 1,
+          "line": 358
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 366
+      },
+      "start": {
+        "column": 5,
+        "line": 363
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(true)\n@@ -355,20 +355,17 @@\n     }\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    if Path::new(&format!(\"/proc/{pid}\")).exists() {\n-        return Some(true);\n-    }\n-    kill_liveness(pid)\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     kill_liveness(pid)\n }\n \n #[cfg(test)]\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 367
+        },
+        "start": {
+          "column": 1,
+          "line": 358
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 366
+      },
+      "start": {
+        "column": 5,
+        "line": 363
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(false)\n@@ -355,20 +355,17 @@\n     }\n }\n \n /// On Linux the kernel's own view comes first: `/proc/<pid>` exists exactly while\n /// the pid exists, and it cannot confuse \"gone\" with \"not mine\". Only when the\n /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.\n #[cfg(target_os = \"linux\")]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    if Path::new(&format!(\"/proc/{pid}\")).exists() {\n-        return Some(true);\n-    }\n-    kill_liveness(pid)\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n     kill_liveness(pid)\n }\n \n #[cfg(test)]\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 367
+        },
+        "start": {
+          "column": 1,
+          "line": 358
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:363:5: replace pid_alive -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 366
+      },
+      "start": {
+        "column": 5,
+        "line": 363
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with None\n@@ -363,17 +363,17 @@\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n         return Some(true);\n     }\n     kill_liveness(pid)\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    kill_liveness(pid)\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 372
+        },
+        "start": {
+          "column": 1,
+          "line": 369
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 371
+      },
+      "start": {
+        "column": 5,
+        "line": 371
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(true)\n@@ -363,17 +363,17 @@\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n         return Some(true);\n     }\n     kill_liveness(pid)\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    kill_liveness(pid)\n+    Some(true) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 372
+        },
+        "start": {
+          "column": 1,
+          "line": 369
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with Some(true)",
+    "package": "flow",
+    "replacement": "Some(true)",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 371
+      },
+      "start": {
+        "column": 5,
+        "line": 371
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/lock.rs\n+++ replace pid_alive -> Option<bool> with Some(false)\n@@ -363,17 +363,17 @@\n     if Path::new(&format!(\"/proc/{pid}\")).exists() {\n         return Some(true);\n     }\n     kill_liveness(pid)\n }\n \n #[cfg(all(unix, not(target_os = \"linux\")))]\n fn pid_alive(pid: u32) -> Option<bool> {\n-    kill_liveness(pid)\n+    Some(false) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(test)]\n mod tests {\n     use super::*;\n \n     fn temp_flow_dir(tag: &str) -> PathBuf {\n         let path = std::env::temp_dir().join(format!(\"flow-lock-{}-{tag}\", std::process::id()));\n",
+    "file": "crates/flow/src/lock.rs",
+    "function": {
+      "function_name": "pid_alive",
+      "return_type": "-> Option<bool>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 372
+        },
+        "start": {
+          "column": 1,
+          "line": 369
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/lock.rs:371:5: replace pid_alive -> Option<bool> with Some(false)",
+    "package": "flow",
+    "replacement": "Some(false)",
+    "span": {
+      "end": {
+        "column": 23,
+        "line": 371
+      },
+      "start": {
+        "column": 5,
+        "line": 371
+      }
+    }
+  }
+]

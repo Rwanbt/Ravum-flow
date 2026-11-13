@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1619,17 +1619,17 @@
+     // `--candidate` is given, the index tree otherwise.
+     let tree = match &candidate_record {
+         Some(record) => record.tree_oid.clone(),
+         None => git.write_tree()?,
+     };
+     if candidate_record.is_some() {
+         let present =
+             git.run_bounded(&["cat-file", "-e", &format!("{tree}^{{tree}}")], None, None)?;
+-        if present.status != 0 {
++        if present.status == /* ~ changed by cargo-mutants ~ */ 0 {
+             return Ok(refused_code(
+                 "CANDIDATE_TREE_MISSING",
+                 format!("candidate tree {tree} is no longer in the object store: nothing coherent can be published"),
+             ));
+         }
+     }
+     let receipt = match Receipt::load(root, &tree)? {
+         Some(r) => r,

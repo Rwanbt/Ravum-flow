@@ -1,0 +1,33 @@
+--- crates/flow/src/scratch.rs
++++ replace Scratch::still_owned -> bool with true
+@@ -75,29 +75,17 @@
+ 
+ impl Scratch {
+     /// The directory holding the materialised tree.
+     pub fn path(&self) -> &Path {
+         &self.path
+     }
+ 
+     fn still_owned(&self) -> bool {
+-        let Ok(meta) = fs::symlink_metadata(&self.path) else {
+-            return false;
+-        };
+-        if meta.file_type().is_symlink() || !meta.is_dir() {
+-            return false;
+-        }
+-        match fs::canonicalize(&self.path) {
+-            Ok(resolved) if resolved == self.canonical => {}
+-            _ => return false,
+-        }
+-        fs::symlink_metadata(self.path.join(OWNED_MARKER))
+-            .map(|meta| meta.is_file() && !meta.file_type().is_symlink())
+-            .unwrap_or(false)
++        true /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ impl Drop for Scratch {
+     /// Bounded, idempotent, non-panicking cleanup.
+     ///
+     /// The directory is removed only while it is provably still the one this
+     /// value created; the administrative worktree entry is pruned with a

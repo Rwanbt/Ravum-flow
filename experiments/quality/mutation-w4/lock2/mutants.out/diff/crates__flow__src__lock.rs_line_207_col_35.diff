@@ -1,0 +1,21 @@
+--- crates/flow/src/lock.rs
++++ replace + with - in wait_for_record
+@@ -199,17 +199,17 @@
+     linked
+ }
+ 
+ /// Read the lock record, tolerating a creator that is still writing it.
+ fn wait_for_record(path: &Path, first: String) -> Option<Owner> {
+     if let Some(owner) = parse(&first) {
+         return Some(owner);
+     }
+-    let deadline = Instant::now() + CREATE_GRACE;
++    let deadline = Instant::now() - /* ~ changed by cargo-mutants ~ */ CREATE_GRACE;
+     while Instant::now() < deadline {
+         std::thread::sleep(POLL_INTERVAL);
+         let Ok(text) = fs::read_to_string(path) else {
+             return None;
+         };
+         if let Some(owner) = parse(&text) {
+             return Some(owner);
+         }

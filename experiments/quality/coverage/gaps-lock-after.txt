@@ -1,0 +1,14 @@
+
+== D:\App\Ravum-flow\crates\flow\src\lock.rs  lines 93.61% (366/391)  branches 81.58% (31/38)
+-- uncovered lines: 121,225,282,283,284,285,286,287,297,298,299,300,301,311,312,313,314,315,328,413,429,450,575,657,696
+-- uncovered branch lines (5):
+   222: 1/2 branch points untaken
+      >>  222     if let Some(parent) = path.parent() {
+   236: 1/2 branch points untaken
+      >>  236             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+   239: 1/2 branch points untaken
+      >>  239                     Err(err) if err.kind() == std::io::ErrorKind::NotFound => continue,
+   327: 1/2 branch points untaken
+      >>  327     if !out.status.success() {
+   427: 3/4 branch points untaken
+      >>  427                 assert!(m.contains("never stolen") || m.contains("cannot be established"))

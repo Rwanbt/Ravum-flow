@@ -1,0 +1,181 @@
+--- crates/flow/src/proposal.rs
++++ replace assemble -> Result<Json, String> with Ok(Default::default())
+@@ -816,177 +816,17 @@
+                 ),
+             ));
+         }
+     }
+     None
+ }
+ 
+ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
+-    let git = Git::new(root);
+-    if proposal_ids.is_empty() {
+-        return Ok(refusal(
+-            "NO_PROPOSAL",
+-            "assemble needs at least one --proposal <id>",
+-        ));
+-    }
+-    let mut seen: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+-    for id in proposal_ids {
+-        if !seen.insert(id.as_str()) {
+-            return Ok(refusal(
+-                "DUPLICATE_PROPOSAL",
+-                format!("proposal {id:?} is listed more than once: a candidate applies each proposal exactly once"),
+-            ));
+-        }
+-    }
+-    let mut proposals: Vec<Proposal> = Vec::new();
+-    for id in proposal_ids {
+-        match Proposal::load(root, id)? {
+-            Some(p) => proposals.push(p),
+-            None => {
+-                return Ok(refusal(
+-                    "UNKNOWN_PROPOSAL",
+-                    format!("no admitted proposal {id:?} in .flow/proposals/"),
+-                ))
+-            }
+-        }
+-    }
+-    let base = proposals[0].base_commit.clone();
+-    let base_tree = proposals[0].base_tree.clone();
+-    let mismatched: Vec<String> = proposals
+-        .iter()
+-        .filter(|p| p.base_commit != base)
+-        .map(|p| format!("{}@{}", p.proposal_id, p.base_commit))
+-        .collect();
+-    if !mismatched.is_empty() {
+-        return Ok(refusal(
+-            "BASE_MISMATCH",
+-            format!(
+-                "every proposal in one candidate must share base {base}; these do not: {}",
+-                mismatched.join(", ")
+-            ),
+-        ));
+-    }
+-
+-    // Incompatible operations on one path are refused *before* any patch is
+-    // applied, so the diagnostic does not depend on application order.
+-    if let Some(refusal) = path_conflicts(&proposals) {
+-        return Ok(refusal);
+-    }
+-
+-    let index = TempIndex::new();
+-    let seeded = git.run_bounded(&["read-tree", &base_tree], None, Some(index.path()))?;
+-    if seeded.status != 0 {
+-        return Err(format!(
+-            "cannot seed a temporary index from {base_tree}: {}",
+-            seeded.stderr.trim()
+-        ));
+-    }
+-    for proposal in &proposals {
+-        let patch = match fs::read(Proposal::patch_path(root, &proposal.proposal_id)) {
+-            Ok(bytes) => bytes,
+-            Err(e) => {
+-                return Err(format!(
+-                    "proposal {} is recorded but its patch is unreadable: {e}",
+-                    proposal.proposal_id
+-                ))
+-            }
+-        };
+-        let applied = apply_patch(&git, index.path(), &patch)?;
+-        if applied.status != 0 {
+-            let kind = classify_apply_failure(&applied.stderr);
+-            return Ok(refusal(
+-                "CONFLICT",
+-                format!(
+-                    "{kind}: proposal {} ({} / {}) does not apply on top of the earlier proposals: {}",
+-                    proposal.proposal_id,
+-                    proposal.agent_id,
+-                    proposal.task_id,
+-                    applied.stderr.trim()
+-                ),
+-            ));
+-        }
+-    }
+-    let written = git.run_bounded(&["write-tree"], None, Some(index.path()))?;
+-    if written.status != 0 {
+-        return Err(format!(
+-            "cannot write the candidate tree: {}",
+-            written.stderr.trim()
+-        ));
+-    }
+-    let tree_oid = written.stdout.trim().to_string();
+-    drop(index);
+-
+-    if let Err(refusal) = validate_tree(&git, &tree_oid) {
+-        return Ok(refusal);
+-    }
+-    let changes = diff_changes(&git, &base_tree, &tree_oid)?;
+-    let candidate_id = {
+-        let material = format!(
+-            "{SCHEMA_CANDIDATE}\nbase:{base}\ntree:{tree_oid}\nproposals:{}",
+-            proposal_ids.join(",")
+-        );
+-        sha256_hex(material.as_bytes())[..32].to_string()
+-    };
+-    let record = Json::obj(vec![
+-        ("schema", Json::str(SCHEMA_CANDIDATE)),
+-        ("status", Json::str("ASSEMBLED")),
+-        ("candidate_id", Json::str(candidate_id.clone())),
+-        ("base_commit", Json::str(base.clone())),
+-        ("base_tree", Json::str(base_tree.clone())),
+-        ("tree_oid", Json::str(tree_oid.clone())),
+-        (
+-            "proposals",
+-            Json::Arr(proposal_ids.iter().map(|p| Json::str(p.clone())).collect()),
+-        ),
+-        ("created_at", Json::str(state::iso8601_now())),
+-        (
+-            "attribution",
+-            Json::Arr(
+-                proposals
+-                    .iter()
+-                    .map(|p| {
+-                        Json::obj(vec![
+-                            ("proposal_id", Json::str(p.proposal_id.clone())),
+-                            ("agent_id", Json::str(p.agent_id.clone())),
+-                            ("task_id", Json::str(p.task_id.clone())),
+-                            ("base_commit", Json::str(p.base_commit.clone())),
+-                        ])
+-                    })
+-                    .collect(),
+-            ),
+-        ),
+-        (
+-            "changes",
+-            Json::Arr(changes.iter().map(Change::to_json).collect()),
+-        ),
+-        (
+-            "note",
+-            Json::str("immutable candidate: verify it with `flow run --candidate <id>`, publish it with `flow publish --candidate <id> --expected-old <base>`; no ref, index or worktree was touched"),
+-        ),
+-    ]);
+-    fs::create_dir_all(state::candidates_dir(root))
+-        .map_err(|e| format!("cannot create candidates dir: {e}"))?;
+-    let path = Candidate::path(root, &candidate_id);
+-    if path.exists() {
+-        // Same inputs, same id. Only an identical record may reuse the slot.
+-        let existing = Candidate::load(root, &candidate_id)?;
+-        match existing {
+-            Some(c) if c.tree_oid == tree_oid && c.proposals == proposal_ids => {}
+-            _ => {
+-                return Ok(refusal(
+-                    "CANDIDATE_IMMUTABLE",
+-                    format!("candidate {candidate_id} exists with different content: refusing to overwrite it"),
+-                ))
+-            }
+-        }
+-    } else {
+-        state::write_atomic(&path, &(record.to_string_pretty() + "\n"))?;
+-    }
+-    Ok(record)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     // These parsers read answers from a separate Git process. A corrupted object
+     // store or a Git that answers nonsense must produce a named refusal, never a

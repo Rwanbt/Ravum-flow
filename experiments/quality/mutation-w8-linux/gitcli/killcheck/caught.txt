@@ -1,0 +1,2 @@
+crates/flow/src/gitcli.rs:623:38: replace > with < in run_obligation
+crates/flow/src/gitcli.rs:623:38: replace > with == in run_obligation

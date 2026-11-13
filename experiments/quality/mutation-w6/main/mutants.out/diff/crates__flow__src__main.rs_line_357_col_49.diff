@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace + with - in collect_values
+@@ -349,17 +349,17 @@
+ /// `--name value` and `--name=value` are both accepted; a repeated flag keeps
+ /// its order, which is the assembly order of a candidate.
+ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+     let mut out = Vec::new();
+     let mut index = 0;
+     while index < args.len() {
+         let arg = &args[index];
+         if names.contains(&arg.as_str()) {
+-            if let Some(value) = args.get(index + 1) {
++            if let Some(value) = args.get(index - /* ~ changed by cargo-mutants ~ */ 1) {
+                 out.push(value.clone());
+             }
+             index += 2;
+             continue;
+         }
+         let mut matched = false;
+         for name in names {
+             if let Some(value) = arg.strip_prefix(&format!("{name}=")) {

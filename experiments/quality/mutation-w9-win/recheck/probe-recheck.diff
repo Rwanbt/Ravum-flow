@@ -1,0 +1,17 @@
+diff --git a/crates/flow/src/gitcli.rs b/crates/flow/src/gitcli.rs
+index 0e0cedd..e074bb0 100644
+--- a/crates/flow/src/gitcli.rs
++++ b/crates/flow/src/gitcli.rs
+@@ -523 +523 @@ fn resolve_program(program: &str) -> Option<PathBuf> {
+-    resolve_program_in(
++    resolve_program_in( // w9probe
+diff --git a/crates/flow/src/main.rs b/crates/flow/src/main.rs
+index ee63109..7f38a2d 100644
+--- a/crates/flow/src/main.rs
++++ b/crates/flow/src/main.rs
+@@ -360 +360 @@ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+-            index += 2;
++            index += 2; // w9probe
+@@ -372 +372 @@ fn collect_values(args: &[String], names: &[&str]) -> Option<Vec<String>> {
+-        index += 1;
++        index += 1; // w9probe

@@ -1,0 +1,157 @@
+crates/flow/src/state.rs:51:9: replace <impl std::fmt::Display for JournalError>::fmt -> std::fmt::Result with Ok(Default::default())
+crates/flow/src/state.rs:60:9: replace <impl From<JournalError> for String>::from -> String with String::new()
+crates/flow/src/state.rs:60:9: replace <impl From<JournalError> for String>::from -> String with "xyzzy".into()
+crates/flow/src/state.rs:89:9: replace Config::to_json -> Json with Default::default()
+crates/flow/src/state.rs:118:9: replace Config::from_json -> Result<Config, String> with Ok(Default::default())
+crates/flow/src/state.rs:119:19: replace != with == in Config::from_json
+crates/flow/src/state.rs:135:34: replace || with && in Config::from_json
+crates/flow/src/state.rs:180:5: replace flow_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:184:5: replace config_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:188:5: replace journal_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:192:5: replace receipts_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:196:5: replace logs_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:200:5: replace proposals_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:204:5: replace candidates_dir -> PathBuf with Default::default()
+crates/flow/src/state.rs:208:5: replace adoption_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:224:5: replace load_adoption -> Result<Option<Adoption>, String> with Ok(None)
+crates/flow/src/state.rs:224:5: replace load_adoption -> Result<Option<Adoption>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:225:8: delete ! in load_adoption
+crates/flow/src/state.rs:232:15: replace != with == in load_adoption
+crates/flow/src/state.rs:254:5: replace save_adoption -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:261:67: replace + with - in save_adoption
+crates/flow/src/state.rs:261:67: replace + with * in save_adoption
+crates/flow/src/state.rs:265:5: replace receipt_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:269:5: replace load_config -> Result<Config, String> with Ok(Default::default())
+crates/flow/src/state.rs:276:5: replace save_config -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:280:63: replace + with - in save_config
+crates/flow/src/state.rs:280:63: replace + with * in save_config
+crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:294:43: replace == with != in guard_below_flow
+crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow
+crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow
+crates/flow/src/state.rs:323:38: replace || with && in guard_below_flow
+crates/flow/src/state.rs:340:27: replace && with || in guard_below_flow
+crates/flow/src/state.rs:340:43: replace > with == in guard_below_flow
+crates/flow/src/state.rs:340:43: replace > with < in guard_below_flow
+crates/flow/src/state.rs:340:43: replace > with >= in guard_below_flow
+crates/flow/src/state.rs:352:5: replace write_atomic -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:358:5: replace write_atomic_bytes -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with None
+crates/flow/src/state.rs:396:5: replace parent_to_flush -> Option<&Path> with Some(Box::leak(Box::new(Default::default())))
+crates/flow/src/state.rs:396:30: delete ! in parent_to_flush
+crates/flow/src/state.rs:401:5: replace append_journal -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:403:12: delete ! in append_journal
+crates/flow/src/state.rs:403:41: replace == with != in append_journal
+crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with true in append_journal
+crates/flow/src/state.rs:420:19: replace match guard e.kind() == std::io::ErrorKind::NotFound with false in append_journal
+crates/flow/src/state.rs:420:28: replace == with != in append_journal
+crates/flow/src/state.rs:435:5: replace read_journal -> Result<Vec<Json>, JournalError> with Ok(vec![])
+crates/flow/src/state.rs:435:5: replace read_journal -> Result<Vec<Json>, JournalError> with Ok(vec![Default::default()])
+crates/flow/src/state.rs:436:8: delete ! in read_journal
+crates/flow/src/state.rs:458:5: replace unix_now -> u64 with 0
+crates/flow/src/state.rs:458:5: replace unix_now -> u64 with 1
+crates/flow/src/state.rs:471:5: replace unique_suffix -> u128 with 0
+crates/flow/src/state.rs:471:5: replace unique_suffix -> u128 with 1
+crates/flow/src/state.rs:505:9: replace Receipt::load -> Result<Option<Receipt>, String> with Ok(None)
+crates/flow/src/state.rs:505:9: replace Receipt::load -> Result<Option<Receipt>, String> with Ok(Some(Default::default()))
+crates/flow/src/state.rs:505:12: delete ! in Receipt::load
+crates/flow/src/state.rs:511:12: delete ! in Receipt::load
+crates/flow/src/state.rs:565:5: replace without_field -> Json with Default::default()
+crates/flow/src/state.rs:567:33: replace != with == in without_field
+crates/flow/src/state.rs:579:5: replace seal_receipt -> Json with Default::default()
+crates/flow/src/state.rs:589:5: replace verify_receipt_integrity -> Result<(), String> with Ok(())
+crates/flow/src/state.rs:595:17: replace != with == in verify_receipt_integrity
+crates/flow/src/state.rs:604:5: replace string_list -> Vec<String> with vec![]
+crates/flow/src/state.rs:604:5: replace string_list -> Vec<String> with vec![String::new()]
+crates/flow/src/state.rs:604:5: replace string_list -> Vec<String> with vec!["xyzzy".into()]
+crates/flow/src/state.rs:619:5: replace partial_receipt_path -> PathBuf with Default::default()
+crates/flow/src/state.rs:624:5: replace save_receipt -> Result<PathBuf, String> with Ok(Default::default())
+crates/flow/src/state.rs:631:8: delete ! in save_receipt
+crates/flow/src/state.rs:661:54: replace + with - in save_receipt
+crates/flow/src/state.rs:661:54: replace + with * in save_receipt
+crates/flow/src/state.rs:670:5: replace iso8601_now -> String with String::new()
+crates/flow/src/state.rs:670:5: replace iso8601_now -> String with "xyzzy".into()
+crates/flow/src/state.rs:674:22: replace / with % in iso8601_now
+crates/flow/src/state.rs:674:22: replace / with * in iso8601_now
+crates/flow/src/state.rs:675:20: replace % with / in iso8601_now
+crates/flow/src/state.rs:675:20: replace % with + in iso8601_now
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (0, 0, 1)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (0, 1, 1)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (1, 0, 1)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (1, 1, 1)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (-1, 0, 1)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 0)
+crates/flow/src/state.rs:690:5: replace civil_from_days -> (i64, u32, u32) with (-1, 1, 1)
+crates/flow/src/state.rs:690:18: replace + with - in civil_from_days
+crates/flow/src/state.rs:690:18: replace + with * in civil_from_days
+crates/flow/src/state.rs:691:52: replace / with % in civil_from_days
+crates/flow/src/state.rs:691:52: replace / with * in civil_from_days
+crates/flow/src/state.rs:691:20: replace >= with < in civil_from_days
+crates/flow/src/state.rs:691:40: replace - with + in civil_from_days
+crates/flow/src/state.rs:691:40: replace - with / in civil_from_days
+crates/flow/src/state.rs:692:18: replace - with + in civil_from_days
+crates/flow/src/state.rs:692:18: replace - with / in civil_from_days
+crates/flow/src/state.rs:692:24: replace * with + in civil_from_days
+crates/flow/src/state.rs:692:24: replace * with / in civil_from_days
+crates/flow/src/state.rs:693:65: replace / with % in civil_from_days
+crates/flow/src/state.rs:693:65: replace / with * in civil_from_days
+crates/flow/src/state.rs:693:48: replace - with + in civil_from_days
+crates/flow/src/state.rs:693:48: replace - with / in civil_from_days
+crates/flow/src/state.rs:693:33: replace + with - in civil_from_days
+crates/flow/src/state.rs:693:33: replace + with * in civil_from_days
+crates/flow/src/state.rs:693:20: replace - with + in civil_from_days
+crates/flow/src/state.rs:693:20: replace - with / in civil_from_days
+crates/flow/src/state.rs:693:26: replace / with % in civil_from_days
+crates/flow/src/state.rs:693:26: replace / with * in civil_from_days
+crates/flow/src/state.rs:693:39: replace / with % in civil_from_days
+crates/flow/src/state.rs:693:39: replace / with * in civil_from_days
+crates/flow/src/state.rs:693:54: replace / with % in civil_from_days
+crates/flow/src/state.rs:693:54: replace / with * in civil_from_days
+crates/flow/src/state.rs:694:24: replace + with - in civil_from_days
+crates/flow/src/state.rs:694:24: replace + with * in civil_from_days
+crates/flow/src/state.rs:694:30: replace * with + in civil_from_days
+crates/flow/src/state.rs:694:30: replace * with / in civil_from_days
+crates/flow/src/state.rs:695:19: replace - with + in civil_from_days
+crates/flow/src/state.rs:695:19: replace - with / in civil_from_days
+crates/flow/src/state.rs:695:42: replace - with + in civil_from_days
+crates/flow/src/state.rs:695:42: replace - with / in civil_from_days
+crates/flow/src/state.rs:695:32: replace + with - in civil_from_days
+crates/flow/src/state.rs:695:32: replace + with * in civil_from_days
+crates/flow/src/state.rs:695:26: replace * with + in civil_from_days
+crates/flow/src/state.rs:695:26: replace * with / in civil_from_days
+crates/flow/src/state.rs:695:38: replace / with % in civil_from_days
+crates/flow/src/state.rs:695:38: replace / with * in civil_from_days
+crates/flow/src/state.rs:695:48: replace / with % in civil_from_days
+crates/flow/src/state.rs:695:48: replace / with * in civil_from_days
+crates/flow/src/state.rs:696:28: replace / with % in civil_from_days
+crates/flow/src/state.rs:696:28: replace / with * in civil_from_days
+crates/flow/src/state.rs:696:23: replace + with - in civil_from_days
+crates/flow/src/state.rs:696:23: replace + with * in civil_from_days
+crates/flow/src/state.rs:696:17: replace * with + in civil_from_days
+crates/flow/src/state.rs:696:17: replace * with / in civil_from_days
+crates/flow/src/state.rs:697:39: replace + with - in civil_from_days
+crates/flow/src/state.rs:697:39: replace + with * in civil_from_days
+crates/flow/src/state.rs:697:18: replace - with + in civil_from_days
+crates/flow/src/state.rs:697:18: replace - with / in civil_from_days
+crates/flow/src/state.rs:697:35: replace / with % in civil_from_days
+crates/flow/src/state.rs:697:35: replace / with * in civil_from_days
+crates/flow/src/state.rs:697:30: replace + with - in civil_from_days
+crates/flow/src/state.rs:697:30: replace + with * in civil_from_days
+crates/flow/src/state.rs:697:25: replace * with + in civil_from_days
+crates/flow/src/state.rs:697:25: replace * with / in civil_from_days
+crates/flow/src/state.rs:698:19: replace < with == in civil_from_days
+crates/flow/src/state.rs:698:19: replace < with > in civil_from_days
+crates/flow/src/state.rs:698:19: replace < with <= in civil_from_days
+crates/flow/src/state.rs:698:29: replace + with - in civil_from_days
+crates/flow/src/state.rs:698:29: replace + with * in civil_from_days
+crates/flow/src/state.rs:698:45: replace - with + in civil_from_days
+crates/flow/src/state.rs:698:45: replace - with / in civil_from_days
+crates/flow/src/state.rs:699:11: replace <= with > in civil_from_days
+crates/flow/src/state.rs:699:20: replace + with - in civil_from_days
+crates/flow/src/state.rs:699:20: replace + with * in civil_from_days

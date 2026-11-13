@@ -1,0 +1,290 @@
+[
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with None\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in( // w9probe\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program -> Option<PathBuf> with Some(Default::default())\n@@ -515,21 +515,17 @@\n //\n // CreateProcess only appends .exe, so a tool installed as a .cmd or .bat shim\n // (which is how npm installs tsc, npx, gradle, ...) is not found by name. Flow\n // resolves it the way a shell would and only then spawns it. When nothing\n // matches, the caller keeps the declared name so the failure is reported as\n // UNSUPPORTED with the name the policy asked for.\n #[cfg(windows)]\n fn resolve_program(program: &str) -> Option<PathBuf> {\n-    resolve_program_in( // w9probe\n-        program,\n-        std::env::var_os(\"PATH\"),\n-        std::env::var(\"PATHEXT\").ok(),\n-    )\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n /// The testable half of [`resolve_program`]: the search locations are arguments\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 528
+        },
+        "start": {
+          "column": 1,
+          "line": 495
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:523:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 6,
+        "line": 527
+      },
+      "start": {
+        "column": 5,
+        "line": 523
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program_in -> Option<PathBuf> with None\n@@ -531,44 +531,17 @@\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n-    let path = path?; // w9probe\n-    let extensions: Vec<String> = pathext\n-        .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n-        .split(';')\n-        .filter(|e| !e.is_empty()) // w9probe\n-        .map(|e| e.to_ascii_lowercase())\n-        .collect();\n-    let has_extension = std::path::Path::new(program).extension().is_some();\n-    for dir in std::env::split_paths(&path) {\n-        if has_extension {\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        } else {\n-            for extension in &extensions {\n-                let candidate = dir.join(format!(\"{program}{extension}\"));\n-                if candidate.is_file() {\n-                    return Some(candidate);\n-                }\n-            }\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        }\n-    }\n-    None\n+    None /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n     None\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with None",
+    "package": "flow",
+    "replacement": "None",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 539
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ replace resolve_program_in -> Option<PathBuf> with Some(Default::default())\n@@ -531,44 +531,17 @@\n /// so the resolution rules can be pinned without mutating the process\n /// environment (which other tests read).\n #[cfg(windows)]\n fn resolve_program_in(\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n-    let path = path?; // w9probe\n-    let extensions: Vec<String> = pathext\n-        .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n-        .split(';')\n-        .filter(|e| !e.is_empty()) // w9probe\n-        .map(|e| e.to_ascii_lowercase())\n-        .collect();\n-    let has_extension = std::path::Path::new(program).extension().is_some();\n-    for dir in std::env::split_paths(&path) {\n-        if has_extension {\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        } else {\n-            for extension in &extensions {\n-                let candidate = dir.join(format!(\"{program}{extension}\"));\n-                if candidate.is_file() {\n-                    return Some(candidate);\n-                }\n-            }\n-            let candidate = dir.join(program);\n-            if candidate.is_file() {\n-                return Some(candidate);\n-            }\n-        }\n-    }\n-    None\n+    Some(Default::default()) /* ~ changed by cargo-mutants ~ */\n }\n \n #[cfg(not(windows))]\n fn resolve_program(_program: &str) -> Option<PathBuf> {\n     None\n }\n \n pub fn run_obligation(ob: &Obligation, cwd: &Path) -> Outcome {\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/gitcli.rs:539:5: replace resolve_program_in -> Option<PathBuf> with Some(Default::default())",
+    "package": "flow",
+    "replacement": "Some(Default::default())",
+    "span": {
+      "end": {
+        "column": 9,
+        "line": 566
+      },
+      "start": {
+        "column": 5,
+        "line": 539
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/gitcli.rs\n+++ delete ! in resolve_program_in\n@@ -535,17 +535,17 @@\n     program: &str,\n     path: Option<std::ffi::OsString>,\n     pathext: Option<String>,\n ) -> Option<PathBuf> {\n     let path = path?; // w9probe\n     let extensions: Vec<String> = pathext\n         .unwrap_or_else(|| \".COM;.EXE;.BAT;.CMD\".to_string())\n         .split(';')\n-        .filter(|e| !e.is_empty()) // w9probe\n+        .filter(|e|  /* ~ changed by cargo-mutants ~ */e.is_empty()) // w9probe\n         .map(|e| e.to_ascii_lowercase())\n         .collect();\n     let has_extension = std::path::Path::new(program).extension().is_some();\n     for dir in std::env::split_paths(&path) {\n         if has_extension {\n             let candidate = dir.join(program);\n             if candidate.is_file() {\n                 return Some(candidate);\n",
+    "file": "crates/flow/src/gitcli.rs",
+    "function": {
+      "function_name": "resolve_program_in",
+      "return_type": "-> Option<PathBuf>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 567
+        },
+        "start": {
+          "column": 1,
+          "line": 530
+        }
+      }
+    },
+    "genre": "UnaryOperator",
+    "name": "crates/flow/src/gitcli.rs:543:21: delete ! in resolve_program_in",
+    "package": "flow",
+    "replacement": "",
+    "span": {
+      "end": {
+        "column": 22,
+        "line": 543
+      },
+      "start": {
+        "column": 21,
+        "line": 543
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace guard_below_flow -> Result<(), String> with Ok(())\n@@ -284,73 +284,17 @@\n ///\n /// A repository can ship `.flow/journal.jsonl` or `.flow/receipts` as a symlink:\n /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes\n /// Flow append outside the workspace. Every write below `.flow/` therefore checks\n /// that each existing component is a real directory and that the target is not a\n /// link. This is a check-then-write, so it is not a defence against a *concurrent*\n /// local attacker — that boundary is documented, and the local user is trusted.\n fn guard_below_flow(path: &Path) -> Result<(), String> {\n-    let mut anchor: Option<&Path> = None;\n-    for ancestor in path.ancestors() {\n-        if ancestor.file_name().map(|n| n == \".flow\").unwrap_or(false) {\n-            anchor = ancestor.parent();\n-            break;\n-        }\n-    }\n-    let Some(root) = anchor else {\n-        return Ok(());\n-    };\n-    let relative = path\n-        .strip_prefix(root)\n-        .map_err(|_| format!(\"{} is not below {}\", path.display(), root.display()))?;\n-    let mut current = root.to_path_buf();\n-    for component in relative.components() {\n-        current.push(component);\n-        match fs::symlink_metadata(&current) {\n-            Ok(meta) => {\n-                let kind = meta.file_type();\n-                let reparse = {\n-                    #[cfg(windows)]\n-                    {\n-                        use std::os::windows::fs::MetadataExt;\n-                        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n-                    }\n-                    #[cfg(not(windows))]\n-                    {\n-                        false\n-                    }\n-                };\n-                if kind.is_symlink() || reparse {\n-                    return Err(format!(\n-                        \"refusing to write {}: {} is a symbolic link or reparse point, so the write would escape the workspace\",\n-                        path.display(),\n-                        current.display()\n-                    ));\n-                }\n-            }\n-            Err(_) => break,\n-        }\n-    }\n-    // A hard link is indistinguishable from a regular file on Windows without\n-    // Win32, so the check exists where the metadata exposes it. It closes the\n-    // \"journal appended through a link to an outside file\" shape on Unix.\n-    #[cfg(unix)]\n-    if let Ok(meta) = fs::symlink_metadata(path) {\n-        use std::os::unix::fs::MetadataExt;\n-        if meta.is_file() && meta.nlink() > 1 {\n-            return Err(format!(\n-                \"refusing to write {}: it has {} hard links, so the write could reach a file outside the workspace\",\n-                path.display(),\n-                meta.nlink()\n-            ));\n-        }\n-    }\n-    Ok(())\n+    Ok(()) /* ~ changed by cargo-mutants ~ */\n }\n \n pub fn write_atomic(path: &Path, data: &str) -> Result<(), String> {\n     write_atomic_bytes(path, data.as_bytes())\n }\n \n /// Atomic write of arbitrary bytes: a proposal patch is not guaranteed to be\n /// text and must never be round-tripped through `String`.\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "FnValue",
+    "name": "crates/flow/src/state.rs:292:5: replace guard_below_flow -> Result<(), String> with Ok(())",
+    "package": "flow",
+    "replacement": "Ok(())",
+    "span": {
+      "end": {
+        "column": 11,
+        "line": 348
+      },
+      "start": {
+        "column": 5,
+        "line": 292
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace != with == in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n+                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT == /* ~ changed by cargo-mutants ~ */ 0 // w9probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:79: replace != with == in guard_below_flow",
+    "package": "flow",
+    "replacement": "==",
+    "span": {
+      "end": {
+        "column": 81,
+        "line": 316
+      },
+      "start": {
+        "column": 79,
+        "line": 316
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace & with | in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n+                        meta.file_attributes() | /* ~ changed by cargo-mutants ~ */ FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:48: replace & with | in guard_below_flow",
+    "package": "flow",
+    "replacement": "|",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 316
+      },
+      "start": {
+        "column": 48,
+        "line": 316
+      }
+    }
+  },
+  {
+    "diff": "--- crates/flow/src/state.rs\n+++ replace & with ^ in guard_below_flow\n@@ -308,17 +308,17 @@\n         match fs::symlink_metadata(&current) {\n             Ok(meta) => {\n                 let kind = meta.file_type();\n                 let reparse = {\n                     #[cfg(windows)]\n                     {\n                         use std::os::windows::fs::MetadataExt;\n                         const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;\n-                        meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n+                        meta.file_attributes() ^ /* ~ changed by cargo-mutants ~ */ FILE_ATTRIBUTE_REPARSE_POINT != 0 // w9probe\n                     }\n                     #[cfg(not(windows))]\n                     {\n                         false\n                     }\n                 };\n                 if kind.is_symlink() || reparse {\n                     return Err(format!(\n",
+    "file": "crates/flow/src/state.rs",
+    "function": {
+      "function_name": "guard_below_flow",
+      "return_type": "-> Result<(), String>",
+      "span": {
+        "end": {
+          "column": 2,
+          "line": 349
+        },
+        "start": {
+          "column": 1,
+          "line": 283
+        }
+      }
+    },
+    "genre": "BinaryOperator",
+    "name": "crates/flow/src/state.rs:316:48: replace & with ^ in guard_below_flow",
+    "package": "flow",
+    "replacement": "^",
+    "span": {
+      "end": {
+        "column": 49,
+        "line": 316
+      },
+      "start": {
+        "column": 48,
+        "line": 316
+      }
+    }
+  }
+]

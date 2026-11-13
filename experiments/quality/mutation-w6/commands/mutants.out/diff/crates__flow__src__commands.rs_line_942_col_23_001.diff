@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace > with < in parse_tree_entries
+@@ -934,17 +934,17 @@
+         let oid = fields.next().unwrap_or("").to_string();
+         // `ls-tree -l` prints the object size, right-aligned, before the tab.
+         let size = fields
+             .next()
+             .and_then(|v| v.parse::<u64>().ok())
+             .unwrap_or(0);
+         expected.push((mode, oid, path.replace('\\', "/"), size));
+     }
+-    if expected.len() > MAX_ENTRIES {
++    if expected.len() < /* ~ changed by cargo-mutants ~ */ MAX_ENTRIES {
+         return Err(format!(
+             "tree {tree} has {} entries, above the {MAX_ENTRIES}-entry fidelity budget",
+             expected.len()
+         ));
+     }
+     Ok(expected)
+ }
+ 

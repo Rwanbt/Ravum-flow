@@ -1,0 +1,1 @@
+["version", "--obligations", "--expected-old", "help", "HEAD", "=x", "--", "0123456789abcdef0123456789abcdef", "--obligations", "--unknown"]

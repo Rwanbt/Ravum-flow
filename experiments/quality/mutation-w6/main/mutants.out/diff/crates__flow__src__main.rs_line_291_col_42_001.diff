@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace + with * in validate_flags
+@@ -283,17 +283,17 @@
+         }
+         if let Some(body) = arg.strip_prefix("--") {
+             let (name, inline_value) = match body.split_once('=') {
+                 Some((head, value)) => (format!("--{head}"), Some(value)),
+                 None => (format!("--{body}"), None),
+             };
+             if takes_value.contains(&name.as_str()) {
+                 if inline_value.is_none() {
+-                    match args.get(index + 1) {
++                    match args.get(index * /* ~ changed by cargo-mutants ~ */ 1) {
+                         None => return Err(format!("`{name}` needs a value (flow {command} ...)")),
+                         Some(value) if value.starts_with("--") => {
+                             return Err(format!(
+                                 "`{name}` needs a value, found the flag {value:?} instead"
+                             ))
+                         }
+                         Some(_) => {}
+                     }

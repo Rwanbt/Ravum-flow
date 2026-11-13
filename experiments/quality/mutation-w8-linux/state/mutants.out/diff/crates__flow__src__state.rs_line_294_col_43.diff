@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ replace == with != in guard_below_flow
+@@ -286,17 +286,17 @@
+ /// cloning with `core.symlinks=true` (the default on Linux and macOS) then makes
+ /// Flow append outside the workspace. Every write below `.flow/` therefore checks
+ /// that each existing component is a real directory and that the target is not a
+ /// link. This is a check-then-write, so it is not a defence against a *concurrent*
+ /// local attacker — that boundary is documented, and the local user is trusted.
+ fn guard_below_flow(path: &Path) -> Result<(), String> {
+     let mut anchor: Option<&Path> = None;
+     for ancestor in path.ancestors() {
+-        if ancestor.file_name().map(|n| n == ".flow").unwrap_or(false) {
++        if ancestor.file_name().map(|n| n != /* ~ changed by cargo-mutants ~ */ ".flow").unwrap_or(false) {
+             anchor = ancestor.parent();
+             break;
+         }
+     }
+     let Some(root) = anchor else {
+         return Ok(());
+     };
+     let relative = path

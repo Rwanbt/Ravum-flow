@@ -1,0 +1,53 @@
+--- crates/flow/src/main.rs
++++ delete match arm "version" | "--version" in dispatch
+@@ -79,49 +79,17 @@
+         return 2;
+     };
+     let rest = &args[1..];
+     match command {
+         "help" | "-h" | "--help" => {
+             print!("{USAGE}");
+             0
+         }
+-        "version" | "--version" => {
+-            emit(Json::obj(vec![
+-                ("status", Json::str("VERSION")),
+-                (
+-                    "tool",
+-                    Json::str(format!("flow {}", env!("CARGO_PKG_VERSION"))),
+-                ),
+-                ("policy_version", Json::str(state::POLICY_VERSION)),
+-                ("git", Json::str(gitcli::Git::new(".").version())),
+-                ("schema", Json::str(state::SCHEMA_RECEIPT)),
+-                // Every document this build can emit, so a client that discovers
+-                // schemas from `version` learns the whole contract instead of
+-                // half of it.
+-                (
+-                    "schemas",
+-                    Json::str(
+-                        [
+-                            state::SCHEMA_CONFIG,
+-                            state::SCHEMA_RECEIPT,
+-                            state::SCHEMA_JOURNAL,
+-                            state::SCHEMA_PROPOSAL,
+-                            state::SCHEMA_CANDIDATE,
+-                            state::SCHEMA_ADOPTION,
+-                            state::SCHEMA_PLAN,
+-                            state::SCHEMA_STATUS,
+-                            state::SCHEMA_PROPOSAL_LIST,
+-                        ]
+-                        .join(", "),
+-                    ),
+-                ),
+-            ]));
+-            0
+-        }
++         /* ~ changed by cargo-mutants ~ */
+         _ => {
+             let root =
+                 match gitcli::toplevel(&std::env::current_dir().unwrap_or(PathBuf::from("."))) {
+                     Ok(root) => root,
+                     Err(err) => {
+                         emit_error(&err);
+                         return 1;
+                     }

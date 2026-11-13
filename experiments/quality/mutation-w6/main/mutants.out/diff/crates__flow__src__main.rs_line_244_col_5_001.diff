@@ -1,0 +1,28 @@
+--- crates/flow/src/main.rs
++++ replace value_flags -> &'static[&'static str] with Vec::leak(vec![""])
+@@ -236,24 +236,17 @@
+         }
+     }
+ }
+ 
+ /// Flags that take a value, per command. An unknown flag, or a value flag
+ /// without a value, is a usage error: silently ignoring `--dry-run` on a program
+ /// that does not know it would publish when the operator asked for a plan.
+ fn value_flags(command: &str) -> &'static [&'static str] {
+-    match command {
+-        "run" => &["--obligation", "--obligations", "--timeout", "--candidate"],
+-        "publish" => &["--ref", "--expected-old", "--message", "--candidate"],
+-        "propose" => &["--agent", "--task", "--base", "--patch", "--key"],
+-        "assemble" => &["--proposal"],
+-        "explain" => &["--tree", "--candidate"],
+-        _ => &[],
+-    }
++    Vec::leak(vec![""]) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Boolean flags accepted by any command: output mode and help. Any other boolean
+ /// is per command, below.
+ const GLOBAL_BOOL_FLAGS: &[&str] = &["--json", "--help"];
+ 
+ /// Boolean flags that a command actually implements.
+ ///

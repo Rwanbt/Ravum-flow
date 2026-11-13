@@ -9,3 +9,77 @@
 .env
 .env.*
 !.env.example
+
+# R0 harness generated trees (rebuild with experiments/r0a/run_r0a.py)
+/experiments/r0a/work/
+
+__pycache__/
+*.pyc
+
+
+# R0-b scratch repositories and S9 generated trees (rebuildable, never committed)
+/experiments/r0b/*/scratch/
+/experiments/s9/work/
+/experiments/r0b/*/fixtures/**/.git/
+
+
+# R0-b git fixtures are rebuilt by experiments/r0b/git/run_tests.py
+/experiments/r0b/git/fixtures/
+dist/
+
+# Coverage instrumentation leaves profile data next to the binary
+*.profraw
+
+# Coverage target used by the documented measurement command (summary-*.txt)
+/wt-quality-target/
+
+# wave-6 mutation evidence: per-mutant test logs and cargo-mutants debug traces are
+# large and regenerable from the committed outcomes (rerun with --iterate).
+/experiments/quality/mutation-w6/**/log/
+/experiments/quality/mutation-w6/**/debug.log
+/experiments/quality/mutation-w6/**/mutants.out.old/
+/experiments/quality/mutation-w6/**/baseline.log
+
+# wave-7 mutation evidence: same rule as wave 6 — per-mutant logs are regenerable from the
+# committed outcomes, and an interrupted run's mutants.out.old is not evidence.
+/experiments/quality/mutation-w7/**/log/
+/experiments/quality/mutation-w7/**/debug.log
+/experiments/quality/mutation-w7/**/mutants.out.old/
+/experiments/quality/mutation-w7-linux/**/log/
+/experiments/quality/mutation-w7-linux/**/debug.log
+
+# wave-8 mutation/stability evidence: same rule as waves 6-7 — per-mutant logs and debug traces
+# are regenerable from the committed outcomes (rerun with --iterate); the stability CSV is small
+# and is committed, its per-run failure logs would not be.
+/experiments/quality/mutation-w8-linux/**/log/
+/experiments/quality/mutation-w8-linux/**/debug.log
+/experiments/quality/mutation-w8-linux/**/mutants.out.old/
+/experiments/quality/stability-w8/*.log
+
+# wave-9 mutation/stability evidence: same rule as waves 6-8. The wave-9 campaigns pin a
+# worktree at HEAD, probe one line per target mutant and commit the outcomes; the per-mutant
+# logs and the interrupted-run copies are regenerable and not evidence.
+/experiments/quality/mutation-w9-win/**/log/
+/experiments/quality/mutation-w9-win/**/debug.log
+/experiments/quality/mutation-w9-win/**/mutants.out.old/
+/experiments/quality/stability-w9/*.log
+
+# P0 adversarial harness outputs. The harness (`.py`, `.rs`, `.sh`), its README, the JSON summaries and
+# the verdict tables are committed; the compiled helper binaries, the Python cache and the multi-megabyte
+# raw dumps are local and regenerable with the commands recorded in
+# docs/reviews/FLOW-P0-GIT-FIDELITY-RECHECK.md, so they are not versioned./experiments/verify-p0/__pycache__/
+/experiments/verify-p0/*.exe
+/experiments/verify-p0/results-p0.json
+/experiments/verify-p0/results-p0-7a.json
+/experiments/verify-p0/results-p0-f5.json
+/experiments/verify-p0/results-p0-recheck.json
+/experiments/verify-p0/results-campaign-7a.json
+/experiments/verify-p0/results-campaign-f5.json
+/experiments/verify-p0/results-campaign-recheck.json
+
+# Wave-9 durability experiment: the shim is compiled by `run-durability.sh` and the three
+# disposable repositories are created by it, so neither is evidence — only the run log and the
+# fsync call logs are.
+/experiments/quality/durability-w9/repo-*/
+/experiments/quality/durability-w9/*.so
+

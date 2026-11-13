@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace + with - in assemble
+@@ -974,17 +974,17 @@
+             _ => {
+                 return Ok(refusal(
+                     "CANDIDATE_IMMUTABLE",
+                     format!("candidate {candidate_id} exists with different content: refusing to overwrite it"),
+                 ))
+             }
+         }
+     } else {
+-        state::write_atomic(&path, &(record.to_string_pretty() + "\n"))?;
++        state::write_atomic(&path, &(record.to_string_pretty() - /* ~ changed by cargo-mutants ~ */ "\n"))?;
+     }
+     Ok(record)
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 

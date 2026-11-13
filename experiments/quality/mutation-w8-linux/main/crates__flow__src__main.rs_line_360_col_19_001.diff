@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ replace += with *= in collect_values
+@@ -352,17 +352,17 @@
+     let mut out = Vec::new();
+     let mut index = 0;
+     while index < args.len() {
+         let arg = &args[index];
+         if names.contains(&arg.as_str()) {
+             if let Some(value) = args.get(index + 1) {
+                 out.push(value.clone());
+             }
+-            index += 2;
++            index *= /* ~ changed by cargo-mutants ~ */ 2;
+             continue;
+         }
+         let mut matched = false;
+         for name in names {
+             if let Some(value) = arg.strip_prefix(&format!("{name}=")) {
+                 out.push(value.to_string());
+                 matched = true;
+                 break;

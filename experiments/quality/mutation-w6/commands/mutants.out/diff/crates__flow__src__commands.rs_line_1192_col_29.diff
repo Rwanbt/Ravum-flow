@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in collect_entries
+@@ -1184,17 +1184,17 @@
+         // root entry, including one whose name merely starts with `.flow-scratch`,
+         // is an extra file.
+         if dir == root && name == ".flow-scratch-owned" {
+             continue;
+         }
+         let Ok(meta) = fs::symlink_metadata(&path) else {
+             continue;
+         };
+-        if meta.is_dir() && !meta.file_type().is_symlink() {
++        if meta.is_dir() &&  /* ~ changed by cargo-mutants ~ */meta.file_type().is_symlink() {
+             let rel = path
+                 .strip_prefix(root)
+                 .map_err(|_| format!("{} escaped the checkout", path.display()))?;
+             dirs.push(rel.to_string_lossy().replace('\\', "/"));
+             collect_entries(root, &path, files, dirs)?;
+         } else {
+             let rel = path
+                 .strip_prefix(root)

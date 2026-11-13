@@ -1,0 +1,6 @@
+crates/flow/src/main.rs:276:5: replace validate_flags -> Result<(), String> with Ok(())
+crates/flow/src/main.rs:281:19: replace += with -= in validate_flags
+crates/flow/src/main.rs:280:16: replace == with != in validate_flags
+crates/flow/src/main.rs:281:19: replace += with *= in validate_flags
+crates/flow/src/main.rs:329:15: replace += with -= in validate_flags
+crates/flow/src/main.rs:329:15: replace += with *= in validate_flags

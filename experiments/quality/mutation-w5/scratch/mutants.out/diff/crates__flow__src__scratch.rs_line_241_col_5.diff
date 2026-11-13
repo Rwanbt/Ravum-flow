@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace candidate_path -> PathBuf with Default::default()
+@@ -233,17 +233,17 @@
+ /// The next name sequence value. Exposed to the test crate so the collision
+ /// path can be exercised against the exact path the next attempt would use.
+ pub(crate) fn next_sequence() -> u64 {
+     COUNTER.fetch_add(1, Ordering::Relaxed)
+ }
+ 
+ /// The path of the `seq`-th candidate under `base` (before collision retries).
+ pub(crate) fn candidate_path(base: &Path, seq: u64) -> PathBuf {
+-    base.join(format!("{NAME_PREFIX}-{}-{seq}", std::process::id()))
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// True for a hexadecimal object id as `git worktree add` will accept it.
+ ///
+ /// Deliberately wider than [`crate::paths::is_object_id`]: Git resolves an
+ /// *abbreviated* object id, and `--candidate <short-oid>` is a documented way to
+ /// name a tree. The value still may not begin with `-` (it is hex) and never
+ /// reaches a file name, so the wider length is a convenience, not a widening of

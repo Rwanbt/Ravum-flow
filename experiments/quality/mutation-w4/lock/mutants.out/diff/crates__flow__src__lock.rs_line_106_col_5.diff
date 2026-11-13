@@ -1,0 +1,53 @@
+--- crates/flow/src/lock.rs
++++ replace inspect -> LockInfo with Default::default()
+@@ -98,49 +98,17 @@
+         pid: parts.next()?.parse().ok()?,
+         at: parts.next()?.parse().ok()?,
+         nonce: parts.next()?.to_string(),
+         purpose: parts.next().unwrap_or("unknown").to_string(),
+     })
+ }
+ 
+ pub fn inspect(root: &Path) -> LockInfo {
+-    let path = lock_path(root);
+-    let Ok(text) = fs::read_to_string(&path) else {
+-        return LockInfo {
+-            present: false,
+-            pid: None,
+-            age_s: None,
+-            purpose: String::new(),
+-            attribution: "absent",
+-        };
+-    };
+-    match parse(&text) {
+-        Some(owner) => {
+-            let attribution = match pid_alive(owner.pid) {
+-                Some(true) => "live",
+-                Some(false) => "dead",
+-                None => "unknown",
+-            };
+-            LockInfo {
+-                present: true,
+-                pid: Some(owner.pid),
+-                age_s: Some(crate::state::unix_now().saturating_sub(owner.at)),
+-                purpose: owner.purpose,
+-                attribution,
+-            }
+-        }
+-        None => LockInfo {
+-            present: true,
+-            pid: None,
+-            age_s: None,
+-            purpose: String::new(),
+-            attribution: "unparseable",
+-        },
+-    }
++    Default::default() /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[derive(Debug)]
+ pub struct LockGuard {
+     path: PathBuf,
+     nonce: String,
+ }
+ 

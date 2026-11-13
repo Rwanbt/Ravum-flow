@@ -1,0 +1,21 @@
+--- crates/flow/src/gitcli.rs
++++ replace + with * in Git::run_bounded
+@@ -126,17 +126,17 @@
+                 }
+                 Err(e) => {
+                     let _ = child.kill();
+                     reap_bounded(&mut child);
+                     return Err(format!("git {args:?} could not be waited for: {e}"));
+                 }
+             }
+         }
+-        let reader_deadline = Instant::now() + READER_GRACE; // survival-probe
++        let reader_deadline = Instant::now() * /* ~ changed by cargo-mutants ~ */ READER_GRACE; // survival-probe
+         let stdout = receive(&out_rx, reader_deadline);
+         let stderr = receive(&err_rx, reader_deadline);
+         if timed_out {
+             return Err(format!(
+                 "GIT_TIMEOUT: git {args:?} exceeded {GIT_TIMEOUT_S}s and was killed; its output is incomplete"
+             ));
+         }
+         if stdout.truncated {

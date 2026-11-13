@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in assemble
+@@ -848,17 +848,17 @@
+                 ))
+             }
+         }
+     }
+     let base = proposals[0].base_commit.clone();
+     let base_tree = proposals[0].base_tree.clone();
+     let mismatched: Vec<String> = proposals
+         .iter()
+-        .filter(|p| p.base_commit != base)
++        .filter(|p| p.base_commit == /* ~ changed by cargo-mutants ~ */ base)
+         .map(|p| format!("{}@{}", p.proposal_id, p.base_commit))
+         .collect();
+     if !mismatched.is_empty() {
+         return Ok(refusal(
+             "BASE_MISMATCH",
+             format!(
+                 "every proposal in one candidate must share base {base}; these do not: {}",
+                 mismatched.join(", ")

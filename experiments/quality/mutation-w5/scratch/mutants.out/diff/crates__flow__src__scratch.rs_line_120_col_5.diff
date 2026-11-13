@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace materialise -> Result<Scratch, String> with Ok(Default::default())
+@@ -112,17 +112,17 @@
+ 
+ /// Materialise `commit`'s tree in a NEW unique directory outside the repository.
+ ///
+ /// The directory is `std::env::temp_dir()`-based; it is refused if it resolves
+ /// inside `repo_root`. The returned [`Scratch`] owns the directory and removes
+ /// it on drop; see the module documentation for the limits of what removing
+ /// `.git` achieves.
+ pub fn materialise(git: &Git, commit: &str, repo_root: &Path) -> Result<Scratch, String> {
+-    materialise_in(&std::env::temp_dir(), git, commit, repo_root)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Implementation with an injectable base directory, so the boundary and
+ /// collision paths are testable without changing the process environment.
+ pub(crate) fn materialise_in(
+     base: &Path,
+     git: &Git,
+     commit: &str,

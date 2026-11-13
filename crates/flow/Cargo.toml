@@ -1,0 +1,13 @@
+[package]
+name = "flow"
+version = "0.2.0-rc.1"
+edition = "2021"
+rust-version = "1.95"
+description = "Ravum Flow — minimal verified-tree receipt CLI (no dependencies)"
+license = "MPL-2.0"
+
+[[bin]]
+name = "flow"
+path = "src/main.rs"
+
+[dependencies]

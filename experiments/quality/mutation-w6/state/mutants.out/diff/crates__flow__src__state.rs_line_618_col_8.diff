@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in save_receipt
+@@ -610,17 +610,17 @@
+ pub fn save_receipt(root: &Path, receipt: &Json) -> Result<PathBuf, String> {
+     let tree = receipt
+         .get("tree_oid")
+         .and_then(Json::as_str)
+         .ok_or("receipt without tree_oid")?;
+     // The tree id becomes a file name here too: a receipt is loaded from disk as
+     // well as written, and a hand-edited or foreign one must never choose where
+     // the next write lands.
+-    if !crate::paths::is_object_id(tree) {
++    if  /* ~ changed by cargo-mutants ~ */crate::paths::is_object_id(tree) {
+         return Err(format!(
+             "INVALID_TREE_ID: receipt tree_oid {tree:?} is not a 40- or 64-character hex object id"
+         ));
+     }
+     let mode = receipt
+         .get("verification_scope")
+         .and_then(|s| s.get("mode"))
+         .and_then(Json::as_str)

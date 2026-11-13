@@ -1,0 +1,26 @@
+--- crates/flow/src/proposal.rs
++++ replace Change::to_json -> Json with Default::default()
+@@ -56,22 +56,17 @@
+     pub path: String,
+     pub old_mode: String,
+     pub new_mode: String,
+     pub new_oid: String,
+ }
+ 
+ impl Change {
+     pub fn to_json(&self) -> Json {
+-        Json::obj(vec![
+-            ("path", Json::str(self.path.clone())),
+-            ("status", Json::str(self.status.clone())),
+-            ("old_mode", Json::str(self.old_mode.clone())),
+-            ("new_mode", Json::str(self.new_mode.clone())),
+-        ])
++        Default::default() /* ~ changed by cargo-mutants ~ */
+     }
+ }
+ 
+ #[derive(Debug, Clone)]
+ pub struct Proposal {
+     pub proposal_id: String,
+     pub agent_id: String,
+     pub task_id: String,

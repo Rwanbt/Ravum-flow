@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace += with *= in Parser<'a>::string
+@@ -265,17 +265,17 @@
+                 }
+                 _ => return Err(format!("expected ',' or ']' at {}", self.pos)),
+             }
+         }
+         Ok(Json::Arr(items))
+     }
+ 
+     fn string(&mut self) -> Result<String, String> {
+-        self.pos += 1; // opening quote
++        self.pos *= /* ~ changed by cargo-mutants ~ */ 1; // opening quote
+         let mut out = String::new();
+         loop {
+             let b = self.peek().ok_or("unterminated string")?;
+             self.pos += 1;
+             match b {
+                 b'"' => return Ok(out),
+                 b'\\' => {
+                     let esc = self.peek().ok_or("unterminated escape")?;

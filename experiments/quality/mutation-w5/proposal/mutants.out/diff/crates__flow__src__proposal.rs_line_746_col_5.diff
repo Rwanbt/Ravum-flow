@@ -1,0 +1,25 @@
+--- crates/flow/src/proposal.rs
++++ replace apply_patch -> Result<crate::gitcli::Output, String> with Ok(Default::default())
+@@ -738,21 +738,17 @@
+     )?;
+     Ok(record)
+ }
+ 
+ // --------------------------------------------------------------- assembly
+ 
+ /// Apply one stored patch to the temporary index.
+ fn apply_patch(git: &Git, index: &Path, patch: &[u8]) -> Result<crate::gitcli::Output, String> {
+-    git.run_bounded(
+-        &["apply", "--cached", "--binary", "--whitespace=nowarn", "-"],
+-        Some(patch),
+-        Some(index),
+-    )
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn classify_apply_failure(stderr: &str) -> &'static str {
+     let text = stderr.to_lowercase();
+     if text.contains("already exists") || text.contains("does not exist") {
+         "PATH_CONFLICT"
+     } else if text.contains("does not match index") || text.contains("does not apply") {
+         "HUNK_CONFLICT"

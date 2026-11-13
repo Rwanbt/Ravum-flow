@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace match guard !meta.file_type().is_symlink() with false in verify_checkout_fidelity
+@@ -865,17 +865,17 @@
+     }
+ 
+     // And each entry must have the type the tree declares.
+     for (mode, _, path, _) in &expected {
+         let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+         let meta = fs::symlink_metadata(&full)
+             .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+         match mode.as_str() {
+-            "120000" if !meta.file_type().is_symlink() => { // survival-probe
++            "120000" if false /* ~ changed by cargo-mutants ~ */ => { // survival-probe
+                 return Err(format!(
+                     "tree {tree} entry {path:?} is a symlink but was checked out as a regular file (core.symlinks=false): refusing to certify it"
+                 ));
+             }
+             "100644" | "100755" if !meta.is_file() => { // survival-probe
+                 return Err(format!(
+                     "tree {tree} entry {path:?} (mode {mode}) was not checked out as a regular file"
+                 ));

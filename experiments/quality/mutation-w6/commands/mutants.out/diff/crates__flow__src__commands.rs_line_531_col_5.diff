@@ -1,0 +1,168 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_status -> Result<Json, String> with Ok(Default::default())
+@@ -523,164 +523,17 @@
+             }
+         }
+     }
+     false
+ }
+ 
+ // ----------------------------------------------------------------- status
+ pub fn cmd_status(root: &Path) -> Result<Json, String> {
+-    let git = Git::new(root);
+-    let head = git.head_oid().unwrap_or_default();
+-    let tree = git.head_tree().unwrap_or_default();
+-    let branch = git
+-        .run(&["symbolic-ref", "--short", "-q", "HEAD"])
+-        .map(|o| o.stdout.trim().to_string())
+-        .unwrap_or_default();
+-    let status = git.status_porcelain()?;
+-    let dirty = status.iter().filter(|l| !l.starts_with("??")).count();
+-    let untracked = status.iter().filter(|l| l.starts_with("??")).count();
+-    let config = state::load_config(root).ok();
+-    let disabled = config.as_ref().map(|c| c.disabled).unwrap_or(false);
+-    let obligations = config.as_ref().map(|c| c.obligations.len()).unwrap_or(0);
+-
+-    let mut latest = Json::Null;
+-    if let Ok(entries) = fs::read_dir(state::receipts_dir(root)) {
+-        let mut files: Vec<PathBuf> = entries
+-            .flatten()
+-            .map(|e| e.path())
+-            .filter(|p| p.extension().map(|e| e == "json").unwrap_or(false))
+-            .collect();
+-        files.sort();
+-        if let Some(last) = files.last() {
+-            if let Ok(text) = fs::read_to_string(last) {
+-                if let Ok(value) = json::parse(&text) {
+-                    // A receipt whose content does not match its integrity digest
+-                    // is not evidence. It is shown for inspection, never as PASSED.
+-                    let trust = match state::verify_receipt_integrity(&value) {
+-                        Ok(()) => "INTEGRITY_OK",
+-                        Err(_) => "RECEIPT_INTEGRITY_INVALID",
+-                    };
+-                    let displayed_status = if trust == "INTEGRITY_OK" {
+-                        value.get("status").cloned().unwrap_or(Json::Null)
+-                    } else {
+-                        Json::str("RECEIPT_INTEGRITY_INVALID")
+-                    };
+-                    let logs: Vec<String> = value
+-                        .get("logs")
+-                        .and_then(Json::as_arr)
+-                        .map(|items| {
+-                            items
+-                                .iter()
+-                                .filter_map(|v| v.as_str().map(str::to_string))
+-                                .collect()
+-                        })
+-                        .unwrap_or_default();
+-                    let missing: Vec<String> = logs
+-                        .iter()
+-                        .filter(|rel| !root.join(rel.as_str()).is_file())
+-                        .cloned()
+-                        .collect();
+-                    latest = Json::obj(vec![
+-                        (
+-                            "tree_oid",
+-                            value.get("tree_oid").cloned().unwrap_or(Json::Null),
+-                        ),
+-                        ("status", displayed_status),
+-                        ("trust", Json::str(trust)),
+-                        (
+-                            "evidence_complete",
+-                            Json::Bool(trust == "INTEGRITY_OK" && missing.is_empty()),
+-                        ),
+-                        (
+-                            "missing_logs",
+-                            Json::Arr(missing.into_iter().map(Json::str).collect()),
+-                        ),
+-                        (
+-                            "scope",
+-                            value
+-                                .get("verification_scope")
+-                                .and_then(|s| s.get("mode"))
+-                                .cloned()
+-                                .unwrap_or(Json::Null),
+-                        ),
+-                        (
+-                            "context_id",
+-                            value.get("context_id").cloned().unwrap_or(Json::Null),
+-                        ),
+-                        (
+-                            "finished_at",
+-                            value.get("finished_at").cloned().unwrap_or(Json::Null),
+-                        ),
+-                    ]);
+-                }
+-            }
+-        }
+-    }
+-    // An unreadable journal must not be reported as "nothing pending".
+-    let pending = pending_intents(root)?.len();
+-
+-    // Which policy this working copy believes it is running, and who approved it.
+-    let policy = match (&config, state::load_adoption(root)) {
+-        (Some(config), Ok(adoption)) => {
+-            let digest = policy_digest(&effective_policy(config, &config.obligations));
+-            Json::obj(vec![
+-                (
+-                    "path",
+-                    Json::str(state::config_path(root).to_string_lossy().to_string()),
+-                ),
+-                ("policy_version", Json::str(config.policy_version.clone())),
+-                ("digest", Json::str(digest.clone())),
+-                ("obligations", Json::Num(config.obligations.len() as f64)),
+-                (
+-                    "adopted",
+-                    Json::Bool(
+-                        adoption
+-                            .as_ref()
+-                            .map(|a| a.policy_digest == digest)
+-                            .unwrap_or(false),
+-                    ),
+-                ),
+-                (
+-                    "adopted_at",
+-                    adoption
+-                        .as_ref()
+-                        .map(|a| Json::str(a.approved_at.clone()))
+-                        .unwrap_or(Json::Null),
+-                ),
+-                (
+-                    "adoption_source",
+-                    adoption
+-                        .as_ref()
+-                        .map(|a| Json::str(a.source.clone()))
+-                        .unwrap_or(Json::Null),
+-                ),
+-            ])
+-        }
+-        (Some(_), Err(e)) => Json::obj(vec![("error", Json::str(e))]),
+-        (None, _) => Json::Null,
+-    };
+-    Ok(Json::obj(vec![
+-        ("status", Json::str("REPORT")),
+-        ("schema", Json::str(crate::state::SCHEMA_STATUS)),
+-        ("policy", policy),
+-        ("branch", Json::str(branch)),
+-        ("head", Json::str(head)),
+-        ("tree", Json::str(tree)),
+-        ("dirty_count", Json::Num(dirty as f64)),
+-        ("untracked_count", Json::Num(untracked as f64)),
+-        ("obligations_declared", Json::Num(obligations as f64)),
+-        ("disabled", Json::Bool(disabled)),
+-        ("latest_receipt", latest),
+-        ("pending_intents", Json::Num(pending as f64)),
+-        (
+-            "hint",
+-            Json::str("`flow run` verifies the INDEX tree (git add first); the worktree is never modified"),
+-        ),
+-    ]))
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ------------------------------------------------------- policy identity
+ fn obligation_json(o: &Obligation) -> Json {
+     Json::obj(vec![
+         ("id", Json::str(o.id.clone())),
+         ("program", Json::str(o.program.clone())),
+         (

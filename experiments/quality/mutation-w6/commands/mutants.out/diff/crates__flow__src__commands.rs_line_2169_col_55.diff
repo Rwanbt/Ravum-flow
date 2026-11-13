@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_reconcile
+@@ -2161,17 +2161,17 @@
+     };
+ 
+     let occurrences = count_by_id(&records, "intent");
+     let outcome_counts = count_by_id(&records, "outcome");
+ 
+     let mut resolved: Vec<Json> = Vec::new();
+     let mut needs_human = false;
+     for intent in &records {
+-        if intent.get("event").and_then(Json::as_str) != Some("intent") {
++        if intent.get("event").and_then(Json::as_str) == /* ~ changed by cargo-mutants ~ */ Some("intent") {
+             continue;
+         }
+         let id = intent
+             .get("id")
+             .and_then(Json::as_str)
+             .unwrap_or("")
+             .to_string();
+         let intents_for_id = occurrences.get(&id).copied().unwrap_or(0);

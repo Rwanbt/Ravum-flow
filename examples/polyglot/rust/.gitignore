@@ -1,0 +1,3 @@
+# Build output of the fixture crate. Flow always builds the materialised copy in
+# a throwaway directory, so this only matters when a reader runs cargo in place.
+/target/

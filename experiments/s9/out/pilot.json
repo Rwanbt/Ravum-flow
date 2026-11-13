@@ -1,0 +1,942 @@
+{
+  "schema": "flow-s9-pilot/1",
+  "kind": "EXPLORATORY_PILOT",
+  "confirmatory": false,
+  "started_at": "2026-11-09T17:25:28Z",
+  "fixture": {
+    "path": "experiments/s9/work/base",
+    "sha": "b04b0b92f64a90334f21f1e2de7cde6399b51fdd",
+    "agents": 3,
+    "think_ms": 0
+  },
+  "os": "win32",
+  "tools": {
+    "git": "git version 2.51.1.windows.1",
+    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "jj": "NOT_AVAILABLE",
+    "gitbutler": "NOT_AVAILABLE",
+    "scion": "NOT_AVAILABLE"
+  },
+  "arms": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "calibration_runs": 2,
+  "records": [
+    {
+      "arm": "D",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.7344,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4828
+      },
+      "t_verified_s": 2.2172,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.7515,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.5157
+      },
+      "t_verified_s": 2.2672,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "E",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.2669,
+        "t_work": 0.4536,
+        "t_verify": 1.8926,
+        "t_integrate": 0.3662,
+        "t_final_verify": 0.5554,
+        "t_cleanup": 0.1328
+      },
+      "t_verified_s": 3.5347,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "A",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.7653,
+        "t_work": 0.3347,
+        "t_verify": 1.6816,
+        "t_integrate": 0.907,
+        "t_final_verify": 0.6306
+      },
+      "t_verified_s": 4.3193,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "B",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.3916,
+        "t_work": 0.6534,
+        "t_verify": 1.5353,
+        "t_integrate": 0.2813,
+        "t_final_verify": 0.4959,
+        "t_cleanup": 0.1252
+      },
+      "t_verified_s": 3.3574,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "A",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.6408,
+        "t_work": 0.3325,
+        "t_verify": 1.4279,
+        "t_integrate": 0.7466,
+        "t_final_verify": 0.4973
+      },
+      "t_verified_s": 3.6452,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.7847,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4995
+      },
+      "t_verified_s": 2.2842,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "D",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 2.2649,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.732
+      },
+      "t_verified_s": 2.9969,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "B",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.3867,
+        "t_work": 0.6649,
+        "t_verify": 1.5604,
+        "t_integrate": 0.3015,
+        "t_final_verify": 0.5251,
+        "t_cleanup": 0.1162
+      },
+      "t_verified_s": 3.4386,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "E",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.2843,
+        "t_work": 0.4796,
+        "t_verify": 1.8807,
+        "t_integrate": 0.2744,
+        "t_final_verify": 0.4657,
+        "t_cleanup": 0.1464
+      },
+      "t_verified_s": 3.3847,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": true
+    },
+    {
+      "arm": "C",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.6799,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4703
+      },
+      "t_verified_s": 2.1502,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.7129,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4795
+      },
+      "t_verified_s": 2.1924,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.2455,
+        "t_work": 0.3959,
+        "t_verify": 1.4753,
+        "t_integrate": 0.2299,
+        "t_final_verify": 0.4394,
+        "t_cleanup": 0.1349
+      },
+      "t_verified_s": 2.786,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.6199,
+        "t_work": 0.2965,
+        "t_verify": 1.4107,
+        "t_integrate": 0.7066,
+        "t_final_verify": 0.4727
+      },
+      "t_verified_s": 3.5064,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.2251,
+        "t_work": 0.4037,
+        "t_verify": 1.3226,
+        "t_integrate": 0.2653,
+        "t_final_verify": 0.4453,
+        "t_cleanup": 0.1041
+      },
+      "t_verified_s": 2.662,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.5311,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4725
+      },
+      "t_verified_s": 2.0036,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.2252,
+        "t_work": 0.3988,
+        "t_verify": 1.4613,
+        "t_integrate": 0.2373,
+        "t_final_verify": 0.4455,
+        "t_cleanup": 0.1078
+      },
+      "t_verified_s": 2.7681,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.6377,
+        "t_work": 0.2706,
+        "t_verify": 1.4002,
+        "t_integrate": 0.6875,
+        "t_final_verify": 0.4452
+      },
+      "t_verified_s": 3.4412,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.5831,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4787
+      },
+      "t_verified_s": 2.0618,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.2307,
+        "t_work": 0.4076,
+        "t_verify": 1.3631,
+        "t_integrate": 0.2574,
+        "t_final_verify": 0.4426,
+        "t_cleanup": 0.1036
+      },
+      "t_verified_s": 2.7014,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.6982,
+        "t_work": 0.2626,
+        "t_verify": 1.4082,
+        "t_integrate": 0.7069,
+        "t_final_verify": 0.4421
+      },
+      "t_verified_s": 3.518,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.268,
+        "t_work": 0.3586,
+        "t_verify": 1.4768,
+        "t_integrate": 0.2613,
+        "t_final_verify": 0.4398,
+        "t_cleanup": 0.1006
+      },
+      "t_verified_s": 2.8045,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.5492,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4306
+      },
+      "t_verified_s": 1.9798,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.5374,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4425
+      },
+      "t_verified_s": 1.9799,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.2231,
+        "t_work": 0.3883,
+        "t_verify": 1.3824,
+        "t_integrate": 0.2313,
+        "t_final_verify": 0.4527,
+        "t_cleanup": 0.137
+      },
+      "t_verified_s": 2.6778,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.6548,
+        "t_work": 0.315,
+        "t_verify": 1.3935,
+        "t_integrate": 0.7126,
+        "t_final_verify": 0.4681
+      },
+      "t_verified_s": 3.544,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.6467,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4406
+      },
+      "t_verified_s": 2.0874,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.2558,
+        "t_work": 0.357,
+        "t_verify": 1.4711,
+        "t_integrate": 0.2282,
+        "t_final_verify": 0.4732,
+        "t_cleanup": 0.1062
+      },
+      "t_verified_s": 2.7853,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.6609,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4252
+      },
+      "t_verified_s": 2.0861,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.2262,
+        "t_work": 0.3727,
+        "t_verify": 1.3385,
+        "t_integrate": 0.2231,
+        "t_final_verify": 0.4752,
+        "t_cleanup": 0.1024
+      },
+      "t_verified_s": 2.6357,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.2222,
+        "t_work": 0.4553,
+        "t_verify": 1.4848,
+        "t_integrate": 0.2308,
+        "t_final_verify": 0.4395,
+        "t_cleanup": 0.1008
+      },
+      "t_verified_s": 2.8326,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "A",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.6958,
+        "t_work": 0.298,
+        "t_verify": 1.3969,
+        "t_integrate": 0.7259,
+        "t_final_verify": 0.4988
+      },
+      "t_verified_s": 3.6156,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "C",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.6328,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.445
+      },
+      "t_verified_s": 2.0778,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "D",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.0,
+        "t_work": 1.6869,
+        "t_verify": 0.0,
+        "t_integrate": 0.0,
+        "t_final_verify": 0.4738
+      },
+      "t_verified_s": 2.1607,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "B",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.2394,
+        "t_work": 0.4132,
+        "t_verify": 1.3678,
+        "t_integrate": 0.2692,
+        "t_final_verify": 0.4556,
+        "t_cleanup": 0.1057
+      },
+      "t_verified_s": 2.7453,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "verify_rc": [
+        0,
+        0,
+        0
+      ],
+      "final_rc": 0,
+      "calibration": false
+    }
+  ],
+  "summary": {
+    "per_arm": {
+      "A": {
+        "n": 5,
+        "median_s": 3.518,
+        "min_s": 3.4412,
+        "max_s": 3.6156,
+        "mean_s": 3.525
+      },
+      "B": {
+        "n": 5,
+        "median_s": 2.6778,
+        "min_s": 2.6357,
+        "max_s": 2.7453,
+        "mean_s": 2.6844
+      },
+      "C": {
+        "n": 5,
+        "median_s": 2.0778,
+        "min_s": 1.9799,
+        "max_s": 2.1502,
+        "mean_s": 2.0595
+      },
+      "D": {
+        "n": 5,
+        "median_s": 2.0874,
+        "min_s": 1.9798,
+        "max_s": 2.1924,
+        "mean_s": 2.0964
+      },
+      "E": {
+        "n": 5,
+        "median_s": 2.786,
+        "min_s": 2.7681,
+        "max_s": 2.8326,
+        "mean_s": 2.7953
+      }
+    },
+    "pairs": {
+      "A-B": {
+        "n": 5,
+        "median_diff_s": 0.8444,
+        "median_ratio": 1.317,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "A-C": {
+        "n": 5,
+        "median_diff_s": 1.4579,
+        "median_ratio": 1.7175,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "A-D": {
+        "n": 5,
+        "median_diff_s": 1.4549,
+        "median_ratio": 1.6733,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "A-E": {
+        "n": 5,
+        "median_diff_s": 0.7204,
+        "median_ratio": 1.2586,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "B-C": {
+        "n": 5,
+        "median_diff_s": 0.6675,
+        "median_ratio": 1.3213,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "B-D": {
+        "n": 5,
+        "median_diff_s": 0.5846,
+        "median_ratio": 1.2706,
+        "a_slower_wins": 5,
+        "one_sided_sign_p": 0.03125,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "B-E": {
+        "n": 5,
+        "median_diff_s": -0.124,
+        "median_ratio": 0.9555,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "C-D": {
+        "n": 5,
+        "median_diff_s": -0.0422,
+        "median_ratio": 0.9808,
+        "a_slower_wins": 1,
+        "one_sided_sign_p": 0.96875,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "C-E": {
+        "n": 5,
+        "median_diff_s": -0.7548,
+        "median_ratio": 0.7335,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      },
+      "D-E": {
+        "n": 5,
+        "median_diff_s": -0.6979,
+        "median_ratio": 0.7494,
+        "a_slower_wins": 0,
+        "one_sided_sign_p": 1.0,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      }
+    }
+  },
+  "limitations": [
+    "agent thinking time is a constant (default 0 ms): LLM latency is out of scope",
+    "single machine, 16 GB, warm cargo cache inside the campaign",
+    "arms are run sequentially; CPU/RAM contention between concurrent agents is not measured",
+    "no arm F/G: no existing tool installed and no Flow prototype exists",
+    "n is exploratory; no p95, no confirmatory claim, no ranking"
+  ]
+}

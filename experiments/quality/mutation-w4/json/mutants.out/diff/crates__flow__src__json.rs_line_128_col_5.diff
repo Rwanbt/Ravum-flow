@@ -1,0 +1,26 @@
+--- crates/flow/src/json.rs
++++ replace newline with ()
+@@ -120,22 +120,17 @@
+                 newline(out, indent, level);
+                 out.push('}');
+             }
+         }
+     }
+ }
+ 
+ fn newline(out: &mut String, indent: Option<usize>, level: usize) {
+-    if let Some(width) = indent {
+-        out.push('\n');
+-        for _ in 0..width * level {
+-            out.push(' ');
+-        }
+-    }
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ fn write_string(out: &mut String, s: &str) {
+     out.push('"');
+     for ch in s.chars() {
+         match ch {
+             '"' => out.push_str("\\\""),
+             '\\' => out.push_str("\\\\"),

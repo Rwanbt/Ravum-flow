@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_run
+@@ -1254,17 +1254,17 @@
+         },
+     };
+ 
+     let selection: Option<Vec<Obligation>> = match &only {
+         None => None,
+         Some(ids) => {
+             let mut seen: BTreeSet<&str> = BTreeSet::new();
+             for id in ids {
+-                if !seen.insert(id.as_str()) {
++                if  /* ~ changed by cargo-mutants ~ */seen.insert(id.as_str()) {
+                     return Ok(refused_code(
+                         "DUPLICATE_OBLIGATION_ID",
+                         format!(
+                             "obligation {id:?} is requested more than once: a selection is a set"
+                         ),
+                     ));
+                 }
+                 if !effective.iter().any(|o| &o.id == id) {

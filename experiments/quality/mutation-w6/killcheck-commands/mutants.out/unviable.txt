@@ -1,0 +1,7 @@
+crates/flow/src/commands.rs:217:5: replace adoption_gate -> Result<Option<Json>, String> with Ok(Some(Default::default()))
+crates/flow/src/commands.rs:531:5: replace cmd_status -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:1213:5: replace cmd_run -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:1546:5: replace cmd_publish -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:2100:5: replace pending_intents -> Result<Vec<Json>, String> with Ok(vec![Default::default()])
+crates/flow/src/commands.rs:2153:5: replace cmd_reconcile -> Result<Json, String> with Ok(Default::default())
+crates/flow/src/commands.rs:2289:5: replace cmd_explain -> Result<Json, String> with Ok(Default::default())

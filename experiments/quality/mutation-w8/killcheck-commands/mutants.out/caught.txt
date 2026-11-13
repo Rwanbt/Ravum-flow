@@ -1,0 +1,2 @@
+crates/flow/src/commands.rs:357:26: replace && with || in cmd_doctor
+crates/flow/src/commands.rs:357:39: replace != with == in cmd_doctor

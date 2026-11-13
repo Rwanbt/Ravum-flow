@@ -1,0 +1,21 @@
+--- crates/flow/src/state.rs
++++ delete ! in Receipt::load
+@@ -484,17 +484,17 @@
+ 
+ impl Receipt {
+     /// Load the **complete** receipt for `tree_oid`.
+     ///
+     /// Selected (partial) executions are written to a different file, so a
+     /// partial run can never be mistaken for — or overwrite — a complete proof.
+     pub fn load(root: &Path, tree_oid: &str) -> Result<Option<Receipt>, String> {
+         // The tree id becomes a file name. It must be an object id, never a path.
+-        if !crate::paths::is_object_id(tree_oid) {
++        if  /* ~ changed by cargo-mutants ~ */crate::paths::is_object_id(tree_oid) {
+             return Err(format!(
+                 "INVALID_TREE_ID: {tree_oid:?} is not a 40- or 64-character hex object id, so it cannot name a receipt"
+             ));
+         }
+         let path = receipt_path(root, tree_oid);
+         if !path.exists() {
+             return Ok(None);
+         }

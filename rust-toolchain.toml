@@ -1,0 +1,9 @@
+# The compiler is part of the contract this project certifies with: a receipt
+# produced by one rustc is not automatically the one another rustc produces, and
+# `cargo fmt`/`clippy` output moves between releases. The channel is pinned for
+# every checkout, and CI names the same version, so "Rust 1.95" is a fact about
+# the repository rather than a sentence in the README.
+[toolchain]
+channel = "1.95.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

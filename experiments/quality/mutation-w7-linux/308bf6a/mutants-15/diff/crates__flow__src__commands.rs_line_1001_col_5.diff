@@ -1,0 +1,44 @@
+--- crates/flow/src/commands.rs
++++ replace verify_checkout_modes -> Result<(), String> with Ok(())
+@@ -993,40 +993,17 @@
+ /// mode) changes what an obligation *executes*, without touching a byte the
+ /// content comparison can see. Windows does not represent the bit and is not
+ /// checked; that limit is documented.
+ fn verify_checkout_modes( // w7probe
+     scratch: &Path,
+     tree: &str,
+     expected: &[(String, String, String, u64)],
+ ) -> Result<(), String> {
+-    #[cfg(unix)]
+-    {
+-        use std::os::unix::fs::PermissionsExt;
+-        for (mode, _, path, _) in expected {
+-            if mode != "100644" && mode != "100755" { // w7probe
+-                continue;
+-            }
+-            let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+-            let meta = fs::symlink_metadata(&full)
+-                .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+-            let executable = meta.permissions().mode() & 0o111 != 0; // w7probe
+-            if executable != (mode == "100755") { // w7probe
+-                return Err(format!(
+-                    "tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree",
+-                    if executable { "executable" } else { "non-executable" }
+-                ));
+-            }
+-        }
+-    }
+-    #[cfg(not(unix))]
+-    {
+-        let _ = (scratch, tree, expected);
+-    }
+-    Ok(())
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Prove the declared content did not change while the obligations ran.
+ ///
+ /// The fidelity check happens *before* the first obligation. A `post-checkout`
+ /// hook can spawn a writer that changes a file later, and an obligation can
+ /// rewrite its own input; both would make the receipt claim that the tree passed
+ /// while the obligations saw something else. Re-running the same byte and mode

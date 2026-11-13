@@ -1,0 +1,25 @@
+--- crates/flow/src/json.rs
++++ replace Parser<'a>::ws with ()
+@@ -166,21 +166,17 @@
+ 
+ struct Parser<'a> {
+     bytes: &'a [u8],
+     pos: usize,
+ }
+ 
+ impl<'a> Parser<'a> {
+     fn ws(&mut self) {
+-        while self.pos < self.bytes.len()
+-            && matches!(self.bytes[self.pos], b' ' | b'\t' | b'\n' | b'\r')
+-        {
+-            self.pos += 1;
+-        }
++        () /* ~ changed by cargo-mutants ~ */
+     }
+ 
+     fn peek(&self) -> Option<u8> {
+         self.bytes.get(self.pos).copied()
+     }
+ 
+     fn value(&mut self) -> Result<Json, String> {
+         match self.peek() {

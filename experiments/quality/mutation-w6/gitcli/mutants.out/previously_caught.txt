@@ -1,0 +1,70 @@
+crates/flow/src/gitcli.rs:79:16: delete ! in Git::run_bounded
+crates/flow/src/gitcli.rs:108:32: replace + with - in Git::run_bounded
+crates/flow/src/gitcli.rs:118:39: replace >= with < in Git::run_bounded
+crates/flow/src/gitcli.rs:161:9: replace Git::capture -> Result<String, String> with Ok(String::new())
+crates/flow/src/gitcli.rs:161:9: replace Git::capture -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/gitcli.rs:162:23: replace != with == in Git::capture
+crates/flow/src/gitcli.rs:173:9: replace Git::head_oid -> Result<String, String> with Ok(String::new())
+crates/flow/src/gitcli.rs:173:9: replace Git::head_oid -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/gitcli.rs:181:9: replace Git::write_tree -> Result<String, String> with Ok(String::new())
+crates/flow/src/gitcli.rs:181:9: replace Git::write_tree -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/gitcli.rs:185:9: replace Git::commit_tree -> Result<String, String> with Ok(String::new())
+crates/flow/src/gitcli.rs:185:9: replace Git::commit_tree -> Result<String, String> with Ok("xyzzy".into())
+crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(None)
+crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(Some(String::new()))
+crates/flow/src/gitcli.rs:193:9: replace Git::show_ref -> Result<Option<String>, String> with Ok(Some("xyzzy".into()))
+crates/flow/src/gitcli.rs:194:23: replace == with != in Git::show_ref
+crates/flow/src/gitcli.rs:202:9: replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec![String::new()])
+crates/flow/src/gitcli.rs:202:9: replace Git::status_porcelain -> Result<Vec<String>, String> with Ok(vec!["xyzzy".into()])
+crates/flow/src/gitcli.rs:219:5: replace toplevel -> Result<PathBuf, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:221:19: replace != with == in toplevel
+crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(Vec::new())
+crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(vec![""])
+crates/flow/src/gitcli.rs:312:5: replace env_allowlist -> &'static[&'static str] with Vec::leak(vec!["xyzzy"])
+crates/flow/src/gitcli.rs:329:5: replace scrub_env with ()
+crates/flow/src/gitcli.rs:332:13: replace || with && in scrub_env
+crates/flow/src/gitcli.rs:346:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![(Default::default(), Default::default())]
+crates/flow/src/gitcli.rs:346:5: replace allowed_env -> Vec<(OsString, OsString)> with vec![]
+crates/flow/src/gitcli.rs:388:42: replace * with /
+crates/flow/src/gitcli.rs:417:51: replace * with /
+crates/flow/src/gitcli.rs:417:44: replace * with /
+crates/flow/src/gitcli.rs:428:5: replace read_capped_at -> Captured with Default::default()
+crates/flow/src/gitcli.rs:445:23: replace match guard e.kind() == std::io::ErrorKind::Interrupted with false in read_capped_at
+crates/flow/src/gitcli.rs:435:25: replace == with != in read_capped_at
+crates/flow/src/gitcli.rs:441:25: replace < with == in read_capped_at
+crates/flow/src/gitcli.rs:441:25: replace < with <= in read_capped_at
+crates/flow/src/gitcli.rs:445:32: replace == with != in read_capped_at
+crates/flow/src/gitcli.rs:473:5: replace finish -> (String, bool) with (String::new(), true)
+crates/flow/src/gitcli.rs:473:5: replace finish -> (String, bool) with (String::new(), false)
+crates/flow/src/gitcli.rs:473:5: replace finish -> (String, bool) with ("xyzzy".into(), true)
+crates/flow/src/gitcli.rs:473:5: replace finish -> (String, bool) with ("xyzzy".into(), false)
+crates/flow/src/gitcli.rs:483:5: replace receive -> Captured with Default::default()
+crates/flow/src/gitcli.rs:515:5: replace resolve_program -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:531:5: replace resolve_program_in -> Option<PathBuf> with None
+crates/flow/src/gitcli.rs:531:5: replace resolve_program_in -> Option<PathBuf> with Some(Default::default())
+crates/flow/src/gitcli.rs:535:21: delete ! in resolve_program_in
+crates/flow/src/gitcli.rs:615:38: replace > with < in run_obligation
+crates/flow/src/gitcli.rs:638:20: replace == with != in run_obligation
+crates/flow/src/gitcli.rs:615:38: replace > with == in run_obligation
+crates/flow/src/gitcli.rs:719:5: replace redact -> String with String::new()
+crates/flow/src/gitcli.rs:719:5: replace redact -> String with "xyzzy".into()
+crates/flow/src/gitcli.rs:741:45: replace && with || in redact
+crates/flow/src/gitcli.rs:741:25: replace && with || in redact
+crates/flow/src/gitcli.rs:40:9: replace Git::base -> Command with Default::default()
+crates/flow/src/gitcli.rs:69:9: replace Git::run_bounded -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:44:9: replace Git::run -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:108:32: replace + with * in Git::run_bounded
+crates/flow/src/gitcli.rs:134:46: replace + with * in Git::run_bounded
+crates/flow/src/gitcli.rs:189:9: replace Git::update_ref -> Result<Output, String> with Ok(Default::default())
+crates/flow/src/gitcli.rs:318:5: replace git_command -> Command with Default::default()
+crates/flow/src/gitcli.rs:456:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new()
+crates/flow/src/gitcli.rs:456:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])
+crates/flow/src/gitcli.rs:456:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::new(Default::default())
+crates/flow/src/gitcli.rs:456:5: replace spawn_reader -> mpsc::Receiver<Captured> with Receiver::from(Default::default())
+crates/flow/src/gitcli.rs:463:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new()
+crates/flow/src/gitcli.rs:463:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from_iter([Default::default()])
+crates/flow/src/gitcli.rs:463:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::new(Default::default())
+crates/flow/src/gitcli.rs:463:5: replace spawn_reader_with_cap -> mpsc::Receiver<Captured> with Receiver::from(Default::default())
+crates/flow/src/gitcli.rs:567:5: replace run_obligation -> Outcome with Default::default()
+crates/flow/src/gitcli.rs:632:42: replace + with * in run_obligation
+crates/flow/src/gitcli.rs:658:35: replace + with * in reap_bounded

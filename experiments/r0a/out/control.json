@@ -1,0 +1,81 @@
+{
+  "checks": [
+    {
+      "detail": {
+        "commit_a": "e6ac48958a87daac55e0dd24269687d6cd8b8cab",
+        "commit_b": "9f7383f4f93d6552ede4eea8f3eb963d026afafa",
+        "commit_differ": true,
+        "digest_equal": true,
+        "tree_a": "06bc53df9c198ba34ca1e21be0194c71d358e09c",
+        "tree_b": "06bc53df9c198ba34ca1e21be0194c71d358e09c"
+      },
+      "id": "determinism",
+      "ok": true
+    },
+    {
+      "detail": {
+        "tree_unchanged": true,
+        "worktree_changed": true
+      },
+      "id": "tree_vs_worktree",
+      "ok": true
+    },
+    {
+      "detail": {
+        "new_tree": "067b1a2a5dba096348685c85b7715765cb3778c0"
+      },
+      "id": "commit_changes_tree",
+      "ok": true
+    },
+    {
+      "detail": {
+        "marker": "experiments/r0a/should-survive.txt",
+        "survived": true
+      },
+      "id": "cleanup_bounded",
+      "ok": true
+    },
+    {
+      "detail": {
+        "leaks": [],
+        "log": "experiments/r0a/work/logs/redaction-probe.log"
+      },
+      "id": "redaction_before_persist",
+      "ok": true
+    },
+    {
+      "detail": {
+        "rusage": {
+          "maxrss_kb": null,
+          "reason": "python `resource` module unavailable on this platform",
+          "status": "NOT_MEASURED",
+          "system_s": null,
+          "user_s": null
+        },
+        "sample": {
+          "error": null,
+          "name": "sleep-50ms",
+          "ok": true,
+          "seconds": 0.0504
+        }
+      },
+      "id": "instrumentation",
+      "ok": true
+    }
+  ],
+  "environment": {
+    "canary_label": "FLOW_FAKE_SECRET_CANARY",
+    "cargo": "error: rustup could not choose a version of cargo to run, because one wasn't specified explicitly, and no default is configured.",
+    "cpu_count": 16,
+    "git": "git version 2.51.1.windows.1",
+    "node": "v26.13.0",
+    "os": "win32",
+    "platform": "Windows_NT",
+    "python": "3.13.7",
+    "repo_root": ".",
+    "rustc": "error: rustup could not choose a version of rustc to run, because one wasn't specified explicitly, and no default is configured."
+  },
+  "generated_at": "2026-11-09T17:23:23Z",
+  "passed": true,
+  "schema": "flow-r0a-manifest/1"
+}

@@ -1,0 +1,24 @@
+--- crates/flow/src/main.rs
++++ replace emit_error with ()
+@@ -399,20 +399,17 @@
+     }
+ }
+ 
+ fn emit(value: Json) {
+     println!("{}", value.to_string_pretty());
+ }
+ 
+ fn emit_error(message: &str) {
+-    emit(Json::obj(vec![
+-        ("status", Json::str("ERROR")),
+-        ("error", Json::str(message)),
+-    ]));
++    () /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     fn args(values: &[&str]) -> Vec<String> {
+         values.iter().map(|v| v.to_string()).collect()

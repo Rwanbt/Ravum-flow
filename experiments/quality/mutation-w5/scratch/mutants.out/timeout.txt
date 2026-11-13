@@ -1,0 +1,4 @@
+crates/flow/src/scratch.rs:194:31: replace == with != in materialise_in
+crates/flow/src/scratch.rs:194:20: replace match guard add.status == 0 with false in materialise_in
+crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 1
+crates/flow/src/scratch.rs:236:5: replace next_sequence -> u64 with 0

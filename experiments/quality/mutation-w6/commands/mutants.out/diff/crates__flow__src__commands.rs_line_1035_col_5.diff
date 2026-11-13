@@ -1,0 +1,23 @@
+--- crates/flow/src/commands.rs
++++ replace verify_checkout_unchanged -> Result<(), String> with Ok(())
+@@ -1027,19 +1027,17 @@
+ /// while the obligations saw something else. Re-running the same byte and mode
+ /// proof after the last obligation closes that window for a declared file.
+ ///
+ /// Extra files are **allowed** here: a legitimate obligation writes build outputs
+ /// (`target/`, `node_modules/`). What is not detectable without a snapshot is a
+ /// write that is reverted before this re-check, or one that happens after it; the
+ /// limit is documented and `doctor` states it.
+ fn verify_checkout_unchanged(git: &Git, scratch: &Path, tree: &str) -> Result<(), String> {
+-    let expected = ls_tree_entries(git, tree)?;
+-    verify_checkout_modes(scratch, tree, &expected)?;
+-    verify_checkout_content(git, scratch, tree, &expected, "while the obligations ran")
++    Ok(()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ /// Prove that the checkout holds the bytes the tree stores.
+ ///
+ /// `git worktree add` applies the repository's content filters
+ /// (`core.autocrlf`, `core.eol`, `.gitattributes` — committed **or local**
+ /// (`.git/info/attributes`, `core.attributesFile`) — and any driver those
+ /// attributes name). A filter can rewrite content **without changing its

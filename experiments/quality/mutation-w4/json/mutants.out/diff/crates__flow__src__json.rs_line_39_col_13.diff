@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ delete match arm Json::Bool(b) in Json::as_bool
+@@ -31,17 +31,17 @@
+         match self {
+             Json::Str(s) => Some(s),
+             _ => None,
+         }
+     }
+ 
+     pub fn as_bool(&self) -> Option<bool> {
+         match self {
+-            Json::Bool(b) => Some(*b),
++             /* ~ changed by cargo-mutants ~ */
+             _ => None,
+         }
+     }
+ 
+     pub fn as_arr(&self) -> Option<&[Json]> {
+         match self {
+             Json::Arr(v) => Some(v),
+             _ => None,

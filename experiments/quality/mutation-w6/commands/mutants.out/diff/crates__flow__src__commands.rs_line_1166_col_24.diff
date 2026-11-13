@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace + with - in parse_cat_file_batch
+@@ -1158,17 +1158,17 @@
+             .ok_or_else(|| format!("truncated cat-file batch in {path:?}"))?;
+         total += size;
+         if total > CONTENT_BUDGET {
+             return Err(format!(
+                 "tree {tree} exceeds the {CONTENT_BUDGET}-byte content-fidelity budget: refusing to certify a tree Flow cannot compare"
+             ));
+         }
+         blobs.push(blob);
+-        position = end + 1;
++        position = end - /* ~ changed by cargo-mutants ~ */ 1;
+     }
+     Ok(blobs)
+ }
+ fn collect_entries(
+     root: &Path,
+     dir: &Path,
+     files: &mut Vec<String>,
+     dirs: &mut Vec<String>,

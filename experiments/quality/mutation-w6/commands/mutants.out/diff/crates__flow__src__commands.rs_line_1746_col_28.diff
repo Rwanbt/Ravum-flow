@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace match guard entry.get("status").and_then(Json::as_str) != Some("PASSED") with true in cmd_publish
+@@ -1738,17 +1738,17 @@
+             .find(|x| x.get("id").and_then(Json::as_str) == Some(ob.id.as_str()))
+         {
+             None => {
+                 return Ok(refused_code(
+                     "MISSING_REQUIRED",
+                     format!("required obligation {:?} is absent from the receipt", ob.id),
+                 ))
+             }
+-            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => {
++            Some(entry) if true /* ~ changed by cargo-mutants ~ */ => {
+                 return Ok(refused_code(
+                     "REQUIRED_NOT_PASSED",
+                     format!(
+                         "required obligation {:?} has status {:?}",
+                         ob.id,
+                         entry
+                             .get("status")
+                             .and_then(Json::as_str)

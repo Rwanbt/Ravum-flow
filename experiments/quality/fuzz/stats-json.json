@@ -1,0 +1,19 @@
+{
+  "seed": 20261110,
+  "target": "json::parse",
+  "iterations": 5000000,
+  "accepted": 625226,
+  "refused": 4374250,
+  "findings": 524,
+  "distinct_findings": 2,
+  "elapsed_s": 13.073,
+  "seconds_budget": 60,
+  "saved_corpus": 200,
+  "note": "seed fixes the input sequence; with --seconds the prefix length depends on machine speed",
+  "first_finding": {
+    "kind": "round-trip-error",
+    "detail": "accepted input printed \"inf\", which does not re-parse: unexpected byte 'i' at 0",
+    "iteration": 32237,
+    "input": "999991e999"
+  }
+}

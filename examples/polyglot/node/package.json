@@ -1,0 +1,9 @@
+{
+  "name": "polyglot-node",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free polyglot fixture verified by Ravum Flow",
+  "scripts": {
+    "test": "node --test"
+  }
+}

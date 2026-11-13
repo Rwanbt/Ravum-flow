@@ -1,0 +1,32 @@
+--- crates/flow/src/gitcli.rs
++++ replace allowed_env -> Vec<(OsString, OsString)> with vec![]
+@@ -346,28 +346,17 @@
+     cmd.env("GIT_TERMINAL_PROMPT", "0")
+         .env("GIT_PAGER", "cat")
+         .env("GIT_EDITOR", "true")
+         .env("GIT_CONFIG_NOSYSTEM", "1")
+         .env("LC_ALL", "C");
+ }
+ 
+ fn allowed_env() -> Vec<(OsString, OsString)> {
+-    let host: Vec<(OsString, OsString)> = std::env::vars_os().collect(); // w8probe
+-    let mut kept = Vec::new();
+-    for wanted in env_allowlist() {
+-        // Windows environment names are case-insensitive: scan for the first match.
+-        if let Some((name, value)) = host
+-            .iter()
+-            .find(|(name, _)| name.to_string_lossy().eq_ignore_ascii_case(wanted))
+-        {
+-            kept.push((name.clone(), value.clone()));
+-        }
+-    }
+-    kept
++    vec![] /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ // ------------------------------------------------------------ obligations
+ #[derive(Debug, Clone)]
+ pub struct Obligation {
+     pub id: String,
+     pub program: String,
+     pub args: Vec<String>,

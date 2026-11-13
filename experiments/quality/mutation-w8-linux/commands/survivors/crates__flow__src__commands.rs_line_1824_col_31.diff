@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace != with == in cmd_publish
+@@ -1816,17 +1816,17 @@
+                 format!("{reference} already points at a commit whose tree is {tree}: nothing to publish"),
+             ));
+         }
+     }
+ 
+     // A candidate is a statement about "base + these proposals". Publishing it on
+     // top of a different commit would silently claim a merge Flow never made.
+     if let Some(record) = &candidate_record {
+-        if record.base_commit != old {
++        if record.base_commit == /* ~ changed by cargo-mutants ~ */ old {
+             return Ok(refused_code(
+                 "BASE_MISMATCH",
+                 format!(
+                     "candidate {} was assembled on base {} but this publication would land on {}: re-assemble on the new base and re-run, or pass the matching --expected-old",
+                     record.candidate_id, record.base_commit, old
+                 ),
+             ));
+         }

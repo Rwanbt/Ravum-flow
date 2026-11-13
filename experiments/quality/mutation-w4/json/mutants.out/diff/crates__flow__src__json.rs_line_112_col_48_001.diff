@@ -1,0 +1,21 @@
+--- crates/flow/src/json.rs
++++ replace + with * in Json::write
+@@ -104,17 +104,17 @@
+                     out.push_str("{}");
+                     return;
+                 }
+                 out.push('{');
+                 for (i, (k, v)) in pairs.iter().enumerate() {
+                     if i > 0 {
+                         out.push(',');
+                     }
+-                    newline(out, indent, level + 1);
++                    newline(out, indent, level * /* ~ changed by cargo-mutants ~ */ 1);
+                     write_string(out, k);
+                     out.push(':');
+                     if indent.is_some() {
+                         out.push(' ');
+                     }
+                     v.write(out, indent, level + 1);
+                 }
+                 newline(out, indent, level);

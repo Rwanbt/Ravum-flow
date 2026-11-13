@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_run
+@@ -1400,17 +1400,17 @@
+     let worktree_diff = git
+         .capture(&["diff", "--name-only", &tree])
+         // An empty list on a failed diff would be a receipt claiming "no worktree
+         // differences" the check never observed, so the run refuses to certify.
+         .map_err(|e| {
+             format!("cannot record the worktree diff against {tree} (a receipt with an empty diff would be a false claim): {e}")
+         })?
+         .lines()
+-        .filter(|l| !l.trim().is_empty())
++        .filter(|l|  /* ~ changed by cargo-mutants ~ */l.trim().is_empty())
+         .map(str::to_string)
+         .collect::<Vec<_>>();
+ 
+     // The scratch directory is removed by `Scratch::drop`, which runs on every
+     // path out of this function, including the `?` above.
+     drop(scratch);
+ 
+     let declared_ids: Vec<String> = effective.iter().map(|o| o.id.clone()).collect();

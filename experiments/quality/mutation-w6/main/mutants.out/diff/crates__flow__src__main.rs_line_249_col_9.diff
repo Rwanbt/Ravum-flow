@@ -1,0 +1,21 @@
+--- crates/flow/src/main.rs
++++ delete match arm "explain" in value_flags
+@@ -241,17 +241,17 @@
+ /// without a value, is a usage error: silently ignoring `--dry-run` on a program
+ /// that does not know it would publish when the operator asked for a plan.
+ fn value_flags(command: &str) -> &'static [&'static str] {
+     match command {
+         "run" => &["--obligation", "--obligations", "--timeout", "--candidate"],
+         "publish" => &["--ref", "--expected-old", "--message", "--candidate"],
+         "propose" => &["--agent", "--task", "--base", "--patch", "--key"],
+         "assemble" => &["--proposal"],
+-        "explain" => &["--tree", "--candidate"],
++         /* ~ changed by cargo-mutants ~ */
+         _ => &[],
+     }
+ }
+ 
+ /// Boolean flags accepted by any command: output mode and help. Any other boolean
+ /// is per command, below.
+ const GLOBAL_BOOL_FLAGS: &[&str] = &["--json", "--help"];
+ 

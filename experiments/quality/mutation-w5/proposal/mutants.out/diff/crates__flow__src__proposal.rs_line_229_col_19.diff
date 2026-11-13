@@ -1,0 +1,21 @@
+--- crates/flow/src/proposal.rs
++++ replace != with == in Candidate::load
+@@ -221,17 +221,17 @@
+         if !path.exists() {
+             return Ok(None);
+         }
+         let value = json::parse(
+             &fs::read_to_string(&path)
+                 .map_err(|e| format!("cannot read {}: {e}", path.display()))?,
+         )?;
+         let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
+-        if schema != SCHEMA_CANDIDATE {
++        if schema == /* ~ changed by cargo-mutants ~ */ SCHEMA_CANDIDATE {
+             return Err(format!(
+                 "candidate {id} carries schema {schema:?}, not {SCHEMA_CANDIDATE}: refusing to reinterpret it"
+             ));
+         }
+         let get = |key: &str| {
+             value
+                 .get(key)
+                 .and_then(Json::as_str)

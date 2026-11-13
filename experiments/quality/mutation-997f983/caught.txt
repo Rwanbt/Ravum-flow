@@ -1,0 +1,57 @@
+crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with ""
+crates/flow/src/lock.rs:51:9: replace LockError::message -> &str with "xyzzy"
+crates/flow/src/lock.rs:59:9: replace <impl std::fmt::Display for LockError>::fmt -> std::fmt::Result with Ok(Default::default())
+crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with String::new()
+crates/flow/src/lock.rs:65:9: replace <impl From<LockError> for String>::from -> String with "xyzzy".into()
+crates/flow/src/lock.rs:70:5: replace lock_path -> PathBuf with Default::default()
+crates/flow/src/lock.rs:92:5: replace parse -> Option<Owner> with None
+crates/flow/src/lock.rs:94:15: replace != with == in parse
+crates/flow/src/lock.rs:151:9: replace <impl Drop for LockGuard>::drop with ()
+crates/flow/src/lock.rs:152:57: replace == with != in <impl Drop for LockGuard>::drop
+crates/flow/src/lock.rs:163:5: replace nonce -> String with String::new()
+crates/flow/src/lock.rs:163:5: replace nonce -> String with "xyzzy".into()
+crates/flow/src/lock.rs:186:5: replace create_lock_file -> std::io::Result<()> with Ok(())
+crates/flow/src/lock.rs:204:5: replace wait_for_record -> Option<Owner> with None
+crates/flow/src/lock.rs:207:35: replace + with - in wait_for_record
+crates/flow/src/lock.rs:208:26: replace < with == in wait_for_record
+crates/flow/src/lock.rs:208:26: replace < with > in wait_for_record
+crates/flow/src/lock.rs:226:35: replace + with - in acquire_lock
+crates/flow/src/lock.rs:236:23: replace match guard e.kind() == std::io::ErrorKind::AlreadyExists with false in acquire_lock
+crates/flow/src/lock.rs:236:32: replace == with != in acquire_lock
+crates/flow/src/lock.rs:261:30: replace == with != in acquire_lock
+crates/flow/src/lock.rs:271:43: replace >= with < in acquire_lock
+crates/flow/src/lock.rs:294:42: replace match guard parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) with false in acquire_lock
+crates/flow/src/lock.rs:294:73: replace == with != in acquire_lock
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with None
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(true)
+crates/flow/src/lock.rs:323:5: replace pid_alive -> Option<bool> with Some(false)
+crates/flow/src/lock.rs:327:8: delete ! in pid_alive
+crates/flow/src/lock.rs:331:47: replace || with && in pid_alive
+crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with true
+crates/flow/src/paths.rs:23:5: replace is_object_id -> bool with false
+crates/flow/src/paths.rs:23:46: replace && with || in is_object_id
+crates/flow/src/paths.rs:23:24: replace || with && in is_object_id
+crates/flow/src/paths.rs:23:18: replace == with != in is_object_id
+crates/flow/src/paths.rs:23:39: replace == with != in is_object_id
+crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with true
+crates/flow/src/paths.rs:30:5: replace is_record_id -> bool with false
+crates/flow/src/paths.rs:30:23: replace && with || in is_record_id
+crates/flow/src/paths.rs:30:17: replace == with != in is_record_id
+crates/flow/src/paths.rs:35:5: replace validate_relative -> Result<(), String> with Ok(())
+crates/flow/src/paths.rs:38:19: replace > with == in validate_relative
+crates/flow/src/paths.rs:38:19: replace > with < in validate_relative
+crates/flow/src/paths.rs:38:19: replace > with >= in validate_relative
+crates/flow/src/paths.rs:41:31: replace < with == in validate_relative
+crates/flow/src/paths.rs:41:31: replace < with > in validate_relative
+crates/flow/src/paths.rs:41:31: replace < with <= in validate_relative
+crates/flow/src/paths.rs:48:59: replace && with || in validate_relative
+crates/flow/src/paths.rs:48:25: replace && with || in validate_relative
+crates/flow/src/paths.rs:48:71: replace == with != in validate_relative
+crates/flow/src/paths.rs:55:22: replace == with != in validate_relative
+crates/flow/src/paths.rs:55:42: replace == with != in validate_relative
+crates/flow/src/paths.rs:60:28: replace > with == in validate_relative
+crates/flow/src/paths.rs:60:28: replace > with < in validate_relative
+crates/flow/src/paths.rs:60:28: replace > with >= in validate_relative
+crates/flow/src/paths.rs:69:37: replace || with && in validate_relative
+crates/flow/src/paths.rs:88:5: replace canonical_within -> Result<PathBuf, String> with Ok(Default::default())
+crates/flow/src/paths.rs:101:16: delete ! in canonical_within

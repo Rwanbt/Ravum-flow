@@ -1,0 +1,25 @@
+diff --git a/crates/flow/src/commands.rs b/crates/flow/src/commands.rs
+index 5f27ea0..c9192d8 100644
+--- a/crates/flow/src/commands.rs
++++ b/crates/flow/src/commands.rs
+@@ -217 +217 @@ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+-    let digest = policy_digest(&effective_policy(config, &config.obligations));
++    let digest = policy_digest(&effective_policy(config, &config.obligations)); // w8probe
+@@ -223 +223 @@ fn adoption_gate(root: &Path, config: &Config) -> Result<Option<Json>, String> {
+-        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code(
++        Some(adoption) if adoption.policy_digest != digest => Ok(Some(refused_code( // w8probe
+@@ -357 +357 @@ pub fn cmd_doctor(root: &Path) -> Result<Json, String> {
+-        if cfg!(windows) && longpaths != "true" {
++        if cfg!(windows) && longpaths != "true" { // w8probe
+@@ -1592 +1592 @@ pub fn cmd_publish(
+-    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') {
++    if reference.len() > 1024 || reference.contains('\0') || reference.contains(' ') { // w8probe
+@@ -1751 +1751 @@ pub fn cmd_publish(
+-            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => {
++            Some(entry) if entry.get("status").and_then(Json::as_str) != Some("PASSED") => { // w8probe
+@@ -1778 +1778 @@ pub fn cmd_publish(
+-    if !receipt.commit_oid.is_empty() {
++    if !receipt.commit_oid.is_empty() { // w8probe
+@@ -1824 +1824 @@ pub fn cmd_publish(
+-        if record.base_commit != old {
++        if record.base_commit != old { // w8probe

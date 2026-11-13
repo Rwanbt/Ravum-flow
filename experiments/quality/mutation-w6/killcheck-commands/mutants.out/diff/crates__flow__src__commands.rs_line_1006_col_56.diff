@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace & with | in verify_checkout_modes
+@@ -998,17 +998,17 @@
+         use std::os::unix::fs::PermissionsExt;
+         for (mode, _, path, _) in expected {
+             if mode != "100644" && mode != "100755" { // survival-probe
+                 continue;
+             }
+             let full = scratch.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+             let meta = fs::symlink_metadata(&full)
+                 .map_err(|e| format!("cannot stat {path:?} after checkout: {e}"))?;
+-            let executable = meta.permissions().mode() & 0o111 != 0; // survival-probe
++            let executable = meta.permissions().mode() | /* ~ changed by cargo-mutants ~ */ 0o111 != 0; // survival-probe
+             if executable != (mode == "100755") { // survival-probe
+                 return Err(format!(
+                     "tree {tree} entry {path:?} declares mode {mode} but is {}: a hook or a filesystem that cannot carry the executable bit changed it, so the obligations would not run on the verified tree",
+                     if executable { "executable" } else { "non-executable" }
+                 ));
+             }
+         }
+     }

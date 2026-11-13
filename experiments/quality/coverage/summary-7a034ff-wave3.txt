@@ -1,0 +1,60 @@
+# Coverage — final code SHA 7a034ff (wave 3, product code only)
+
+Measured on 2026-11-10 (Europe/Paris) on Windows 11, Rust nightly + rustc 1.95.0,
+`cargo-llvm-cov 0.9.1`, on the working tree whose only uncommitted files were
+agent artefacts (no `crates/flow/src` or `crates/flow/tests` change).
+
+## Exact commands (a clean profile state is mandatory)
+
+```bash
+CARGO_TARGET_DIR=D:\App\Ravum-flow\wt-quality-target CARGO_BUILD_JOBS=4
+cargo +nightly llvm-cov clean --workspace
+cargo +nightly llvm-cov --locked --offline --all-targets --branch \
+  --ignore-filename-regex '[\\/]tests[\\/]' --no-report
+cargo +nightly llvm-cov report --branch --ignore-filename-regex '[\\/]tests[\\/]'
+```
+
+## Result (product code only; `tests/` and `benches/` excluded)
+
+| File | Lines | Branches |
+|---|---|---|
+| `commands.rs` | 86.83 % | 73.54 % |
+| `gitcli.rs` | 91.35 % | 80.00 % |
+| `json.rs` | 87.24 % | 81.25 % |
+| `lock.rs` | 84.47 % | 71.05 % |
+| `main.rs` | 94.02 % | 83.33 % |
+| `paths.rs` | 96.67 % | 91.30 % |
+| `proposal.rs` | 90.91 % | 80.14 % |
+| `scratch.rs` | 75.42 % | 59.72 % |
+| `sha256.rs` | 100.00 % | 100.00 % |
+| `state.rs` | 92.56 % | 66.07 % |
+| **TOTAL** | **88.68 %** | **75.67 %** |
+
+Totals: 5142 lines (582 uncovered), 859 branches (209 uncovered), 7971 regions,
+423 functions.
+
+## Comparison
+
+| Measurement | Lines | Branches |
+|---|---|---|
+| Gate report, `997f983` (163 tests) | 83.19 % | 68.64 % |
+| Wave 3 baseline, `dfb941d` (173 tests) | 83.27 % | 69.11 % |
+| Wave 3 after the error-path suite, `5077c50` + `error_paths.rs` (225 tests) | 88.75 % | 75.62 % |
+| **Wave 3 final, `7a034ff` (232/233 tests)** | **88.68 %** | **75.67 %** |
+
+The final code adds the checkout re-check and containment paths (≈120 source
+lines); the new gates exercise them, so the global percentage holds. The
+candidate gates (90 % lines / 85 % branches) are **not met**; the honest reasons
+and the exact uncovered regions are in `docs/reviews/FLOW-QUALITY-WAVE3.md`
+(§3.1): most of `scratch.rs`'s uncovered lines are only reachable by importing
+the module directly, which the prescribed `tests/` filter discards, and the
+remaining ones need injected filesystem failures.
+
+## Caveats (measured)
+
+- profraw files accumulate in the target directory: without the `clean` step an
+  identical tree drifted by 9 lines / 2 branch points. Two cleaned identical
+  runs still varied by ±1 branch point.
+- `--ignore-filename-regex '[\\/]tests[\\/]'` also discards coverage of source
+  modules imported by integration tests through `#[path = "../src/x.rs"]`; that
+  is why `scratch.rs` cannot honestly reach 85 % under this command.

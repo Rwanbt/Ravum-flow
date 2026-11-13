@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ replace cmd_assemble -> Result<Json, String> with Ok(Default::default())
+@@ -2461,17 +2461,17 @@
+                 ),
+                 ("count", Json::Num(proposals.len() as f64)),
+             ]))
+         }
+     }
+ }
+ 
+ pub fn cmd_assemble(root: &Path, proposals: &[String]) -> Result<Json, String> {
+-    crate::proposal::assemble(root, proposals)
++    Ok(Default::default()) /* ~ changed by cargo-mutants ~ */
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     // The three parsers below consume answers from a *separate* Git process.
+     // Their inputs are therefore untrusted: a corrupted object store, a Git that

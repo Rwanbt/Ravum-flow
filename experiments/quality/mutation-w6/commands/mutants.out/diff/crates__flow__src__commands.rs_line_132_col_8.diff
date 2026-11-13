@@ -1,0 +1,21 @@
+--- crates/flow/src/commands.rs
++++ delete ! in cmd_init
+@@ -124,17 +124,17 @@
+     }
+     // Flow's own state must never become part of the tree it verifies: if it
+     // did, every policy change would move the tree OID and a receipt could
+     // never be compared with "the same tree under a different policy".
+     let gitignore = dir.join(".gitignore");
+     if !gitignore.exists() {
+         state::write_atomic(&gitignore, "*\n")?;
+     }
+-    if !existing_config {
++    if  /* ~ changed by cargo-mutants ~ */existing_config {
+         state::save_config(root, &config)?;
+     }
+     let source = if adopt_policy {
+         "init --adopt-policy"
+     } else {
+         "init"
+     };
+     state::save_adoption(

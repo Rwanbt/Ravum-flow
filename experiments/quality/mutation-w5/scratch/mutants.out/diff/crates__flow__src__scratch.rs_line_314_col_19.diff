@@ -1,0 +1,21 @@
+--- crates/flow/src/scratch.rs
++++ replace match guard e.kind() == io::ErrorKind::NotFound with true in detach_git_link
+@@ -306,17 +306,17 @@
+ }
+ 
+ /// Remove the worktree's `.git` link (a file) so ordinary repository discovery
+ /// from inside the scratch directory cannot reach the shared Git directory.
+ fn detach_git_link(dir: &Path) -> Result<(), String> {
+     let link = dir.join(".git");
+     let meta = match fs::symlink_metadata(&link) {
+         Ok(meta) => meta,
+-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
++        Err(e) if true /* ~ changed by cargo-mutants ~ */ => {
+             return Err(format!(
+                 "refusing scratch directory {}: `git worktree add` did not create a .git link",
+                 dir.display()
+             ))
+         }
+         Err(e) => return Err(format!("cannot inspect {}: {e}", link.display())),
+     };
+     if meta.file_type().is_symlink() {
