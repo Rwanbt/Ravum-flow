@@ -54,6 +54,8 @@ VERIFICATION AND PUBLICATION:
   publish [--candidate <id>] [--ref REF] [--expected-old OID] [--message M]
           [--dry-run]               CAS-publish a verified tree
   reconcile                         resolve pending intents by observation
+  gc --keep N | --max-age-days D [--dry-run]
+                                    apply an explicit retention policy to .flow/
   explain [--tree OID | --candidate <id>]
                                     receipt, proposals and journal for a tree
 
@@ -63,7 +65,7 @@ VERIFICATION AND PUBLICATION:
 Every command prints machine-readable JSON on stdout. `--json` is accepted for
 compatibility; JSON is already the default.
 Exit codes: 0 = PASSED/PUBLISHED/PLAN/INITIALIZED/APPROVED/ADMITTED/ASSEMBLED/
-RECORD/RECONCILED/EXPLAIN/STATUS/DISABLED/ENABLED, 1 = REFUSED/FAILED/UNKNOWN/
+RECORD/RECONCILED/GC/EXPLAIN/STATUS/DISABLED/ENABLED, 1 = REFUSED/FAILED/UNKNOWN/
 UNSUPPORTED/NEEDS_RECONCILIATION/ERROR, 2 = usage.
 ";
 
@@ -202,6 +204,36 @@ fn dispatch(args: &[String]) -> u8 {
                     None => commands::cmd_assemble(&root, &[]),
                 },
                 "reconcile" => commands::cmd_reconcile(&root),
+                "gc" => {
+                    // A retention policy is explicit or it does not exist: a
+                    // silently truncated evidence store is worse than a growing
+                    // one, so an unusable number is a usage error.
+                    let keep = match flag_value(rest, "--keep") {
+                        None => None,
+                        Some(raw) => match raw.parse::<usize>() {
+                            Ok(count) if count >= 1 => Some(count),
+                            _ => {
+                                emit_error(&format!(
+                                    "`--keep` needs a whole number >= 1 (found {raw:?})"
+                                ));
+                                return 2;
+                            }
+                        },
+                    };
+                    let age = match flag_value(rest, "--max-age-days") {
+                        None => None,
+                        Some(raw) => match raw.parse::<u64>() {
+                            Ok(days) if days >= 1 => Some(days),
+                            _ => {
+                                emit_error(&format!(
+                                    "`--max-age-days` needs a whole number >= 1 (found {raw:?})"
+                                ));
+                                return 2;
+                            }
+                        },
+                    };
+                    commands::cmd_gc(&root, keep, age, has_flag(rest, "--dry-run"))
+                }
                 "explain" => commands::cmd_explain(
                     &root,
                     flag_value(rest, "--tree"),
@@ -247,6 +279,7 @@ fn value_flags(command: &str) -> &'static [&'static str] {
         "propose" => &["--agent", "--task", "--base", "--patch", "--key"],
         "assemble" => &["--proposal"],
         "explain" => &["--tree", "--candidate"],
+        "gc" => &["--keep", "--max-age-days"],
         _ => &[],
     }
 }
@@ -266,6 +299,7 @@ fn bool_flags(command: &str) -> &'static [&'static str] {
     match command {
         "init" => &["--force", "--adopt-policy"],
         "publish" => &["--dry-run"],
+        "gc" => &["--dry-run"],
         _ => &[],
     }
 }
@@ -393,7 +427,7 @@ fn exit_code_for(value: &Json) -> u8 {
         Some("PASSED") | Some("PUBLISHED") | Some("PLAN") | Some("INITIALIZED")
         | Some("APPROVED") | Some("ADMITTED") | Some("ASSEMBLED") | Some("RECORD")
         | Some("RECONCILED") | Some("EXPLAIN") | Some("STATUS") | Some("DISABLED")
-        | Some("ENABLED") | Some("REPORT") => 0,
+        | Some("ENABLED") | Some("REPORT") | Some("GC") => 0,
         Some(_) => 1,
         None => 1,
     }

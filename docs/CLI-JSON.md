@@ -1,6 +1,6 @@
 # Flow CLI and JSON reference
 
-**Scope:** the CLI shipped by `crate flow 0.2.0-rc.1` (policy `FLOW-POLICY-1`) on
+**Scope:** the CLI shipped by `crate flow 0.2.0-rc.2` (policy `FLOW-POLICY-1`) on
 `feat/flow-production-candidate`, code head `997f983`. The whole documented surface is
 implemented and covered by the executed tests counted in the gate report; §10 is the reference for
 the commands added after 0.1.0, and §12 lists what is still **NOT_RUN** so no reader mistakes
@@ -90,7 +90,7 @@ flow version | flow --version
 $ flow version
 {
   "status": "VERSION",
-  "tool": "flow 0.2.0-rc.1",
+  "tool": "flow 0.2.0-rc.2",
   "policy_version": "FLOW-POLICY-1",
   "git": "git version 2.51.1.windows.1",
   "schema": "flow-receipt/2",

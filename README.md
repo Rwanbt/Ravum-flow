@@ -1,5 +1,5 @@
 # Ravum Flow
-> **Status: `0.2.0-rc.1` merged into `dev` and `main`; gate verdict `PRODUCTION_PARTIAL` — local-trusted, not released.**  
+> **Status: `0.2.0-rc.2` merged into `dev` and `main`; gate verdict `PRODUCTION_PARTIAL` — local-trusted, not released.**  
 > `flow` is a small local CLI that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
 > **Measured on this line:** 482 tests on Windows, 479 on Linux, 479 on macOS (0 ignored, 144 named gates); the product-only coverage gate (95 % lines / 90 % branches) is green in CI; a 25 000-file repository was verified and published end to end. The open gaps are listed in the [2026-11-13 verdict](docs/reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) and every number is sourced in [MEASUREMENTS](docs/MEASUREMENTS.md).  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
@@ -61,7 +61,8 @@ value: `--dry-run=true` is a usage error (exit 2) rather than a live publication
 | `status` | implemented | head/tree, dirty and untracked counts, latest receipt, pending intents; a corrupt journal is an error, never "0 pending" |
 | `run` | implemented | exports the exact tree to a directory Flow owns (`.git` link removed), runs declared obligations, writes a receipt bound to the tree OID **and** to the effective policy digest. `--obligation ID` is diagnostic only: the run is `PARTIAL` and is never publishable |
 | `publish` | implemented (ref-only) | requires a **complete** `PASSED` receipt for that exact tree whose policy digest still matches the current config; verifies the receipt's integrity and every required obligation, appends a durable intent, re-reads the ref, then `git update-ref` CAS, then reads the ref back. Destination must be a real `refs/heads/...` ref (a symref is `REF_IS_SYMREF`); a tree the ref already carries is `ALREADY_PUBLISHED`. Outcomes `PUBLISHED` / `REFUSED` with a machine `code`; a crash window is classified by `reconcile` as `RECONCILED_PUBLISHED`, `RECONCILED_NOT_PUBLISHED` or `NEEDS_RECONCILIATION` |
-| `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref. An unreadable journal is `CORRUPT_JOURNAL` or `UNKNOWN_OUTCOME` with `manual_required: true` and a non-zero exit — never a successful empty reconciliation |
+| `reconcile` | implemented | observes the ref and records `PUBLISHED` / `NOT_PUBLISHED` / `NEEDS_RECONCILIATION`; never moves a ref.
+| `gc` | implemented | explicit retention for `.flow/`: keeps the N newest receipts with their logs, removes the rest by age, never touches the journal, the config, the adoption record or the proposals, and refuses while a publication intent is unresolved | An unreadable journal is `CORRUPT_JOURNAL` or `UNKNOWN_OUTCOME` with `manual_required: true` and a non-zero exit — never a successful empty reconciliation |
 | `explain` | implemented | receipt + journal entries for a tree |
 | `disable` / `enable` | implemented | mutating commands refuse while disabled |
 

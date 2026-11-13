@@ -2,6 +2,38 @@
 
 All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 
+## [0.2.0-rc.2] — 2026-11-13 — the merged, measured line
+
+### Added
+- `flow gc --keep N` and/or `--max-age-days D` (`--dry-run` to plan): an **explicit** retention
+  policy for Flow's own evidence. It never deletes the journal, the config, the adoption record or
+  the proposals, keeps the N newest complete receipts with their logs, refuses while a publication
+  intent is unresolved, and never removes a link or a file it cannot name.
+- The verification comparison **streams**: up to **200 000 regular files**, 32 MiB of declared
+  content per `cat-file` request and one file up to 48 MiB. The previous 20 000-file budget made a
+  real monorepo a refusal; a 25 000-file repository is now verified and published end to end.
+- **macOS** joins the CI test matrix (479 executed tests, 0 ignored) and found a real platform
+  limit: APFS refuses a non-UTF-8 file name, so that gate skips with its reason there.
+- A **scheduled per-module mutation campaign** on Linux (`.github/workflows/flow-mutation.yml`),
+  where five modules had never been measured. First measurement: `paths` 31/31 caught.
+- A **crash harness on the release binary** (`experiments/quality/crash-release/`): an `LD_PRELOAD`
+  shim kills the shipped binary at a known `rename`/`fsync`, and the recovery contract is asserted
+  (journal readable, `reconcile` classifies, publication still possible).
+- A startup/plumbing **regression gate** in CI (`flow version` < 2 s, `flow doctor` < 5 s).
+
+### Changed
+- Version `0.2.0-rc.2`. `dev` and `main` now carry the whole line; the four stacked draft PRs were
+  retired in favour of one traceable merge path.
+- `docs/MEASUREMENTS.md` is the single source of every count, with head, platform and run id. The
+  README, CAPABILITIES and the release checklist cite it instead of restating numbers.
+
+### Fixed
+- The mutation workflow rejected `--bins` (a `cargo test` argument) and reported success while
+  mutating nothing; the flag now follows `--`, and a campaign that runs nothing fails the job.
+- The release checklist presented a superseded binary as the current artefact of `dist/`.
+- `SECURITY.md` described a pre-implementation project: it is now a real policy (supported versions,
+  private reporting, and the limits written as limits).
+
 ## [0.2.0-rc.1] — 2026-11-10 — production candidate (unreleased)
 
 ### Added
