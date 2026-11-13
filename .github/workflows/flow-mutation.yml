@@ -53,20 +53,35 @@ jobs:
       - name: install cargo-mutants
         run: cargo install cargo-mutants --locked
 
-      # A mutant is killed only when a test fails. `--bins` is the unit suite, so
-      # every number this job prints is a lower bound on that suite and never a
-      # crate-wide claim (same scope as waves 8 and 9).
+      # A mutant is killed only when a test fails. `-- --bins` is what selects the
+      # unit suite (`--bins` is a `cargo test` argument, not a cargo-mutants one;
+      # the first version of this step passed it to the wrong program and reported
+      # success while running nothing). Every number this job prints is a lower
+      # bound on that suite and never a crate-wide claim (same scope as waves 8-9).
       - name: mutate ${{ matrix.module }} (report mode)
-        continue-on-error: true
+        shell: bash
         run: |
           set -o pipefail
+          set +e
           cargo mutants \
             --file "crates/flow/src/${{ matrix.module }}.rs" \
-            --bins \
             --jobs 4 \
             --timeout 240 \
             --gitignore true \
-            --output "mutants-${{ matrix.module }}" 2>&1 | tee "mutants-${{ matrix.module }}.log" || true
+            --output "mutants-${{ matrix.module }}" \
+            -- --bins 2>&1 | tee "mutants-${{ matrix.module }}.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          # 0 = every mutant caught, 2 = survivors (report mode: not a failure).
+          # Anything else is a broken campaign, and must fail loudly.
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            echo "::error::cargo mutants failed with exit $status: the campaign did not run"
+            exit "$status"
+          fi
+          if [ ! -d "mutants-${{ matrix.module }}/mutants.out" ]; then
+            echo "::error::cargo mutants produced no mutants.out: the campaign did not run"
+            exit 1
+          fi
 
       - name: summarise
         if: always()
