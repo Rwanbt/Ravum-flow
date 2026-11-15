@@ -561,7 +561,24 @@ pub fn blob_relative_path(digest: &str) -> String {
 /// Returns `Ok(true)` when this call created the name, `Ok(false)` when it
 /// already existed.
 pub fn create_once(path: &Path, data: &[u8]) -> Result<bool, String> {
-    guard_below_flow(path)?;
+    // An existing name is never rewritten, so it is answered *before* the
+    // hard-link guard. That guard refuses a target with `nlink > 1`, and for a few
+    // microseconds a concurrent creator's own staging link makes the final name
+    // legitimately have two links (`name` + `name.tmp-flow-*`). Treating that as
+    // an error failed a valid concurrent `propose` on macOS (CI run 43711951264):
+    // "it has 2 hard links". The name exists, this call did not create it, and the
+    // caller re-reads and validates the winner's bytes.
+    if fs::symlink_metadata(path).is_ok() {
+        return Ok(false);
+    }
+    if let Err(reason) = guard_below_flow(path) {
+        // Same window, but the guard ran first: if the name exists now, another
+        // writer published it (a symlink included) and nothing is written here.
+        if fs::symlink_metadata(path).is_ok() {
+            return Ok(false);
+        }
+        return Err(reason);
+    }
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|e| format!("cannot create {}: {e}", parent.display()))?;
@@ -1406,6 +1423,33 @@ mod tests {
             1,
             "no staging file may survive"
         );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn create_once_treats_a_staging_link_as_an_existing_name_not_an_error() {
+        use std::os::unix::fs::MetadataExt;
+
+        // A concurrent creator's staging link leaves the final name with two
+        // links for a moment. The guard refuses `nlink > 1`; `create_once` must
+        // answer "not created" for an existing name instead of failing the whole
+        // command (reproduced on macOS by `g1`).
+        let root = temp_root("create-once-linked");
+        let path = root.join(".flow").join("records").join("two.json");
+        assert!(create_once(&path, b"first").unwrap());
+        let staging = root.join(".flow").join("records").join("staging");
+        fs::hard_link(&path, &staging).unwrap();
+        assert_eq!(
+            fs::metadata(&path).unwrap().nlink(),
+            2,
+            "the regression needs two links on the final name"
+        );
+        assert!(
+            !create_once(&path, b"second").unwrap(),
+            "an existing (even multi-linked) name is simply not created"
+        );
+        assert_eq!(fs::read(&path).unwrap(), b"first");
         let _ = fs::remove_dir_all(&root);
     }
 
