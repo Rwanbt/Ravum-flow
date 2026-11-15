@@ -1909,6 +1909,163 @@ fn gc_refuses_retention_values_it_cannot_apply() {
     }
 }
 
+/// A toolchain probe that answers differently changes what a `PASSED` receipt
+/// proves, even when the policy file itself did not change: publication must
+/// refuse with `CONTEXT_MISMATCH`, not publish evidence from another context.
+#[cfg(unix)]
+#[test]
+fn a_changed_context_probe_refuses_publication_without_a_policy_change() {
+    use std::os::unix::fs::PermissionsExt;
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    let probe = repo.path.join("probe.sh");
+    let observed = repo.path.join("probe.txt");
+    fs::write(
+        &probe,
+        format!("#!/bin/sh\ncat \"{}\"\n", observed.display()),
+    )
+    .unwrap();
+    fs::set_permissions(&probe, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::write(&observed, "toolchain-one\n").unwrap();
+    fs::write(
+        repo.path.join(".flow/config.json"),
+        format!(
+            r#"{{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{GREEN}],"context_probes":[["{}"]]}}"#,
+            probe.display()
+        ),
+    )
+    .unwrap();
+    let (code, approved) = flow(&repo.path, &["approve"]);
+    assert_eq!(code, 0, "{approved}");
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+
+    // The toolchain moved, the policy did not: the recorded context is stale.
+    fs::write(&observed, "toolchain-two\n").unwrap();
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert!(
+        out.to_string().contains("CONTEXT_MISMATCH"),
+        "the refusal must name the context, not the policy: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "a stale context must not move the ref"
+    );
+}
+
+/// `gc` must see a verification that is actually running: the marker is the
+/// coordination point, and it is cleared on the run's own exit path.
+#[cfg(unix)]
+#[test]
+fn gc_refuses_while_a_verification_is_actually_running() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(
+        &repo.path,
+        r#"{"id":"slow","program":"sh","args":["-c","sleep 3"],"required":true,"timeout_s":30}"#,
+    );
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let mut child = Command::new(env!("CARGO_BIN_EXE_flow"))
+        .current_dir(&repo.path)
+        .arg("run")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("flow run starts");
+    let runs = repo.path.join(".flow").join("runs");
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        if let Ok(entries) = fs::read_dir(&runs) {
+            if entries
+                .flatten()
+                .any(|entry| entry.file_name().to_string_lossy().ends_with(".active"))
+            {
+                break;
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
+    assert_eq!(code, 1, "the refusal exits non-zero: {out}");
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("RUN_ACTIVE"),
+        "gc must refuse while the run is writing evidence: {out}"
+    );
+    let status = child.wait().expect("the run finishes");
+    assert!(
+        status.success(),
+        "the run itself must still succeed: {status}"
+    );
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        status_of(&out),
+        "GC",
+        "after the run, the marker is gone and gc proceeds: {out}"
+    );
+}
+
+/// A receipt written before `run_id`, log digests and the context codec existed
+/// is not silently reinterpreted as current evidence: it is refused by name.
+#[test]
+fn a_legacy_receipt_without_a_context_is_refused_not_published() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let tree = run
+        .get("tree_oid")
+        .and_then(Json::as_str)
+        .unwrap()
+        .to_string();
+    let receipt_path = repo
+        .path
+        .join(".flow")
+        .join("receipts")
+        .join(format!("{tree}.json"));
+    let mut receipt = read_json_file(&receipt_path);
+    if let Json::Obj(pairs) = &mut receipt {
+        pairs.retain(|(k, _)| k != "context_id" && k != "run_id" && k != "log_digests");
+    }
+    // Re-seal exactly as `state::seal_record` does, so the refusal under test is
+    // the missing context, not a broken integrity digest.
+    let mut body = receipt.clone();
+    if let Json::Obj(pairs) = &mut body {
+        pairs.retain(|(k, _)| k != "integrity");
+    }
+    let material = repo.path.join("receipt-body.txt");
+    fs::write(&material, body.to_string()).unwrap();
+    let digest = sha256_of(&material);
+    let mut sealed = body;
+    if let Json::Obj(pairs) = &mut sealed {
+        pairs.push(("integrity".to_string(), Json::str(digest)));
+    }
+    write_json_file(&receipt_path, &sealed);
+
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    let text = out.to_string();
+    assert!(
+        text.contains("CONTEXT_MISMATCH") || text.contains("RECEIPT"),
+        "a legacy receipt must be refused by a named check: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "an unusable legacy receipt must not publish anything"
+    );
+}
+
 /// `status` says which policy is in force and who approved it.
 #[test]
 fn status_reports_policy_provenance() {
