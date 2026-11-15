@@ -2487,6 +2487,60 @@ mod tests {
     // reach to break it.
 
     #[test]
+    fn program_resolution_and_identity_cover_explicit_missing_and_bare_names() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-program-{}-{}",
+            std::process::id(),
+            state::unique_suffix()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let file = root.join("tool");
+        fs::write(&file, b"#!/bin/sh\nexit 0\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mut perms = fs::metadata(&file).unwrap().permissions();
+            perms.set_mode(0o755);
+            fs::set_permissions(&file, perms).unwrap();
+        }
+        let explicit = file.to_string_lossy().to_string();
+        assert_eq!(
+            resolve_program_path(&explicit),
+            Some(file.canonicalize().unwrap()),
+            "an explicit existing path is used as given"
+        );
+        assert_eq!(
+            resolve_program_path(&format!("{}/absent", root.display())),
+            None,
+            "an explicit missing path is not searched on PATH"
+        );
+        assert!(
+            resolve_program_path("git").is_some(),
+            "a bare name is searched on PATH"
+        );
+        let missing = program_identity("flow-definitely-absent-program");
+        assert_eq!(
+            missing.get("resolved").map(|v| v == &Json::Null),
+            Some(true),
+            "an absent program has no resolved path: {missing}"
+        );
+        // A declared probe with no program is marked INVALID and never executed.
+        let config = Config {
+            context_probes: vec![Vec::new()],
+            ..Config::default()
+        };
+        let probes = probe_identity(&config, &root);
+        let first = probes
+            .as_arr()
+            .and_then(|items| items.first())
+            .and_then(|probe| probe.get("status"))
+            .and_then(Json::as_str);
+        assert_eq!(first, Some("INVALID"), "{probes}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn context_helpers_are_deterministic_and_do_not_leak_values() {
         let Json::Arr(entries) = env_identity() else {
             panic!("env identity is a list")

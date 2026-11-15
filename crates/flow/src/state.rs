@@ -1573,6 +1573,48 @@ mod tests {
     }
 
     #[test]
+    fn read_journal_reports_an_archived_segment_it_cannot_open() {
+        let root = temp_root("journal-archive-dir");
+        fs::create_dir_all(flow_dir(&root)).unwrap();
+        let archived = flow_dir(&root).join(format!("journal.{:020}.jsonl", 1));
+        fs::create_dir_all(&archived).unwrap();
+        match read_journal(&root) {
+            Err(JournalError::Io(reason)) => {
+                assert!(
+                    reason.contains("journal.00000000000000000001.jsonl"),
+                    "{reason}"
+                );
+            }
+            other => panic!("an unreadable archive must be an IO refusal: {other:?}"),
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_state_path_that_is_not_a_directory_is_reported_by_the_journal() {
+        let root = temp_root("journal-state-file");
+        fs::write(root.join(".flow"), "not a directory").unwrap();
+        assert!(
+            read_journal(&root).is_err(),
+            "a file where .flow belongs is not an empty journal"
+        );
+        let record = json::parse(r#"{"schema":"flow-journal/1","event":"record"}"#).unwrap();
+        let reason = append_journal(&root, &record).expect_err("a file cannot hold the journal");
+        assert!(reason.contains("cannot create .flow"), "{reason}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn next_journal_sequence_saturates_at_the_maximum() {
+        let root = temp_root("journal-max-seq");
+        let dir = flow_dir(&root);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join(format!("journal.{:020}.jsonl", u64::MAX)), "").unwrap();
+        assert_eq!(next_journal_sequence(&root), u64::MAX);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn measure_journal_append_cost() {
         // Measurement only: the CI gate forbids `ignored` tests, so this runs
         // when explicitly requested and is a no-op (a pass) otherwise.
