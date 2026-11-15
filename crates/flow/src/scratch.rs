@@ -190,7 +190,7 @@ pub(crate) fn materialise_in(
         ));
     };
 
-    if let Err(e) = add_worktree(&git, path_str, commit) {
+    if let Err(e) = add_worktree(git, path_str, commit) {
         abandon(&path, &repo_root);
         return Err(e);
     }
@@ -1024,3 +1024,4 @@ mod tests {
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
     }
 }
+
