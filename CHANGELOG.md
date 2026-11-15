@@ -24,6 +24,9 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   (`MISSING_LOGS`, `LOG_INTEGRITY_INVALID`) before the intent, exactly as `explain` already reported.
 - **`gc --keep N` no longer deletes fresh candidates or partial receipts.** Only an explicit age
   policy collects them; `--keep` governs receipts and their logs.
+- **FBL-014 (found by CI, macOS)**: a concurrent creator's staging link (`nlink == 2` for
+  microseconds) no longer makes the hard-link guard refuse a valid concurrent `propose`;
+  `create_once` answers "not created" for an existing name before the guard.
 
 ### Changed
 - Coverage gate closed without lowering a threshold or adding a waiver: **96.00 % lines / 90.69 %

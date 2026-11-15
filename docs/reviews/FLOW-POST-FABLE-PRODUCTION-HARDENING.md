@@ -46,6 +46,8 @@ Git, unsourced claim, P0 still open at the verdict).
 | `ac38bfb` | test(hardening): expect the platform's honest host identity when no fallback exists |
 | `9baa72b` | fix(scratch): retry git's unlocked worktree-admin race instead of failing the run (FBL-013) |
 | `3b0fb6a` | style(scratch): restore the file's trailing newline after the clippy fix |
+| `922bd22` | fix(policy,publish,gc): close the three defects found by the internal pre-review |
+| `fb00d8d` | fix(state): answer `create_once` for an existing name before the hard-link guard (FBL-014) |
 | final HEAD | recorded at the end of this wave (see §9) |
 
 ## 4. FBL matrix
@@ -68,6 +70,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | FBL-011 | P3 | CONFIRMED_BY_CODE | persisted evidence uses workspace-relative paths: `patch_blob`, `receipt_path`, `journal`, `loc_path` in refusals, status config path; proposal records no longer store an absolute `patch_path` | relative paths asserted in the G1/G2 outputs; full suite | **PARTIAL**: `doctor` diagnostic *details* may still print absolute host paths (not persisted evidence); program resolution paths are hashed, never stored |
 | FBL-012 | P3 | CONFIRMED_BY_CODE (documented) | measured: `append_journal` ≈ **9 ms/append**, fsync-dominated, 2 000 appends = 17.97 s / 274 KB on this host; the per-append cost is flat in the measured range, so no quadratic behaviour was observed there | `state::measure_journal_append_cost` (env-gated with `FLOW_JOURNAL_BENCH=1`, counts as a pass otherwise) | **DEFERRED** (P3): segmentation/compaction is a separate, migration-bearing change; it is not required for the local-trusted P0/P1 envelope. No performance claim beyond the measurement |
 | FBL-013 | P2 | **DISCOVERED_BY_CI** (run `43704406911`, `g2` on Ubuntu) | `git worktree add` is not internally locked: it can read another process's half-written `.git/worktrees/<name>/commondir` while that process runs `git worktree prune`, and the loser failed a valid run with `SCRATCH_REFUSED` ("failed to read .../commondir"). `add_worktree` now retries exactly that transient error a bounded number of times and refuses by name when it persists | `tests/cli.rs::a_transient_worktree_admin_race_is_retried_instead_of_failing_the_run` and `an_unresolved_worktree_admin_race_refuses_the_run_by_name`, both driving a real `git` shim that fails the first/ every `worktree add` with Git's own message | **CLOSED (by fault injection)**. The underlying Git race is not removed by Flow; it is tolerated, and a host with a persistently broken worktree admin still fails closed |
+| FBL-014 | P2 | **DISCOVERED_BY_CI** (run `43711951264`, `g1` on macOS) | a concurrent creator's staging link makes the final name legitimately have `nlink == 2` for a few microseconds (`name` + `name.tmp-flow-*`); the Unix hard-link guard refused a valid concurrent `propose` with "it has 2 hard links". `create_once` now answers "not created" for any existing name before running the guard, without writing; the caller re-reads and validates the winner's bytes | `state::tests::create_once_treats_a_staging_link_as_an_existing_name_not_an_error` pins the two-link case, and `g1_concurrent_proposals_same_key_have_exactly_one_winner` is the live stress that found it | **CLOSED**. The guard still refuses a hard-linked target for `write_atomic` (journal, config, receipts), where Flow would be writing through a link; only the immutable create-once names short-circuit |
 
 ## 5. Gates
 
@@ -111,6 +114,13 @@ make `git worktree add` read another process's half-written `.git/worktrees/<nam
 that process prunes; the run was refused with `SCRATCH_REFUSED` although nothing was wrong with the
 requested tree. `add_worktree` now retries exactly that transient error (≤3 attempts, 150 ms apart)
 and refuses by name when it persists; two fault-injection tests drive both outcomes.
+
+**A fourth defect was found by CI on macOS (FBL-014):** the hard-link guard added for FBL-001 saw a
+concurrent creator's own staging link (`nlink == 2` for microseconds) and refused a valid concurrent
+`propose` with "it has 2 hard links". `create_once` now answers "not created" for any existing name
+before the guard, without writing; the regression test pins the two-link case. Both defects are
+concurrency bugs that only a real multi-process run could expose, which is why they are recorded as
+CI findings rather than audit findings.
 
 **Test-count caveat.** 489 → 537 is +48 executed (Linux 546: the same suite plus the Unix-only
 gates). The test wave covers the store, lock, host, context, revalidation, gc, publish and migrate
