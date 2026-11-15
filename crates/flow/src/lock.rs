@@ -316,6 +316,26 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                         owner.purpose
                     )));
                 }
+                // A record that names **another host** is unattributable
+                // whatever its PID says: PID spaces are incomparable, and a
+                // recycled PID that happens to be alive here used to turn a
+                // foreign lock into "held" (FBL-015). Attribution therefore
+                // comes before liveness for explicit foreign hosts. A record
+                // *without* a host token is legacy: it falls through to the
+                // liveness probe (a live PID is waited for, a dead one is
+                // refused as unattributable below), as documented.
+                let local = local_host_id();
+                let foreign_host = match (owner.host.as_deref(), local.as_deref()) {
+                    (Some(writer), Some(here)) => writer != here,
+                    (Some(_), None) => true,
+                    (None, _) => false,
+                };
+                if foreign_host {
+                    return Err(LockError::Unknown(format!(
+                        "lock {} cannot be attributed to this host (foreign record): refusing to steal it. Inspect it and remove it by hand only if no flow process holds it",
+                        path.display()
+                    )));
+                }
                 match pid_alive(owner.pid) {
                     // A live owner is never displaced, whatever the age says.
                     Some(true) => {
@@ -341,15 +361,15 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                         // Provably dead owner. The steal itself is serialized by
                         // a per-generation marker: only the process that creates
                         // it may remove that exact lock, so two stealers can
-                        // never delete each other's fresh lock. A foreign or
-                        // host-less record is refused, never guessed.
-                        let same_host = match (owner.host.as_deref(), local_host_id()) {
+                        // never delete each other's fresh lock. A host-less
+                        // record is refused, never guessed.
+                        let same_host = match (owner.host.as_deref(), local.as_deref()) {
                             (Some(writer), Some(here)) => writer == here,
                             _ => false,
                         };
                         if !same_host {
                             return Err(LockError::Unknown(format!(
-                                "lock {} cannot be attributed to this host (foreign or host-less record): refusing to steal it. Inspect it and remove it by hand only if no flow process holds it",
+                                "lock {} cannot be attributed to this host (host-less record): refusing to steal it. Inspect it and remove it by hand only if no flow process holds it",
                                 path.display()
                             )));
                         }
@@ -690,6 +710,55 @@ mod tests {
             Err(LockError::Held(m)) => assert!(m.contains("already holds"), "{m}"),
             other => panic!("a host-less record naming our pid is still ours: {other:?}"),
         }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_foreign_record_with_a_live_pid_is_unattributable_not_held() {
+        let root = temp_flow_dir("foreign-live-pid");
+        // A live PID that is *not* this process: the old code asked `pid_alive`
+        // first, so a recycled PID made a foreign lock look held (FBL-015).
+        #[cfg(unix)]
+        let mut child = {
+            use std::process::Stdio;
+            std::process::Command::new("sleep")
+                .arg("5")
+                .stdout(Stdio::null())
+                .spawn()
+                .expect("a short-lived child")
+        };
+        #[cfg(windows)]
+        let mut child = {
+            use std::process::Stdio;
+            std::process::Command::new("cmd")
+                .args(["/c", "ping", "-n", "6", "127.0.0.1"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .expect("a short-lived child")
+        };
+        let record = format!(
+            "{LOCK_SCHEMA} {} {} nonce publish host:0000000000000000\n",
+            child.id(),
+            crate::state::unix_now()
+        );
+        let lock = lock_path(&root);
+        fs::write(&lock, &record).unwrap();
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Unknown(reason)) => {
+                assert!(reason.contains("cannot be attributed"), "{reason}");
+            }
+            other => panic!(
+                "a foreign record must be unattributable even when its pid is alive here: {other:?}"
+            ),
+        }
+        assert_eq!(
+            fs::read_to_string(&lock).unwrap(),
+            record,
+            "a foreign lock is left exactly in place"
+        );
+        let _ = child.kill();
+        let _ = child.wait();
         let _ = fs::remove_dir_all(&root);
     }
 
