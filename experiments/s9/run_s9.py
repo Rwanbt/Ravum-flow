@@ -109,6 +109,28 @@ def git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProces
     return run(["git", "-C", str(cwd), *args], cwd, check=check)
 
 
+FLOW_BIN = REPO_ROOT / "target" / "debug" / ("flow.exe" if os.name == "nt" else "flow")
+FLOW_CONFIG = (
+    '{"schema":"flow-config/1","policy_version":"S9-POLICY-1",'
+    '"execution_boundary":"local-trusted","obligations":['
+    '{"id":"tests","program":"cargo","args":["test","--offline","-q"],'
+    '"required":true,"timeout_s":120}],"disabled":false}'
+)
+
+
+def ensure_flow() -> Path:
+    """Build the shipped CLI once; a campaign without the binary is not a campaign."""
+    if not FLOW_BIN.exists():
+        run(["cargo", "build", "--offline", "-q", "--bin", "flow"], REPO_ROOT, timeout=600.0)
+    if not FLOW_BIN.exists():
+        raise RuntimeError(f"flow binary not found at {FLOW_BIN}")
+    return FLOW_BIN
+
+
+def flow(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess:
+    return run([str(FLOW_BIN), *args], cwd, check=check)
+
+
 def build_base() -> Path:
     base = WORK / "base"
     if base.exists():
@@ -384,7 +406,94 @@ def arm_e(base: Path, run_id: int, agents: int, think_ms: int) -> dict:
                                              "receipts_ok": gate, "final_rc": final.returncode})
 
 
-ARMS = {"A": arm_a, "B": arm_b, "C": arm_c, "D": arm_d, "E": arm_e}
+def arm_g(base: Path, run_id: int, agents: int, think_ms: int) -> dict:
+    """G — Flow managed: propose → assemble → run --candidate → publish.
+
+    The shipped CLI is exercised end to end; nothing is simulated. The candidate
+    run is the required-check gate, and the published ref must carry exactly the
+    candidate tree.
+    """
+    ensure_flow()
+    root = WORK / "runs" / f"{run_id:02d}-G"
+    _rmtree(root)
+    root.mkdir(parents=True)
+    phases = {}
+    sha = base_sha(base)
+
+    t0 = time.perf_counter()
+    trees = []
+    for i in range(agents):
+        dst = root / f"wt{i}"
+        git(base, "worktree", "add", "-q", "-b", f"s9-g-{run_id}-{i}", str(dst))
+        trees.append(dst)
+    # Policy: the same required check as E, adopted locally before any run.
+    flow_dir = base / ".flow"
+    flow_dir.mkdir(exist_ok=True)
+    (flow_dir / "config.json").write_text(FLOW_CONFIG, encoding="utf-8")
+    has_journal = (flow_dir / "journal.jsonl").exists() or bool(list(flow_dir.glob("journal.*.jsonl")))
+    if has_journal:
+        flow(base, "approve")
+    else:
+        flow(base, "init", "--adopt-policy")
+    phases["t_setup"] = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    proposals = []
+    for i, dst in enumerate(trees):
+        name = list(MODULES)[i]
+        _agent_edit(dst, name, think_ms)
+        patch = git(dst, "diff", "--binary", "--no-color", sha).stdout
+        patch_path = root / f"agent{i}.patch"
+        # Bytes, not text: writing the patch with newline translation would turn
+        # every context line into CRLF and make `git apply` reject it on Windows.
+        patch_path.write_bytes(patch.encode("utf-8"))
+        out = flow(
+            base, "propose", "--agent", f"agent-{i}", "--task", f"task-{i}",
+            "--base", sha, "--patch", str(patch_path), "--key", f"s9-{run_id}-{i}",
+        )
+        proposals.append(json.loads(out.stdout)["proposal_id"])
+    phases["t_work"] = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    assemble_args = []
+    for proposal in proposals:
+        assemble_args += ["--proposal", proposal]
+    assembled = json.loads(flow(base, "assemble", *assemble_args).stdout)
+    candidate_id = assembled["candidate_id"]
+    candidate_tree = assembled["tree_oid"]
+    run_json = json.loads(flow(base, "run", "--candidate", candidate_id).stdout)
+    passed = run_json.get("status") == "PASSED"
+    publish_json = json.loads(flow(base, "publish", "--candidate", candidate_id).stdout)
+    published = (
+        publish_json.get("status") == "PUBLISHED"
+        and publish_json.get("tree") == candidate_tree
+    )
+    phases["t_integrate"] = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    present = {}
+    for name, value in EXPECTED.items():
+        shown = git(base, "show", f"refs/heads/main:src/{name}.rs").stdout
+        present[name] = str(value) in shown
+    ref_tree = git(base, "rev-parse", "refs/heads/main^{tree}").stdout.strip()
+    phases["t_final_verify"] = time.perf_counter() - t0
+
+    t0 = time.perf_counter()
+    for dst in trees:
+        git(base, "worktree", "remove", "--force", str(dst), check=False)
+    phases["t_cleanup"] = time.perf_counter() - t0
+
+    ok = passed and published and ref_tree == candidate_tree and all(present.values())
+    return _record(
+        "G", run_id, phases, ok,
+        {"candidate_id": candidate_id, "run_status": run_json.get("status"),
+         "publish_status": publish_json.get("status"), "ref_tree_matches": ref_tree == candidate_tree,
+         "present": present,
+         "lost_edits": [name for name, found in present.items() if not found]},
+    )
+
+
+ARMS = {"A": arm_a, "B": arm_b, "C": arm_c, "D": arm_d, "E": arm_e, "G": arm_g}
 
 
 def tools_available() -> dict:
@@ -399,7 +508,7 @@ def tools_available() -> dict:
             "scion": "NOT_AVAILABLE"}
 
 
-def paired_summary(records: list[dict], arms: list[str]) -> dict:
+def paired_summary(records: list[dict], arms: list[str], confirmatory: bool = False) -> dict:
     by_arm: dict[str, list[dict]] = {a: [r for r in records if r["arm"] == a and r["ok"]] for a in arms}
     summary: dict = {"per_arm": {}, "pairs": {}}
     for a in arms:
@@ -429,7 +538,11 @@ def paired_summary(records: list[dict], arms: list[str]) -> dict:
                 "median_diff_s": round(statistics.median(diffs), 4),
                 "median_ratio": round(statistics.median(ratios), 4) if ratios else None,
                 "a_slower_wins": wins, "one_sided_sign_p": p,
-                "note": "exploratory only; n below confirmatory size, no ranking claim",
+                "note": (
+                    "frozen H4 protocol; success requires paired ratio <= 0.70 with p < 0.05"
+                    if confirmatory
+                    else "exploratory only; n below confirmatory size, no ranking claim"
+                ),
             }
     return summary
 
@@ -451,7 +564,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--arms", default="ABCDE")
     ap.add_argument("--seed", type=int, default=20261109)
     ap.add_argument("--out", default="out/pilot.json")
+    ap.add_argument(
+        "--confirmatory",
+        action="store_true",
+        help="run the frozen H4 protocol (G vs E, >=10 paired runs, alternating order)",
+    )
     args = ap.parse_args(argv)
+    if args.confirmatory and args.runs < 10:
+        ap.error("--confirmatory needs --runs >= 10 (frozen H4 protocol)")
+    if args.confirmatory and args.arms != "GE":
+        ap.error("--confirmatory runs the frozen arms G vs E: pass --arms GE")
 
     WORK.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -464,8 +586,12 @@ def main(argv: list[str] | None = None) -> int:
     started = datetime.now(timezone.utc)
     total = args.calibration + args.runs
     for run_id in range(1, total + 1):
-        order = arms[:]
-        rng.shuffle(order)
+        if args.confirmatory:
+            # Frozen protocol: alternating order cancels warm-cache drift.
+            order = ["G", "E"] if run_id % 2 == 1 else ["E", "G"]
+        else:
+            order = arms[:]
+            rng.shuffle(order)
         for arm in order:
             # every arm starts from the same pristine commit
             git(base, "worktree", "prune", check=False)
@@ -484,11 +610,18 @@ def main(argv: list[str] | None = None) -> int:
                   f"{'FAILED' if t is None else format(t, '8.3f')}s ok={rec['ok']} "
                   f"lost={rec.get('lost_edits')}", flush=True)
     measured = [r for r in records if not r["calibration"]]
-    summary = paired_summary(measured, arms)
+    summary = paired_summary(measured, arms, args.confirmatory)
     payload = {
-        "schema": "flow-s9-pilot/1",
-        "kind": "EXPLORATORY_PILOT",
-        "confirmatory": False,
+        "schema": "flow-s9-campaign/1" if args.confirmatory else "flow-s9-pilot/1",
+        "kind": "CONFIRMATORY" if args.confirmatory else "EXPLORATORY_PILOT",
+        "confirmatory": bool(args.confirmatory),
+        "protocol": "docs/BENCHMARK_S9.md § Protocol v1.0 (frozen 2026-11-15 by H4)",
+        "h4": {
+            "runs": args.runs,
+            "success": ">=30% less wall-clock for G than E (paired ratio <= 0.70) with p < 0.05",
+            "resources": "2 CPU cores / 8 GB RAM per run",
+            "stop": "G >2x slower on the first 3 pairs, or unexplained variance",
+        },
         "started_at": started.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "fixture": {"path": base.relative_to(REPO_ROOT).as_posix(), "sha": sha,
                     "agents": args.agents, "think_ms": args.think_ms},
@@ -502,8 +635,9 @@ def main(argv: list[str] | None = None) -> int:
             "agent thinking time is a constant (default 0 ms): LLM latency is out of scope",
             "single machine, 16 GB, warm cargo cache inside the campaign",
             "arms are run sequentially; CPU/RAM contention between concurrent agents is not measured",
-            "no arm F/G: no existing tool installed and no Flow prototype exists",
-            "n is exploratory; no p95, no confirmatory claim, no ranking",
+            "G is the shipped CLI on this branch; E is instrumented O0 (worktrees + per-agent receipt + exact-tree gate)",
+            "no arm F: no existing tool installed",
+            "n is the frozen H4 sample; no p95 claim",
         ],
     }
     out = OUT / Path(args.out).name if "/" in args.out else OUT / args.out
@@ -516,3 +650,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

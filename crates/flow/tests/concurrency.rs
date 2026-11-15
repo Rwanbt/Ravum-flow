@@ -14,6 +14,14 @@
 #[allow(dead_code)]
 mod json;
 
+#[path = "../src/sha256.rs"]
+#[allow(dead_code)]
+mod sha256;
+
+#[path = "../src/host.rs"]
+#[allow(dead_code)]
+mod host;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -418,11 +426,11 @@ fn a_dead_owners_lock_is_recovered() {
     }
 
     let lock = repo.path.join(".flow").join("lock");
-    fs::write(
-        &lock,
-        format!("flow-lock/2 {pid} 0 canary-dead-nonce publish\n"),
-    )
-    .unwrap();
+    let record = format!(
+        "flow-lock/2 {pid} 0 canary-dead-nonce publish host:{}\n",
+        local_host_token()
+    );
+    fs::write(&lock, &record).unwrap();
 
     let (publish_code, publish) = flow(&repo.path, &["publish"]);
     assert_eq!(
@@ -560,6 +568,447 @@ fn reconcile_is_serialized_and_never_duplicates_outcomes() {
         git(&repo.path, &["rev-parse", "HEAD"]),
         new,
         "reconcile must never move a ref"
+    );
+}
+
+// ------------------------------------------------------------ G1 (FBL-001)
+
+/// The exact patch bytes a G1 writer submits: the same key, eight different
+/// contents.
+fn g1_patch(writer: usize) -> String {
+    format!(
+        "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1 +1 @@\n-alpha\n+beta{writer}\n"
+    )
+}
+
+/// G1 — eight real processes race on the same `--agent/--task/--base/--key`
+/// with different patches, fifteen times. Exactly one may be `ADMITTED`, every
+/// other must be a named `IDEMPOTENCY_CONFLICT`, and the bytes on disk must
+/// still hash to the winner's recorded `content_digest`.
+#[test]
+fn g1_concurrent_proposals_same_key_have_exactly_one_winner() {
+    let repo = new_repo("g1");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    let base = git(&repo.path, &["rev-parse", "HEAD"]);
+    let patches = repo.path.join("g1-patches");
+    fs::create_dir_all(&patches).unwrap();
+    let mut patch_paths = Vec::new();
+    for writer in 0..8 {
+        let path = patches.join(format!("p{writer}.patch"));
+        fs::write(&path, g1_patch(writer)).unwrap();
+        patch_paths.push(path);
+    }
+
+    for round in 0..15 {
+        let key = format!("g1-key-{round}");
+        let children: Vec<Child> = patch_paths
+            .iter()
+            .map(|patch| {
+                Command::new(env!("CARGO_BIN_EXE_flow"))
+                    .current_dir(&repo.path)
+                    .args([
+                        "propose",
+                        "--agent",
+                        "agent-a",
+                        "--task",
+                        "T1",
+                        "--base",
+                        &base,
+                        "--key",
+                        &key,
+                        "--patch",
+                        patch.to_str().unwrap(),
+                    ])
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .expect("propose child spawns")
+            })
+            .collect();
+        let outputs = wait_all(children);
+
+        let mut admitted = 0;
+        let mut conflicts = 0;
+        let mut winner = None;
+        for (index, output) in outputs.iter().enumerate() {
+            let value = parse_output(&format!("g1[{round}][{index}]"), output);
+            match status_of(&value).as_str() {
+                "ADMITTED" => {
+                    admitted += 1;
+                    let idempotent = value.get("idempotent").and_then(Json::as_bool);
+                    assert_ne!(
+                        idempotent,
+                        Some(true),
+                        "a distinct patch may not be reported idempotent: {value}"
+                    );
+                    winner = Some(value);
+                }
+                "REFUSED" => {
+                    assert_eq!(
+                        code_of(&value),
+                        "IDEMPOTENCY_CONFLICT",
+                        "a losing writer must be a named conflict: {value}"
+                    );
+                    conflicts += 1;
+                }
+                other => panic!("unexpected proposal status {other:?}: {value}"),
+            }
+        }
+        assert_eq!(admitted, 1, "round {round}: exactly one winner");
+        assert_eq!(conflicts, 7, "round {round}: every other writer conflicts");
+
+        // The winner's bytes are on disk under their digest, and a second read
+        // of the same key is idempotent for exactly that content.
+        let winner = winner.expect("one winner");
+        let digest = winner
+            .get("content_digest")
+            .and_then(Json::as_str)
+            .expect("winner digest");
+        let blob = repo
+            .path
+            .join(".flow")
+            .join("blobs")
+            .join(&digest[..2])
+            .join(digest);
+        let bytes = fs::read(&blob).expect("winner blob exists");
+        assert_eq!(
+            sha256::sha256_hex(&bytes),
+            digest,
+            "round {round}: the stored bytes must hash to the recorded digest"
+        );
+        let winner_patch = winner
+            .get("patch_blob")
+            .and_then(Json::as_str)
+            .expect("winner patch_blob");
+        assert_eq!(
+            winner_patch,
+            format!(".flow/blobs/{}/{}", &digest[..2], digest),
+            "round {round}: the record must point at the content-addressed blob"
+        );
+
+        if round == 0 {
+            // Re-submitting the winner's exact bytes is idempotent, not a new
+            // admission and not a conflict.
+            let winning_writer = (0..8)
+                .find(|w| sha256::sha256_hex(g1_patch(*w).as_bytes()) == digest)
+                .expect("the winner is one of the eight writers");
+            let (code, again) = flow(
+                &repo.path,
+                &[
+                    "propose",
+                    "--agent",
+                    "agent-a",
+                    "--task",
+                    "T1",
+                    "--base",
+                    &base,
+                    "--key",
+                    &key,
+                    "--patch",
+                    patch_paths[winning_writer].to_str().unwrap(),
+                ],
+            );
+            assert_eq!(code, 0, "same bytes must be idempotent: {again}");
+            assert_eq!(
+                again.get("idempotent").and_then(Json::as_bool),
+                Some(true),
+                "{again}"
+            );
+        }
+    }
+}
+
+/// The host token the product writes: `sha256("flow-host/1\n<name>\n<os>")[..16]`.
+/// A test that rewrites a lock record must speak the same dialect.
+fn local_host_token() -> String {
+    host::local_host_id().expect("the test host has an identity")
+}
+
+/// G3 — a provably dead owner's lock and eight real `publish` processes: exactly
+/// one publication, every loser refused by name, one intent/outcome pair, and no
+/// lock artifact left behind. The steal is serialized by a per-generation marker,
+/// so no two publishers can both believe they own the critical section.
+#[test]
+fn g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder() {
+    let (repo, tree, head_before) = prepared_repo("g3-steal");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert_eq!(status_of(&out), "PASSED");
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    fs::write(
+        &lock,
+        format!(
+            "flow-lock/2 {pid} 0 canary-g3-nonce publish host:{}\n",
+            local_host_token()
+        ),
+    )
+    .unwrap();
+
+    let children: Vec<Child> = (0..8)
+        .map(|_| spawn_flow(&repo.path, &["publish"]))
+        .collect();
+    let outputs = wait_all(children);
+    assert_eq!(outputs.len(), 8);
+
+    let mut published = 0;
+    for (index, output) in outputs.iter().enumerate() {
+        let value = parse_output(&format!("g3[{index}]"), output);
+        let exit = output.status.code().unwrap_or(-1);
+        match status_of(&value).as_str() {
+            "PUBLISHED" => published += 1,
+            "REFUSED" => {
+                assert_ne!(exit, 0, "a refusal exits nonzero: {value}");
+                let code = code_of(&value);
+                assert!(
+                    code == "LOCKED" || code == "ALREADY_PUBLISHED",
+                    "a loser must be a named refusal, got {code:?}: {value}"
+                );
+            }
+            other => panic!("unexpected publish status {other:?}: {value}"),
+        }
+    }
+    assert_eq!(published, 1, "exactly one recovered writer may publish");
+
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    assert_ne!(head, head_before, "the recovered writer must publish");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD^{tree}"]), tree);
+
+    // One intent, one outcome: a double holder would interleave or duplicate
+    // these read-modify-write appends.
+    let records = journal_lines(&repo.path);
+    assert_eq!(count_event(&records, "intent"), 1, "{records:?}");
+    assert_eq!(count_event(&records, "outcome"), 1, "{records:?}");
+
+    assert!(!lock.exists(), "the recovered lock must be released");
+    let leftovers: Vec<String> = fs::read_dir(repo.path.join(".flow"))
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .filter(|name| name.starts_with("lock"))
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "no lock or steal artifact may survive: {leftovers:?}"
+    );
+}
+
+/// A lock record written by another host is never stolen, even when its PID is
+/// provably dead on this machine: the PID spaces are not comparable.
+#[test]
+fn a_foreign_host_lock_is_never_stolen() {
+    let (repo, tree, head_before) = prepared_repo("foreign-lock");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert!(receipt_for(&repo.path, &tree).is_file());
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP a_foreign_host_lock_is_never_stolen: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    let record = format!("flow-lock/2 {pid} 0 foreign-nonce publish host:0000000000000000\n");
+    fs::write(&lock, &record).unwrap();
+
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        code_of(&out),
+        "LOCK_UNKNOWN",
+        "a foreign lock is unattributable, not dead: {out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(true)
+    );
+    assert_eq!(
+        fs::read_to_string(&lock).unwrap(),
+        record,
+        "a foreign lock must be left exactly in place"
+    );
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+/// A dead lock written before the host token existed cannot be attributed to
+/// this machine, so it is refused (a named LOCK_UNKNOWN) rather than stolen.
+#[test]
+fn a_hostless_dead_lock_is_refused_not_stolen() {
+    let (repo, tree, _) = prepared_repo("hostless-lock");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert!(receipt_for(&repo.path, &tree).is_file());
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP a_hostless_dead_lock_is_refused_not_stolen: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    let record = format!("flow-lock/2 {pid} 0 legacy-nonce publish\n");
+    fs::write(&lock, &record).unwrap();
+
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(code_of(&out), "LOCK_UNKNOWN", "{out}");
+    assert_eq!(fs::read_to_string(&lock).unwrap(), record);
+}
+
+// ------------------------------------------------------------ G2 (FBL-002)
+
+/// G2 — two concurrent `run`s on the same tree: each execution writes its own
+/// log directory, the surviving receipt binds every log by sha256, and a later
+/// tamper is reported instead of being accepted as evidence.
+#[test]
+fn g2_concurrent_runs_keep_separate_integrity_bound_evidence() {
+    let (repo, tree, _) = prepared_repo("g2");
+    let children: Vec<Child> = (0..2).map(|_| spawn_flow(&repo.path, &["run"])).collect();
+    let outputs = wait_all(children);
+    for (index, output) in outputs.iter().enumerate() {
+        let value = parse_output(&format!("g2[{index}]"), output);
+        assert_eq!(
+            status_of(&value),
+            "PASSED",
+            "both runs must pass on this fixture: {value}"
+        );
+    }
+
+    let logs = repo.path.join(".flow").join("logs").join(&tree);
+    let run_dirs: Vec<PathBuf> = fs::read_dir(&logs)
+        .expect("logs dir")
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .collect();
+    assert_eq!(
+        run_dirs.len(),
+        2,
+        "each execution must have its own log directory: {run_dirs:?}"
+    );
+
+    let receipt_path = receipt_for(&repo.path, &tree);
+    let receipt = json::parse(&fs::read_to_string(&receipt_path).expect("receipt exists"))
+        .expect("receipt parses");
+    let run_id = receipt
+        .get("run_id")
+        .and_then(Json::as_str)
+        .expect("receipt records its run id");
+    assert!(!run_id.is_empty());
+    assert!(
+        run_dirs
+            .iter()
+            .any(|dir| dir.file_name().and_then(|n| n.to_str()) == Some(run_id)),
+        "the receipt's run directory must exist: {run_dirs:?}"
+    );
+
+    let digests = receipt
+        .get("log_digests")
+        .and_then(Json::as_arr)
+        .expect("receipt records log digests");
+    assert!(!digests.is_empty(), "at least one obligation log");
+    let logs_list: Vec<String> = receipt
+        .get("logs")
+        .and_then(Json::as_arr)
+        .expect("receipt records logs")
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect();
+    for entry in digests {
+        let id = entry.get("id").and_then(Json::as_str).expect("log id");
+        for (suffix, key) in [("stdout", "stdout_sha256"), ("stderr", "stderr_sha256")] {
+            let recorded = entry.get(key).and_then(Json::as_str).expect("log digest");
+            let wanted = format!("/{id}.{suffix}.log");
+            let rel = logs_list
+                .iter()
+                .find(|p| p.ends_with(&wanted))
+                .unwrap_or_else(|| panic!("no {wanted} in {logs_list:?}"));
+            let bytes = fs::read(repo.path.join(rel)).expect("log exists");
+            assert_eq!(
+                sha256::sha256_hex(&bytes),
+                recorded,
+                "the log {rel} must still hash to the receipt digest"
+            );
+        }
+    }
+
+    // Swap one log: explain must report incomplete evidence, never PASSED.
+    let victim = logs_list
+        .iter()
+        .find(|p| p.ends_with(".stdout.log"))
+        .expect("a stdout log");
+    fs::write(repo.path.join(victim), b"tampered evidence\n").unwrap();
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("log_integrity").and_then(Json::as_str),
+        Some("LOG_INTEGRITY_INVALID"),
+        "{explain}"
+    );
+    assert_eq!(
+        explain.get("evidence_complete").and_then(Json::as_bool),
+        Some(false),
+        "{explain}"
+    );
+}
+
+// ------------------------------------------------------------ G4 (FBL-004)
+
+/// G4 — an allowlisted environment change between `run` and `publish` makes the
+/// receipt stale: the publication is refused with CONTEXT_MISMATCH and the ref
+/// does not move.
+#[test]
+fn g4_environment_change_between_run_and_publish_refuses_context_mismatch() {
+    let (repo, tree, head_before) = prepared_repo("g4");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition run: {out}");
+    assert_eq!(status_of(&out), "PASSED");
+
+    let separator = if cfg!(windows) { ';' } else { ':' };
+    let changed_path = format!(
+        "{}{separator}{}",
+        std::env::var("PATH").unwrap_or_default(),
+        repo.path.display()
+    );
+    let (code, out) = flow_with_env(&repo.path, &["publish"], &[("PATH", &changed_path)]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        code_of(&out),
+        "CONTEXT_MISMATCH",
+        "a changed build environment must refuse the receipt: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "a refused publication must not move the ref"
+    );
+    assert!(
+        receipt_for(&repo.path, &tree).is_file(),
+        "the run receipt stays on disk as a record"
     );
 }
 

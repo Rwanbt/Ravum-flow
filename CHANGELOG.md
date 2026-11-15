@@ -2,6 +2,62 @@
 
 All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 
+## [Unreleased] — post-Fable production hardening (branch `feat/flow-production-hardening-fable`)
+
+### Fixed
+- **FBL-001 (P0)**: a patch is content-addressed (`.flow/blobs/<2>/<sha256>`) and its proposal record is
+  published exactly once; a losing concurrent writer re-reads and reports `IDEMPOTENCY_CONFLICT`
+  instead of leaving its bytes under another writer's metadata.
+- **FBL-002**: every `run` has a `run_id`; logs live under `logs/<tree>/<run_id>/` and the sealed
+  receipt records their sha256; `explain` reports `LOG_INTEGRITY_INVALID` for a swapped log.
+- **FBL-003**: a dead lock is stolen only through a per-generation marker, with a liveness re-check
+  before the removal and a bounded grace window for a claimed recovery.
+- **FBL-004/FBL-006/FBL-007/FBL-010**: `flow-context/3` (env values, resolved program bytes, declared
+  probes), strict policy decoding, receipt↔candidate binding and re-derived record identities.
+- **FBL-005..012** — gc coordination (`RUN_ACTIVE`, stale markers, links), strict policy decoding,
+  receipt↔candidate binding, re-derived identities and seals, relative persisted paths, and
+  **FBL-012**: the journal is segmented (active segment ≤ 256 KiB, archives
+  `journal.<20-digit>.jsonl` read in order and never deleted), so one append no longer rewrites the
+  whole history; destructive compaction is rejected because it would break recovery and audit.
+- **FBL-013 (found by CI)**: `git worktree add` racing another process's `worktree prune` no longer
+  fails a valid run; the transient "commondir" error is retried a bounded number of times.
+
+### Fixed after the internal adversarial pre-review
+- **`context_probes` are part of the approved policy.** Adding a probe to `.flow/config.json` after
+  `flow approve` is `POLICY_NOT_APPROVED` and nothing executes; `flow approve` now lists the probes.
+- **`publish` checks the log bytes it names.** A receipt whose log was deleted or swapped is refused
+  (`MISSING_LOGS`, `LOG_INTEGRITY_INVALID`) before the intent, exactly as `explain` already reported.
+- **`gc --keep N` no longer deletes fresh candidates or partial receipts.** Only an explicit age
+  policy collects them; `--keep` governs receipts and their logs.
+- **FBL-014 (found by CI, macOS)**: a concurrent creator's staging link (`nlink == 2` for
+  microseconds) no longer makes the hard-link guard refuse a valid concurrent `propose`;
+  `create_once` answers "not created" for an existing name before the guard.
+- **FBL-015 (found by repeated concurrency runs)**: a lock written by **another host** whose PID is
+  recycled and alive locally is no longer reported `LOCKED` after a full acquire budget — explicit
+  foreign hosts are attributed before any `pid_alive` probe and refused as `LOCK_UNKNOWN`, as the
+  lock contract already said. Host-less legacy records keep their documented behaviour.
+
+### Measured
+- **S9 confirmatory campaign** (frozen H4 protocol, 10 paired runs): arm G (Flow) vs arm E
+  (instrumented O0) on the synthetic `s9_workload`. G median `T_verified` **4.925 s** vs E **2.823 s**,
+  paired ratio **1.784**, G slower in **10/10** pairs, p = 0.000977 — the H4 criterion (ratio ≤ 0.70)
+  **failed**. No productivity advantage is claimed; the record is
+  `experiments/s9/out/campaign-h4.json`.
+
+### Changed
+- Coverage gate closed without lowering a threshold or adding a waiver: **95.96 % lines / 90.47 %
+  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 549 Windows / 560
+  Linux / 560 macOS.
+- `commands.rs` is split into `commands/mod.rs` (shared helpers, init/approve/doctor/status/
+  reconcile/disable/propose/proposals/assemble), `commands/policy.rs` (policy identity, effective
+  digest, build context, obligation validation), `commands/checkout.rs` (tree listing, fidelity,
+  mode and content certification, lock-free index read), `commands/run.rs`, `commands/publish.rs`,
+  `commands/gc.rs` and `commands/explain.rs`. Behaviour-constant.
+- `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
+- Documentation corrections from the claims audit: 152 named gates (not 144), the runtime-`SKIP`
+  caveat in `MEASUREMENTS.md`, FBL-004 is `PARTIAL`, FBL-009 no longer counts an unreachable branch
+  as proof, and the retention claim is scoped to receipts/logs/candidates.
+
 ## [0.2.0-rc.2] — 2026-11-13 — the merged, measured line
 
 ### Added
@@ -310,3 +366,10 @@ macOS is not tested, performance/productivity is not proven.
 ## [0.1.0] — 2026-11-09 — verified-tree foundation (unreleased)
 - Exact-tree receipts, CAS publication, durable intent/outcome journal, `reconcile`, bounded
   obligations, scratch isolation, policy/context binding, adoption of the MPL-2.0 licence.
+
+
+
+
+
+
+

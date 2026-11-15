@@ -3,19 +3,19 @@ No choice below is accepted merely because documentation has been uploaded. Mark
 
 | ID | Decision | Current state | Candidate direction | Evidence required |
 |---|---|---|---|---|
-| H1 | Provisional design O0/O1/O2/O3 | OPEN | Compare O0, O1, O3; keep O2 as subset | S9 + safety + maintainability |
+| H1 | Provisional design O0/O1/O2/O3 | **HUMAN_DECIDED 2026-11-15: O3 complet** (owner, via the session questionnaire). **O3 is the target, not what exists**: the branch implements the O1 + O2 subset (local CLI, exact-tree verification, CAS publication); orchestration/distribution (O3) is **not designed, budgeted or measured** and needs its own ADR, budget and P0 review before any claim. Four shapes and their tradeoffs are compared in [FLOW-O3-PROPOSALS.md](reviews/FLOW-O3-PROPOSALS.md) (local daemon, network coordinator, Git federation, embedded protocol) | O3 as the long-term target; the shipped subset stays labeled as such | O3 design + budget + review (not satisfied by this branch) |
 | H2 | License, rights, extraction vs clean-room | **HUMAN_DECIDED 2026-11-09**: MPL-2.0 for original Flow material (PR #49 main, #50 dev). Copying/deriving external code still **OPEN** | provenance + clean-room review before any external reuse | rights inventory; per-file third-party declaration |
-| H3 | Untrusted sandbox Windows/Linux policy | OPEN | refuse/fail-closed where isolation unsupported | actual OS-level containment tests |
-| H4 | S9 threshold and resource budget | OPEN — **no numbers granted** | pre-register paired difference, cost and stop criteria | human-set numeric threshold/budget before run |
+| H3 | Untrusted sandbox Windows/Linux policy | **HUMAN_DECIDED 2026-11-15: refuse/fail-closed where OS isolation is absent** (owner). The product stays `local-trusted`, untrusted execution is `UNSUPPORTED`, and `doctor` states it | fail-closed; no confinement claim | no OS containment tests exist, and none is claimed |
+| H4 | S9 threshold and resource budget | **HUMAN_DECIDED 2026-11-15: granted** (owner): confirmatory paired campaign, **10 pairs, 2 cores / 8 GB, stop if Flow is >2× slower or variance is unexplained; success = ≥30 % less wall-clock to a verified publish, p < 0.05** | pre-registered threshold and budget | campaign not yet run; until it is, productivity stays `UNPROVEN` |
 | H5 | R0 fixtures authorization, then minimal implementation | **HUMAN_DECIDED 2026-11-09** (owner-delegated GOAL, bounded) | R0-a/b/c on synthetic fixtures, then smallest useful core only if O0 is demonstrably insufficient | this GOAL's scope; results in `FLOW-FOUNDATION-VERIFIED-REPORT.md` |
-| H6 | Handoff P0 to separate Ravum session | OPEN | send risk report, never edits | session priority / human agreement |
+| H6 | Handoff P0 to separate Ravum session | **HUMAN_DECIDED 2026-11-15: draft handoff authorized, no write into `Rwanbt/Ravum`** (owner). The draft is [RAVUM-HANDOFF-DRAFT-2026-11-15.md](reviews/RAVUM-HANDOFF-DRAFT-2026-11-15.md); transmission to the owning session is the owner's act | send the evidence-based draft; never edit Ravum | Flow has no channel into the Ravum session; the draft stays local until the owner transmits it |
 | H7 | Internal-first use vs independent product | **HUMAN_DECIDED 2026-11-13**: independent product, evaluated on real projects (mandate below) | production-grade envelope and demonstrable advantage, not only internal use | real-project pilot evidence, maintenance cost |
-| H8 | Stop rule for documentary reviews | OPEN (**new**, proposed) | no new review dossier unless a decision is blocked; every review ends with GO/NO-GO + one concrete artifact | observed review cost vs decision throughput |
+| H8 | Stop rule for documentary reviews | **HUMAN_DECIDED 2026-11-15: adopted** (owner): no new review dossier unless a decision is blocked; every review ends with `GO`/`NO-GO` and one concrete artifact | adopted rule | applies from this date; no retroactive re-scoring |
 | D0 | source, provenance and rights inventoried | PARTIAL | verify GitHub actual refs and rights | citations, SHA, 42 ADR audit |
 | D1 | independent contradictory review | DOCUMENT-CONDITIONAL | Claude V5 reviewed; V6 corrected afterwards | unresolved differences + provenance |
-| D2 | security and transactional contract | PROPOSED | tree/hook/context/receipt/fencing rules | negative test specifications; no claims of tests run |
-| D3 | S9 protocol frozen | DRAFT | paired benchmark with real worktrees and tools | budget, threshold, seeds, gates |
-| D4 | reviewed human decision and scoped GO | PARTIAL (planning + R0 granted; D4 not closed) | separate planning, fixture and implementation permissions | dated explicit acceptance |
+| D2 | security and transactional contract | PROPOSED (ADR-012, plus the 2026-11-15 review notes) | tree/hook/context/receipt/fencing rules; probes in the approved policy; publish checks log bytes | negative test specifications; ADR-012 ratification is post-`G10` |
+| D3 | S9 protocol frozen | **FROZEN + RUN 2026-11-15 (`H4`); result NEGATIVE** — G (Flow) slower than E (O0): median ratio 1.784, 10/10 pairs, p=0.000977 vs the ≤0.70 criterion | paired benchmark with real worktrees and tools | no productivity claim; a positive claim needs a new pre-registered protocol (see [campaign summary](../experiments/s9/CAMPAIGN-2026-11-15.md)) |
+| D4 | reviewed human decision and scoped GO | PARTIAL: human decisions `H1`/`H3`/`H4`/`H6`/`H8` recorded 2026-11-15; `G10` and `GO_PRODUCTION` outstanding | separate planning, fixture and implementation permissions | external review verdict + owner `GO_PRODUCTION` |
 
 ## Mandate of 2026-11-09 (bounded, second wave) — recorded, not ratified
 The owner message that opened the MVP 0.1 wave is a **bounded technical mandate**, not a decision:
@@ -65,6 +65,42 @@ product requirement rather than an optional study.
 thresholds and budget), `H6` (Ravum handoff), `H8` (review stop rule), any `RAVUM-ADR-*` or `FLOW-ADR-*`, and
 `G10` (which requires a reviewer outside the team). `GO_PRODUCTION` itself remains the owner's act.
 
+## Decisions of 2026-11-15 (owner's answers, recorded verbatim)
+
+The owner answered the questionnaire of [FLOW-HUMAN-DECISIONS-2026-11-15.md](reviews/FLOW-HUMAN-DECISIONS-2026-11-15.md)
+in session. The answers are recorded as given, including the one that departs from the recommendation:
+
+| Question | Owner's answer | Consequence recorded here |
+|---|---|---|
+| H1 | **"O3 complet"** | O3 is the target architecture. The branch implements only the O1 + O2 subset; O3 (orchestration/distribution) has **no design, no budget, no measurement and no P0 review** and is a separate workstream. No document may present O3 as delivered. |
+| H3 | **"Refus/fail-closed hors isolation OS"** | The product keeps `local-trusted`; untrusted execution is `UNSUPPORTED`; no confinement is claimed. |
+| H4 | **"Oui : ≥30 % de temps en moins, p<0,05, 10 paires"** | The S9 thresholds and budget are frozen as stated; the campaign is **not yet run**, so productivity remains `UNPROVEN` until it is. |
+| H6 | **"Les trois recommandations"** (handoff draft, no Ravum write) | The draft [RAVUM-HANDOFF-DRAFT-2026-11-15.md](reviews/RAVUM-HANDOFF-DRAFT-2026-11-15.md) is authorized; transmission is the owner's act; Flow never writes `Rwanbt/Ravum`. |
+| H8 | **"Les trois recommandations"** (review stop rule) | The rule is adopted from 2026-11-15. |
+| ADR-012 | **"Les trois recommandations"** (stay `PROPOSED` until G10, then ratify) | ADR-012 remains **PROPOSED**; its ratification is a post-`G10` act. |
+
+`G10` (reviewer outside the team) is **not** satisfied by this record: it remains an open gate, and the
+verdict stays `PRODUCTION_PARTIAL` until it is passed and `GO_PRODUCTION` is granted.
+
+## Mandate of 2026-11-15 (Fable hardening) — granted by the owner in session
+The owner granted the following scoped GO on 2026-11-15, after reading the Fable counter-audit
+(`RAVUM_FLOW_FABLE_AUDIT.md`, SHA `1952325c`). It is recorded here verbatim; it is a **production
+hardening** authorization, not `GO_PRODUCTION` and not a release decision.
+
+| Field | Value |
+|---|---|
+| `GO(scope)` | Corrections FBL-001..FBL-012 du contre-audit Fable du 2026-11-15 ; tests de régression G1–G8 ; adaptations de schémas et migration ; refactoring strictement nécessaire ; CI/documentation/ADR ; benchmarks bornés ; commits et PR sur une branche feature. Périmètre produit : local-trusted mono-hôte, Git en sous-processus, aucune promesse de sandbox OS ni de système multi-hôtes. |
+| `repository` | `Rwanbt/Ravum-flow` uniquement ; `Rwanbt/Ravum` reste en lecture seule, hors périmètre |
+| `branch` | `feat/flow-production-hardening-fable` créée depuis `origin/dev` (`2ab79c7`) ; branches courtes dérivées autorisées ; aucun force-push, aucun merge `dev`/`main` |
+| `allowed_paths` | `crates/flow/**`, `tests/**`, `docs/**`, `.github/**`, `scripts/**`, `examples/**`, `experiments/quality/**` |
+| `budgets` | machine de référence 16 Go RAM ; pas de campagnes Cargo lourdes concurrentes ; benchmarks et fuzz bornés (local ou CI), aucun run illimité |
+| `evidence` | `docs/reviews/FLOW-POST-FABLE-PRODUCTION-HARDENING.md` ; commandes, OS, exit codes, digests, run ids CI, résultats G1–G8 |
+| `stop_conditions` | check requis rouge ; secret réel dans un log/fixture ; écriture dans `Rwanbt/Ravum` ; opération Git destructive sur fichiers utilisateur ; affirmation non traçable à une mesure ; P0 encore ouvert au verdict final |
+
+**Explicitly excluded by the owner:** merges into protected branches, tags, releases, and any change
+to `Rwanbt/Ravum`. **Still not ratified:** `H1`, `H3`, `H4`, `H6`, `H8`, any `FLOW-ADR-*` /
+`RAVUM-ADR-*`, coverage/mutation thresholds, and `GO_PRODUCTION` itself.
+
 ## Decisions this GOAL does **not** ratify
 The owner's operational GOAL is not a ratification of `H1`, `H3`, `H4`, `H6`, `H7`, `H8`, of any `RAVUM-ADR-*`, or of any `FLOW-ADR-*`. `H2` was decided separately by the owner (MPL-2.0, PRs #49/#50). The GOAL does not close `D3` and does not authorize a merge into `dev` or `main`.
 
@@ -76,3 +112,4 @@ The owner's operational GOAL is not a ratification of `H1`, `H3`, `H4`, `H6`, `H
 
 ## Evidence labeling
 `CODE_READ`, `SOURCE_READ`, `MEASURED_HISTORICAL`, `MEASURED`, `PLAUSIBLE_NOT_REPRODUCED`, `NOT_REVIEWED`, `PROPOSED`, `UNKNOWN`. Human verdict documented independently from model opinions.
+

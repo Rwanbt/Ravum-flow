@@ -12,9 +12,16 @@
 //!
 //! Attribution rules (the whole point of v2):
 //!
-//! * a lock whose owner is provably alive is **never** stolen, whatever its age;
-//! * a lock is stolen only when its owner is **provably gone** (the PID is dead
-//!   and the file still carries the same nonce that was observed);
+//! * a lock whose owner is provably alive **on this host** is **never** stolen,
+//!   whatever its age. "This host" is the host-name hash of `flow-lock/2`; two
+//!   machines that share a host name are indistinguishable, which is why a shared
+//!   `.flow/` across machines is unsupported rather than "protected";
+//! * a dead lock is stolen only when its record names **this host** and the steal
+//!   itself is claimed by a per-generation marker (`lock.steal.<nonce>`): the
+//!   marker's creator alone may remove that exact lock, so two stealers can
+//!   never delete each other's fresh lock;
+//! * a record without a host token, or written by another host, is never stolen:
+//!   a shared `.flow/` across hosts has incomparable PID spaces;
 //! * when liveness cannot be established (no `tasklist`/`kill`, an unreadable or
 //!   unparseable file, an empty file left by a crash between create and write, a
 //!   `kill -0` that failed for any reason other than "no such process") the
@@ -34,6 +41,11 @@ use std::time::{Duration, Instant};
 pub const LOCK_SCHEMA: &str = "flow-lock/2";
 
 const ACQUIRE_BUDGET: Duration = Duration::from_secs(3);
+/// How long a writer waits for another process to finish recovering a dead lock
+/// before giving up with `LOCK_UNKNOWN`. Separate from `ACQUIRE_BUDGET`: the
+/// recovery is a short, claimed operation, and a burst of publishers must not
+/// turn a healthy recovery into a manual-intervention refusal.
+const STEAL_GRACE: Duration = Duration::from_secs(15);
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 #[derive(Debug)]
@@ -86,7 +98,14 @@ struct Owner {
     at: u64,
     nonce: String,
     purpose: String,
+    /// The host that wrote the record. `None` for records written before the
+    /// host token existed: such a lock is never stolen, because a shared
+    /// `.flow/` across hosts (network share, bind mount, WSL/Windows) can make a
+    /// foreign live PID look dead locally.
+    host: Option<String>,
 }
+
+use crate::host::local_host_id;
 
 fn parse(text: &str) -> Option<Owner> {
     let mut parts = text.split_whitespace();
@@ -94,11 +113,20 @@ fn parse(text: &str) -> Option<Owner> {
     if schema != LOCK_SCHEMA {
         return None;
     }
+    let pid = parts.next()?.parse().ok()?;
+    let at = parts.next()?.parse().ok()?;
+    let nonce = parts.next()?.to_string();
+    let purpose = parts.next().unwrap_or("unknown").to_string();
+    let host = parts
+        .next()
+        .and_then(|token| token.strip_prefix("host:"))
+        .map(str::to_string);
     Some(Owner {
-        pid: parts.next()?.parse().ok()?,
-        at: parts.next()?.parse().ok()?,
-        nonce: parts.next()?.to_string(),
-        purpose: parts.next().unwrap_or("unknown").to_string(),
+        pid,
+        at,
+        nonce,
+        purpose,
+        host,
     })
 }
 
@@ -115,10 +143,22 @@ pub fn inspect(root: &Path) -> LockInfo {
     };
     match parse(&text) {
         Some(owner) => {
-            let attribution = match pid_alive(owner.pid) {
-                Some(true) => "live",
-                Some(false) => "dead",
-                None => "unknown",
+            let local = local_host_id();
+            let foreign = match (&owner.host, &local) {
+                (Some(writer), Some(here)) => writer != here,
+                // A record without a host token predates the identity, so it
+                // cannot be attributed to this machine: it is not "dead".
+                (None, _) => true,
+                (Some(_), None) => true,
+            };
+            let attribution = if foreign {
+                "foreign"
+            } else {
+                match pid_alive(owner.pid) {
+                    Some(true) => "live",
+                    Some(false) => "dead",
+                    None => "unknown",
+                }
             };
             LockInfo {
                 present: true,
@@ -184,8 +224,11 @@ const CREATE_GRACE: Duration = Duration::from_millis(750);
 /// name is removed on every path.
 fn create_lock_file(path: &Path, nonce: &str, purpose: &str) -> std::io::Result<()> {
     let tmp = path.with_file_name(format!("lock.{nonce}.tmp"));
+    let host = local_host_id()
+        .map(|h| format!(" host:{h}"))
+        .unwrap_or_default();
     let line = format!(
-        "{LOCK_SCHEMA} {} {} {nonce} {purpose}\n",
+        "{LOCK_SCHEMA} {} {} {nonce} {purpose}{host}\n",
         std::process::id(),
         crate::state::unix_now()
     );
@@ -217,6 +260,13 @@ fn wait_for_record(path: &Path, first: String) -> Option<Owner> {
     None
 }
 
+/// The per-generation steal marker. Its name carries the dead owner's nonce, so
+/// one generation has exactly one marker and a second stealer waits instead of
+/// racing the first.
+fn steal_marker_path(path: &Path, nonce: &str) -> PathBuf {
+    path.with_file_name(format!("lock.steal.{nonce}"))
+}
+
 pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> {
     let path = lock_path(root);
     if let Some(parent) = path.parent() {
@@ -224,6 +274,7 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
             .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
     }
     let deadline = Instant::now() + ACQUIRE_BUDGET;
+    let mut steal_waited: Option<Instant> = None;
     loop {
         let ours = nonce();
         match create_lock_file(&path, &ours, purpose) {
@@ -265,6 +316,26 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                         owner.purpose
                     )));
                 }
+                // A record that names **another host** is unattributable
+                // whatever its PID says: PID spaces are incomparable, and a
+                // recycled PID that happens to be alive here used to turn a
+                // foreign lock into "held" (FBL-015). Attribution therefore
+                // comes before liveness for explicit foreign hosts. A record
+                // *without* a host token is legacy: it falls through to the
+                // liveness probe (a live PID is waited for, a dead one is
+                // refused as unattributable below), as documented.
+                let local = local_host_id();
+                let foreign_host = match (owner.host.as_deref(), local.as_deref()) {
+                    (Some(writer), Some(here)) => writer != here,
+                    (Some(_), None) => true,
+                    (None, _) => false,
+                };
+                if foreign_host {
+                    return Err(LockError::Unknown(format!(
+                        "lock {} cannot be attributed to this host (foreign record): refusing to steal it. Inspect it and remove it by hand only if no flow process holds it",
+                        path.display()
+                    )));
+                }
                 match pid_alive(owner.pid) {
                     // A live owner is never displaced, whatever the age says.
                     Some(true) => {
@@ -287,22 +358,106 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                         )))
                     }
                     Some(false) => {
-                        // Provably dead owner: steal only if the file still
-                        // carries the nonce that was observed, so a concurrent
-                        // successor is never removed.
-                        match fs::read_to_string(&path) {
-                            Ok(again) if parse(&again).map(|o| o.nonce) == Some(owner.nonce.clone()) => {
-                                match fs::remove_file(&path) {
-                                    Ok(()) => continue,
-                                    Err(err) => {
-                                        return Err(LockError::Io(format!(
-                                            "cannot remove the dead lock {}: {err}",
-                                            path.display()
-                                        )))
+                        // Provably dead owner. The steal itself is serialized by
+                        // a per-generation marker: only the process that creates
+                        // it may remove that exact lock, so two stealers can
+                        // never delete each other's fresh lock. A host-less
+                        // record is refused, never guessed.
+                        let same_host = match (owner.host.as_deref(), local.as_deref()) {
+                            (Some(writer), Some(here)) => writer == here,
+                            _ => false,
+                        };
+                        if !same_host {
+                            return Err(LockError::Unknown(format!(
+                                "lock {} cannot be attributed to this host (host-less record): refusing to steal it. Inspect it and remove it by hand only if no flow process holds it",
+                                path.display()
+                            )));
+                        }
+                        let marker = steal_marker_path(&path, &owner.nonce);
+                        let marker_body = format!(
+                            "{LOCK_SCHEMA} steal {} {} {} {}\n",
+                            std::process::id(),
+                            crate::state::unix_now(),
+                            nonce(),
+                            owner.nonce
+                        );
+                        match OpenOptions::new()
+                            .write(true)
+                            .create_new(true)
+                            .open(&marker)
+                        {
+                            Ok(mut file) => {
+                                let written = file.write_all(marker_body.as_bytes());
+                                drop(file);
+                                if let Err(err) = written {
+                                    let _ = fs::remove_file(&marker);
+                                    return Err(LockError::Io(format!(
+                                        "cannot record the steal of {}: {err}",
+                                        path.display()
+                                    )));
+                                }
+                                // Last liveness re-check before removing anything:
+                                // a probe that answered "dead" must not let a live
+                                // writer's lock be deleted. A third answer that is
+                                // not a clear "gone" aborts the steal.
+                                if pid_alive(owner.pid) != Some(false) {
+                                    let _ = fs::remove_file(&marker);
+                                    continue;
+                                }
+                                // We are the only stealer for this generation.
+                                // Remove only the lock whose nonce we observed;
+                                // a successor cannot have taken the name while
+                                // the dead record was still present.
+                                match fs::read_to_string(&path) {
+                                    Ok(again)
+                                        if parse(&again).map(|o| o.nonce)
+                                            == Some(owner.nonce.clone()) =>
+                                    {
+                                        match fs::remove_file(&path) {
+                                            Ok(()) => {
+                                                let _ = fs::remove_file(&marker);
+                                                continue;
+                                            }
+                                            Err(err) => {
+                                                let _ = fs::remove_file(&marker);
+                                                return Err(LockError::Io(format!(
+                                                    "cannot remove the dead lock {}: {err}",
+                                                    path.display()
+                                                )));
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        let _ = fs::remove_file(&marker);
+                                        continue;
                                     }
                                 }
                             }
-                            _ => continue,
+                            Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                                // Another process owns this recovery. Wait for it
+                                // on a dedicated window: the acquire budget alone
+                                // is too short for a burst of eight publishers.
+                                let now = Instant::now();
+                                let since = *steal_waited.get_or_insert(now);
+                                if now.duration_since(since) >= STEAL_GRACE {
+                                    return Err(LockError::Unknown(format!(
+                                        "lock {} has a provably dead owner but its recovery is already claimed by {}: the claiming process did not finish within {}s. Inspect both files and remove them by hand only if no flow process is running",
+                                        path.display(),
+                                        marker.display(),
+                                        STEAL_GRACE.as_secs()
+                                    )));
+                                }
+                            }
+                            Err(err) => {
+                                // A transient sharing/AV denial is not a reason
+                                // to fail a publisher: retry within the budget.
+                                if Instant::now() >= deadline {
+                                    return Err(LockError::Io(format!(
+                                        "cannot record the steal of {}: {err}",
+                                        path.display()
+                                    )));
+                                }
+                            }
                         }
                     }
                 }
@@ -319,16 +474,42 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
 }
 
 #[cfg(windows)]
-fn pid_alive(pid: u32) -> Option<bool> {
-    let out = std::process::Command::new("tasklist")
-        .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
+pub fn pid_alive(pid: u32) -> Option<bool> {
+    // Two consecutive answers are required before concluding "dead": `tasklist`
+    // can answer an empty or truncated list under load (the first release run
+    // observed exactly that), and a false "dead" would steal a live writer's
+    // lock. An answer we do not understand is never proof of death.
+    let mut dead_answers = 0;
+    for attempt in 0..2 {
+        let out = std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let text = String::from_utf8_lossy(&out.stdout);
+        if text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")) {
+            return Some(true);
+        }
+        let lower = text.to_ascii_lowercase();
+        let definitively_empty = lower.contains("no tasks")
+            || lower.contains("aucune t")
+            || lower.contains("keine aufgabe")
+            || lower.contains("ninguna")
+            || lower.contains("nenhuma")
+            || lower.contains("nessuna");
+        if !definitively_empty {
+            return None;
+        }
+        dead_answers += 1;
+        if attempt == 0 {
+            std::thread::sleep(Duration::from_millis(50));
+        }
     }
-    let text = String::from_utf8_lossy(&out.stdout);
-    Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
+    // Two definitive "no such task" answers: the pid is gone.
+    debug_assert_eq!(dead_answers, 2);
+    Some(false)
 }
 
 /// Ask `kill -0` and read its message.
@@ -359,7 +540,7 @@ fn kill_liveness(pid: u32) -> Option<bool> {
 /// the pid exists, and it cannot confuse "gone" with "not mine". Only when the
 /// entry is invisible (hidepid, another PID namespace) does the probe ask `kill`.
 #[cfg(target_os = "linux")]
-fn pid_alive(pid: u32) -> Option<bool> {
+pub fn pid_alive(pid: u32) -> Option<bool> {
     if Path::new(&format!("/proc/{pid}")).exists() {
         return Some(true);
     }
@@ -367,7 +548,7 @@ fn pid_alive(pid: u32) -> Option<bool> {
 }
 
 #[cfg(all(unix, not(target_os = "linux")))]
-fn pid_alive(pid: u32) -> Option<bool> {
+pub fn pid_alive(pid: u32) -> Option<bool> {
     kill_liveness(pid)
 }
 
@@ -403,9 +584,13 @@ mod tests {
         .unwrap();
         // Use this process's own pid instead of 1 so the test does not depend on
         // whether pid 1 is readable from the test host.
+        let host = crate::host::local_host_id().expect("the test host has an identity");
         fs::write(
             lock_path(&root),
-            format!("{LOCK_SCHEMA} {} 0 deadbeef publish\n", std::process::id()),
+            format!(
+                "{LOCK_SCHEMA} {} 0 deadbeef publish host:{host}\n",
+                std::process::id()
+            ),
         )
         .unwrap();
         match acquire_lock(&root, "publish") {
@@ -462,9 +647,10 @@ mod tests {
         let pid = child.id();
         child.kill().ok();
         let _ = child.wait();
+        let host = crate::host::local_host_id().expect("the test host has an identity");
         fs::write(
             lock_path(&root),
-            format!("{LOCK_SCHEMA} {pid} 0 deadbeef publish\n"),
+            format!("{LOCK_SCHEMA} {pid} 0 deadbeef publish host:{host}\n"),
         )
         .unwrap();
         let info = inspect(&root);
@@ -501,6 +687,152 @@ mod tests {
             .stderr(std::process::Stdio::null())
             .spawn()
             .expect("the test needs a long-lived child process (ping/sleep)")
+    }
+
+    #[test]
+    fn a_hostless_or_foreign_record_is_attributed_to_another_host() {
+        // A record written before the host token existed cannot be attributed to
+        // this machine: its pid space is not comparable, so `inspect` says so
+        // instead of claiming the writer is dead.
+        let root = temp_flow_dir("hostless");
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {} 0 deadbeef publish\n", std::process::id()),
+        )
+        .unwrap();
+        let info = inspect(&root);
+        assert!(info.present);
+        assert_eq!(info.attribution, "foreign", "{info:?}");
+        assert_eq!(info.pid, Some(std::process::id()));
+        // And it is never stolen, even though its pid is our own (which the
+        // "this process already holds it" check would otherwise report).
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Held(m)) => assert!(m.contains("already holds"), "{m}"),
+            other => panic!("a host-less record naming our pid is still ours: {other:?}"),
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_foreign_record_with_a_live_pid_is_unattributable_not_held() {
+        let root = temp_flow_dir("foreign-live-pid");
+        // A live PID that is *not* this process: the old code asked `pid_alive`
+        // first, so a recycled PID made a foreign lock look held (FBL-015).
+        #[cfg(unix)]
+        let mut child = {
+            use std::process::Stdio;
+            std::process::Command::new("sleep")
+                .arg("5")
+                .stdout(Stdio::null())
+                .spawn()
+                .expect("a short-lived child")
+        };
+        #[cfg(windows)]
+        let mut child = {
+            use std::process::Stdio;
+            std::process::Command::new("cmd")
+                .args(["/c", "ping", "-n", "6", "127.0.0.1"])
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .expect("a short-lived child")
+        };
+        let record = format!(
+            "{LOCK_SCHEMA} {} {} nonce publish host:0000000000000000\n",
+            child.id(),
+            crate::state::unix_now()
+        );
+        let lock = lock_path(&root);
+        fs::write(&lock, &record).unwrap();
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Unknown(reason)) => {
+                assert!(reason.contains("cannot be attributed"), "{reason}");
+            }
+            other => panic!(
+                "a foreign record must be unattributable even when its pid is alive here: {other:?}"
+            ),
+        }
+        assert_eq!(
+            fs::read_to_string(&lock).unwrap(),
+            record,
+            "a foreign lock is left exactly in place"
+        );
+        let _ = child.kill();
+        let _ = child.wait();
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_steal_claimed_by_another_writer_is_waited_for_then_reported_unknown() {
+        let root = temp_flow_dir("claimed-steal");
+        let host = crate::host::local_host_id().expect("the test host has an identity");
+        // A provably dead owner on this host, and a marker that says someone else
+        // already owns its recovery. The second writer must not race it.
+        let dead = 4_194_304u32;
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {dead} 0 deadbeef publish host:{host}\n"),
+        )
+        .unwrap();
+        fs::write(
+            steal_marker_path(&lock_path(&root), "deadbeef"),
+            format!("{LOCK_SCHEMA} steal 1 0 other deadbeef\n"),
+        )
+        .unwrap();
+        let started = Instant::now();
+        let result = acquire_lock(&root, "publish");
+        match result {
+            Err(LockError::Unknown(m)) => assert!(m.contains("already claimed"), "{m}"),
+            other => panic!("a claimed recovery is never raced: {other:?}"),
+        }
+        assert!(
+            started.elapsed() >= STEAL_GRACE * 9 / 10,
+            "the second stealer must wait for the claimant: {:?}",
+            started.elapsed()
+        );
+        assert!(
+            lock_path(&root).is_file(),
+            "a refused steal leaves the dead record in place"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn kill_liveness_answers_a_successful_probe_for_the_caller_group() {
+        // `kill -0 0` names the caller's own process group: a successful probe.
+        // This is the only portable way to observe the "probe says alive" branch
+        // without a /proc entry, and it proves the branch is not dead code.
+        assert_eq!(kill_liveness(0), Some(true));
+        // A pid that no process holds is provably gone: only that message is
+        // allowed to mean "dead".
+        assert_eq!(kill_liveness(4_194_304), Some(false));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_state_directory_that_cannot_be_written_is_an_io_refusal() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = temp_flow_dir("read-only");
+        let flow = root.join(".flow");
+        let mut perms = fs::metadata(&flow).unwrap().permissions();
+        perms.set_mode(0o555);
+        fs::set_permissions(&flow, perms).unwrap();
+        let result = acquire_lock(&root, "publish");
+        // Running as root ignores the permission bits; skip rather than lie.
+        if fs::write(flow.join("probe"), b"").is_err() {
+            match result {
+                Err(LockError::Io(m)) => assert!(m.contains("cannot create"), "{m}"),
+                other => panic!("an unwritable state directory is an IO refusal: {other:?}"),
+            }
+        } else {
+            println!("SKIP: this user can write to a 0o555 directory (running as root)");
+        }
+        let _ = fs::remove_file(flow.join("probe"));
+        let mut perms = fs::metadata(&flow).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&flow, perms).unwrap();
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

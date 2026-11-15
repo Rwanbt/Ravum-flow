@@ -349,8 +349,24 @@ fn publish_with_stale_expected_old_is_refused() {
     );
 }
 
+/// The crash-injection hook is compiled out of release builds by design; CI
+/// proves the released binary ignores it. A release-mode run reports these
+/// tests as skipped instead of failing on the missing hook.
+fn skip_without_debug_hook(name: &str) -> bool {
+    if cfg!(debug_assertions) {
+        return false;
+    }
+    println!(
+        "SKIP {name}: FLOW_TEST_CRASH is inert in release builds (CI proves the released binary ignores it)"
+    );
+    true
+}
+
 #[test]
 fn crash_after_intent_is_not_published_and_reconciles() {
+    if skip_without_debug_hook("crash_after_intent_is_not_published_and_reconciles") {
+        return;
+    }
     let repo = new_repo();
     flow(&repo.path, &["init"]);
     write_config(
@@ -385,6 +401,9 @@ fn crash_after_intent_is_not_published_and_reconciles() {
 
 #[test]
 fn crash_after_ref_is_observed_as_published() {
+    if skip_without_debug_hook("crash_after_ref_is_observed_as_published") {
+        return;
+    }
     let repo = new_repo();
     flow(&repo.path, &["init"]);
     write_config(
@@ -817,6 +836,9 @@ fn p1_a_symbolic_ref_is_never_a_publication_target() {
 // ------------------------------------------------------------------ P0-C
 #[test]
 fn p0c_corrupt_journal_is_not_reported_as_reconciled() {
+    if skip_without_debug_hook("p0c_corrupt_journal_is_not_reported_as_reconciled") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -887,6 +909,9 @@ fn p0c_duplicate_intent_id_requires_a_human() {
 
 #[test]
 fn p0c_ref_moved_elsewhere_needs_reconciliation() {
+    if skip_without_debug_hook("p0c_ref_moved_elsewhere_needs_reconciliation") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -919,6 +944,9 @@ fn p0c_ref_moved_elsewhere_needs_reconciliation() {
 
 #[test]
 fn p0c_reconcile_is_idempotent() {
+    if skip_without_debug_hook("p0c_reconcile_is_idempotent") {
+        return;
+    }
     let (repo, _, _) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -1409,8 +1437,437 @@ fn explain_refuses_a_path_instead_of_a_tree_id() {
     );
 }
 
-/// Inspection must never present a receipt whose content no longer matches its
-/// digest as a valid `PASSED` proof.
+/// A journal that cannot even be read is an explicit unknown outcome, never an
+/// empty history that reconciliation could "close".
+#[test]
+fn reconcile_reports_an_unreadable_journal_instead_of_guessing() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let journal = journal_file(&repo.path);
+    fs::remove_file(&journal).unwrap();
+    fs::create_dir_all(&journal).unwrap();
+    let (code, out) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(
+        code, 1,
+        "a refusal that needs a human exits non-zero: {out}"
+    );
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("JOURNAL_UNREADABLE"),
+        "{out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(true)
+    );
+    assert!(journal.is_dir(), "recovery must not rewrite the journal");
+}
+
+/// A Git call that answers with more than Flow's bounded stream can retain is a
+/// failed observation, not a ref that does not exist: recovery must ask a human
+/// instead of closing the intent as "nothing was published".
+#[cfg(unix)]
+#[test]
+fn reconcile_reports_an_unreadable_ref_instead_of_calling_it_absent() {
+    use std::os::unix::fs::PermissionsExt;
+    let (repo, _, _) = prepared_repo(GREEN);
+    let intent = r#"{"schema":"flow-journal/1","event":"intent","id":"intent-unreadable-ref","ref":"refs/heads/main","old":"0000000000000000000000000000000000000000","new":"1111111111111111111111111111111111111111"}"#;
+    fs::write(journal_file(&repo.path), format!("{intent}\n")).unwrap();
+    let git_binary = std::env::var_os("PATH")
+        .and_then(|path| {
+            std::env::split_paths(&path)
+                .map(|dir| dir.join("git"))
+                .find(|candidate| candidate.is_file())
+        })
+        .expect("the test host has a git binary on PATH");
+    let shim = repo.path.join("shim-bin");
+    fs::create_dir_all(&shim).unwrap();
+    let script = format!(
+        "#!/bin/sh\nfor arg in \"$@\"; do\n  if [ \"$arg\" = \"--verify\" ]; then\n    exec head -c 70000000 /dev/zero\n  fi\ndone\nexec \"{}\" \"$@\"\n",
+        git_binary.display()
+    );
+    let shim_git = shim.join("git");
+    fs::write(&shim_git, script).unwrap();
+    fs::set_permissions(&shim_git, fs::Permissions::from_mode(0o755)).unwrap();
+    let path = format!(
+        "{}:{}",
+        shim.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let out = Command::new(env!("CARGO_BIN_EXE_flow"))
+        .current_dir(&repo.path)
+        .arg("reconcile")
+        .env("PATH", path)
+        .output()
+        .expect("flow runs");
+    assert_eq!(
+        out.status.code(),
+        Some(1),
+        "an unobservable ref needs a human: {}",
+        String::from_utf8_lossy(&out.stdout)
+    );
+    let out = json::parse(&String::from_utf8_lossy(&out.stdout)).unwrap();
+    let resolved = out
+        .get("resolved")
+        .and_then(Json::as_arr)
+        .map(|a| a.to_vec())
+        .unwrap_or_else(|| panic!("no resolved entries: {out}"));
+    assert_eq!(resolved.len(), 1, "{out}");
+    assert!(
+        resolved[0]
+            .get("reason")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .starts_with("REF_UNREADABLE"),
+        "the reason must name the unobservable ref and its cause: {out}"
+    );
+    assert_eq!(
+        out.get("status").and_then(Json::as_str),
+        Some("NEEDS_RECONCILIATION"),
+        "{out}"
+    );
+}
+
+/// The local host token is derived even when no environment variable names the
+/// machine: the `hostname` utility and `/proc` are the documented fallbacks, and
+/// a lock written by this machine must still be attributed to it.
+#[cfg(unix)]
+#[test]
+fn host_identity_falls_back_to_the_platform_when_no_variable_names_it() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let name = fs::read_to_string("/proc/sys/kernel/hostname")
+        .or_else(|_| {
+            let out = Command::new("hostname").output()?;
+            Ok::<String, std::io::Error>(String::from_utf8_lossy(&out.stdout).to_string())
+        })
+        .expect("the host has a name")
+        .trim()
+        .to_string();
+    let material = repo.path.join("host-material.txt");
+    fs::write(
+        &material,
+        format!("flow-host/1\n{name}\n{}", std::env::consts::OS),
+    )
+    .unwrap();
+    let expected = sha256_of(&material)[..16].to_string();
+    let lock = repo.path.join(".flow").join("lock");
+    fs::write(
+        &lock,
+        format!(
+            "flow-lock/2 {} 0 fallbacknonce publish host:{expected}\n",
+            std::process::id()
+        ),
+    )
+    .unwrap();
+
+    // 1. No host variable at all: the `hostname` utility answers.
+    let run = |path: Option<&Path>| {
+        let mut cmd = Command::new(env!("CARGO_BIN_EXE_flow"));
+        cmd.current_dir(&repo.path).arg("doctor");
+        cmd.env_remove("HOSTNAME").env_remove("COMPUTERNAME");
+        if let Some(path) = path {
+            cmd.env("PATH", path);
+        }
+        let out = cmd.output().expect("flow runs");
+        let text = String::from_utf8_lossy(&out.stdout).to_string();
+        json::parse(&text).unwrap_or_else(|e| panic!("doctor printed non-JSON ({e}):\n{text}"))
+    };
+    let report = run(None);
+    assert!(
+        report.to_string().contains("publication_lock"),
+        "doctor must report the lock: {report}"
+    );
+    assert!(
+        report.to_string().contains("live"),
+        "a lock naming this machine's fallback identity must be attributed to it: {report}"
+    );
+
+    // 2. PATH without the `hostname` utility: `/proc` answers instead. Only a
+    //    directory holding a real `git` is exposed, so the command still works.
+    let shim = repo.path.join("path-with-git-only");
+    fs::create_dir_all(&shim).unwrap();
+    let git_binary = std::env::var_os("PATH")
+        .and_then(|path| {
+            std::env::split_paths(&path)
+                .map(|dir| dir.join("git"))
+                .find(|candidate| candidate.is_file())
+        })
+        .expect("the test host has a git binary on PATH");
+    std::os::unix::fs::symlink(&git_binary, shim.join("git")).unwrap();
+    let report = run(Some(&shim));
+    // Linux reads `/proc/sys/kernel/hostname` when the utility is unavailable, so
+    // the identity still matches. macOS has no such file: without the utility the
+    // machine identity is simply unknown, and the honest answer is "foreign"
+    // (never a guess), which is what this branch pins.
+    #[cfg(target_os = "linux")]
+    assert!(
+        report.to_string().contains("live"),
+        "the /proc fallback must produce the same identity: {report}"
+    );
+    #[cfg(not(target_os = "linux"))]
+    assert!(
+        report.to_string().contains("foreign"),
+        "without `hostname` and without /proc, the identity is unknown, not guessed: {report}"
+    );
+}
+
+/// A `git` that delegates to the real binary, except for the sub-commands named
+/// by `FLOW_SHIM_MODE`. The same script (and the same PATH) is used for the
+/// `run` and the `publish` of one scenario, so the recorded build context stays
+/// identical and the fault is the only difference.
+#[cfg(unix)]
+fn shim_git(repo: &Path, tag: &str) -> PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    let git_binary = std::env::var_os("PATH")
+        .and_then(|path| {
+            std::env::split_paths(&path)
+                .map(|dir| dir.join("git"))
+                .find(|candidate| candidate.is_file())
+        })
+        .expect("the test host has a git binary on PATH");
+    let dir = repo.join(format!("shim-{tag}"));
+    fs::create_dir_all(&dir).unwrap();
+    let counter = dir.join("show-ref-count");
+    let script = format!(
+        r#"#!/bin/sh
+mode="${{FLOW_SHIM_MODE:-normal}}"
+# Flow always invokes `git -C <root> <command> ...`: the command is $3.
+if [ "$mode" = "update-ref-fail" ] && [ "$3" = "update-ref" ]; then
+  echo "shim: ref update refused" >&2
+  exit 1
+fi
+if [ "$mode" = "update-ref-noop" ] && [ "$3" = "update-ref" ]; then
+  exit 0
+fi
+if [ "$mode" = "show-ref-moves" ] && [ "$3" = "rev-parse" ] && [ "$4" = "--verify" ] && [ "$5" = "--quiet" ]; then
+  n=$(cat "{counter}" 2>/dev/null || echo 0)
+  n=$((n+1))
+  echo "$n" > "{counter}"
+  if [ "$n" -ge 3 ]; then
+    echo 1111111111111111111111111111111111111111
+    exit 0
+  fi
+fi
+if [ "$mode" = "worktree-race" ] && [ "$3" = "worktree" ] && [ "$4" = "add" ]; then
+  n=$(cat "{counter}" 2>/dev/null || echo 0)
+  n=$((n+1))
+  echo "$n" > "{counter}"
+  if [ "$n" -le 1 ]; then
+    echo "fatal: failed to read .git/worktrees/other/commondir: Success" >&2
+    exit 128
+  fi
+fi
+if [ "$mode" = "worktree-race-always" ] && [ "$3" = "worktree" ] && [ "$4" = "add" ]; then
+  echo "fatal: failed to read .git/worktrees/other/commondir: Success" >&2
+  exit 128
+fi
+exec "{git}" "$@"
+"#,
+        counter = counter.display(),
+        git = git_binary.display()
+    );
+    let path = dir.join("git");
+    fs::write(&path, script).unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    dir
+}
+
+#[cfg(unix)]
+fn flow_with_path(repo: &Path, shim: &Path, args: &[&str], mode: &str) -> (i32, Json) {
+    let path = format!(
+        "{}:{}",
+        shim.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let out = Command::new(env!("CARGO_BIN_EXE_flow"))
+        .current_dir(repo)
+        .args(args)
+        .env("PATH", path)
+        .env("FLOW_SHIM_MODE", mode)
+        .output()
+        .expect("flow runs");
+    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    let parsed = if text.trim().is_empty() {
+        Json::Null
+    } else {
+        json::parse(&text).unwrap_or_else(|e| panic!("non-JSON output ({e}):\n{text}"))
+    };
+    (out.status.code().unwrap_or(-1), parsed)
+}
+
+fn code_field(value: &Json) -> String {
+    value
+        .get("code")
+        .and_then(Json::as_str)
+        .unwrap_or("<none>")
+        .to_string()
+}
+
+/// A refused `git update-ref` is reported by name, and the ref is untouched.
+#[cfg(unix)]
+#[test]
+fn publish_reports_an_update_ref_refusal_without_moving_the_ref() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "update-ref-fails");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "normal");
+    assert_eq!(code, 0, "{run}");
+    let before = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow_with_path(&repo.path, &shim, &["publish"], "update-ref-fail");
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "UPDATE_REF_REFUSED", "{out}");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        before,
+        "a refused CAS must leave the ref alone"
+    );
+}
+
+/// `update-ref` answering success without moving the ref is not a publication:
+/// the post-CAS observation must refuse to report one.
+#[cfg(unix)]
+#[test]
+fn publish_never_reports_success_when_the_ref_did_not_move() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "update-ref-lies");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "normal");
+    assert_eq!(code, 0, "{run}");
+    let before = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow_with_path(&repo.path, &shim, &["publish"], "update-ref-noop");
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "NEEDS_RECONCILIATION", "{out}");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        before,
+        "nothing was published, so the ref must not have moved"
+    );
+}
+
+/// A ref that moves between the durable intent and the CAS is detected before the
+/// CAS, and the intent is closed with an explicit stale outcome.
+#[cfg(unix)]
+#[test]
+fn publish_detects_a_ref_that_moved_between_intent_and_cas() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "show-ref-moves");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "normal");
+    assert_eq!(code, 0, "{run}");
+    let before = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow_with_path(&repo.path, &shim, &["publish"], "show-ref-moves");
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "REF_MOVED", "{out}");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        before,
+        "a ref that moved under us must not be overwritten"
+    );
+    let journal = fs::read_to_string(journal_file(&repo.path)).unwrap();
+    assert!(
+        journal.contains("REFUSED_STALE"),
+        "the intent must be closed with its stale outcome: {journal}"
+    );
+}
+
+/// Git's worktree admin is not internally locked: a `worktree add` racing another
+/// process's `worktree prune` fails with a transient "commondir" error, which is
+/// retried rather than reported as an unusable checkout.
+#[cfg(unix)]
+#[test]
+fn a_transient_worktree_admin_race_is_retried_instead_of_failing_the_run() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "worktree-race");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "worktree-race");
+    assert_eq!(code, 0, "the transient Git race must be retried: {run}");
+    assert_eq!(status_of(&run), "PASSED", "{run}");
+}
+
+/// When the race does not clear, the run must refuse by name instead of looping:
+/// a scratch directory that cannot be materialised is never verified.
+#[cfg(unix)]
+#[test]
+fn an_unresolved_worktree_admin_race_refuses_the_run_by_name() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "worktree-race-always");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "worktree-race-always");
+    assert_eq!(code, 1, "{run}");
+    assert_eq!(code_field(&run), "SCRATCH_REFUSED", "{run}");
+    assert!(
+        run.to_string().contains("cannot materialise"),
+        "the refusal must name the materialisation: {run}"
+    );
+}
+
+/// A `context_probes` entry is an arbitrary program Flow executes between `run`
+/// and `publish`; adding one to `.flow/config.json` after `flow approve` must be
+/// refused as an unapproved policy change *before* anything runs.
+#[cfg(unix)]
+#[test]
+fn an_unapproved_context_probe_is_never_executed() {
+    use std::os::unix::fs::PermissionsExt;
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    let canary = repo.path.join("probe-executed");
+    let probe = repo.path.join("probe.sh");
+    fs::write(
+        &probe,
+        format!("#!/bin/sh\necho ran > \"{}\"\n", canary.display()),
+    )
+    .unwrap();
+    fs::set_permissions(&probe, fs::Permissions::from_mode(0o755)).unwrap();
+    // The cloned/edited policy gains a probe the working copy never approved.
+    fs::write(
+        repo.path.join(".flow/config.json"),
+        format!(
+            r#"{{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{GREEN}],"context_probes":[["{}"]]}}"#,
+            probe.display()
+        ),
+    )
+    .unwrap();
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "POLICY_NOT_APPROVED", "{out}");
+    assert!(
+        !canary.exists(),
+        "an unapproved probe must never be executed: {out}"
+    );
+}
+
+/// The publication gate must be at least as strict as `explain`: a receipt whose
+/// log was swapped or deleted proves nothing, so the ref cannot move.
+#[test]
+fn publish_refuses_swapped_or_missing_evidence() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+    let logs = run
+        .get("logs")
+        .and_then(Json::as_arr)
+        .expect("the receipt names its logs")
+        .to_vec();
+    let first = logs[0].as_str().expect("a log path").to_string();
+    let second = logs[1].as_str().expect("a log path").to_string();
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+
+    fs::write(repo.path.join(&first), "swapped evidence\n").unwrap();
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "LOG_INTEGRITY_INVALID", "{out}");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "swapped evidence must not move the ref"
+    );
+
+    fs::remove_file(repo.path.join(&second)).unwrap();
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "MISSING_LOGS", "{out}");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head);
+}
+
 #[test]
 fn status_and_explain_qualify_a_tampered_receipt() {
     let (repo, _, _) = prepared_repo(GREEN);
@@ -1478,6 +1935,295 @@ fn doctor_exits_nonzero_when_a_guarantee_is_broken() {
     assert_eq!(out.get("overall").and_then(Json::as_str), Some("FAILED"));
 }
 
+/// A receipt whose log digests no longer describe the files it names is not
+/// evidence: `explain` must say which log was swapped, and why it cannot answer.
+#[test]
+fn explain_qualifies_swapped_unverifiable_and_absent_log_digests() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let tree = run
+        .get("tree_oid")
+        .and_then(Json::as_str)
+        .unwrap()
+        .to_string();
+    let receipt_path = repo
+        .path
+        .join(".flow")
+        .join("receipts")
+        .join(format!("{tree}.json"));
+    let receipt = read_json_file(&receipt_path);
+
+    // 1. A log file whose bytes no longer hash to the recorded digest.
+    let logs = receipt
+        .get("logs")
+        .and_then(Json::as_arr)
+        .expect("the receipt names its logs")
+        .to_vec();
+    let first_log = logs
+        .first()
+        .and_then(Json::as_str)
+        .expect("at least one log")
+        .to_string();
+    fs::write(repo.path.join(&first_log), "swapped evidence\n").unwrap();
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("log_integrity").and_then(Json::as_str),
+        Some("LOG_INTEGRITY_INVALID"),
+        "a swapped log must be reported: {explain}"
+    );
+    assert!(
+        explain
+            .get("tampered_logs")
+            .and_then(Json::as_arr)
+            .map(|a| a.iter().any(|v| v.as_str() == Some(first_log.as_str())))
+            .unwrap_or(false),
+        "the swapped log must be named: {explain}"
+    );
+
+    // 2. A digest entry that no longer records one of its two hashes: the
+    //    receipt cannot be verified, so the answer is a refusal, not a pass.
+    let mut without_hash = receipt.clone();
+    if let Json::Obj(pairs) = &mut without_hash {
+        if let Some((_, Json::Arr(entries))) = pairs.iter_mut().find(|(k, _)| k == "log_digests") {
+            if let Some(Json::Obj(first)) = entries.first_mut() {
+                first.retain(|(k, _)| k != "stdout_sha256");
+            }
+        }
+    }
+    write_json_file(&receipt_path, &without_hash);
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("log_integrity").and_then(Json::as_str),
+        Some("LOG_INTEGRITY_INVALID"),
+        "an incomplete digest record is not a verification: {explain}"
+    );
+
+    // 3. A receipt that records no log digests at all (written before digests
+    //    existed) is explicitly unverifiable, never silently valid.
+    let mut without_digests = receipt.clone();
+    if let Json::Obj(pairs) = &mut without_digests {
+        pairs.retain(|(k, _)| k != "log_digests");
+    }
+    write_json_file(&receipt_path, &without_digests);
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("log_integrity").and_then(Json::as_str),
+        Some("NO_LOG_DIGESTS"),
+        "{explain}"
+    );
+}
+
+/// A retention boundary the CLI cannot apply is a usage error, not a silent
+/// clamp: zero would delete everything, and text would mean nothing.
+#[test]
+fn gc_refuses_retention_values_it_cannot_apply() {
+    let repo = new_repo();
+    for args in [
+        ["gc", "--max-age-days", "0"],
+        ["gc", "--max-age-days", "soon"],
+        ["gc", "--keep", "0"],
+        ["gc", "--keep", "-1"],
+    ] {
+        let (code, out) = flow(&repo.path, &args);
+        assert_eq!(code, 2, "{args:?} must be a usage error: {out}");
+    }
+}
+
+/// A toolchain probe that answers differently changes what a `PASSED` receipt
+/// proves, even when the policy file itself did not change: publication must
+/// refuse with `CONTEXT_MISMATCH`, not publish evidence from another context.
+#[cfg(unix)]
+#[test]
+fn a_changed_context_probe_refuses_publication_without_a_policy_change() {
+    use std::os::unix::fs::PermissionsExt;
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    let probe = repo.path.join("probe.sh");
+    let observed = repo.path.join("probe.txt");
+    fs::write(
+        &probe,
+        format!("#!/bin/sh\ncat \"{}\"\n", observed.display()),
+    )
+    .unwrap();
+    fs::set_permissions(&probe, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::write(&observed, "toolchain-one\n").unwrap();
+    fs::write(
+        repo.path.join(".flow/config.json"),
+        format!(
+            r#"{{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{GREEN}],"context_probes":[["{}"]]}}"#,
+            probe.display()
+        ),
+    )
+    .unwrap();
+    let (code, approved) = flow(&repo.path, &["approve"]);
+    assert_eq!(code, 0, "{approved}");
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+
+    // The toolchain moved, the policy did not: the recorded context is stale.
+    fs::write(&observed, "toolchain-two\n").unwrap();
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert!(
+        out.to_string().contains("CONTEXT_MISMATCH"),
+        "the refusal must name the context, not the policy: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "a stale context must not move the ref"
+    );
+}
+
+/// `gc` must see a verification that is actually running: the marker is the
+/// coordination point, and it is cleared on the run's own exit path.
+#[cfg(unix)]
+#[test]
+fn gc_refuses_while_a_verification_is_actually_running() {
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(
+        &repo.path,
+        r#"{"id":"slow","program":"sh","args":["-c","sleep 3"],"required":true,"timeout_s":30}"#,
+    );
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let mut child = Command::new(env!("CARGO_BIN_EXE_flow"))
+        .current_dir(&repo.path)
+        .arg("run")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("flow run starts");
+    let runs = repo.path.join(".flow").join("runs");
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        if let Ok(entries) = fs::read_dir(&runs) {
+            if entries
+                .flatten()
+                .any(|entry| entry.file_name().to_string_lossy().ends_with(".active"))
+            {
+                break;
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
+    assert_eq!(code, 1, "the refusal exits non-zero: {out}");
+    assert_eq!(
+        out.get("code").and_then(Json::as_str),
+        Some("RUN_ACTIVE"),
+        "gc must refuse while the run is writing evidence: {out}"
+    );
+    let status = child.wait().expect("the run finishes");
+    assert!(
+        status.success(),
+        "the run itself must still succeed: {status}"
+    );
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        status_of(&out),
+        "GC",
+        "after the run, the marker is gone and gc proceeds: {out}"
+    );
+}
+
+/// A receipt written before `run_id`, log digests and the context codec existed
+/// is not silently reinterpreted as current evidence: it is refused by name.
+#[test]
+fn a_legacy_receipt_without_a_context_is_refused_not_published() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let tree = run
+        .get("tree_oid")
+        .and_then(Json::as_str)
+        .unwrap()
+        .to_string();
+    let receipt_path = repo
+        .path
+        .join(".flow")
+        .join("receipts")
+        .join(format!("{tree}.json"));
+    let mut receipt = read_json_file(&receipt_path);
+    if let Json::Obj(pairs) = &mut receipt {
+        pairs.retain(|(k, _)| k != "context_id" && k != "run_id" && k != "log_digests");
+    }
+    // Re-seal exactly as `state::seal_record` does, so the refusal under test is
+    // the missing context, not a broken integrity digest.
+    let mut body = receipt.clone();
+    if let Json::Obj(pairs) = &mut body {
+        pairs.retain(|(k, _)| k != "integrity");
+    }
+    let material = repo.path.join("receipt-body.txt");
+    fs::write(&material, body.to_string()).unwrap();
+    let digest = sha256_of(&material);
+    let mut sealed = body;
+    if let Json::Obj(pairs) = &mut sealed {
+        pairs.push(("integrity".to_string(), Json::str(digest)));
+    }
+    write_json_file(&receipt_path, &sealed);
+
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    let text = out.to_string();
+    assert!(
+        text.contains("CONTEXT_MISMATCH") || text.contains("RECEIPT"),
+        "a legacy receipt must be refused by a named check: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "an unusable legacy receipt must not publish anything"
+    );
+}
+
+/// The journal may be split across archived segments; recovery must read the
+/// history in order and never treat a missing active segment as no history.
+#[test]
+fn reconcile_reads_an_intent_closed_in_an_archived_segment() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let flow_dir = repo.path.join(".flow");
+    fs::create_dir_all(&flow_dir).unwrap();
+    let intent = format!(
+        r#"{{"schema":"flow-journal/1","event":"intent","id":"seg-1","ref":"refs/heads/main","old":"{head}","new":"1111111111111111111111111111111111111111"}}"#
+    );
+    fs::write(
+        flow_dir.join("journal.00000000000000000001.jsonl"),
+        format!("{intent}\n"),
+    )
+    .unwrap();
+    let outcome =
+        r#"{"schema":"flow-journal/1","event":"outcome","id":"seg-1","status":"NOT_PUBLISHED"}"#;
+    fs::write(flow_dir.join("journal.jsonl"), format!("{outcome}\n")).unwrap();
+
+    let (code, out) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("status").and_then(Json::as_str),
+        Some("RECONCILED"),
+        "an intent closed in another segment is closed, not pending: {out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(false),
+        "{out}"
+    );
+}
+
 /// `status` says which policy is in force and who approved it.
 #[test]
 fn status_reports_policy_provenance() {
@@ -1515,7 +2261,14 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
         .to_string();
     let log_dir = repo.path.join(".flow").join("logs").join(&tree);
     for entry in fs::read_dir(&log_dir).unwrap().flatten() {
-        fs::remove_file(entry.path()).unwrap();
+        let path = entry.path();
+        if path.is_dir() {
+            for file in fs::read_dir(&path).unwrap().flatten() {
+                fs::remove_file(file.path()).unwrap();
+            }
+        } else {
+            fs::remove_file(path).unwrap();
+        }
     }
     let (code, status) = flow(&repo.path, &["status"]);
     assert_eq!(code, 0, "{status}");
@@ -1539,12 +2292,15 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
             .unwrap_or(false),
         "the missing logs must be listed: {explain}"
     );
-    // Publication still works: the receipt is intact, the logs are evidence that
-    // is displayed as incomplete. This is a documentation decision, not a gate.
+    // Publication now refuses incomplete evidence: the receipt names the logs it
+    // hashed, and a publication that cannot re-read them would move a ref on
+    // evidence nobody can check. This gate is the one `explain` already applied.
     let (code, published) = flow(&repo.path, &["publish"]);
-    assert_eq!(
-        code, 0,
-        "publish does not depend on log retention: {published}"
+    assert_eq!(code, 1, "deleted evidence is not publishable: {published}");
+    assert_eq!(code_field(&published), "MISSING_LOGS", "{published}");
+    assert!(
+        published.to_string().contains("re-run `flow run`"),
+        "the refusal must name the remedy: {published}"
     );
 }
 
@@ -1590,6 +2346,9 @@ fn a_hardlinked_journal_is_not_written_through() {
 /// nothing to reconcile and no ref moved.
 #[test]
 fn crash_before_intent_leaves_no_pending_intent() {
+    if skip_without_debug_hook("crash_before_intent_leaves_no_pending_intent") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -1861,4 +2620,26 @@ fn gc_requires_an_explicit_policy_and_reports_its_plan() {
         Some(true),
         "the plan must say it was a dry run: {out}"
     );
+}
+
+/// gc must not collect evidence while a live run is still writing it.
+#[test]
+fn gc_refuses_while_a_live_run_marker_exists() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let runs = repo.path.join(".flow").join("runs");
+    fs::create_dir_all(&runs).unwrap();
+    let marker = runs.join("live.active");
+    fs::write(
+        &marker,
+        format!(
+            r#"{{"schema":"flow-run-active/1","run_id":"live","pid":{},"tree":"t"}}"#,
+            std::process::id()
+        ),
+    )
+    .unwrap();
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
+    assert_eq!(code, 1, "gc must refuse while a run is active: {out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(out.get("code").and_then(Json::as_str), Some("RUN_ACTIVE"));
+    assert!(marker.exists(), "gc must not clear a live marker");
 }

@@ -190,20 +190,9 @@ pub(crate) fn materialise_in(
         ));
     };
 
-    match git.run(&["worktree", "add", "--detach", "--quiet", path_str, commit]) {
-        Ok(add) if add.status == 0 => {}
-        Ok(add) => {
-            abandon(&path, &repo_root);
-            return Err(format!(
-                "cannot materialise commit {commit} in {}: {}",
-                path.display(),
-                add.stderr.trim()
-            ));
-        }
-        Err(e) => {
-            abandon(&path, &repo_root);
-            return Err(e);
-        }
+    if let Err(e) = add_worktree(git, path_str, commit) {
+        abandon(&path, &repo_root);
+        return Err(e);
     }
 
     if let Err(reason) = detach_git_link(&path) {
@@ -337,6 +326,35 @@ fn detach_git_link(dir: &Path) -> Result<(), String> {
         fs::remove_file(&link).map_err(|e| format!("cannot remove {}: {e}", link.display()))?;
     }
     Ok(())
+}
+
+/// `git worktree add`, retried on Git's own worktree-admin race.
+///
+/// Two Flow processes materialising checkouts in the same repository can
+/// interleave `git worktree add` with another process's `git worktree prune`:
+/// Git creates and reads `.git/worktrees/<name>/commondir` without a lock, and
+/// the loser reports `failed to read .../commondir`. That failure is transient
+/// and says nothing about the requested tree, so it is retried a bounded number
+/// of times instead of failing an otherwise valid run.
+fn add_worktree(git: &Git, path: &str, commit: &str) -> Result<(), String> {
+    const ATTEMPTS: usize = 3;
+    let mut attempt = 1;
+    loop {
+        let out = git.run(&["worktree", "add", "--detach", "--quiet", path, commit])?;
+        if out.status == 0 {
+            return Ok(());
+        }
+        let raced = out.stderr.contains("commondir") || out.stderr.contains(".git/worktrees");
+        if raced && attempt < ATTEMPTS {
+            attempt += 1;
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            continue;
+        }
+        return Err(format!(
+            "cannot materialise commit {commit} in {path}: {}",
+            out.stderr.trim()
+        ));
+    }
 }
 
 fn abandon(path: &Path, repo_root: &Path) {

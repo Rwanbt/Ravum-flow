@@ -14,6 +14,14 @@
 #[allow(dead_code)]
 mod json;
 
+#[path = "../src/sha256.rs"]
+#[allow(dead_code)]
+mod sha256;
+
+#[path = "../src/host.rs"]
+#[allow(dead_code)]
+mod host;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -22,6 +30,11 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use json::Json;
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+/// The host token the product writes: `sha256("flow-host/1\n<name>\n<os>")[..16]`.
+fn local_host_token() -> String {
+    host::local_host_id().expect("the test host has an identity")
+}
 
 // ------------------------------------------------------------------ fixtures
 
@@ -422,9 +435,10 @@ fn doctor_discloses_hooks_attribute_sources_case_folding_and_a_live_lock() {
     fs::write(
         repo.path.join(".flow/lock"),
         format!(
-            "flow-lock/2 {} {} testnonce publish\n",
+            "flow-lock/2 {} {} testnonce publish host:{}\n",
             std::process::id(),
-            now
+            now,
+            local_host_token()
         ),
     )
     .unwrap();

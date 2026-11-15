@@ -17,7 +17,7 @@ on:
       modules:
         description: 'JSON array of modules to mutate (default: all, -bins scope)'
         required: false
-        default: '["paths","lock","proposal","scratch","state","gitcli","commands","main"]'
+        default: '["paths","lock","proposal","scratch","state","gitcli","commands","commands-policy","commands-checkout","main"]'
   schedule:
     # Weekly, off-peak: a long campaign that competes with no pull request.
     - cron: '0 3 * * 1'
@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: ${{ fromJSON(github.event.inputs.modules || '["paths","lock","proposal","scratch","state","gitcli","commands","main"]') }}
+        module: ${{ fromJSON(github.event.inputs.modules || '["paths","lock","proposal","scratch","state","gitcli","commands","commands-policy","commands-checkout","main"]') }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
@@ -63,8 +63,14 @@ jobs:
         run: |
           set -o pipefail
           set +e
+          case "${{ matrix.module }}" in
+            commands) file="crates/flow/src/commands/mod.rs" ;;
+            commands-policy) file="crates/flow/src/commands/policy.rs" ;;
+            commands-checkout) file="crates/flow/src/commands/checkout.rs" ;;
+            *) file="crates/flow/src/${{ matrix.module }}.rs" ;;
+          esac
           cargo mutants \
-            --file "crates/flow/src/${{ matrix.module }}.rs" \
+            --file "$file" \
             --jobs 4 \
             --timeout 240 \
             --gitignore true \
@@ -72,11 +78,15 @@ jobs:
             -- --bins 2>&1 | tee "mutants-${{ matrix.module }}.log"
           status=${PIPESTATUS[0]}
           set -e
-          # 0 = every mutant caught, 2 = survivors (report mode: not a failure).
-          # Anything else is a broken campaign, and must fail loudly.
-          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+          # 0 = every mutant caught, 2 = survivors, 3 = some mutants timed out.
+          # Report mode never fails on a survivor or a timeout, but a campaign
+          # that did not run (any other exit) must fail loudly.
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ] && [ "$status" -ne 3 ]; then
             echo "::error::cargo mutants failed with exit $status: the campaign did not run"
             exit "$status"
+          fi
+          if [ "$status" -eq 3 ]; then
+            echo "::warning::cargo mutants reported timed-out mutants (exit 3); they are counted as timeouts, never as killed"
           fi
           if [ ! -d "mutants-${{ matrix.module }}/mutants.out" ]; then
             echo "::error::cargo mutants produced no mutants.out: the campaign did not run"
@@ -90,19 +100,21 @@ jobs:
           out="mutants-${{ matrix.module }}/mutants.out"
           module="${{ matrix.module }}"
           if [ ! -d "$out" ]; then
-            echo "::warning::no mutants.out for $module (the campaign did not run)"
-            exit 0
+            echo "::error::no mutants.out for $module: the campaign did not run"
+            exit 1
           fi
           caught=$(wc -l < "$out/caught.txt" 2>/dev/null || echo 0)
           missed=$(wc -l < "$out/missed.txt" 2>/dev/null || echo 0)
           unviable=$(wc -l < "$out/unviable.txt" 2>/dev/null || echo 0)
           timeout=$(wc -l < "$out/timeout.txt" 2>/dev/null || echo 0)
           total=$((caught + missed + unviable + timeout))
-          if [ "$total" -gt 0 ]; then
-            rate=$(awk -v c="$caught" -v t="$total" 'BEGIN { printf "%.1f", 100 * c / t }')
-          else
-            rate="0.0"
+          if [ "$total" -eq 0 ]; then
+            # A campaign that finds no mutant for a real file must never look like a
+            # 0 % score: that is how a moved file silently stops being measured.
+            echo "::error::$module produced zero mutants: the file moved or the campaign did not run"
+            exit 1
           fi
+          rate=$(awk -v c="$caught" -v t="$total" 'BEGIN { printf "%.1f", 100 * c / t }')
           {
             echo "### mutation — $module"
             echo ""
@@ -130,3 +142,4 @@ jobs:
           path: mutants-${{ matrix.module }}/mutants.out
           if-no-files-found: warn
           retention-days: 30
+

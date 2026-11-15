@@ -1,5 +1,10 @@
-# S9 benchmark protocol — DRAFT, NOT RUN
-**Status: `DRAFT`.** No S9 campaign has been executed in this repository. This file is the **single naming authority** for S9 arms (`X-06` resolved here); the protocol itself is still `DRAFT` and blocked on `H4`.
+# S9 benchmark protocol — FROZEN 2026-11-15, CAMPAIGN RUN (negative result)
+**Status: protocol frozen by `H4`; campaign executed on 2026-11-15 and the H4 success criterion was
+NOT met** — arm G (Flow) was slower than arm E (instrumented O0) on the frozen workload. Raw record:
+[`experiments/s9/out/campaign-h4.json`](../../experiments/s9/out/campaign-h4.json), summary:
+[`experiments/s9/CAMPAIGN-2026-11-15.md`](../../experiments/s9/CAMPAIGN-2026-11-15.md). No
+productivity advantage is claimed. This file is the **single naming authority** for S9 arms (`X-06`
+resolved here); the frozen protocol is [Protocol v1.0](#protocol-v10--frozen-2026-11-15).
 
 ## Canonical arms (A–G)
 | Arm | Mechanism | Notes |
@@ -54,5 +59,35 @@ Freeze fixture SHA, OS/toolchain/adapter version, task definition, model/provide
 ## Elimination and stopping rules
 **Immediate NO-GO** for silent data loss, unpublished/untested tree marked passed, required E2E omitted/masked, secret leak, or non-recoverable transactional state. **O0 stop:** do not create new VCS machinery if O0 matches or beats the candidate on total verified outcome and maintenance cost. Any numeric effect threshold, experiment budget, confidence protocol, sample size and stopping rule are **H4 HUMAN DECISION**; placeholder percentages from prior reviews are not ratified.
 
+## Protocol v1.0 — frozen 2026-11-15
+
+Frozen by the owner's `H4` answer before any confirmatory run. Changing any field below after results
+are seen invalidates the campaign and requires a new version.
+
+| Field | Frozen value |
+|---|---|
+| Arms | **G** = Flow managed (this CLI: `propose`/`assemble`/`run`/`publish`) vs **E** = instrumented O0 (plain Git + the same obligations run by CI/hooks + the same evidence discipline, no Flow). No other arm in the confirmatory campaign; F stays `NOT_AVAILABLE` unless installed. |
+| Design | **Paired**: each repetition runs both arms on the same fixture, the same task and the same machine, with alternating arm order (G first on odd repetitions, E first on even) to cancel warm-cache drift. |
+| Repetitions | **10 pairs**. Not 3, not 5; the sign test has a minimum of 10. |
+| Metric | `T_verified`: elapsed wall-clock from task start until the exact final tree passes every required check and the publish (G) or the equivalent gate (E). Paired differences and ratios are reported with their pairs. |
+| Success criterion | **≥ 30 % less wall-clock for G than E** (paired ratio ≤ 0.70) with **p < 0.05**. |
+| Statistics | One-sided paired sign test over the 10 ratios plus the paired median ratio; report every pair. No marginal confidence interval is required to be non-overlapping. |
+| Resources | **2 CPU cores, 8 GB RAM** per run, no other heavy Cargo campaign concurrently (same host, idle otherwise). Peak RAM and disk footprint recorded. |
+| Workloads | The pinned fixtures of the workload list below; each run records the fixture SHA, the task text and the exact obligation set. At least: disjoint files, same file/hunk, stale base, failing E2E, interrupted process, dirty/untracked user files. |
+| Stop rules | Immediate `NO-GO` on silent data loss, a tree marked passed without its obligations, a secret leak, or non-recoverable state. Campaign stops early if G is **> 2× slower** on the first 3 pairs or if the variance cannot be explained; the reason is recorded. |
+| Environment | Windows 11 reference host (16 logical CPUs, 16 GB) and Linux (CI runner or WSL) recorded separately; OS, `rustc`, `git`, `node`/`python` versions pinned per run. No scoring change after results. |
+| Result handling | A run that does not meet the success criterion is reported as such; the exploratory `n=5` pilot stays exploratory and is never merged into the confirmatory sample. |
+
+**Campaign state: RUN on 2026-11-15.** G median `T_verified` **4.925 s** vs E **2.823 s**; paired
+median ratio **1.784**, G slower in **10/10** pairs, one-sided sign test **p = 0.000977**. The H4
+criterion (ratio ≤ 0.70, p < 0.05) **failed**: no productivity advantage is claimed, and the
+comparison is dominated by Flow's isolated cold-cache candidate run on a conflict-free workload
+(see the campaign summary for the phase breakdown and the limitations). A future campaign needs a new
+protocol version (conflict-heavy workload, or warm-cache-equalised arms) and its own pre-registration.
+
 ## Gate
-`D3` closes only when a human signs off a versioned protocol, effect threshold, sample sizes, resource budget and stop rules **before** a confirmatory run. An exploratory pilot may measure noise and orders of magnitude; it does not close `D3`.
+`D3` is **not closed as a positive result**. The pre-registered campaign ran and produced a negative
+result, which is recorded as evidence; any follow-up is a new protocol version, not a rerun scored
+after the fact. An exploratory pilot may measure noise and orders of magnitude; it does not close `D3`.
+
+

@@ -1,0 +1,540 @@
+{
+  "schema": "flow-s9-campaign/1",
+  "kind": "CONFIRMATORY",
+  "confirmatory": true,
+  "protocol": "docs/BENCHMARK_S9.md \u00a7 Protocol v1.0 (frozen 2026-11-15 by H4)",
+  "h4": {
+    "runs": 10,
+    "success": ">=30% less wall-clock for G than E (paired ratio <= 0.70) with p < 0.05",
+    "resources": "2 CPU cores / 8 GB RAM per run",
+    "stop": "G >2x slower on the first 3 pairs, or unexplained variance"
+  },
+  "started_at": "2026-11-15T13:56:44Z",
+  "fixture": {
+    "path": "experiments/s9/work/base",
+    "sha": "4d0fdeed7fdfd8c14701056c69af003322f9f6df",
+    "agents": 3,
+    "think_ms": 0
+  },
+  "os": "win32",
+  "tools": {
+    "git": "git version 2.51.1.windows.1",
+    "cargo": "cargo 1.95.0 (f2d3ce0bd 2026-03-21)",
+    "jj": "NOT_AVAILABLE",
+    "gitbutler": "NOT_AVAILABLE",
+    "scion": "NOT_AVAILABLE"
+  },
+  "arms": [
+    "G",
+    "E"
+  ],
+  "calibration_runs": 0,
+  "records": [
+    {
+      "arm": "G",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.2632,
+        "t_work": 0.8164,
+        "t_integrate": 3.6937,
+        "t_final_verify": 0.1061,
+        "t_cleanup": 0.0846
+      },
+      "t_verified_s": 4.8794,
+      "ok": true,
+      "candidate_id": "296a791a13258b6b64956723df1da277",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 1,
+      "phases": {
+        "t_setup": 0.1928,
+        "t_work": 0.3174,
+        "t_verify": 1.6182,
+        "t_integrate": 0.2171,
+        "t_final_verify": 0.4607,
+        "t_cleanup": 0.0846
+      },
+      "t_verified_s": 2.8062,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.2051,
+        "t_work": 0.3177,
+        "t_verify": 1.4334,
+        "t_integrate": 0.1921,
+        "t_final_verify": 0.4308,
+        "t_cleanup": 0.0902
+      },
+      "t_verified_s": 2.5791,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 2,
+      "phases": {
+        "t_setup": 0.2463,
+        "t_work": 0.9846,
+        "t_integrate": 3.7573,
+        "t_final_verify": 0.1179,
+        "t_cleanup": 0.1079
+      },
+      "t_verified_s": 5.106,
+      "ok": true,
+      "candidate_id": "0d6e4b92c920791c0d918575d22fb88c",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.3415,
+        "t_work": 1.2578,
+        "t_integrate": 4.0912,
+        "t_final_verify": 0.1224,
+        "t_cleanup": 0.1059
+      },
+      "t_verified_s": 5.8128,
+      "ok": true,
+      "candidate_id": "1058e771d578386c68fd9338731b3a94",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 3,
+      "phases": {
+        "t_setup": 0.3628,
+        "t_work": 0.3863,
+        "t_verify": 1.5437,
+        "t_integrate": 0.193,
+        "t_final_verify": 0.426,
+        "t_cleanup": 0.0863
+      },
+      "t_verified_s": 2.9117,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.1952,
+        "t_work": 0.3077,
+        "t_verify": 1.6491,
+        "t_integrate": 0.2166,
+        "t_final_verify": 0.4715,
+        "t_cleanup": 0.0985
+      },
+      "t_verified_s": 2.8401,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 4,
+      "phases": {
+        "t_setup": 0.2287,
+        "t_work": 0.748,
+        "t_integrate": 3.6284,
+        "t_final_verify": 0.1064,
+        "t_cleanup": 0.0864
+      },
+      "t_verified_s": 4.7115,
+      "ok": true,
+      "candidate_id": "5d3c83edc8d21b64766a661b3648fed4",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.2252,
+        "t_work": 0.7598,
+        "t_integrate": 3.733,
+        "t_final_verify": 0.1064,
+        "t_cleanup": 0.0888
+      },
+      "t_verified_s": 4.8245,
+      "ok": true,
+      "candidate_id": "4569187c4330b4db05442a311f56145f",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 5,
+      "phases": {
+        "t_setup": 0.1922,
+        "t_work": 0.3204,
+        "t_verify": 1.6624,
+        "t_integrate": 0.2239,
+        "t_final_verify": 0.4549,
+        "t_cleanup": 0.0874
+      },
+      "t_verified_s": 2.8539,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.1922,
+        "t_work": 0.3145,
+        "t_verify": 1.4347,
+        "t_integrate": 0.2256,
+        "t_final_verify": 0.5229,
+        "t_cleanup": 0.1053
+      },
+      "t_verified_s": 2.6899,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 6,
+      "phases": {
+        "t_setup": 0.3962,
+        "t_work": 1.0433,
+        "t_integrate": 3.3571,
+        "t_final_verify": 0.1256,
+        "t_cleanup": 0.133
+      },
+      "t_verified_s": 4.9222,
+      "ok": true,
+      "candidate_id": "de02a665520bbfc5414267c4072500f5",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.276,
+        "t_work": 0.9962,
+        "t_integrate": 3.5307,
+        "t_final_verify": 0.1251,
+        "t_cleanup": 0.1079
+      },
+      "t_verified_s": 4.928,
+      "ok": true,
+      "candidate_id": "94f3ebccf862b4185a458d4bf273f082",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 7,
+      "phases": {
+        "t_setup": 0.2486,
+        "t_work": 0.3908,
+        "t_verify": 1.8381,
+        "t_integrate": 0.2368,
+        "t_final_verify": 0.4995,
+        "t_cleanup": 0.0984
+      },
+      "t_verified_s": 3.2137,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 8,
+      "phases": {
+        "t_setup": 0.2114,
+        "t_work": 0.3295,
+        "t_verify": 1.4935,
+        "t_integrate": 0.217,
+        "t_final_verify": 0.5133,
+        "t_cleanup": 0.1324
+      },
+      "t_verified_s": 2.7647,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 8,
+      "phases": {
+        "t_setup": 0.3114,
+        "t_work": 3.076,
+        "t_integrate": 8.5214,
+        "t_final_verify": 0.1488,
+        "t_cleanup": 0.1223
+      },
+      "t_verified_s": 12.0576,
+      "ok": true,
+      "candidate_id": "03b58feffb3b2dacd16b44ff57683aca",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 9,
+      "phases": {
+        "t_setup": 0.315,
+        "t_work": 1.0636,
+        "t_integrate": 4.0615,
+        "t_final_verify": 0.1199,
+        "t_cleanup": 0.0976
+      },
+      "t_verified_s": 5.5599,
+      "ok": true,
+      "candidate_id": "e142ff46bdc492668155561c95391c89",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 9,
+      "phases": {
+        "t_setup": 0.1955,
+        "t_work": 0.334,
+        "t_verify": 1.5188,
+        "t_integrate": 0.2135,
+        "t_final_verify": 0.4906,
+        "t_cleanup": 0.0977
+      },
+      "t_verified_s": 2.7524,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "E",
+      "run": 10,
+      "phases": {
+        "t_setup": 0.2238,
+        "t_work": 0.3533,
+        "t_verify": 1.9673,
+        "t_integrate": 0.3932,
+        "t_final_verify": 0.565,
+        "t_cleanup": 0.11
+      },
+      "t_verified_s": 3.5025,
+      "ok": true,
+      "conflicts": 0,
+      "lost_edits": [],
+      "receipts_ok": [
+        true,
+        true,
+        true
+      ],
+      "final_rc": 0,
+      "calibration": false
+    },
+    {
+      "arm": "G",
+      "run": 10,
+      "phases": {
+        "t_setup": 0.2847,
+        "t_work": 0.8176,
+        "t_integrate": 3.4477,
+        "t_final_verify": 0.1047,
+        "t_cleanup": 0.0857
+      },
+      "t_verified_s": 4.6547,
+      "ok": true,
+      "candidate_id": "9cc1cda6e67b908d418a4aae3bcbb2c2",
+      "run_status": "PASSED",
+      "publish_status": "PUBLISHED",
+      "ref_tree_matches": true,
+      "present": {
+        "alpha": true,
+        "beta": true,
+        "gamma": true
+      },
+      "lost_edits": [],
+      "calibration": false
+    }
+  ],
+  "summary": {
+    "per_arm": {
+      "G": {
+        "n": 10,
+        "median_s": 4.9251,
+        "min_s": 4.6547,
+        "max_s": 12.0576,
+        "mean_s": 5.7457
+      },
+      "E": {
+        "n": 10,
+        "median_s": 2.8232,
+        "min_s": 2.5791,
+        "max_s": 3.5025,
+        "mean_s": 2.8914
+      }
+    },
+    "pairs": {
+      "G-E": {
+        "n": 10,
+        "median_diff_s": 2.1528,
+        "median_ratio": 1.7843,
+        "a_slower_wins": 10,
+        "one_sided_sign_p": 0.000977,
+        "note": "exploratory only; n below confirmatory size, no ranking claim"
+      }
+    }
+  },
+  "limitations": [
+    "agent thinking time is a constant (default 0 ms): LLM latency is out of scope",
+    "single machine, 16 GB, warm cargo cache inside the campaign",
+    "arms are run sequentially; CPU/RAM contention between concurrent agents is not measured",
+    "G is the shipped CLI on this branch; E is instrumented O0 (worktrees + per-agent receipt + exact-tree gate)",
+    "no arm F: no existing tool installed",
+    "n is the frozen H4 sample; no p95 claim"
+  ]
+}
