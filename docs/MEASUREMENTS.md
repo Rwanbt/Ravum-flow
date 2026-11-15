@@ -4,7 +4,7 @@
 here is not a claim; a number that is here names its head, its platform and its evidence. Historical
 reports keep their own dated numbers on purpose (a record that follows the code is not a record).
 
-**Head of the merged line:** `1319201` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
+**Head of the merged line:** `2af4455` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
 **Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.2`, zero runtime
 dependencies.
 
@@ -12,10 +12,10 @@ dependencies.
 
 | Platform | Executed | Failed | Ignored | Evidence |
 |---|---|---|---|---|
-| Windows x86_64 (MSVC) | **548** | 0 | 0 | CI run `43723448433`, job `test windows-latest` (`executed_passed=548`) |
-| Linux x86_64 (GNU) | **559** | 0 | 0 | CI run `43723448433`, job `test ubuntu-latest` (`executed_passed=559`) |
-| macOS arm64 | **559** | 0 | 0 | CI run `43723448433`, job `test macos-latest` (`executed_passed=559`) |
-| Windows, local | 548 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
+| Windows x86_64 (MSVC) | **549** | 0 | 0 | CI run `43726322606`, job `test windows-latest` (`executed_passed=549`) |
+| Linux x86_64 (GNU) | **560** | 0 | 0 | CI run `43726322606`, job `test ubuntu-latest` (`executed_passed=560`) |
+| macOS arm64 | **560** | 0 | 0 | CI run `43726322606`, job `test macos-latest` (`executed_passed=560`) |
+| Windows, local | 549 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
 
 Differences are platform gates; the counts **include tests that print a runtime `SKIP` and return**.
 `ignored=0` proves that no `#[ignore]` existed, not that every counted test executed its body: the
@@ -27,14 +27,14 @@ evidence.
 **152 named gates** are required by name in CI; each one was verified to resolve to a real
 `fn <name>` in `crates/flow`.
 
-Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 548 / 559 / 559 and
+Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 549 / 560 / 560 and
 any `ignored` count fails the build).
 
 ## 2. Coverage (product-only, branch counters)
 
 | Platform | Gate | Result | Evidence |
 |---|---|---|---|
-| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43723448433`: **95.93 % lines (5497/5730) / 90.37 % branches (1032/1142)** |
+| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43726322606`: **95.92 % lines (5507/5741) / 90.38 % branches (1034/1144)** |
 
 The measurement is `cargo-llvm-cov --all-targets --branch` with
 `--ignore-filename-regex '[\/]tests[\/]'`, then `analyze_lcov.py --product-only`. Test code never
@@ -52,7 +52,7 @@ the same instrumented tree above 95/90 without lowering a threshold or adding a 
 |---|---|---|
 | Module subset, hand-measured (Windows/Linux) | `state` 140/140 · `commands` 96.7 % · `gitcli` 88.6 % · `main` 94.2 % (97.1 % adjudicated) · aggregate **95.4 %** | [wave 9 §3.5](reviews/FLOW-QUALITY-WAVE9.md) |
 | **`paths` on Linux, in CI** | **31/31 caught (100 %)** in 2 min | scheduled run [`43491500539`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43491500539), `cargo-mutants 27.1.0` |
-| **Post-Fable modules on Linux, in CI** | `state` **85.5 %** (183/214) · `lock` **50.7 %** (36/71, 4 timeouts) · `proposal` **56.5 %** (87/154) · `scratch` **61.7 %** (37/60); survivors concentrate in refusal/comparison branches | run [`43721348855`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43721348855), head `71c0160`; [`mutation-2026-11-15.md`](../experiments/quality/mutation-2026-11-15.md) |
+| **Post-Fable modules on Linux, in CI** | `state` **85.5 %** (183/214) · `lock` **50.7 %** (36/71, 4 timeouts) · `proposal` **56.5 %** (87/154) · `scratch` **61.7 %** (37/60) · `commands` **21.2 %** (45/212) · `commands-checkout` **68.0 %** (100/147, 7 timeouts) · `commands-policy` **11.1 %** (3/27); the `commands*` rates are low **by construction**: the workflow runs `--bins`, and those modules are exercised by the integration suites. Survivors concentrate in refusal/comparison branches | run [`43721348855`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43721348855) and re-dispatch [`43723454770`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43723454770), head `71c0160` / `1319201`; [`mutation-2026-11-15.md`](../experiments/quality/mutation-2026-11-15.md) |
 
 Scope is `--bins` (the unit suite): every rate above is a **lower bound**, never a crate-wide
 score. Mutation is measured, not yet enforcing a threshold — the threshold has to come from the
@@ -150,5 +150,12 @@ negative result for this workload, not a universal ranking.
 Update it when a head changes the numbers, and cite the CI run id. Do not copy a number from this
 table into prose without its platform and its evidence: that is how four contradictory test counts
 appeared three times (R2-06, waves 5 and 8, then again on 2026-11-13).
+
+
+
+
+
+
+
 
 

@@ -32,6 +32,10 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - **FBL-014 (found by CI, macOS)**: a concurrent creator's staging link (`nlink == 2` for
   microseconds) no longer makes the hard-link guard refuse a valid concurrent `propose`;
   `create_once` answers "not created" for an existing name before the guard.
+- **FBL-015 (found by repeated concurrency runs)**: a lock written by **another host** whose PID is
+  recycled and alive locally is no longer reported `LOCKED` after a full acquire budget — explicit
+  foreign hosts are attributed before any `pid_alive` probe and refused as `LOCK_UNKNOWN`, as the
+  lock contract already said. Host-less legacy records keep their documented behaviour.
 
 ### Measured
 - **S9 confirmatory campaign** (frozen H4 protocol, 10 paired runs): arm G (Flow) vs arm E
@@ -41,9 +45,9 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `experiments/s9/out/campaign-h4.json`.
 
 ### Changed
-- Coverage gate closed without lowering a threshold or adding a waiver: **95.93 % lines / 90.37 %
-  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 548 Windows / 559
-  Linux / 559 macOS.
+- Coverage gate closed without lowering a threshold or adding a waiver: **95.92 % lines / 90.38 %
+  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 549 Windows / 560
+  Linux / 560 macOS.
 - `commands.rs` is split into `commands/mod.rs`, `commands/policy.rs` (policy identity, effective
   digest, build context, obligation validation) and `commands/checkout.rs` (tree listing, fidelity,
   mode and content certification, lock-free index read). Behaviour-constant.
@@ -360,5 +364,8 @@ macOS is not tested, performance/productivity is not proven.
 ## [0.1.0] — 2026-11-09 — verified-tree foundation (unreleased)
 - Exact-tree receipts, CAS publication, durable intent/outcome journal, `reconcile`, bounded
   obligations, scratch isolation, policy/context binding, adoption of the MPL-2.0 licence.
+
+
+
 
 

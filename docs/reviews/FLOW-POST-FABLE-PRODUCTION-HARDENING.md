@@ -53,6 +53,7 @@ Git, unsourced claim, P0 still open at the verdict).
 | `a107fb4` | test(s9): run the frozen H4 confirmatory campaign with a real arm G; result negative |
 | `fb063a6` | test(coverage): pin program resolution, journal archive and sequence edge branches |
 | `1319201` | fix(ci): measure the moved commands modules and fail on a zero-mutant campaign |
+| `2af4455` | fix(lock): attribute an explicit foreign host before probing its pid (FBL-015); split `run` |
 | final HEAD | recorded at the end of this wave (see §9) |
 
 ## 4. FBL matrix
@@ -76,6 +77,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | FBL-012 | P3 | CONFIRMED_BY_CODE (documented) | **segmented**: the active journal is bounded to 256 KiB; past that it is archived by an atomic rename to `journal.<20-digit sequence>.jsonl` and a fresh active file starts. Readers concatenate archived segments (oldest first) then the active one, so an append no longer rewrites the whole history. **Destructive compaction is rejected, not deferred**: dropping closed intents/outcomes would break recovery and audit; archives are evidence and are never deleted | `state::tests::the_journal_rotates_and_still_reads_every_record_in_order`, `a_journal_without_an_active_segment_keeps_its_archived_history`, `a_corrupt_archived_segment_is_refused_and_named`, `journal_segments_only_accept_the_archived_name_shape`; `tests/cli.rs::reconcile_reads_an_intent_closed_in_an_archived_segment` | **CLOSED** (segmentation). The measured ~9 ms/append is now bounded by the segment size instead of growing with age; the env-gated measurement remains available |
 | FBL-013 | P2 | **DISCOVERED_BY_CI** (run `43704406911`, `g2` on Ubuntu) | `git worktree add` is not internally locked: it can read another process's half-written `.git/worktrees/<name>/commondir` while that process runs `git worktree prune`, and the loser failed a valid run with `SCRATCH_REFUSED` ("failed to read .../commondir"). `add_worktree` now retries exactly that transient error a bounded number of times and refuses by name when it persists | `tests/cli.rs::a_transient_worktree_admin_race_is_retried_instead_of_failing_the_run` and `an_unresolved_worktree_admin_race_refuses_the_run_by_name`, both driving a real `git` shim that fails the first/ every `worktree add` with Git's own message | **CLOSED (by fault injection)**. The underlying Git race is not removed by Flow; it is tolerated, and a host with a persistently broken worktree admin still fails closed |
 | FBL-014 | P2 | **DISCOVERED_BY_CI** (run `43711951264`, `g1` on macOS) | a concurrent creator's staging link makes the final name legitimately have `nlink == 2` for a few microseconds (`name` + `name.tmp-flow-*`); the Unix hard-link guard refused a valid concurrent `propose` with "it has 2 hard links". `create_once` now answers "not created" for any existing name before running the guard, without writing; the caller re-reads and validates the winner's bytes | `state::tests::create_once_treats_a_staging_link_as_an_existing_name_not_an_error` pins the two-link case, and `g1_concurrent_proposals_same_key_have_exactly_one_winner` is the live stress that found it | **CLOSED**. The guard still refuses a hard-linked target for `write_atomic` (journal, config, receipts), where Flow would be writing through a link; only the immutable create-once names short-circuit |
+| FBL-015 | P2 | **DISCOVERED_BY_REPEATED_TESTS** (wave 4, `a_foreign_host_lock_is_never_stolen` flaked 1/4) | `acquire_lock` probed `pid_alive` **before** host attribution. A lock written by another host whose PID happened to be recycled and alive locally was waited on for the whole acquire budget and then reported `LOCKED` ("another flow process holds"), instead of `LOCK_UNKNOWN`. The explicit-foreign-host check now comes first; host-less legacy records keep their behaviour (live PID waited for, dead PID refused) | `lock::tests::a_foreign_record_with_a_live_pid_is_unattributable_not_held` (live child PID + `host:0000000000000000`) plus five consecutive green runs of the whole `concurrency` suite; the original flake is the live evidence | **CLOSED (found by the suite, not by the audit)**. Same-host PID reuse is still undetectable, documented residual R3 |
 
 ## 5. Gates
 
@@ -95,14 +97,14 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Check | Command | Result |
 |---|---|---|
 | Baseline suite | `cargo test --locked --offline --all-targets` | **489 passed**, 0 failed |
-| Hardened suite | same command | **548 passed**, 0 failed (see §9 for the exact head) |
+| Hardened suite | same command | **549 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` (CI: `--locked --all-targets`) | exit 0 |
 | Release suite | `cargo test --release --locked --offline --all-targets` | **507 passed**, 0 failed, 0 ignored at the pre-test-wave head. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
 | Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
-| CI (head `1319201`) | `gh run view 43723448433` | Linux **559**, Windows **548**, macOS **559** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.93 % lines / 90.37 % branches |
+| CI (head `2af4455`) | `gh run view 43726322606` | Linux **560**, Windows **549**, macOS **560** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.92 % lines / 90.38 % branches |
 
 **Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
 
@@ -127,11 +129,11 @@ before the guard, without writing; the regression test pins the two-link case. B
 concurrency bugs that only a real multi-process run could expose, which is why they are recorded as
 CI findings rather than audit findings.
 
-**Test-count caveat.** 489 → 548 is +59 executed (Linux 559: the same suite plus the Unix-only
+**Test-count caveat.** 489 → 549 is +60 executed (Linux 560: the same suite plus the Unix-only
 gates). The test wave covers the store, lock, host, context, revalidation, gc, publish and migrate
 edges; no test was deleted or weakened, and four existing tests were adapted to the new authoritative
 storage (blob path, run subdirectory, host token), each adaptation keeping or strengthening the
-asserted failure mode. Raising the CI floors from 482/479/479 to 548/559/559 is the same change: a
+asserted failure mode. Raising the CI floors from 482/479/479 to 549/560/560 is the same change: a
 floor that does not move with the measured count stops protecting it.
 
 ### 6.1 Internal adversarial pre-review (not G10)
@@ -183,28 +185,28 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | FBL-011 doctor diagnostic paths | **PARTIAL**; diagnostics, not persisted evidence |
 | FBL-008 host identity | **PARTIAL**; host name only, no boot id, PID reuse after reboot wedges the lock |
 | `commands.rs` modularisation (3.6k LOC) | **PARTIAL**: `commands/mod.rs` + `policy.rs` (policy identity, context, validation) + `checkout.rs` (tree listing, fidelity/mode/content certification, lock-free index read) extracted behaviour-constantly; the command bodies remain in `mod.rs` (~2.6k product lines) and can be split per command later |
-| Coverage gate | **CLOSED** on this line: 95.93 % lines / 90.37 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
-| Mutation | **RUN 2026-11-15** on `state`/`lock`/`proposal`/`scratch`: killed **85.5 % / 50.7 % / 56.5 % / 61.7 %** (`--bins`, lower bounds); survivors concentrate in refusal/comparison branches. The campaign also found two harness defects (a moved file silently measured nothing; timeouts exit 3 were treated as a broken campaign), both fixed. `commands*` re-dispatched with the fixed mapping. CI stays report mode: no threshold yet |
+| Coverage gate | **CLOSED** on this line: 95.92 % lines / 90.38 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
+| Mutation | **RUN 2026-11-15** (`--bins`, lower bounds): `state` 85.5 %, `lock` 50.7 %, `proposal` 56.5 %, `scratch` 61.7 %, `commands-checkout` 68.0 %, `commands` 21.2 %, `commands-policy` 11.1 %. The low `commands*` rates are **by construction**: the workflow runs unit tests only and those modules are exercised by the integration suites. Two harness defects found and fixed (a moved file silently measured nothing; exit 3/timeouts treated as a broken campaign). CI stays report mode: no threshold yet |
 | Confirmatory S9 | **RUN 2026-11-15, NEGATIVE**: G median 4.925 s vs E 2.823 s, paired ratio 1.784, 10/10 pairs, p=0.000977 — the H4 criterion (≤0.70) failed. No productivity claim; see [the campaign summary](../../experiments/s9/CAMPAIGN-2026-11-15.md) |
 | **O3 workstream (`H1 = O3 complet`)** | **NOT IMPLEMENTED**: the delivered code is the O1 + O2 subset. O3 needs its own ADR, budget, threat model and P0 review; four shapes and their tradeoffs are compared in [FLOW-O3-PROPOSALS.md](FLOW-O3-PROPOSALS.md). No document may present O3 as delivered |
-| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43723448433`; coverage also green (see §9) |
+| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43726322606`; coverage also green (see §9) |
 
 ## 9. Final head, CI and verdict
 
-**Final code head:** `1319201` (`fix(ci): measure the moved commands modules and fail on a zero-mutant
-campaign`), plus this documentation commit. The PR is
+**Final code head:** `2af4455` (`fix(lock): attribute an explicit foreign host before probing its pid
+) plus this documentation commit. The PR is
 **[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**, a **draft** against `dev`; no merge is
 performed. Tracking issue: [#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
 
-**CI on `1319201` — run [`43723448433`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43723448433):**
+**CI on `2af4455` — run [`43726322606`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43726322606):**
 
 | Job | Result |
 |---|---|
-| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** — 559 executed, 0 ignored |
-| `test windows-latest` | **success** — 548 executed, 0 ignored |
-| `test macos-latest` | **success** — 559 executed, 0 ignored |
+| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** — 560 executed, 0 ignored |
+| `test windows-latest` | **success** — 549 executed, 0 ignored |
+| `test macos-latest` | **success** — 560 executed, 0 ignored |
 | `polyglot ubuntu-latest` / `polyglot windows-latest` | **success** / **success** |
-| `coverage (product-only gate)` | **success**: 95.93 % lines (5497/5730), 90.37 % branches (1032/1142), thresholds 95/90 unchanged, no waiver |
+| `coverage (product-only gate)` | **success**: 95.92 % lines (5507/5741), 90.38 % branches (1034/1144), thresholds 95/90 unchanged, no waiver |
 
 The branch is now mergeable **from a CI standpoint**: every required check is green on the head. It is
 not merged, because the remaining conditions are human and review acts, not code:
@@ -225,5 +227,7 @@ not merged, because the remaining conditions are human and review acts, not code
 `H4` = S9 thresholds and budget granted (campaign not yet run), `H6` = draft handoff authorized with
 no Ravum write, `H8` = review stop rule adopted, ADR-012 stays `PROPOSED` until after `G10`.
 `G10` and `GO_PRODUCTION` remain open.
+
+
 
 

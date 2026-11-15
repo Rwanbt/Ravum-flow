@@ -90,13 +90,13 @@ jobs:
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
           # number that would silently shrink. Both numbers are measured, not
-          # projected: **548 on Windows and 559 on Linux/macOS** (2026-11-15, the
-          # `executed_passed` line of each runner at head `1319201`, run
-          # `43723448433`), 0 ignored. The floors move with the measured counts;
+          # projected: **549 on Windows and 560 on Linux/macOS** (2026-11-15, the
+          # `executed_passed` line of each runner at head `2af4455`, run
+          # `43726322606`), 0 ignored. The floors move with the measured counts;
           # the macOS floor is the Unix count because every Unix-only gate
           # compiles and runs there.
-          minimum=559
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=548; fi
+          minimum=560
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=549; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1
@@ -618,5 +618,6 @@ jobs:
           name: flow-coverage-lcov
           path: coverage-lcov.info
           if-no-files-found: warn
+
 
 
