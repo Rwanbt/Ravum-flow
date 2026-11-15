@@ -1594,9 +1594,19 @@ fn host_identity_falls_back_to_the_platform_when_no_variable_names_it() {
         .expect("the test host has a git binary on PATH");
     std::os::unix::fs::symlink(&git_binary, shim.join("git")).unwrap();
     let report = run(Some(&shim));
+    // Linux reads `/proc/sys/kernel/hostname` when the utility is unavailable, so
+    // the identity still matches. macOS has no such file: without the utility the
+    // machine identity is simply unknown, and the honest answer is "foreign"
+    // (never a guess), which is what this branch pins.
+    #[cfg(target_os = "linux")]
     assert!(
         report.to_string().contains("live"),
         "the /proc fallback must produce the same identity: {report}"
+    );
+    #[cfg(not(target_os = "linux"))]
+    assert!(
+        report.to_string().contains("foreign"),
+        "without `hostname` and without /proc, the identity is unknown, not guessed: {report}"
     );
 }
 
