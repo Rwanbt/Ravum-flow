@@ -2190,6 +2190,40 @@ fn a_legacy_receipt_without_a_context_is_refused_not_published() {
     );
 }
 
+/// The journal may be split across archived segments; recovery must read the
+/// history in order and never treat a missing active segment as no history.
+#[test]
+fn reconcile_reads_an_intent_closed_in_an_archived_segment() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let flow_dir = repo.path.join(".flow");
+    fs::create_dir_all(&flow_dir).unwrap();
+    let intent = format!(
+        r#"{{"schema":"flow-journal/1","event":"intent","id":"seg-1","ref":"refs/heads/main","old":"{head}","new":"1111111111111111111111111111111111111111"}}"#
+    );
+    fs::write(
+        flow_dir.join("journal.00000000000000000001.jsonl"),
+        format!("{intent}\n"),
+    )
+    .unwrap();
+    let outcome =
+        r#"{"schema":"flow-journal/1","event":"outcome","id":"seg-1","status":"NOT_PUBLISHED"}"#;
+    fs::write(flow_dir.join("journal.jsonl"), format!("{outcome}\n")).unwrap();
+
+    let (code, out) = flow(&repo.path, &["reconcile"]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out.get("status").and_then(Json::as_str),
+        Some("RECONCILED"),
+        "an intent closed in another segment is closed, not pending: {out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(false),
+        "{out}"
+    );
+}
+
 /// `status` says which policy is in force and who approved it.
 #[test]
 fn status_reports_policy_provenance() {

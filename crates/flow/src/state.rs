@@ -323,6 +323,62 @@ pub fn journal_path(root: &Path) -> PathBuf {
     flow_dir(root).join("journal.jsonl")
 }
 
+/// Maximum size of the **active** journal segment before it is archived.
+///
+/// Every append rewrites the active file (rename-based atomicity, no `O_APPEND`
+/// and no writable hard link). Without a bound, the cost of one publication grew
+/// with the whole history (FBL-012). 256 KiB keeps an append in the measured
+/// single-digit-millisecond range while making it independent of the journal's
+/// age: the active segment is rotated to `journal.<20 digits>.jsonl` and a fresh
+/// one starts. Archived segments are evidence and are never deleted.
+pub const JOURNAL_SEGMENT_BYTES: u64 = 256 * 1024;
+
+/// Archived journal segments, oldest first.
+///
+/// The active file is `journal.jsonl`; an archived one is
+/// `journal.<20-digit sequence>.jsonl`. Anything else in `.flow/` is ignored, so
+/// a foreign file can never be read as history.
+fn journal_segments(root: &Path) -> Result<Vec<PathBuf>, String> {
+    let dir = flow_dir(root);
+    let entries = match fs::read_dir(&dir) {
+        Ok(entries) => entries,
+        // No `.flow/` yet is an empty history, not an error.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(format!("cannot list {}: {e}", dir.display())),
+    };
+    let mut segments: Vec<(u64, PathBuf)> = Vec::new();
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let Some(rest) = name.strip_prefix("journal.") else {
+            continue;
+        };
+        let Some(sequence) = rest.strip_suffix(".jsonl") else {
+            continue;
+        };
+        if sequence.len() != 20 || !sequence.bytes().all(|b| b.is_ascii_digit()) {
+            continue;
+        }
+        if let Ok(number) = sequence.parse::<u64>() {
+            segments.push((number, entry.path()));
+        }
+    }
+    segments.sort_by_key(|(number, _)| *number);
+    Ok(segments.into_iter().map(|(_, path)| path).collect())
+}
+
+/// Next free sequence number for an archived segment.
+fn next_journal_sequence(root: &Path) -> u64 {
+    let Ok(segments) = journal_segments(root) else {
+        return 1;
+    };
+    let last = segments.last().and_then(|path| {
+        let name = path.file_name()?.to_string_lossy().to_string();
+        let digits = name.strip_prefix("journal.")?.strip_suffix(".jsonl")?;
+        digits.parse::<u64>().ok()
+    });
+    last.map(|number| number.saturating_add(1)).unwrap_or(1)
+}
+
 pub fn receipts_dir(root: &Path) -> PathBuf {
     flow_dir(root).join("receipts")
 }
@@ -693,46 +749,94 @@ pub fn append_journal(root: &Path, record: &Json) -> Result<(), String> {
         fs::create_dir_all(parent).map_err(|e| format!("cannot create .flow: {e}"))?;
     }
     guard_below_flow(&path)?;
+    // `tagged`, not `record`: the schema stamp is what lets a future reader
+    // refuse a record it does not understand.
+    let mut line = tagged.to_string();
+    line.push('\n');
+    // The active segment is bounded: past `JOURNAL_SEGMENT_BYTES` it is archived
+    // and a fresh one starts, so an append never rewrites the whole history
+    // (FBL-012). The rotation is a rename, which is atomic and keeps the order:
+    // archived segments are read first, oldest sequence first.
+    let current_len = match fs::metadata(&path) {
+        Ok(meta) => meta.len(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => 0,
+        Err(e) => return Err(format!("cannot inspect journal {}: {e}", path.display())),
+    };
+    if current_len > 0 && current_len.saturating_add(line.len() as u64) > JOURNAL_SEGMENT_BYTES {
+        rotate_journal(root, &path)?;
+    }
     // The journal is rewritten and renamed rather than opened with `O_APPEND`.
     // A rename replaces the directory entry, so a *hard link* to an outside file
     // can no longer be written through — the case the `nlink > 1` check cannot see
     // on Windows. It also makes every append atomic: a torn line is impossible.
-    // The cost is O(journal size) per append, which is bounded in practice and
-    // documented; the alternative is a write primitive with worse failure modes.
+    // The cost is O(active segment) per append, now bounded by the rotation above.
     let mut content = match fs::read(&path) {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
         Err(e) => return Err(format!("cannot read journal {}: {e}", path.display())),
     };
-    // `tagged`, not `record`: the schema stamp is what lets a future reader
-    // refuse a record it does not understand.
-    let mut line = tagged.to_string();
-    line.push('\n');
     content.extend_from_slice(line.as_bytes());
     write_atomic_bytes(&path, &content).map_err(|e| format!("cannot append journal: {e}"))
+}
+
+/// Archive the active segment under the next sequence number.
+///
+/// A failure here is reported, never swallowed: the caller is about to append to
+/// a file that would otherwise grow without bound.
+fn rotate_journal(root: &Path, path: &Path) -> Result<(), String> {
+    let sequence = next_journal_sequence(root);
+    let archived = flow_dir(root).join(format!("journal.{sequence:020}.jsonl"));
+    fs::rename(path, &archived)
+        .map_err(|e| format!("cannot rotate journal into {}: {e}", archived.display()))?;
+    // Make the new directory entry durable before the next append creates the
+    // active file again; Windows has no directory fsync and says so in the README.
+    #[cfg(not(windows))]
+    if let Some(parent) = parent_to_flush(&archived) {
+        if let Ok(dir) = File::open(parent) {
+            let _ = dir.sync_all();
+        }
+    }
+    Ok(())
 }
 /// Read every journal record.
 ///
 /// A missing journal is an empty journal (a fresh repository). Anything else
 /// that prevents a faithful read is an error — never silently an empty set.
 pub fn read_journal(root: &Path) -> Result<Vec<Json>, JournalError> {
-    let path = journal_path(root);
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let file =
-        File::open(&path).map_err(|e| JournalError::Io(format!("cannot open journal: {e}")))?;
+    let mut paths = journal_segments(root).map_err(JournalError::Io)?;
+    // The active segment is read last: the history is archived segments in
+    // sequence order, then whatever has been appended since the last rotation. A
+    // crash between the rotation's rename and the creation of the new active file
+    // leaves no `journal.jsonl`; that is an intact history, not an empty one.
+    paths.push(journal_path(root));
     let mut records = Vec::new();
-    for (lineno, line) in BufReader::new(file).lines().enumerate() {
-        let line =
-            line.map_err(|e| JournalError::Io(format!("cannot read line {}: {e}", lineno + 1)))?;
-        if line.trim().is_empty() {
+    for path in paths {
+        if !path.exists() {
             continue;
         }
-        let record = json::parse(&line).map_err(|e| {
-            JournalError::Corrupt(format!("torn or invalid line {}: {e}", lineno + 1))
+        let file = File::open(&path).map_err(|e| {
+            JournalError::Io(format!("cannot open journal {}: {e}", path.display()))
         })?;
-        records.push(record);
+        for (lineno, line) in BufReader::new(file).lines().enumerate() {
+            let line = line.map_err(|e| {
+                JournalError::Io(format!(
+                    "cannot read line {} of {}: {e}",
+                    lineno + 1,
+                    path.display()
+                ))
+            })?;
+            if line.trim().is_empty() {
+                continue;
+            }
+            let record = json::parse(&line).map_err(|e| {
+                JournalError::Corrupt(format!(
+                    "torn or invalid line {} of {}: {e}",
+                    lineno + 1,
+                    path.display()
+                ))
+            })?;
+            records.push(record);
+        }
     }
     Ok(records)
 }
@@ -1358,6 +1462,113 @@ mod tests {
         let reason =
             create_once(&file.join("child"), b"data").expect_err("a file cannot hold an entry");
         assert!(reason.contains("cannot create"), "{reason}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_journal_rotates_and_still_reads_every_record_in_order() {
+        let root = temp_root("journal-rotate");
+        let payload = "x".repeat(60_000);
+        let mut expected = Vec::new();
+        for index in 0..12 {
+            let record = json::parse(&format!(
+                r#"{{"schema":"flow-journal/1","event":"record","id":"id-{index}","payload":"{payload}"}}"#
+            ))
+            .unwrap();
+            append_journal(&root, &record).unwrap();
+            expected.push(format!("id-{index}"));
+        }
+        let segments = journal_segments(&root).unwrap();
+        assert!(
+            segments.len() >= 2,
+            "the history must have been archived, not kept in one growing file: {segments:?}"
+        );
+        assert!(
+            fs::metadata(journal_path(&root)).unwrap().len() <= JOURNAL_SEGMENT_BYTES,
+            "the active segment is bounded"
+        );
+        let records = read_journal(&root).unwrap();
+        let ids: Vec<String> = records
+            .iter()
+            .filter_map(|record| record.get("id").and_then(Json::as_str).map(str::to_string))
+            .collect();
+        assert_eq!(
+            ids, expected,
+            "archived segments are read oldest first, then the active one"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_journal_without_an_active_segment_keeps_its_archived_history() {
+        let root = temp_root("journal-no-active");
+        for index in 0..2 {
+            append_journal(
+                &root,
+                &json::parse(&format!(
+                    r#"{{"schema":"flow-journal/1","event":"record","id":"id-{index}"}}"#
+                ))
+                .unwrap(),
+            )
+            .unwrap();
+        }
+        // The crash window between the rotation rename and the new active file.
+        let archived = flow_dir(&root).join(format!("journal.{:020}.jsonl", 1));
+        fs::rename(journal_path(&root), &archived).unwrap();
+        assert_eq!(
+            read_journal(&root).unwrap().len(),
+            2,
+            "a missing active segment is an intact history, not an empty one"
+        );
+        append_journal(
+            &root,
+            &json::parse(r#"{"schema":"flow-journal/1","event":"record","id":"new"}"#).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(read_journal(&root).unwrap().len(), 3);
+        assert!(
+            archived.exists(),
+            "the archive is never deleted by an append"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_corrupt_archived_segment_is_refused_and_named() {
+        let root = temp_root("journal-corrupt-archive");
+        fs::create_dir_all(flow_dir(&root)).unwrap();
+        let archived = flow_dir(&root).join(format!("journal.{:020}.jsonl", 1));
+        fs::write(&archived, "{not a record\n").unwrap();
+        match read_journal(&root) {
+            Err(JournalError::Corrupt(reason)) => {
+                assert!(
+                    reason.contains("journal.00000000000000000001.jsonl"),
+                    "{reason}"
+                );
+                assert!(reason.contains("line 1"), "{reason}");
+            }
+            other => panic!("a corrupt archive must be a named refusal: {other:?}"),
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn journal_segments_only_accept_the_archived_name_shape() {
+        let root = temp_root("journal-names");
+        fs::create_dir_all(flow_dir(&root)).unwrap();
+        fs::write(journal_path(&root), "").unwrap();
+        let accepted = flow_dir(&root).join(format!("journal.{:020}.jsonl", 7));
+        fs::write(&accepted, "").unwrap();
+        for foreign in [
+            "journal.1.jsonl",
+            "journal.abcdefghijklmnopqrst.jsonl",
+            "other.jsonl",
+        ] {
+            fs::write(flow_dir(&root).join(foreign), "").unwrap();
+        }
+        let segments = journal_segments(&root).unwrap();
+        assert_eq!(segments, vec![accepted]);
+        assert_eq!(next_journal_sequence(&root), 8);
         let _ = fs::remove_dir_all(&root);
     }
 
