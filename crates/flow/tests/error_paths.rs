@@ -697,17 +697,18 @@ fn assemble_refuses_when_a_recorded_patch_vanished() {
     let (_, admitted) = propose(&repo.path, "agent-a", "T1", &base, &patch, Some("k"));
     assert_eq!(status_of(&admitted), "ADMITTED", "{admitted}");
     let id = proposal_id(&admitted);
-    fs::remove_file(
-        repo.path
-            .join(".flow")
-            .join("proposals")
-            .join(format!("{id}.patch")),
-    )
-    .expect("remove the recorded patch");
+    let digest = field(&admitted, "content_digest");
+    let blob = repo
+        .path
+        .join(".flow")
+        .join("blobs")
+        .join(&digest[..2])
+        .join(&digest);
+    fs::remove_file(blob).expect("remove the recorded patch blob");
 
     let (code, out) = assembled(&repo.path, &[&id]);
     assert_eq!(code, 1);
-    assert_error_mentions(&out, "patch is unreadable");
+    assert_error_mentions(&out, "PROPOSAL_INTEGRITY");
     assert!(
         !repo.path.join(".flow").join("candidates").exists(),
         "a vanished patch must not produce a candidate"
@@ -764,7 +765,7 @@ fn assemble_refuses_to_overwrite_an_immutable_candidate() {
 
     let (code, out) = assembled(&repo.path, &[&id]);
     assert_eq!(code, 1, "{out}");
-    assert_refused(&out, "CANDIDATE_IMMUTABLE");
+    assert_error_mentions(&out, "integrity digest");
     assert_eq!(
         fs::read_to_string(&path).unwrap(),
         tampered,
@@ -781,52 +782,33 @@ fn assemble_reports_a_patch_that_does_not_apply_without_writing_a_candidate() {
     let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &first, Some("a"));
     let (_, b) = propose(&repo.path, "agent-b", "T2", &base, &second, Some("b"));
     let (ida, idb) = (proposal_id(&a), proposal_id(&b));
+    let digest_a = field(&a, "content_digest");
+    let digest_b = field(&b, "content_digest");
+    let blob = |digest: &str| {
+        repo.path
+            .join(".flow")
+            .join("blobs")
+            .join(&digest[..2])
+            .join(digest)
+    };
 
-    // A recorded patch that no longer matches its record: applying it after the
-    // first proposal asks Git to add a path that already exists.
-    let first_bytes = fs::read(
-        repo.path
-            .join(".flow")
-            .join("proposals")
-            .join(format!("{ida}.patch")),
-    )
-    .unwrap();
-    fs::write(
-        repo.path
-            .join(".flow")
-            .join("proposals")
-            .join(format!("{idb}.patch")),
-        &first_bytes,
-    )
-    .unwrap();
+    // A recorded patch whose bytes no longer hash to its `content_digest`: the
+    // bytes are refused before Git is asked to apply them.
+    let first_bytes = fs::read(blob(&digest_a)).unwrap();
+    fs::write(blob(&digest_b), &first_bytes).unwrap();
     let (code, out) = assembled(&repo.path, &[&ida, &idb]);
     assert_eq!(code, 1, "{out}");
-    assert_refused(&out, "CONFLICT");
-    assert!(
-        field(&out, "reason").contains("PATH_CONFLICT"),
-        "the conflict must be classified, not reported as a generic refusal: {out}"
-    );
+    assert_error_mentions(&out, "PROPOSAL_INTEGRITY");
 
-    // Garbage in the recorded slot has no known conflict shape: it is still a
-    // refusal, classified as APPLY_REFUSED, and never a candidate.
-    fs::write(
-        repo.path
-            .join(".flow")
-            .join("proposals")
-            .join(format!("{idb}.patch")),
-        b"this is not a patch\n",
-    )
-    .unwrap();
+    // Garbage in the content slot is the same integrity refusal, and never a
+    // candidate.
+    fs::write(blob(&digest_b), b"this is not a patch\n").unwrap();
     let (code, out) = assembled(&repo.path, &[&ida, &idb]);
     assert_eq!(code, 1, "{out}");
-    assert_refused(&out, "CONFLICT");
-    assert!(
-        field(&out, "reason").contains("APPLY_REFUSED"),
-        "an unclassifiable apply failure is APPLY_REFUSED: {out}"
-    );
+    assert_error_mentions(&out, "PROPOSAL_INTEGRITY");
     assert!(
         !repo.path.join(".flow").join("candidates").exists(),
-        "no candidate is written when the patches do not apply"
+        "no candidate is written when the patches do not match their records"
     );
 }
 
@@ -1469,7 +1451,7 @@ fn assemble_refuses_a_candidate_record_whose_proposal_list_changed() {
 
     let (code, out) = assembled(&repo.path, &[&id]);
     assert_eq!(code, 1, "{out}");
-    assert_refused(&out, "CANDIDATE_IMMUTABLE");
+    assert_error_mentions(&out, "integrity digest");
     assert_eq!(
         fs::read_to_string(&path).unwrap(),
         tampered,

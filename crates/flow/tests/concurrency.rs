@@ -14,6 +14,10 @@
 #[allow(dead_code)]
 mod json;
 
+#[path = "../src/sha256.rs"]
+#[allow(dead_code)]
+mod sha256;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -561,6 +565,155 @@ fn reconcile_is_serialized_and_never_duplicates_outcomes() {
         new,
         "reconcile must never move a ref"
     );
+}
+
+// ------------------------------------------------------------ G1 (FBL-001)
+
+/// The exact patch bytes a G1 writer submits: the same key, eight different
+/// contents.
+fn g1_patch(writer: usize) -> String {
+    format!(
+        "diff --git a/a.txt b/a.txt\n--- a/a.txt\n+++ b/a.txt\n@@ -1 +1 @@\n-alpha\n+beta{writer}\n"
+    )
+}
+
+/// G1 — eight real processes race on the same `--agent/--task/--base/--key`
+/// with different patches, fifteen times. Exactly one may be `ADMITTED`, every
+/// other must be a named `IDEMPOTENCY_CONFLICT`, and the bytes on disk must
+/// still hash to the winner's recorded `content_digest`.
+#[test]
+fn g1_concurrent_proposals_same_key_have_exactly_one_winner() {
+    let repo = new_repo("g1");
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    let base = git(&repo.path, &["rev-parse", "HEAD"]);
+    let patches = repo.path.join("g1-patches");
+    fs::create_dir_all(&patches).unwrap();
+    let mut patch_paths = Vec::new();
+    for writer in 0..8 {
+        let path = patches.join(format!("p{writer}.patch"));
+        fs::write(&path, g1_patch(writer)).unwrap();
+        patch_paths.push(path);
+    }
+
+    for round in 0..15 {
+        let key = format!("g1-key-{round}");
+        let children: Vec<Child> = patch_paths
+            .iter()
+            .map(|patch| {
+                Command::new(env!("CARGO_BIN_EXE_flow"))
+                    .current_dir(&repo.path)
+                    .args([
+                        "propose",
+                        "--agent",
+                        "agent-a",
+                        "--task",
+                        "T1",
+                        "--base",
+                        &base,
+                        "--key",
+                        &key,
+                        "--patch",
+                        patch.to_str().unwrap(),
+                    ])
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .expect("propose child spawns")
+            })
+            .collect();
+        let outputs = wait_all(children);
+
+        let mut admitted = 0;
+        let mut conflicts = 0;
+        let mut winner = None;
+        for (index, output) in outputs.iter().enumerate() {
+            let value = parse_output(&format!("g1[{round}][{index}]"), output);
+            match status_of(&value).as_str() {
+                "ADMITTED" => {
+                    admitted += 1;
+                    let idempotent = value.get("idempotent").and_then(Json::as_bool);
+                    assert_ne!(
+                        idempotent,
+                        Some(true),
+                        "a distinct patch may not be reported idempotent: {value}"
+                    );
+                    winner = Some(value);
+                }
+                "REFUSED" => {
+                    assert_eq!(
+                        code_of(&value),
+                        "IDEMPOTENCY_CONFLICT",
+                        "a losing writer must be a named conflict: {value}"
+                    );
+                    conflicts += 1;
+                }
+                other => panic!("unexpected proposal status {other:?}: {value}"),
+            }
+        }
+        assert_eq!(admitted, 1, "round {round}: exactly one winner");
+        assert_eq!(conflicts, 7, "round {round}: every other writer conflicts");
+
+        // The winner's bytes are on disk under their digest, and a second read
+        // of the same key is idempotent for exactly that content.
+        let winner = winner.expect("one winner");
+        let digest = winner
+            .get("content_digest")
+            .and_then(Json::as_str)
+            .expect("winner digest");
+        let blob = repo
+            .path
+            .join(".flow")
+            .join("blobs")
+            .join(&digest[..2])
+            .join(digest);
+        let bytes = fs::read(&blob).expect("winner blob exists");
+        assert_eq!(
+            sha256::sha256_hex(&bytes),
+            digest,
+            "round {round}: the stored bytes must hash to the recorded digest"
+        );
+        let winner_patch = winner
+            .get("patch_blob")
+            .and_then(Json::as_str)
+            .expect("winner patch_blob");
+        assert_eq!(
+            winner_patch,
+            format!(".flow/blobs/{}/{}", &digest[..2], digest),
+            "round {round}: the record must point at the content-addressed blob"
+        );
+
+        if round == 0 {
+            // Re-submitting the winner's exact bytes is idempotent, not a new
+            // admission and not a conflict.
+            let winning_writer = (0..8)
+                .find(|w| sha256::sha256_hex(g1_patch(*w).as_bytes()) == digest)
+                .expect("the winner is one of the eight writers");
+            let (code, again) = flow(
+                &repo.path,
+                &[
+                    "propose",
+                    "--agent",
+                    "agent-a",
+                    "--task",
+                    "T1",
+                    "--base",
+                    &base,
+                    "--key",
+                    &key,
+                    "--patch",
+                    patch_paths[winning_writer].to_str().unwrap(),
+                ],
+            );
+            assert_eq!(code, 0, "same bytes must be idempotent: {again}");
+            assert_eq!(
+                again.get("idempotent").and_then(Json::as_bool),
+                Some(true),
+                "{again}"
+            );
+        }
+    }
 }
 
 // ------------------------------------------------------------ host probes

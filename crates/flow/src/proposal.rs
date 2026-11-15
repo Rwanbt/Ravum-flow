@@ -114,7 +114,78 @@ impl Proposal {
                 "proposal {id} carries schema {schema:?}, not {SCHEMA_PROPOSAL}: refusing to reinterpret it"
             ));
         }
-        Ok(Some(Self::from_json(value)))
+        if value.get("integrity").and_then(Json::as_str).is_some() {
+            state::verify_record_integrity(&value)?;
+        }
+        let proposal = Self::from_json(value);
+        // The id is derived from the author, the task, the base and the
+        // idempotency key. A record naming a different id was edited after it
+        // was written, and its attribution can no longer be trusted.
+        let expected = proposal_id_for(
+            &proposal.agent_id,
+            &proposal.task_id,
+            &proposal.base_commit,
+            proposal
+                .json
+                .get("idempotency_key")
+                .and_then(Json::as_str)
+                .unwrap_or(""),
+        );
+        if proposal.proposal_id != id || expected != id {
+            return Err(format!(
+                "PROPOSAL_INTEGRITY: record {id} names proposal {:?} and its identity recomputes to {expected}: refusing to attribute it",
+                proposal.proposal_id
+            ));
+        }
+        // Read the patch now: a record whose bytes are missing or no longer hash
+        // to `content_digest` is refused at load, not only at assembly.
+        proposal.patch_bytes(root)?;
+        Ok(Some(proposal))
+    }
+
+    /// The digest-bearing bytes of this proposal, or a named refusal.
+    ///
+    /// New records point at a content-addressed blob; records written before the
+    /// store existed still point at `.flow/proposals/<id>.patch`. Both are
+    /// re-hashed, so a tampered or torn patch is never applied.
+    pub fn patch_bytes(&self, root: &Path) -> Result<Vec<u8>, String> {
+        let digest = &self.content_digest;
+        if !state::is_content_digest(digest) {
+            return Err(format!(
+                "PROPOSAL_INTEGRITY: proposal {} records content_digest {digest:?}, not a sha256 content digest",
+                self.proposal_id
+            ));
+        }
+        let path = match self.json.get("patch_blob").and_then(Json::as_str) {
+            Some(blob) => {
+                let expected = state::blob_relative_path(digest);
+                if blob != expected {
+                    return Err(format!(
+                        "PROPOSAL_INTEGRITY: proposal {} records patch_blob {blob:?}, expected {expected:?}",
+                        self.proposal_id
+                    ));
+                }
+                return state::verified_blob(root, digest);
+            }
+            None => Self::patch_path(root, &self.proposal_id),
+        };
+        let bytes = fs::read(&path).map_err(|e| {
+            format!(
+                "PROPOSAL_INTEGRITY: proposal {} patch is unreadable at {}: {e}",
+                self.proposal_id,
+                path.display()
+            )
+        })?;
+        let actual = sha256_hex(&bytes);
+        if actual != *digest {
+            return Err(format!(
+                "PROPOSAL_INTEGRITY: proposal {} records content_digest {} but its patch hashes to {}: refusing to attribute bytes to metadata",
+                self.proposal_id,
+                &digest[..12.min(digest.len())],
+                &actual[..12]
+            ));
+        }
+        Ok(bytes)
     }
 
     pub fn list(root: &Path) -> Result<Vec<Proposal>, String> {
@@ -194,6 +265,20 @@ impl Proposal {
             json: value,
         }
     }
+}
+
+fn proposal_id_for(agent: &str, task: &str, base: &str, key: &str) -> String {
+    let material =
+        format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
+    sha256_hex(material.as_bytes())[..32].to_string()
+}
+
+fn candidate_id_for(base: &str, tree: &str, proposals: &[String]) -> String {
+    let material = format!(
+        "{SCHEMA_CANDIDATE}\nbase:{base}\ntree:{tree}\nproposals:{}",
+        proposals.join(",")
+    );
+    sha256_hex(material.as_bytes())[..32].to_string()
 }
 
 #[derive(Debug, Clone)]
@@ -284,14 +369,37 @@ impl Candidate {
                     .collect()
             })
             .unwrap_or_default();
-        Ok(Some(Candidate {
+        let candidate = Candidate {
             candidate_id: get("candidate_id"),
             base_commit: get("base_commit"),
             tree_oid: get("tree_oid"),
             proposals,
             changes,
             json: value,
-        }))
+        };
+        if candidate
+            .json
+            .get("integrity")
+            .and_then(Json::as_str)
+            .is_some()
+        {
+            state::verify_record_integrity(&candidate.json)?;
+        }
+        // The candidate id binds the base, the tree and the ordered proposal
+        // list. A record whose fields no longer recompute to its own name was
+        // edited after assembly: it is refused, never reinterpreted.
+        let expected = candidate_id_for(
+            &candidate.base_commit,
+            &candidate.tree_oid,
+            &candidate.proposals,
+        );
+        if candidate.candidate_id != id || expected != id {
+            return Err(format!(
+                "CANDIDATE_INTEGRITY: record {id} names candidate {:?} and its identity recomputes to {expected}: refusing to reinterpret it",
+                candidate.candidate_id
+            ));
+        }
+        Ok(Some(candidate))
     }
 }
 
@@ -629,11 +737,7 @@ pub fn admit(
             Err(refusal) => return Ok(refusal),
         },
     };
-    let proposal_id = {
-        let material =
-            format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
-        sha256_hex(material.as_bytes())[..32].to_string()
-    };
+    let proposal_id = proposal_id_for(&agent, &task, &base, &key);
 
     if let Some(existing) = Proposal::load(root, &proposal_id)? {
         if existing.content_digest != content_digest {
@@ -721,22 +825,54 @@ pub fn admit(
             Json::Arr(changes.iter().map(Change::to_json).collect()),
         ),
         (
-            "patch_path",
-            Json::str(Proposal::patch_path(root, &proposal_id).to_string_lossy().to_string()),
+            "patch_blob",
+            Json::str(state::blob_relative_path(&content_digest)),
         ),
         (
             "note",
             Json::str("immutable: re-submitting this key with different content is refused; the proposal tree was built in a temporary index and never touched the worktree"),
         ),
     ]);
-    fs::create_dir_all(state::proposals_dir(root))
-        .map_err(|e| format!("cannot create proposals dir: {e}"))?;
-    state::write_atomic_bytes(&Proposal::patch_path(root, &proposal_id), &patch)?;
-    state::write_atomic(
-        &Proposal::metadata_path(root, &proposal_id),
-        &(record.to_string_pretty() + "\n"),
-    )?;
-    Ok(record)
+    let record = state::seal_record(&record);
+    // Publish the bytes first, under their own digest, and only then the record
+    // that names them: metadata never references an object that is not there.
+    let stored = state::put_blob(root, &patch)?;
+    if stored != content_digest {
+        return Err(format!(
+            "INTERNAL: stored digest {stored} differs from the computed {content_digest}"
+        ));
+    }
+    let metadata = Proposal::metadata_path(root, &proposal_id);
+    let body = record.to_string_pretty() + "\n";
+    match state::create_once(&metadata, body.as_bytes())? {
+        true => Ok(record),
+        false => {
+            // A concurrent writer created the record between our check and our
+            // create. The name can only have one winner; the loser re-reads it
+            // and either confirms the same bytes or reports the conflict.
+            let existing = Proposal::load(root, &proposal_id)?.ok_or_else(|| {
+                format!(
+                    "proposal {proposal_id} was reported created but cannot be read back from {}",
+                    metadata.display()
+                )
+            })?;
+            if existing.content_digest != content_digest {
+                return Ok(refusal(
+                    "IDEMPOTENCY_CONFLICT",
+                    format!(
+                        "proposal {proposal_id} already exists with content {} but this patch is {}: a correction is a new proposal, use a new --key",
+                        &existing.content_digest[..12.min(existing.content_digest.len())],
+                        &content_digest[..12]
+                    ),
+                ));
+            }
+            let mut out = existing.json.clone();
+            if let Json::Obj(pairs) = &mut out {
+                pairs.push(("idempotent".into(), Json::Bool(true)));
+            }
+            Ok(out)
+        }
+    }
 }
 
 // --------------------------------------------------------------- assembly
@@ -820,6 +956,10 @@ fn path_conflicts(proposals: &[Proposal]) -> Option<Json> {
     None
 }
 
+fn changes_json(changes: &[Change]) -> String {
+    Json::Arr(changes.iter().map(Change::to_json).collect()).to_string()
+}
+
 pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
     let git = Git::new(root);
     if proposal_ids.is_empty() {
@@ -866,8 +1006,87 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
         ));
     }
 
-    // Incompatible operations on one path are refused *before* any patch is
-    // applied, so the diagnostic does not depend on application order.
+    // Incompatible operations on one path are refused before any patch is
+    // applied to the shared index, on the *rebuilt* change lists (see below), so
+    // the diagnostic does not depend on application order nor on metadata.
+
+    // The base tree recorded by the proposals must be the tree of the base
+    // commit: a record that names another tree carries a false assembly premise.
+    let base_tree_check =
+        git.run_bounded(&["rev-parse", &format!("{base}^{{tree}}")], None, None)?;
+    if base_tree_check.status != 0 || base_tree_check.stdout.trim() != base_tree {
+        return Err(format!(
+            "PROPOSAL_INTEGRITY: base {base} resolves to tree {:?}, but the proposals record {base_tree}",
+            base_tree_check.stdout.trim()
+        ));
+    }
+
+    // Every proposal is re-derived on its own before the shared assembly: the
+    // patch must still hash to its digest (`patch_bytes`) and must rebuild
+    // exactly the recorded tree and change list. A metadata file edited after
+    // admission is refused instead of steering path-conflict detection.
+    let mut patches: Vec<Vec<u8>> = Vec::with_capacity(proposals.len());
+    for proposal in &mut proposals {
+        let patch = proposal.patch_bytes(root)?;
+        let index = TempIndex::new();
+        let seeded = git.run_bounded(&["read-tree", &base_tree], None, Some(index.path()))?;
+        if seeded.status != 0 {
+            return Err(format!(
+                "cannot seed a temporary index from {base_tree}: {}",
+                seeded.stderr.trim()
+            ));
+        }
+        let applied = apply_patch(&git, index.path(), &patch)?;
+        if applied.status != 0 {
+            return Ok(refusal(
+                "PROPOSAL_INTEGRITY",
+                format!(
+                    "proposal {} records a patch that no longer applies to its base: {}",
+                    proposal.proposal_id,
+                    applied.stderr.trim()
+                ),
+            ));
+        }
+        let written = git.run_bounded(&["write-tree"], None, Some(index.path()))?;
+        if written.status != 0 {
+            return Err(format!(
+                "cannot rebuild proposal {} tree: {}",
+                proposal.proposal_id,
+                written.stderr.trim()
+            ));
+        }
+        let rebuilt = written.stdout.trim().to_string();
+        if rebuilt != proposal.tree_oid {
+            return Ok(refusal(
+                "PROPOSAL_INTEGRITY",
+                format!(
+                    "proposal {} records tree {} but its patch rebuilds {}: refusing to assemble bytes that do not match the record",
+                    proposal.proposal_id, proposal.tree_oid, rebuilt
+                ),
+            ));
+        }
+        let rebuilt_changes = diff_changes(&git, &base_tree, &rebuilt)?;
+        if changes_json(&rebuilt_changes) != changes_json(&proposal.changes) {
+            return Ok(refusal(
+                "PROPOSAL_INTEGRITY",
+                format!(
+                    "proposal {} records a change list that its patch does not produce: refusing to use it for conflict detection",
+                    proposal.proposal_id
+                ),
+            ));
+        }
+        for change in &rebuilt_changes {
+            if let Err(refusal) = validate_path(&git, change) {
+                return Ok(refusal);
+            }
+        }
+        if let Err(refusal) = validate_tree(&git, &rebuilt) {
+            return Ok(refusal);
+        }
+        proposal.changes = rebuilt_changes;
+        patches.push(patch);
+    }
+
     if let Some(refusal) = path_conflicts(&proposals) {
         return Ok(refusal);
     }
@@ -880,17 +1099,8 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
             seeded.stderr.trim()
         ));
     }
-    for proposal in &proposals {
-        let patch = match fs::read(Proposal::patch_path(root, &proposal.proposal_id)) {
-            Ok(bytes) => bytes,
-            Err(e) => {
-                return Err(format!(
-                    "proposal {} is recorded but its patch is unreadable: {e}",
-                    proposal.proposal_id
-                ))
-            }
-        };
-        let applied = apply_patch(&git, index.path(), &patch)?;
+    for (proposal, patch) in proposals.iter().zip(patches.iter()) {
+        let applied = apply_patch(&git, index.path(), patch)?;
         if applied.status != 0 {
             let kind = classify_apply_failure(&applied.stderr);
             return Ok(refusal(
@@ -919,13 +1129,7 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
         return Ok(refusal);
     }
     let changes = diff_changes(&git, &base_tree, &tree_oid)?;
-    let candidate_id = {
-        let material = format!(
-            "{SCHEMA_CANDIDATE}\nbase:{base}\ntree:{tree_oid}\nproposals:{}",
-            proposal_ids.join(",")
-        );
-        sha256_hex(material.as_bytes())[..32].to_string()
-    };
+    let candidate_id = candidate_id_for(&base, &tree_oid, proposal_ids);
     let record = Json::obj(vec![
         ("schema", Json::str(SCHEMA_CANDIDATE)),
         ("status", Json::str("ASSEMBLED")),
@@ -963,25 +1167,25 @@ pub fn assemble(root: &Path, proposal_ids: &[String]) -> Result<Json, String> {
             Json::str("immutable candidate: verify it with `flow run --candidate <id>`, publish it with `flow publish --candidate <id> --expected-old <base>`; no ref, index or worktree was touched"),
         ),
     ]);
-    fs::create_dir_all(state::candidates_dir(root))
-        .map_err(|e| format!("cannot create candidates dir: {e}"))?;
+    let record = state::seal_record(&record);
     let path = Candidate::path(root, &candidate_id);
-    if path.exists() {
-        // Same inputs, same id. Only an identical record may reuse the slot.
-        let existing = Candidate::load(root, &candidate_id)?;
-        match existing {
-            Some(c) if c.tree_oid == tree_oid && c.proposals == proposal_ids => {}
-            _ => {
-                return Ok(refusal(
+    let body = record.to_string_pretty() + "\n";
+    match state::create_once(&path, body.as_bytes())? {
+        true => Ok(record),
+        false => {
+            // Same inputs, same id. The name is created once; a loser confirms
+            // that the existing record is the same assembly or reports the
+            // immutable slot.
+            let existing = Candidate::load(root, &candidate_id)?;
+            match existing {
+                Some(c) if c.tree_oid == tree_oid && c.proposals == proposal_ids => Ok(record),
+                _ => Ok(refusal(
                     "CANDIDATE_IMMUTABLE",
                     format!("candidate {candidate_id} exists with different content: refusing to overwrite it"),
-                ))
+                )),
             }
         }
-    } else {
-        state::write_atomic(&path, &(record.to_string_pretty() + "\n"))?;
     }
-    Ok(record)
 }
 
 #[cfg(test)]

@@ -383,6 +383,130 @@ pub fn write_atomic_bytes(path: &Path, data: &[u8]) -> Result<(), String> {
     Ok(())
 }
 
+// ------------------------------------------------------- content-addressed store
+
+/// Directory of content-addressed blobs below `.flow/`.
+pub fn blobs_dir(root: &Path) -> PathBuf {
+    flow_dir(root).join("blobs")
+}
+
+/// A content digest is exactly 64 lowercase hexadecimal characters.
+pub fn is_content_digest(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// The on-disk path of a content-addressed blob, or `None` for a non-digest.
+pub fn blob_path(root: &Path, digest: &str) -> Option<PathBuf> {
+    if !is_content_digest(digest) {
+        return None;
+    }
+    Some(blobs_dir(root).join(&digest[..2]).join(digest))
+}
+
+/// The root-relative path recorded in a record: never an absolute host path.
+pub fn blob_relative_path(digest: &str) -> String {
+    format!(".flow/blobs/{}/{}", &digest[..2], digest)
+}
+
+/// Publish bytes at `path` only if the name does not exist yet.
+///
+/// The content is written to a uniquely named staging file in the same
+/// directory, fsynced, then hard-linked onto the final name. The hard link is
+/// the atomic create-or-fail primitive: two writers racing on one name produce
+/// exactly one winner and one `AlreadyExists`, never two visible contents.
+/// Returns `Ok(true)` when this call created the name, `Ok(false)` when it
+/// already existed.
+pub fn create_once(path: &Path, data: &[u8]) -> Result<bool, String> {
+    guard_below_flow(path)?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("cannot create {}: {e}", parent.display()))?;
+    }
+    let tmp = path.with_extension(format!(
+        "tmp-flow-{}-{}",
+        std::process::id(),
+        unique_suffix()
+    ));
+    {
+        let mut file =
+            File::create(&tmp).map_err(|e| format!("cannot create {}: {e}", tmp.display()))?;
+        file.write_all(data)
+            .map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
+        file.sync_all()
+            .map_err(|e| format!("cannot fsync {}: {e}", tmp.display()))?;
+    }
+    let linked = fs::hard_link(&tmp, path);
+    let _ = fs::remove_file(&tmp);
+    match linked {
+        Ok(()) => {
+            #[cfg(not(windows))]
+            if let Some(parent) = parent_to_flush(path) {
+                if let Ok(dir) = File::open(parent) {
+                    let _ = dir.sync_all();
+                }
+            }
+            Ok(true)
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
+        Err(e) => Err(format!("cannot publish {}: {e}", path.display())),
+    }
+}
+
+/// Store bytes under their own digest and return that digest.
+///
+/// The name is the digest, so two writers of the same content converge on one
+/// file and two writers of different content never share a name. An existing
+/// file is re-read and compared: a digest collision is refused, never assumed.
+pub fn put_blob(root: &Path, bytes: &[u8]) -> Result<String, String> {
+    let digest = crate::sha256::sha256_hex(bytes);
+    let path = blob_path(root, &digest)
+        .ok_or_else(|| "internal: put_blob produced an invalid digest".to_string())?;
+    if path.exists() {
+        let existing = fs::read(&path)
+            .map_err(|e| format!("cannot re-read blob {}: {e}", path.display()))?;
+        if existing != bytes {
+            return Err(format!(
+                "BLOB_COLLISION: blob {digest} already exists with different bytes: refusing to alias two contents"
+            ));
+        }
+        return Ok(digest);
+    }
+    match create_once(&path, bytes)? {
+        true => Ok(digest),
+        false => {
+            let existing = fs::read(&path)
+                .map_err(|e| format!("cannot re-read blob {}: {e}", path.display()))?;
+            if existing != bytes {
+                Err(format!(
+                    "BLOB_COLLISION: blob {digest} appeared concurrently with different bytes"
+                ))
+            } else {
+                Ok(digest)
+            }
+        }
+    }
+}
+
+/// Read a blob and prove it still hashes to the name it was stored under.
+pub fn verified_blob(root: &Path, digest: &str) -> Result<Vec<u8>, String> {
+    let path = blob_path(root, digest).ok_or_else(|| {
+        format!("PROPOSAL_INTEGRITY: {digest:?} is not a sha256 content digest")
+    })?;
+    let bytes = fs::read(&path).map_err(|e| {
+        format!(
+            "PROPOSAL_INTEGRITY: blob {digest} is unreadable at {}: {e}",
+            path.display()
+        )
+    })?;
+    let actual = crate::sha256::sha256_hex(&bytes);
+    if actual != digest {
+        return Err(format!(
+            "PROPOSAL_INTEGRITY: blob {digest} hashes to {actual}: the bytes do not match the recorded content"
+        ));
+    }
+    Ok(bytes)
+}
+
 /// The directory entry a rename must flush, or `None` when there is none to flush.
 ///
 /// `Path::parent` returns `Some("")` for a bare relative name (`"journal.jsonl"`):
@@ -576,6 +700,11 @@ fn without_field(value: &Json, key: &str) -> Json {
 /// rewrite both the config and the receipt: that would require a key the Flow
 /// process does not have. The honest boundary is documented in the report.
 pub fn seal_receipt(value: &Json) -> Json {
+    seal_record(value)
+}
+
+/// Bind any persisted record to its own content.
+pub fn seal_record(value: &Json) -> Json {
     let body = without_field(value, "integrity");
     let digest = crate::sha256::sha256_hex(body.to_string().as_bytes());
     let mut sealed = body;
@@ -586,15 +715,28 @@ pub fn seal_receipt(value: &Json) -> Json {
 }
 
 pub fn verify_receipt_integrity(value: &Json) -> Result<(), String> {
+    verify_record_integrity(value).map_err(|e| {
+        if e.contains("record") {
+            e.replacen("record", "receipt", 2)
+        } else {
+            e
+        }
+    })
+}
+
+/// Verify a record sealed by [`seal_record`]. Legacy records without a seal are
+/// not rejected here: their own content-derived ids and digests are checked by
+/// the module that owns them, and rewriting history is not a migration.
+pub fn verify_record_integrity(value: &Json) -> Result<(), String> {
     let recorded = value
         .get("integrity")
         .and_then(Json::as_str)
-        .ok_or("receipt carries no integrity digest")?;
+        .ok_or("record carries no integrity digest")?;
     let body = without_field(value, "integrity");
     let computed = crate::sha256::sha256_hex(body.to_string().as_bytes());
     if computed != recorded {
         return Err(format!(
-            "receipt content does not match its integrity digest (recorded {recorded}, computed {computed})"
+            "record content does not match its integrity digest (recorded {recorded}, computed {computed})"
         ));
     }
     Ok(())
