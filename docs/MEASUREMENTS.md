@@ -52,13 +52,15 @@ the same instrumented tree above 95/90 without lowering a threshold or adding a 
 |---|---|---|
 | Module subset, hand-measured (Windows/Linux) | `state` 140/140 · `commands` 96.7 % · `gitcli` 88.6 % · `main` 94.2 % (97.1 % adjudicated) · aggregate **95.4 %** | [wave 9 §3.5](reviews/FLOW-QUALITY-WAVE9.md) |
 | **`paths` on Linux, in CI** | **31/31 caught (100 %)** in 2 min | scheduled run [`43491500539`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43491500539), `cargo-mutants 27.1.0` |
-| Other modules on Linux, in CI | **campaign armed, runs scheduled**; no rate reported yet | `.github/workflows/flow-mutation.yml` (per-module matrix, report mode) |
+| **Post-Fable modules on Linux, in CI** | `state` **85.5 %** (183/214) · `lock` **50.7 %** (36/71, 4 timeouts) · `proposal` **56.5 %** (87/154) · `scratch` **61.7 %** (37/60); survivors concentrate in refusal/comparison branches | run [`43721348855`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43721348855), head `71c0160`; [`mutation-2026-11-15.md`](../experiments/quality/mutation-2026-11-15.md) |
 
 Scope is `--bins` (the unit suite): every rate above is a **lower bound**, never a crate-wide
 score. Mutation is measured, not yet enforcing a threshold — the threshold has to come from the
-first full matrix. The workflow fails when a campaign *runs nothing* (that defect was caught on its
-first dispatch: `--bins` was passed to `cargo-mutants` instead of `cargo test`, and the job
-reported success while mutating nothing).
+first full matrix. The workflow fails when a campaign *runs nothing*: the first dispatch passed
+`--bins` to `cargo-mutants` instead of `cargo test`; the 2026-11-15 campaign found a second form of
+the same defect — a module whose file had moved (`commands.rs` → `commands/mod.rs`) accepted a
+nonexistent path and reported 0 mutants as a success. The workflow now maps the module paths, fails on
+zero mutants, and accepts exit 3 (timeouts) in report mode with a warning.
 
 ## 4. Crash windows on the release binary (Linux)
 
