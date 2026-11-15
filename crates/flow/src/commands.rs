@@ -1466,6 +1466,52 @@ fn collect_entries(
     }
     Ok(())
 }
+/// Compute the index tree **without** taking the shared `.git/index` lock.
+///
+/// `git write-tree` may refresh the index cache-tree and therefore takes
+/// `index.lock`; two concurrent `run`s on the same working copy would make one
+/// of them fail with "Another git process seems to be running". A byte copy of
+/// the index passed through `GIT_INDEX_FILE` gives each run its own view, and
+/// the user's index is never written. The copy is read while the user may be
+/// editing; that is the same snapshot rule as any Git read.
+fn index_tree_without_locking(git: &Git) -> Result<String, String> {
+    let located = git.run_bounded(&["rev-parse", "--git-path", "index"], None, None)?;
+    if located.status != 0 {
+        return Err(format!(
+            "cannot locate the index: {}",
+            located.stderr.trim()
+        ));
+    }
+    let raw = PathBuf::from(located.stdout.trim());
+    let source = if raw.is_absolute() {
+        raw
+    } else {
+        git.root.join(raw)
+    };
+    let copy = std::env::temp_dir().join(format!(
+        "flow-run-index-{}-{:x}",
+        std::process::id(),
+        state::unique_suffix()
+    ));
+    if source.is_file() {
+        fs::copy(&source, &copy).map_err(|e| {
+            format!(
+                "cannot copy the index {} for a lock-free tree read: {e}",
+                source.display()
+            )
+        })?;
+    }
+    let written = git.run_bounded(&["write-tree"], None, Some(&copy))?;
+    let _ = fs::remove_file(&copy);
+    if written.status != 0 {
+        return Err(format!(
+            "cannot write the index tree: {}",
+            written.stderr.trim()
+        ));
+    }
+    Ok(written.stdout.trim().to_string())
+}
+
 pub fn cmd_run(
     root: &Path,
     only: Option<Vec<String>>,
@@ -1557,7 +1603,7 @@ pub fn cmd_run(
     let git = Git::new(root);
     let tree = match &candidate_record {
         Some(record) => record.tree_oid.clone(),
-        None => git.write_tree()?,
+        None => index_tree_without_locking(&git)?,
     };
     // A candidate tree must still be in the object store: a pruned candidate is
     // not verifiable, and verifying something else while naming it would be a

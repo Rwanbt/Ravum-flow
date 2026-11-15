@@ -349,8 +349,24 @@ fn publish_with_stale_expected_old_is_refused() {
     );
 }
 
+/// The crash-injection hook is compiled out of release builds by design; CI
+/// proves the released binary ignores it. A release-mode run reports these
+/// tests as skipped instead of failing on the missing hook.
+fn skip_without_debug_hook(name: &str) -> bool {
+    if cfg!(debug_assertions) {
+        return false;
+    }
+    println!(
+        "SKIP {name}: FLOW_TEST_CRASH is inert in release builds (CI proves the released binary ignores it)"
+    );
+    true
+}
+
 #[test]
 fn crash_after_intent_is_not_published_and_reconciles() {
+    if skip_without_debug_hook("crash_after_intent_is_not_published_and_reconciles") {
+        return;
+    }
     let repo = new_repo();
     flow(&repo.path, &["init"]);
     write_config(
@@ -385,6 +401,9 @@ fn crash_after_intent_is_not_published_and_reconciles() {
 
 #[test]
 fn crash_after_ref_is_observed_as_published() {
+    if skip_without_debug_hook("crash_after_ref_is_observed_as_published") {
+        return;
+    }
     let repo = new_repo();
     flow(&repo.path, &["init"]);
     write_config(
@@ -817,6 +836,9 @@ fn p1_a_symbolic_ref_is_never_a_publication_target() {
 // ------------------------------------------------------------------ P0-C
 #[test]
 fn p0c_corrupt_journal_is_not_reported_as_reconciled() {
+    if skip_without_debug_hook("p0c_corrupt_journal_is_not_reported_as_reconciled") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -887,6 +909,9 @@ fn p0c_duplicate_intent_id_requires_a_human() {
 
 #[test]
 fn p0c_ref_moved_elsewhere_needs_reconciliation() {
+    if skip_without_debug_hook("p0c_ref_moved_elsewhere_needs_reconciliation") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -919,6 +944,9 @@ fn p0c_ref_moved_elsewhere_needs_reconciliation() {
 
 #[test]
 fn p0c_reconcile_is_idempotent() {
+    if skip_without_debug_hook("p0c_reconcile_is_idempotent") {
+        return;
+    }
     let (repo, _, _) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);
@@ -1597,6 +1625,9 @@ fn a_hardlinked_journal_is_not_written_through() {
 /// nothing to reconcile and no ref moved.
 #[test]
 fn crash_before_intent_leaves_no_pending_intent() {
+    if skip_without_debug_hook("crash_before_intent_leaves_no_pending_intent") {
+        return;
+    }
     let (repo, _, head_before) = prepared_repo(GREEN);
     let (code, _) = flow(&repo.path, &["run"]);
     assert_eq!(code, 0);

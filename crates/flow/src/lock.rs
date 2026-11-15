@@ -38,6 +38,11 @@ use std::time::{Duration, Instant};
 pub const LOCK_SCHEMA: &str = "flow-lock/2";
 
 const ACQUIRE_BUDGET: Duration = Duration::from_secs(3);
+/// How long a writer waits for another process to finish recovering a dead lock
+/// before giving up with `LOCK_UNKNOWN`. Separate from `ACQUIRE_BUDGET`: the
+/// recovery is a short, claimed operation, and a burst of publishers must not
+/// turn a healthy recovery into a manual-intervention refusal.
+const STEAL_GRACE: Duration = Duration::from_secs(15);
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 
 #[derive(Debug)]
@@ -282,6 +287,7 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
             .map_err(|e| LockError::Io(format!("cannot create .flow: {e}")))?;
     }
     let deadline = Instant::now() + ACQUIRE_BUDGET;
+    let mut steal_waited: Option<Instant> = None;
     loop {
         let ours = nonce();
         match create_lock_file(&path, &ours, purpose) {
@@ -383,6 +389,14 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                                         path.display()
                                     )));
                                 }
+                                // Last liveness re-check before removing anything:
+                                // a probe that answered "dead" must not let a live
+                                // writer's lock be deleted. A third answer that is
+                                // not a clear "gone" aborts the steal.
+                                if pid_alive(owner.pid) != Some(false) {
+                                    let _ = fs::remove_file(&marker);
+                                    continue;
+                                }
                                 // We are the only stealer for this generation.
                                 // Remove only the lock whose nonce we observed;
                                 // a successor cannot have taken the name while
@@ -413,19 +427,29 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
                                 }
                             }
                             Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
-                                if Instant::now() >= deadline {
+                                // Another process owns this recovery. Wait for it
+                                // on a dedicated window: the acquire budget alone
+                                // is too short for a burst of eight publishers.
+                                let now = Instant::now();
+                                let since = *steal_waited.get_or_insert(now);
+                                if now.duration_since(since) >= STEAL_GRACE {
                                     return Err(LockError::Unknown(format!(
-                                        "lock {} has a provably dead owner but its recovery is already claimed by {}: wait for that process, or inspect both files and remove them by hand only if no flow process is running",
+                                        "lock {} has a provably dead owner but its recovery is already claimed by {}: the claiming process did not finish within {}s. Inspect both files and remove them by hand only if no flow process is running",
                                         path.display(),
-                                        marker.display()
+                                        marker.display(),
+                                        STEAL_GRACE.as_secs()
                                     )));
                                 }
                             }
                             Err(err) => {
-                                return Err(LockError::Io(format!(
-                                    "cannot record the steal of {}: {err}",
-                                    path.display()
-                                )))
+                                // A transient sharing/AV denial is not a reason
+                                // to fail a publisher: retry within the budget.
+                                if Instant::now() >= deadline {
+                                    return Err(LockError::Io(format!(
+                                        "cannot record the steal of {}: {err}",
+                                        path.display()
+                                    )));
+                                }
                             }
                         }
                     }
@@ -444,15 +468,41 @@ pub fn acquire_lock(root: &Path, purpose: &str) -> Result<LockGuard, LockError> 
 
 #[cfg(windows)]
 pub fn pid_alive(pid: u32) -> Option<bool> {
-    let out = std::process::Command::new("tasklist")
-        .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
-        .output()
-        .ok()?;
-    if !out.status.success() {
-        return None;
+    // Two consecutive answers are required before concluding "dead": `tasklist`
+    // can answer an empty or truncated list under load (the first release run
+    // observed exactly that), and a false "dead" would steal a live writer's
+    // lock. An answer we do not understand is never proof of death.
+    let mut dead_answers = 0;
+    for attempt in 0..2 {
+        let out = std::process::Command::new("tasklist")
+            .args(["/FI", &format!("PID eq {pid}"), "/NH", "/FO", "CSV"])
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let text = String::from_utf8_lossy(&out.stdout);
+        if text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")) {
+            return Some(true);
+        }
+        let lower = text.to_ascii_lowercase();
+        let definitively_empty = lower.contains("no tasks")
+            || lower.contains("aucune t")
+            || lower.contains("keine aufgabe")
+            || lower.contains("ninguna")
+            || lower.contains("nenhuma")
+            || lower.contains("nessuna");
+        if !definitively_empty {
+            return None;
+        }
+        dead_answers += 1;
+        if attempt == 0 {
+            std::thread::sleep(Duration::from_millis(50));
+        }
     }
-    let text = String::from_utf8_lossy(&out.stdout);
-    Some(text.contains(&format!("\"{pid}\"")) || text.contains(&format!(",{pid},")))
+    // Two definitive "no such task" answers: the pid is gone.
+    debug_assert_eq!(dead_answers, 2);
+    Some(false)
 }
 
 /// Ask `kill -0` and read its message.
