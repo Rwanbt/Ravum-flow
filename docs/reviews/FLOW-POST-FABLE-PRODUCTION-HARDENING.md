@@ -54,6 +54,7 @@ Git, unsourced claim, P0 still open at the verdict).
 | `fb063a6` | test(coverage): pin program resolution, journal archive and sequence edge branches |
 | `1319201` | fix(ci): measure the moved commands modules and fail on a zero-mutant campaign |
 | `2af4455` | fix(lock): attribute an explicit foreign host before probing its pid (FBL-015); split `run` |
+| `cfc8a6f` | refactor(commands): move `publish`, `gc` and `explain` into their own modules |
 | final HEAD | recorded at the end of this wave (see §9) |
 
 ## 4. FBL matrix
@@ -184,7 +185,7 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | FBL-012 journal segmentation | **CLOSED** on this wave: active segment bounded to 256 KiB, archives read in order and never deleted; destructive compaction rejected (it would break recovery/audit) |
 | FBL-011 doctor diagnostic paths | **PARTIAL**; diagnostics, not persisted evidence |
 | FBL-008 host identity | **PARTIAL**; host name only, no boot id, PID reuse after reboot wedges the lock |
-| `commands.rs` modularisation (3.6k LOC) | **PARTIAL**: `commands/mod.rs` + `policy.rs` (policy identity, context, validation) + `checkout.rs` (tree listing, fidelity/mode/content certification, lock-free index read) extracted behaviour-constantly; the command bodies remain in `mod.rs` (~2.6k product lines) and can be split per command later |
+| `commands.rs` modularisation (3.6k LOC) | **DONE**: `commands/mod.rs` (shared helpers, init/approve/doctor/status/reconcile/disable/propose/proposals/assemble, ~1.3k product lines) + `policy.rs` + `checkout.rs` + `run.rs` + `publish.rs` + `gc.rs` + `explain.rs`; behaviour-constant, full suite green |
 | Coverage gate | **CLOSED** on this line: 95.92 % lines / 90.38 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
 | Mutation | **RUN 2026-11-15** (`--bins`, lower bounds): `state` 85.5 %, `lock` 50.7 %, `proposal` 56.5 %, `scratch` 61.7 %, `commands-checkout` 68.0 %, `commands` 21.2 %, `commands-policy` 11.1 %. The low `commands*` rates are **by construction**: the workflow runs unit tests only and those modules are exercised by the integration suites. Two harness defects found and fixed (a moved file silently measured nothing; exit 3/timeouts treated as a broken campaign). CI stays report mode: no threshold yet |
 | Confirmatory S9 | **RUN 2026-11-15, NEGATIVE**: G median 4.925 s vs E 2.823 s, paired ratio 1.784, 10/10 pairs, p=0.000977 — the H4 criterion (≤0.70) failed. No productivity claim; see [the campaign summary](../../experiments/s9/CAMPAIGN-2026-11-15.md) |
@@ -227,6 +228,7 @@ not merged, because the remaining conditions are human and review acts, not code
 `H4` = S9 thresholds and budget granted (campaign not yet run), `H6` = draft handoff authorized with
 no Ravum write, `H8` = review stop rule adopted, ADR-012 stays `PROPOSED` until after `G10`.
 `G10` and `GO_PRODUCTION` remain open.
+
 
 
 

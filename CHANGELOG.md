@@ -48,9 +48,11 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - Coverage gate closed without lowering a threshold or adding a waiver: **95.92 % lines / 90.38 %
   branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 549 Windows / 560
   Linux / 560 macOS.
-- `commands.rs` is split into `commands/mod.rs`, `commands/policy.rs` (policy identity, effective
-  digest, build context, obligation validation) and `commands/checkout.rs` (tree listing, fidelity,
-  mode and content certification, lock-free index read). Behaviour-constant.
+- `commands.rs` is split into `commands/mod.rs` (shared helpers, init/approve/doctor/status/
+  reconcile/disable/propose/proposals/assemble), `commands/policy.rs` (policy identity, effective
+  digest, build context, obligation validation), `commands/checkout.rs` (tree listing, fidelity,
+  mode and content certification, lock-free index read), `commands/run.rs`, `commands/publish.rs`,
+  `commands/gc.rs` and `commands/explain.rs`. Behaviour-constant.
 - `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
 - Documentation corrections from the claims audit: 152 named gates (not 144), the runtime-`SKIP`
   caveat in `MEASUREMENTS.md`, FBL-004 is `PARTIAL`, FBL-009 no longer counts an unreachable branch
@@ -364,6 +366,7 @@ macOS is not tested, performance/productivity is not proven.
 ## [0.1.0] — 2026-11-09 — verified-tree foundation (unreleased)
 - Exact-tree receipts, CAS publication, durable intent/outcome journal, `reconcile`, bounded
   obligations, scratch isolation, policy/context binding, adoption of the MPL-2.0 licence.
+
 
 
 
