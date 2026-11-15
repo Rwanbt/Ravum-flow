@@ -858,3 +858,65 @@ reader has to guess where the boundary is. Everything else in this document is `
   `UNPROVEN`.
 - **Untrusted code execution**: `UNSUPPORTED` by design — there is no OS sandbox, and `doctor` says so
   in the working copy it inspects.
+
+## 13. Post-Fable hardening additions (2026-11-15)
+
+Source of truth for the outcomes: [FLOW-POST-FABLE-PRODUCTION-HARDENING](reviews/FLOW-POST-FABLE-PRODUCTION-HARDENING.md)
+and [FLOW-ADR-012](adr/FLOW-ADR-012-evidence-store-and-lock-protocol.md). These fields are additive
+unless stated otherwise; the older records remain readable (`CODE_READ`, tests in the branch).
+
+### 13.1 `propose`
+
+- `patch_blob` (new): workspace-relative `.flow/blobs/<2>/<sha256>`, the content-addressed bytes the
+  record names. The absolute `patch_path` field is no longer written; a legacy record without
+  `patch_blob` is still read from `.flow/proposals/<id>.patch` and re-hashed.
+- The record is immutable and published once (`create_once`). Two writers of one
+  `--agent/--task/--base/--key` produce one `ADMITTED`; the others are
+  `IDEMPOTENCY_CONFLICT` (different bytes) or `idempotent:true` (same bytes).
+- `proposals show` recomputes the proposal identity and re-hashes the patch; a mismatch is
+  `PROPOSAL_INTEGRITY`.
+
+### 13.2 `run`
+
+- `run_id` (new): unique identity of the execution.
+- Logs live under `.flow/logs/<tree>/<run_id>/<obligation>.stdout.log` / `.stderr.log`.
+- The sealed receipt records `run_id` and `log_digests`:
+  `[{id, stdout_sha256, stderr_sha256}]`.
+- `receipt_path` is workspace-relative (`.flow/receipts/<tree>.json`).
+- An active marker `.flow/runs/<run_id>.active` is removed on every exit; `gc` refuses `RUN_ACTIVE`
+  while a live marker exists.
+
+### 13.3 `explain`
+
+- `log_integrity`: `OK`, `LOG_INTEGRITY_INVALID` or `NO_LOG_DIGESTS` (legacy receipt).
+- `tampered_logs`: the relative log paths whose bytes no longer hash to the receipt.
+- `run_id`: the execution named by the receipt.
+- `evidence_complete` is false when a named log is missing **or** tampered.
+
+### 13.4 `publish`
+
+- `receipt_candidate_id` (new): the candidate named by the receipt. With `--candidate`, the receipt
+  must name that candidate or the refusal is `RECEIPT_CANDIDATE_MISMATCH`.
+- The journal intent records the receipt's `candidate_id` (or `null`).
+- The dry-run plan's `journal` is the workspace-relative `.flow/journal.jsonl`.
+
+### 13.5 Policy (`flow-config/1`, strict)
+
+Allowed top-level keys: `schema`, `policy_version`, `execution_boundary`, `obligations`,
+`context_probes`, `disabled`. Allowed obligation keys: `id`, `program`, `args`, `required`,
+`timeout_s`. `timeout_s` is an integer in `[1, 86400]`; `execution_boundary` is `local-trusted`;
+`context_probes` is an array of non-empty string arrays (e.g. `[["rustc","-Vv"]]`). Anything else is
+`INVALID_POLICY`, exit 1.
+
+### 13.6 Build context
+
+`flow-context/3` hashes: the tree, the effective policy, the Git version, OS/arch, the **digests** of
+allowlisted environment values (never the values), the resolved path and bytes of every obligation
+program, and the outputs of the declared `context_probes`. A change between `run` and `publish` is
+`CONTEXT_MISMATCH`.
+
+### 13.7 Lock
+
+The `flow-lock/2` record may carry `host:<token>`. A record from another host or without a host
+token is `LOCK_UNKNOWN` (never stolen). A dead same-host lock is recovered through a per-generation
+`lock.steal.<nonce>` marker. A shared `.flow/` across hosts is **unsupported**.

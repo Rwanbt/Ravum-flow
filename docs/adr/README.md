@@ -14,5 +14,6 @@
 - [FLOW-ADR-009: Droits et interface Ravum](FLOW-ADR-009.md) — D0/D4
 - [FLOW-ADR-010: Fichiers binaires, modes, liens et renommages](FLOW-ADR-010.md) — D2/R2/R4
 - [FLOW-ADR-011: Offline, ressources et entreprise](FLOW-ADR-011.md) — D3/R7
+- [FLOW-ADR-012: Store d'évidence transactionnel, verrou à identité d'hôte et contexte versionné](FLOW-ADR-012-evidence-store-and-lock-protocol.md) — D2/R1/R4
 
 Require human actor/date/evidence for any transition to ACCEPTED.

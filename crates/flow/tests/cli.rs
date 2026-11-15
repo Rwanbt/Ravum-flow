@@ -1885,7 +1885,7 @@ fn gc_refuses_while_a_live_run_marker_exists() {
         ),
     )
     .unwrap();
-    let (code, out) = flow(&repo.path, &["gc", "--keep", "0"]);
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "1"]);
     assert_eq!(code, 1, "gc must refuse while a run is active: {out}");
     assert_eq!(status_of(&out), "REFUSED");
     assert_eq!(out.get("code").and_then(Json::as_str), Some("RUN_ACTIVE"));
