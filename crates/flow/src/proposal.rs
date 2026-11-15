@@ -1196,6 +1196,58 @@ mod tests {
     // panic or a silently folded path.
 
     #[test]
+    fn patch_bytes_refuses_legacy_tampering_and_missing_files() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-proposal-bytes-{}-{}",
+            std::process::id(),
+            state::unique_suffix()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(state::proposals_dir(&root)).unwrap();
+        let id = "a".repeat(32);
+        let bytes = b"diff --git a/a b/a\n";
+        fs::write(Proposal::patch_path(&root, &id), bytes).unwrap();
+        let digest = sha256_hex(bytes);
+        let proposal = Proposal {
+            proposal_id: id.clone(),
+            agent_id: "agent-a".into(),
+            task_id: "T".into(),
+            base_commit: "0".repeat(40),
+            base_tree: "0".repeat(40),
+            tree_oid: "0".repeat(40),
+            content_digest: digest.clone(),
+            changes: Vec::new(),
+            json: Json::obj(vec![("schema", Json::str(SCHEMA_PROPOSAL))]),
+        };
+        assert_eq!(proposal.patch_bytes(&root).unwrap(), bytes.to_vec());
+
+        let mut bad_digest = proposal.clone();
+        bad_digest.content_digest = "x".into();
+        assert!(bad_digest
+            .patch_bytes(&root)
+            .unwrap_err()
+            .contains("PROPOSAL_INTEGRITY"));
+
+        fs::write(Proposal::patch_path(&root, &id), b"other bytes\n").unwrap();
+        assert!(proposal
+            .patch_bytes(&root)
+            .unwrap_err()
+            .contains("PROPOSAL_INTEGRITY"));
+
+        let mut with_blob = proposal.clone();
+        with_blob.json = Json::obj(vec![
+            ("schema", Json::str(SCHEMA_PROPOSAL)),
+            ("patch_blob", Json::str(".flow/blobs/xx/yy")),
+        ]);
+        assert!(with_blob
+            .patch_bytes(&root)
+            .unwrap_err()
+            .contains("patch_blob"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn raw_diffs_are_parsed_and_truncated_answers_are_refused() {
         let changes = parse_raw_diff(
             ":100644 100644 aaaa bbbb M\0a.txt\0:000000 100644 0000 cccc A\0b/c.txt\0",

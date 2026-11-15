@@ -3233,6 +3233,41 @@ mod tests {
     // boundary directly, including the arithmetic edges real Git would have to
     // reach to break it.
 
+    #[test]
+    fn context_helpers_are_deterministic_and_do_not_leak_values() {
+        let Json::Arr(entries) = env_identity() else {
+            panic!("env identity is a list")
+        };
+        assert_eq!(entries.len(), gitcli::env_allowlist().len());
+        for entry in entries {
+            let digest = entry
+                .get("value_digest")
+                .and_then(Json::as_str)
+                .unwrap_or("");
+            assert!(
+                digest == "ABSENT" || digest.starts_with("sha256:"),
+                "unexpected digest {digest:?}"
+            );
+        }
+        let missing = program_identity("flow-definitely-missing-program-xyz");
+        assert!(missing
+            .get("resolved")
+            .map(|v| matches!(v, Json::Null))
+            .unwrap_or(false));
+        let git = program_identity("git");
+        assert!(git.get("resolved").and_then(Json::as_str).is_some());
+
+        let config = Config {
+            context_probes: vec![Vec::new(), vec!["git".into(), "--version".into()]],
+            ..Config::default()
+        };
+        let probes = probe_identity(&config, Path::new("."));
+        let arr = probes.as_arr().expect("probes are a list");
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0].get("status").and_then(Json::as_str), Some("INVALID"));
+        assert!(arr[1].get("status").and_then(Json::as_str).is_some());
+    }
+
     fn entry(mode: &str, oid: &str, size: u64, path: &str) -> Vec<u8> {
         format!("{mode} blob {oid:>40} {size:>7}\t{path}\0").into_bytes()
     }

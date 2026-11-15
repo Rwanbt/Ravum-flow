@@ -1221,6 +1221,57 @@ mod tests {
     }
 
     #[test]
+    fn content_addressed_store_creates_once_and_verifies_bytes() {
+        let root = temp_root("blob-store");
+        let digest = put_blob(&root, b"alpha\n").unwrap();
+        assert!(is_content_digest(&digest));
+        assert_eq!(put_blob(&root, b"alpha\n").unwrap(), digest);
+        assert_eq!(verified_blob(&root, &digest).unwrap(), b"alpha\n");
+        assert_eq!(
+            blob_relative_path(&digest),
+            format!(".flow/blobs/{}/{}", &digest[..2], digest)
+        );
+        assert!(blob_path(&root, "not-a-digest").is_none());
+        assert!(!is_content_digest(&digest.to_uppercase()));
+        let path = blob_path(&root, &digest).unwrap();
+        fs::write(&path, b"tampered\n").unwrap();
+        let err = verified_blob(&root, &digest).expect_err("tampered bytes must be refused");
+        assert!(err.contains("PROPOSAL_INTEGRITY"), "{err}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn create_once_never_overwrites_an_existing_name() {
+        let root = temp_root("create-once");
+        let path = root.join(".flow").join("records").join("one.json");
+        assert!(create_once(&path, b"first").unwrap());
+        assert!(!create_once(&path, b"second").unwrap());
+        assert_eq!(fs::read(&path).unwrap(), b"first");
+        assert_eq!(
+            fs::read_dir(path.parent().unwrap()).unwrap().count(),
+            1,
+            "no staging file may survive"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn receipt_load_reads_run_id_and_log_digests() {
+        let root = temp_root("receipt-fields");
+        fs::create_dir_all(receipts_dir(&root)).unwrap();
+        let tree = "a".repeat(40);
+        let text = format!(
+            r#"{{"schema":"flow-receipt/2","tree_oid":"{tree}","status":"PASSED","verification_scope":{{"mode":"complete"}},"run_id":"run-1","log_digests":[{{"id":"x","stdout_sha256":"d"}}],"logs":["l"]}}"#
+        );
+        fs::write(receipt_path(&root, &tree), text).unwrap();
+        let receipt = Receipt::load(&root, &tree).unwrap().unwrap();
+        assert_eq!(receipt.run_id, "run-1");
+        assert_eq!(receipt.log_digests.len(), 1);
+        assert_eq!(receipt.logs, vec!["l".to_string()]);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn an_adoption_record_from_another_schema_is_not_reinterpreted() {
         let root = temp_root("adoption");
         assert!(load_adoption(&root).unwrap().is_none());

@@ -52,3 +52,16 @@ fn discover_host_name() -> Option<String> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn local_host_id_is_stable_and_hex_shaped() {
+        let id = local_host_id().expect("a host name is available on supported platforms");
+        assert_eq!(id.len(), 16);
+        assert!(id.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f')));
+        assert_eq!(local_host_id().as_deref(), Some(id.as_str()));
+    }
+}
