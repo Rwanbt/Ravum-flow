@@ -1024,4 +1024,3 @@ mod tests {
         remove_tree_bounded(&root, Instant::now() + CLEANUP_BUDGET);
     }
 }
-
