@@ -161,9 +161,10 @@ impl Config {
         }
         let policy_version = match value.get("policy_version") {
             None => POLICY_VERSION.to_string(),
-            Some(v) => v.as_str().map(str::to_string).ok_or_else(|| {
-                "INVALID_POLICY: policy_version must be a string".to_string()
-            })?,
+            Some(v) => v
+                .as_str()
+                .map(str::to_string)
+                .ok_or_else(|| "INVALID_POLICY: policy_version must be a string".to_string())?,
         };
         if policy_version.trim().is_empty() {
             return Err("INVALID_POLICY: policy_version must not be empty".into());
@@ -194,9 +195,7 @@ impl Config {
                     };
                     for (key, _) in fields {
                         if !OBLIGATION_KEYS.contains(&key.as_str()) {
-                            return Err(format!(
-                                "INVALID_POLICY: unknown obligation key {key:?}"
-                            ));
+                            return Err(format!("INVALID_POLICY: unknown obligation key {key:?}"));
                         }
                     }
                     let id = item
@@ -274,14 +273,10 @@ impl Config {
                 let mut out = Vec::new();
                 for probe in probes {
                     let Json::Arr(args) = probe else {
-                        return Err(
-                            "INVALID_POLICY: every context probe must be an array".into()
-                        );
+                        return Err("INVALID_POLICY: every context probe must be an array".into());
                     };
                     if args.is_empty() {
-                        return Err(
-                            "INVALID_POLICY: a context probe must name a program".into()
-                        );
+                        return Err("INVALID_POLICY: a context probe must name a program".into());
                     }
                     out.push(
                         args.iter()
@@ -302,9 +297,9 @@ impl Config {
         };
         let disabled = match value.get("disabled") {
             None => false,
-            Some(v) => v.as_bool().ok_or_else(|| {
-                "INVALID_POLICY: disabled must be a boolean".to_string()
-            })?,
+            Some(v) => v
+                .as_bool()
+                .ok_or_else(|| "INVALID_POLICY: disabled must be a boolean".to_string())?,
         };
         Ok(Config {
             policy_version,
@@ -538,7 +533,10 @@ pub fn blobs_dir(root: &Path) -> PathBuf {
 
 /// A content digest is exactly 64 lowercase hexadecimal characters.
 pub fn is_content_digest(value: &str) -> bool {
-    value.len() == 64 && value.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
 }
 
 /// The on-disk path of a content-addressed blob, or `None` for a non-digest.
@@ -608,8 +606,8 @@ pub fn put_blob(root: &Path, bytes: &[u8]) -> Result<String, String> {
     let path = blob_path(root, &digest)
         .ok_or_else(|| "internal: put_blob produced an invalid digest".to_string())?;
     if path.exists() {
-        let existing = fs::read(&path)
-            .map_err(|e| format!("cannot re-read blob {}: {e}", path.display()))?;
+        let existing =
+            fs::read(&path).map_err(|e| format!("cannot re-read blob {}: {e}", path.display()))?;
         if existing != bytes {
             return Err(format!(
                 "BLOB_COLLISION: blob {digest} already exists with different bytes: refusing to alias two contents"
@@ -635,9 +633,8 @@ pub fn put_blob(root: &Path, bytes: &[u8]) -> Result<String, String> {
 
 /// Read a blob and prove it still hashes to the name it was stored under.
 pub fn verified_blob(root: &Path, digest: &str) -> Result<Vec<u8>, String> {
-    let path = blob_path(root, digest).ok_or_else(|| {
-        format!("PROPOSAL_INTEGRITY: {digest:?} is not a sha256 content digest")
-    })?;
+    let path = blob_path(root, digest)
+        .ok_or_else(|| format!("PROPOSAL_INTEGRITY: {digest:?} is not a sha256 content digest"))?;
     let bytes = fs::read(&path).map_err(|e| {
         format!(
             "PROPOSAL_INTEGRITY: blob {digest} is unreadable at {}: {e}",
@@ -1190,6 +1187,32 @@ mod tests {
                 reason.contains("INVALID_POLICY") || reason.contains("obligation needs"),
                 "{label}: {reason}"
             );
+        }
+    }
+
+    #[test]
+    #[ignore = "measurement (FBL-012): run with --ignored --nocapture"]
+    fn measure_journal_append_cost() {
+        let record = json::parse(
+            r#"{"schema":"flow-journal/1","event":"intent","id":"x","ref":"refs/heads/main","old":"a","new":"b","tree":"t","at":"2026-11-15T00:00:00Z"}"#,
+        )
+        .unwrap();
+        for n in [500usize, 1_000, 2_000] {
+            let root = temp_root(&format!("journal-bench-{n}"));
+            let started = std::time::Instant::now();
+            for _ in 0..n {
+                append_journal(&root, &record).unwrap();
+            }
+            let elapsed = started.elapsed();
+            let bytes = fs::metadata(journal_path(&root))
+                .map(|m| m.len())
+                .unwrap_or(0);
+            eprintln!(
+                "MEASURED journal_append n={n} bytes={bytes} total_ms={} per_append_us={:.1}",
+                elapsed.as_millis(),
+                elapsed.as_micros() as f64 / n as f64
+            );
+            let _ = fs::remove_dir_all(&root);
         }
     }
 

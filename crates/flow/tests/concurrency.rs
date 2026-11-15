@@ -724,9 +724,8 @@ fn local_host_token() -> String {
         .expect("the test host has a name");
     let name = name.trim();
     assert!(!name.is_empty(), "the test host name is not empty");
-    let digest = sha256::sha256_hex(
-        format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes(),
-    );
+    let digest =
+        sha256::sha256_hex(format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes());
     digest[..16].to_string()
 }
 

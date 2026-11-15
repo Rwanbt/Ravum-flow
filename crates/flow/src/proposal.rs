@@ -268,8 +268,7 @@ impl Proposal {
 }
 
 fn proposal_id_for(agent: &str, task: &str, base: &str, key: &str) -> String {
-    let material =
-        format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
+    let material = format!("{SCHEMA_PROPOSAL}\nagent:{agent}\ntask:{task}\nbase:{base}\nkey:{key}");
     sha256_hex(material.as_bytes())[..32].to_string()
 }
 

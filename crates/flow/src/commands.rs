@@ -635,10 +635,7 @@ pub fn cmd_status(root: &Path) -> Result<Json, String> {
         (Some(config), Ok(adoption)) => {
             let digest = policy_digest(&effective_policy(config, &config.obligations));
             Json::obj(vec![
-                (
-                    "path",
-                    Json::str(state::config_path(root).to_string_lossy().to_string()),
-                ),
+                ("path", Json::str(".flow/config.json".to_string())),
                 ("policy_version", Json::str(config.policy_version.clone())),
                 ("digest", Json::str(digest.clone())),
                 ("obligations", Json::Num(config.obligations.len() as f64)),
@@ -741,7 +738,11 @@ fn resolve_program_path(program: &str) -> Option<PathBuf> {
     let explicit = as_path.is_absolute() || program.contains('/') || program.contains('\\');
     if explicit {
         return if as_path.is_file() {
-            Some(as_path.canonicalize().unwrap_or_else(|_| as_path.to_path_buf()))
+            Some(
+                as_path
+                    .canonicalize()
+                    .unwrap_or_else(|_| as_path.to_path_buf()),
+            )
         } else {
             None
         };
@@ -795,17 +796,12 @@ fn program_identity(program: &str) -> Json {
     let mut pairs = vec![("program", Json::str(program.to_string()))];
     match resolve_program_path(program) {
         Some(path) => {
-            pairs.push((
-                "resolved",
-                Json::str(path.to_string_lossy().into_owned()),
-            ));
+            pairs.push(("resolved", Json::str(path.to_string_lossy().into_owned())));
             let digest = fs::metadata(&path).ok().and_then(|meta| {
                 if meta.len() > 256 * 1024 * 1024 {
                     Some(format!("TOO_LARGE:{}", meta.len()))
                 } else {
-                    fs::read(&path)
-                        .ok()
-                        .map(|bytes| sha256::sha256_hex(&bytes))
+                    fs::read(&path).ok().map(|bytes| sha256::sha256_hex(&bytes))
                 }
             });
             pairs.push((
@@ -2383,17 +2379,14 @@ pub fn cmd_publish(
 /// Count journal records by `id` for one event kind.
 /// A lock refusal carries its own code: a held lock and an unattributable one
 /// have different remedies, and the second must never look like "try again".
-fn lock_refusal(root: &Path, err: crate::lock::LockError) -> Json {
+fn lock_refusal(_root: &Path, err: crate::lock::LockError) -> Json {
     match err {
         crate::lock::LockError::Held(why) => refused_code("LOCKED", why),
         crate::lock::LockError::Unknown(why) => {
             let mut value = refused_code("LOCK_UNKNOWN", why);
             if let Json::Obj(pairs) = &mut value {
                 pairs.push(("manual_required".into(), Json::Bool(true)));
-                pairs.push((
-                    "lock_path".into(),
-                    Json::str(crate::lock::lock_path(root).to_string_lossy().to_string()),
-                ));
+                pairs.push(("lock_path".into(), Json::str(".flow/lock".to_string())));
             }
             value
         }
@@ -2462,7 +2455,7 @@ fn pending_intents(root: &Path) -> Result<Vec<Json>, String> {
 }
 
 /// The explicit state of "we could not even read the journal".
-fn journal_failure(root: &Path, err: state::JournalError) -> Json {
+fn journal_failure(_root: &Path, err: state::JournalError) -> Json {
     let (status, code) = match &err {
         state::JournalError::Io(_) => (state::STATE_UNKNOWN_OUTCOME, "JOURNAL_UNREADABLE"),
         state::JournalError::Corrupt(_) => (state::STATE_CORRUPT_JOURNAL, "JOURNAL_CORRUPT"),
@@ -2471,10 +2464,7 @@ fn journal_failure(root: &Path, err: state::JournalError) -> Json {
         ("status", Json::str(status)),
         ("code", Json::str(code)),
         ("error", Json::str(err.to_string())),
-        (
-            "journal_path",
-            Json::str(state::journal_path(root).to_string_lossy().to_string()),
-        ),
+        ("journal_path", Json::str(".flow/journal.jsonl".to_string())),
         ("journal_preserved", Json::Bool(true)),
         ("manual_required", Json::Bool(true)),
         ("resolved", Json::Arr(Vec::new())),

@@ -1869,3 +1869,25 @@ fn gc_requires_an_explicit_policy_and_reports_its_plan() {
         "the plan must say it was a dry run: {out}"
     );
 }
+
+/// gc must not collect evidence while a live run is still writing it.
+#[test]
+fn gc_refuses_while_a_live_run_marker_exists() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let runs = repo.path.join(".flow").join("runs");
+    fs::create_dir_all(&runs).unwrap();
+    let marker = runs.join("live.active");
+    fs::write(
+        &marker,
+        format!(
+            r#"{{"schema":"flow-run-active/1","run_id":"live","pid":{},"tree":"t"}}"#,
+            std::process::id()
+        ),
+    )
+    .unwrap();
+    let (code, out) = flow(&repo.path, &["gc", "--keep", "0"]);
+    assert_eq!(code, 1, "gc must refuse while a run is active: {out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(out.get("code").and_then(Json::as_str), Some("RUN_ACTIVE"));
+    assert!(marker.exists(), "gc must not clear a live marker");
+}
