@@ -180,7 +180,8 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | `commands.rs` modularisation (3.6k LOC) | **DEFERRED**; behaviour-constant refactor, separate change |
 | Coverage gate | **CLOSED** on this line: 95.95 % lines / 90.52 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
 | Mutation | not re-run on the hardening modules; CI `flow-mutation.yml` stays report-mode. The new tests are not a mutation score |
-| Confirmatory S9 | still `H4` open; no productivity claim is made |
+| Confirmatory S9 | `H4` decided 2026-11-15 (≥30 % less time, p<0.05, 10 pairs, 2 cores/8 GB); campaign **not run**, so productivity stays `UNPROVEN` |
+| **O3 workstream (`H1 = O3 complet`)** | **NOT IMPLEMENTED**: the delivered code is the O1 + O2 subset. O3 (orchestration/distribution) needs its own ADR, budget, threat model and P0 review; no document may present it as delivered |
 | Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43712727257`; coverage also green (see §9) |
 
 ## 9. Final head, CI and verdict
@@ -208,12 +209,15 @@ not merged, because the remaining conditions are human and review acts, not code
 - All P1 findings are treated (FBL-002/003 closed; FBL-004 is `PARTIAL` with its scope named;
   FBL-005 closed as P2), and every OS test job, the polyglot jobs and the coverage gate are green on
   the head.
-- P2/P3 residuals are listed in §8, and the human decisions are open: the branch is **not**
-  `PRODUCTION_READY_LOCAL_TRUSTED`. Promotion needs the human decisions below, the ratification of
-  ADR-012 (or its rejection), and an independent final review (`G10`).
+- P2/P3 residuals are listed in §8. The branch is **not** `PRODUCTION_READY_LOCAL_TRUSTED`:
+  promotion needs the independent final review (`G10`) and `GO_PRODUCTION`, and
+  **`H1 = O3 complet` changes the target**: the delivered code is the O1 + O2 subset, so O3 needs its
+  own design, budget and P0 review before this line can be presented as the target architecture.
 - `NOT_READY` would be the verdict if a P0 were still open; it is not.
 
-**Human decisions still required (not taken by this wave):** `H1`, `H3`, `H4`, `H6`, `H8`,
-ratification of any `FLOW-ADR-*` (see [FLOW-ADR-012](../adr/FLOW-ADR-012-evidence-store-and-lock-protocol.md)),
-and `GO_PRODUCTION` itself.
+**Human decisions of 2026-11-15 (recorded verbatim in the [register](../DECISION_REGISTER.md)):**
+`H1 = O3 complet` (target; **not implemented**), `H3` = refuse/fail-closed without OS isolation,
+`H4` = S9 thresholds and budget granted (campaign not yet run), `H6` = draft handoff authorized with
+no Ravum write, `H8` = review stop rule adopted, ADR-012 stays `PROPOSED` until after `G10`.
+`G10` and `GO_PRODUCTION` remain open.
 

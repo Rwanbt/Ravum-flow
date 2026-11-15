@@ -1,7 +1,10 @@
 # FLOW-ADR-012 — Store d'évidence transactionnel, verrou à identité d'hôte et contexte versionné
 
-**Status: PROPOSED.** 2026-11-15 · Ouvre D2 (contrat de persistance) · Décisions humaines ouvertes
-`H1`, `H3`, `H4`, `H8` · Ne ratifie rien.
+**Status: PROPOSED — ratification deferred until after `G10`** (human decision 2026-11-15).
+2026-11-15 · Ouvre D2 (contrat de persistance) · `H1`/`H3`/`H4`/`H8` sont **décidés** depuis le
+2026-11-15 (`H1 = O3 complet` comme cible, `H3` fail-closed, `H4` seuils S9, `H8` règle d'arrêt) ;
+`G10` et `GO_PRODUCTION` restent ouverts. Cet ADR ne ratifie ni `H1` ni l'implémentation d'O3 : le
+code livré reste le sous-ensemble O1 + O2.
 
 ## Context
 
@@ -82,6 +85,32 @@ sandbox (`H3`), ni les seuils S9 (`H4`), ni la gouvernance de release.
 - Revue indépendante finale (`G10`) hors équipe.
 - Décisions humaines : modèle de menace local-trusted vs hostile, support multi-hôte, sémantique
   « reçu = arbre » vs « reçu = candidat », ensemble de sondes de toolchain, gouvernance de release.
+
+## Review notes — 2026-11-15 (do not ratify)
+
+Une revue adverse interne (deux agents distincts, non-auteurs) a examiné la branche avant la revue
+indépendante. Ses constats ne changent pas le statut `PROPOSED` ; ils précisent le contrat proposé :
+
+1. **Sondes dans la politique approuvée.** Une sonde `context_probes` est un programme arbitraire
+   exécuté par Flow : elle appartient donc au digest de politique approuvée, pas seulement au contexte.
+   Ajouter ou modifier une sonde après `flow approve` doit refuser (`POLICY_NOT_APPROVED`) sans rien
+   exécuter. Le contrat inclut désormais ce point.
+2. **Preuve des logs à la publication.** Le sceau du reçu couvre les noms et les hachages, pas les
+   octets sur disque. La publication doit re-hacher les logs (`MISSING_LOGS`/`LOG_INTEGRITY_INVALID`)
+   comme le fait `explain` ; sinon un reçu prouve un arbre dont l'évidence a disparu.
+3. **`create_once` face à un nom existant.** Un nom existant (y compris multi-lié par le staging d'un
+   écrivain concurrent, ou un lien symbolique) est « non créé », jamais une erreur ni une écriture :
+   l'appelant relit et valide les octets du gagnant. Le garde `nlink > 1` reste exigé pour
+   `write_atomic` (journal, config, reçus).
+4. **Rétention.** `gc` ne collecte les reçus partiels et les candidats que sous politique d'âge
+   explicite ; `--keep` seul ne supprime jamais du travail non publié. Les blobs et les propositions
+   restent hors collecte (documenté), et un fichier simple sous `logs/` est supprimé comme fichier.
+5. **TOCTOU `gc`/`run` (résiduel).** `run` ne tient pas le verrou de publication ; un `gc` qui a déjà
+   scanné peut supprimer un répertoire de logs pendant qu'un run démarre. Atténué par la vérification
+   des logs à la publication ; le corriger pleinement exige un protocole d'exclusion `run`/`gc`, qui
+   est une décision de conception, pas un correctif.
+
+Ces notes sont de la documentation de revue ; elles ne ratifient ni le présent ADR ni `H1`/`H3`/`H4`/`H8`.
 
 ## Human sign-off
 

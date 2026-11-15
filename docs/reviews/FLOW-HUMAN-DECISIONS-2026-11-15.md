@@ -1,8 +1,20 @@
 # Human decisions required before promotion — 2026-11-15
 
-**Status: QUESTIONNAIRE ISSUED, NO ANSWER RECORDED.** This document prepares the owner's decisions;
-it does not take them. `docs/DECISION_REGISTER.md` remains the authority, and nothing here changes a
-row from `OPEN` to `HUMAN_DECIDED`.
+**Status: ANSWERED 2026-11-15 — recorded in [DECISION_REGISTER](../DECISION_REGISTER.md).** The
+owner's answers are kept verbatim there, including the one that departs from the recommendation:
+**`H1 = O3 complet`**. This document prepared the questions; the register is the authority.
+
+| Row | Owner's answer | What it changes |
+|---|---|---|
+| H1 | **O3 complet** | O3 is the target architecture. **It is not implemented**: the branch delivers the O1 + O2 subset, and O3 needs its own design, budget and P0 review. No document may present O3 as delivered. |
+| H3 | Refus/fail-closed hors isolation OS | Product stays `local-trusted`; untrusted execution `UNSUPPORTED`; no confinement claim. |
+| H4 | ≥30 % less time, p<0.05, 10 pairs, 2 cores/8 GB | S9 thresholds and budget are frozen; the campaign is not run, so productivity stays `UNPROVEN`. |
+| H6 | Draft handoff, no Ravum write | [RAVUM-HANDOFF-DRAFT-2026-11-15.md](RAVUM-HANDOFF-DRAFT-2026-11-15.md) is authorized; transmission is the owner's act. |
+| H8 | Adopt the review stop rule | Adopted from 2026-11-15. |
+| ADR-012 | Stay `PROPOSED` until G10, then ratify | Still `PROPOSED`; ratification is a post-`G10` act. |
+
+`G10` (reviewer outside the team) and `GO_PRODUCTION` remain open; the verdict stays
+`PRODUCTION_PARTIAL`.
 
 Context: the branch `feat/flow-production-hardening-fable` is green on every required CI check at
 head `422fad2` (run `43712727257`): 539 Windows / 550 Linux / 550 macOS executed, 0 ignored, and the
@@ -10,7 +22,7 @@ product-only coverage gate at **95.95 % lines (5421/5650) / 90.52 % branches** w
 unchanged and no waiver. The three fixes found by the internal pre-review (unapproved context probes,
 publication of swapped/missing log evidence, `gc --keep` deleting fresh candidates) and the two
 CI-found concurrency defects (worktree-admin race, staging-link `nlink` race) are applied and green on
-that head. The remaining blockers are decisions and an independent review, not code.
+that head. The remaining blockers are the independent review and the O3 workstream, not this code.
 
 ## H1 — architecture option
 
