@@ -1957,7 +1957,7 @@ pub fn cmd_publish(
     // `--candidate` is given, the index tree otherwise.
     let tree = match &candidate_record {
         Some(record) => record.tree_oid.clone(),
-        None => git.write_tree()?,
+        None => index_tree_without_locking(&git)?,
     };
     if candidate_record.is_some() {
         let present =

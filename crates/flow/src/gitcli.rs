@@ -177,6 +177,9 @@ impl Git {
         self.capture(&["rev-parse", "HEAD^{tree}"])
     }
 
+    /// Only the unit tests still use the shared-index form: the product reads a
+    /// private copy of the index so concurrent runs never race on `index.lock`.
+    #[cfg(test)]
     pub fn write_tree(&self) -> Result<String, String> {
         self.capture(&["write-tree"])
     }

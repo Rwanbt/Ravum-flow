@@ -16,6 +16,11 @@
  *
  *   FLOW_CRASH_ON=rename|fsync   FLOW_CRASH_AT=<n>
  *
+ * Only the calls made by the Flow process itself are counted. `LD_PRELOAD` is
+ * inherited by the `git` children Flow spawns, and counting their renames made
+ * the crash point depend on which internal step happened to write the index
+ * first. A crash point must describe Flow's durable steps, not a child's.
+ *
  * No test may depend on a particular ordering of internal writes, so each case
  * states the call it kills and the script records what happened.
  */
@@ -25,6 +30,23 @@ static int (*real_fsync)(int);
 static long seen;
 static long target = -1;
 static const char *wanted = "rename";
+
+static int in_flow_process(void) {
+    static int cached = -1;
+    if (cached < 0) {
+        char buf[4096];
+        ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+        if (n <= 0) {
+            cached = 0;
+        } else {
+            buf[n] = '\0';
+            const char *base = strrchr(buf, '/');
+            base = base ? base + 1 : buf;
+            cached = strcmp(base, "flow") == 0;
+        }
+    }
+    return cached;
+}
 
 static void load(void) {
     if (!real_rename) real_rename = (int (*)(const char *, const char *))dlsym(RTLD_NEXT, "rename");
@@ -40,6 +62,7 @@ static void load(void) {
 static void maybe_die(const char *op) {
     load();
     if (target <= 0) return;
+    if (!in_flow_process()) return;
     if (strcmp(op, wanted) != 0) return;
     if (++seen != target) return;
     _exit(137);
