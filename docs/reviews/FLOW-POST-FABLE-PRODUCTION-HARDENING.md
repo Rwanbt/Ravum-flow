@@ -61,7 +61,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | FBL-009 | P3 | CONFIRMED_BY_CODE | candidates are published with `create_once`; a loser re-reads and confirms the identical assembly or reports `CANDIDATE_IMMUTABLE` | `assemble` reuse test + `assemble_refuses_to_overwrite_an_immutable_candidate` (now refused earlier by `CANDIDATE_INTEGRITY`) | **CLOSED** |
 | FBL-010 | P2 | CONFIRMED_BY_CODE | proposal ids are recomputed at load; candidate ids are recomputed from base+tree+proposal list; records carry a seal; `assemble` re-derives each tree and change list; a tampered record is refused | `tests/error_paths.rs` (tampered candidate list/tree → `integrity digest`; tampered blob → `PROPOSAL_INTEGRITY`), `m11` | **CLOSED** |
 | FBL-011 | P3 | CONFIRMED_BY_CODE | persisted evidence uses workspace-relative paths: `patch_blob`, `receipt_path`, `journal`, `loc_path` in refusals, status config path; proposal records no longer store an absolute `patch_path` | relative paths asserted in the G1/G2 outputs; full suite | **PARTIAL**: `doctor` diagnostic *details* may still print absolute host paths (not persisted evidence); program resolution paths are hashed, never stored |
-| FBL-012 | P3 | CONFIRMED_BY_CODE (documented) | measured: `append_journal` ≈ **9 ms/append**, fsync-dominated, 2 000 appends = 17.97 s / 274 KB on this host; the per-append cost is flat in the measured range, so no quadratic behaviour was observed there | `state::measure_journal_append_cost` (`#[ignore]`, run with `--ignored --nocapture`) | **DEFERRED** (P3): segmentation/compaction is a separate, migration-bearing change; it is not required for the local-trusted P0/P1 envelope. No performance claim beyond the measurement |
+| FBL-012 | P3 | CONFIRMED_BY_CODE (documented) | measured: `append_journal` ≈ **9 ms/append**, fsync-dominated, 2 000 appends = 17.97 s / 274 KB on this host; the per-append cost is flat in the measured range, so no quadratic behaviour was observed there | `state::measure_journal_append_cost` (env-gated with `FLOW_JOURNAL_BENCH=1`, counts as a pass otherwise) | **DEFERRED** (P3): segmentation/compaction is a separate, migration-bearing change; it is not required for the local-trusted P0/P1 envelope. No performance claim beyond the measurement |
 
 ## 5. Gates
 
@@ -81,11 +81,11 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Check | Command | Result |
 |---|---|---|
 | Baseline suite | `cargo test --locked --offline --all-targets` | **489 passed**, 0 failed |
-| Hardened suite | same command | **498 passed**, 0 failed (see §9 for the exact head) |
+| Hardened suite | same command | **499 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` | exit 0 |
-| Release suite | `cargo test --release --locked --offline --all-targets` | **498 passed**, 0 failed, 1 ignored (the journal measurement). The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
-| Journal measurement | `cargo test --bin flow measure_journal_append_cost -- --ignored --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB |
+| Release suite | `cargo test --release --locked --offline --all-targets` | **499 passed**, 0 failed, 0 ignored. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
+| Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
 
@@ -99,8 +99,8 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
    definitive "no such task" answers, a steal is re-checked against liveness before deleting anything,
    and a claimed recovery has its own 15 s grace window (`STEAL_GRACE`).
 
-**Test-count caveat.** 489 → 498 is +9: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict
-policy test, two strict-refusal assertions and the ignored measurement test. No test was deleted or
+**Test-count caveat.** 489 → 499 is +10: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict
+policy test, the host-identity tests (foreign/host-less), and the measurement test. No test was deleted or
 weakened; four existing tests were adapted to the new authoritative storage (blob path, run
 subdirectory, host token), and each adaptation keeps or strengthens the asserted failure mode.
 

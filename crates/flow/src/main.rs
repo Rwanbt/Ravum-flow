@@ -14,6 +14,7 @@
 
 mod commands;
 mod gitcli;
+mod host;
 mod json;
 mod lock;
 mod paths;

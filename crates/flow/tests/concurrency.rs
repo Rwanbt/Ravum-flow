@@ -18,6 +18,10 @@ mod json;
 #[allow(dead_code)]
 mod sha256;
 
+#[path = "../src/host.rs"]
+#[allow(dead_code)]
+mod host;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -719,14 +723,7 @@ fn g1_concurrent_proposals_same_key_have_exactly_one_winner() {
 /// The host token the product writes: `sha256("flow-host/1\n<name>\n<os>")[..16]`.
 /// A test that rewrites a lock record must speak the same dialect.
 fn local_host_token() -> String {
-    let name = std::env::var("COMPUTERNAME")
-        .or_else(|_| std::env::var("HOSTNAME"))
-        .expect("the test host has a name");
-    let name = name.trim();
-    assert!(!name.is_empty(), "the test host name is not empty");
-    let digest =
-        sha256::sha256_hex(format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes());
-    digest[..16].to_string()
+    host::local_host_id().expect("the test host has an identity")
 }
 
 /// G3 — a provably dead owner's lock and eight real `publish` processes: exactly

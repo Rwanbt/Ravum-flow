@@ -102,23 +102,7 @@ struct Owner {
     host: Option<String>,
 }
 
-/// A stable, non-secret identity of this host.
-///
-/// It is not a security boundary: a local writer can write any token. It only
-/// answers "was this lock written by a process of this machine?".
-fn local_host_id() -> Option<String> {
-    let name = std::env::var("COMPUTERNAME")
-        .or_else(|_| std::env::var("HOSTNAME"))
-        .ok()?;
-    let name = name.trim();
-    if name.is_empty() {
-        return None;
-    }
-    let digest = crate::sha256::sha256_hex(
-        format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes(),
-    );
-    Some(digest[..16].to_string())
-}
+use crate::host::local_host_id;
 
 fn parse(text: &str) -> Option<Owner> {
     let mut parts = text.split_whitespace();
@@ -577,7 +561,7 @@ mod tests {
         .unwrap();
         // Use this process's own pid instead of 1 so the test does not depend on
         // whether pid 1 is readable from the test host.
-        let host = super::local_host_id().expect("the test host has an identity");
+        let host = crate::host::local_host_id().expect("the test host has an identity");
         fs::write(
             lock_path(&root),
             format!(
@@ -640,7 +624,7 @@ mod tests {
         let pid = child.id();
         child.kill().ok();
         let _ = child.wait();
-        let host = super::local_host_id().expect("the test host has an identity");
+        let host = crate::host::local_host_id().expect("the test host has an identity");
         fs::write(
             lock_path(&root),
             format!("{LOCK_SCHEMA} {pid} 0 deadbeef publish host:{host}\n"),

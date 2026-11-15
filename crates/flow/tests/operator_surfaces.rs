@@ -18,6 +18,10 @@ mod json;
 #[allow(dead_code)]
 mod sha256;
 
+#[path = "../src/host.rs"]
+#[allow(dead_code)]
+mod host;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -29,13 +33,7 @@ static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// The host token the product writes: `sha256("flow-host/1\n<name>\n<os>")[..16]`.
 fn local_host_token() -> String {
-    let name = std::env::var("COMPUTERNAME")
-        .or_else(|_| std::env::var("HOSTNAME"))
-        .expect("the test host has a name");
-    let name = name.trim();
-    let digest =
-        sha256::sha256_hex(format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes());
-    digest[..16].to_string()
+    host::local_host_id().expect("the test host has an identity")
 }
 
 // ------------------------------------------------------------------ fixtures
