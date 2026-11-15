@@ -65,6 +65,14 @@ product requirement rather than an optional study.
 thresholds and budget), `H6` (Ravum handoff), `H8` (review stop rule), any `RAVUM-ADR-*` or `FLOW-ADR-*`, and
 `G10` (which requires a reviewer outside the team). `GO_PRODUCTION` itself remains the owner's act.
 
+## Decisions questionnaire — 2026-11-15 (issued, no answer recorded)
+
+The owner was given a prepared questionnaire for `H1`, `H3`, `H4`, `H6`, `H8` and ADR-012 in
+[FLOW-HUMAN-DECISIONS-2026-11-15.md](reviews/FLOW-HUMAN-DECISIONS-2026-11-15.md). The question was
+not answered, so **no row below changes state**: `H1`, `H3`, `H4`, `H6`, `H8` remain `OPEN`, ADR-012
+remains `PROPOSED`, and `G10` (external reviewer) remains a gate. Silence and an interrupted question
+are not an approval.
+
 ## Mandate of 2026-11-15 (Fable hardening) — granted by the owner in session
 The owner granted the following scoped GO on 2026-11-15, after reading the Fable counter-audit
 (`RAVUM_FLOW_FABLE_AUDIT.md`, SHA `1952325c`). It is recorded here verbatim; it is a **production

@@ -82,7 +82,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | G4 | **PASS (environment, program bytes and probes)** — `g4_environment_change_between_run_and_publish_refuses_context_mismatch`; `a_changed_context_probe_refuses_publication_without_a_policy_change` changes only what a declared probe answers and publication is refused with `CONTEXT_MISMATCH` |
 | G5 | **PASS (bounded)** — tampered proposal blob, proposal record, candidate record, receipt and log are refused by name (`PROPOSAL_INTEGRITY`, `CANDIDATE_INTEGRITY`, `RECEIPT_INTEGRITY`, `LOG_INTEGRITY_INVALID`, `MISSING_LOGS`); `assembly_revalidates_the_record_it_applies` covers four tampered-record shapes, and `publish_refuses_swapped_or_missing_evidence` proves the publication gate checks the log bytes, not only their names (it did not before the pre-review) |
 | G6 | **PASS** — strict policy decoder matrix (11 negative cases, plus omitted-field defaults and probe shapes) |
-| G7 | **PASS** — `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --locked --offline --all-targets` green locally on Windows; CI Linux/Windows/macOS and both polyglot jobs green in run `43705496705` (see §9) |
+| G7 | **PASS** — `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --locked --offline --all-targets` green locally on Windows; CI Linux/Windows/macOS and both polyglot jobs green in run `43712727257` (see §9) |
 | G8 | **DOCUMENTED** — local-trusted, single host; foreign/host-less locks are refused; no multi-host sync, no OS sandbox, no signed receipts |
 
 ## 6. Local evidence (Windows 11, 2026-11-15)
@@ -90,14 +90,14 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Check | Command | Result |
 |---|---|---|
 | Baseline suite | `cargo test --locked --offline --all-targets` | **489 passed**, 0 failed |
-| Hardened suite | same command | **537 passed**, 0 failed (see §9 for the exact head) |
+| Hardened suite | same command | **539 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` (CI: `--locked --all-targets`) | exit 0 |
 | Release suite | `cargo test --release --locked --offline --all-targets` | **507 passed**, 0 failed, 0 ignored at the pre-test-wave head. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
 | Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
-| CI (head `3b0fb6a`) | `gh run view 43705496705` | Linux **546**, Windows **537**, macOS **546** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.98 % lines / 90.69 % branches |
+| CI (head `422fad2`) | `gh run view 43712727257` | Linux **550**, Windows **539**, macOS **550** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.95 % lines / 90.52 % branches |
 
 **Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
 
@@ -122,11 +122,11 @@ before the guard, without writing; the regression test pins the two-link case. B
 concurrency bugs that only a real multi-process run could expose, which is why they are recorded as
 CI findings rather than audit findings.
 
-**Test-count caveat.** 489 → 537 is +48 executed (Linux 546: the same suite plus the Unix-only
+**Test-count caveat.** 489 → 539 is +50 executed (Linux 550: the same suite plus the Unix-only
 gates). The test wave covers the store, lock, host, context, revalidation, gc, publish and migrate
 edges; no test was deleted or weakened, and four existing tests were adapted to the new authoritative
 storage (blob path, run subdirectory, host token), each adaptation keeping or strengthening the
-asserted failure mode. Raising the CI floors from 482/479/479 to 537/546/546 is the same change: a
+asserted failure mode. Raising the CI floors from 482/479/479 to 539/550/550 is the same change: a
 floor that does not move with the measured count stops protecting it.
 
 ### 6.1 Internal adversarial pre-review (not G10)
@@ -178,35 +178,36 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | FBL-011 doctor diagnostic paths | **PARTIAL**; diagnostics, not persisted evidence |
 | FBL-008 host identity | **PARTIAL**; host name only, no boot id, PID reuse after reboot wedges the lock |
 | `commands.rs` modularisation (3.6k LOC) | **DEFERRED**; behaviour-constant refactor, separate change |
-| Coverage gate | **CLOSED** on this line: 95.98 % lines / 90.69 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
+| Coverage gate | **CLOSED** on this line: 95.95 % lines / 90.52 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
 | Mutation | not re-run on the hardening modules; CI `flow-mutation.yml` stays report-mode. The new tests are not a mutation score |
 | Confirmatory S9 | still `H4` open; no productivity claim is made |
-| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43705496705`; coverage also green (see §9) |
+| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43712727257`; coverage also green (see §9) |
 
 ## 9. Final head, CI and verdict
 
-**Final code head:** `3b0fb6a` (`style(scratch): restore the file's trailing newline after the clippy
-fix`), plus this documentation commit. The PR is
+**Final code head:** `422fad2` (`fix(state): answer create_once for an existing name before the
+hard-link guard`), plus this documentation commit. The PR is
 **[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**, a **draft** against `dev`; no merge is
 performed. Tracking issue: [#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
 
-**CI on `3b0fb6a` — run [`43705496705`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43705496705):**
+**CI on `422fad2` — run [`43712727257`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43712727257):**
 
 | Job | Result |
 |---|---|
-| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** — 546 executed, 0 ignored |
-| `test windows-latest` | **success** — 537 executed, 0 ignored |
-| `test macos-latest` | **success** — 546 executed, 0 ignored |
+| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** — 550 executed, 0 ignored |
+| `test windows-latest` | **success** — 539 executed, 0 ignored |
+| `test macos-latest` | **success** — 550 executed, 0 ignored |
 | `polyglot ubuntu-latest` / `polyglot windows-latest` | **success** / **success** |
-| `coverage (product-only gate)` | **success**: 95.98 % lines (5372/5597), 90.69 % branches (1003/1106), thresholds 95/90 unchanged, no waiver |
+| `coverage (product-only gate)` | **success**: 95.95 % lines (5421/5650), 90.52 % branches (1012/1118), thresholds 95/90 unchanged, no waiver |
 
 The branch is now mergeable **from a CI standpoint**: every required check is green on the head. It is
 not merged, because the remaining conditions are human and review acts, not code:
 
 **Verdict: `PRODUCTION_PARTIAL`.**
 - No P0 remains (FBL-001 closed by G1).
-- All P1 findings are treated (FBL-002/003/004 closed; FBL-005 closed as P2), and every OS test job,
-  the polyglot jobs and the coverage gate are green on the head.
+- All P1 findings are treated (FBL-002/003 closed; FBL-004 is `PARTIAL` with its scope named;
+  FBL-005 closed as P2), and every OS test job, the polyglot jobs and the coverage gate are green on
+  the head.
 - P2/P3 residuals are listed in §8, and the human decisions are open: the branch is **not**
   `PRODUCTION_READY_LOCAL_TRUSTED`. Promotion needs the human decisions below, the ratification of
   ADR-012 (or its rejection), and an independent final review (`G10`).
@@ -215,3 +216,4 @@ not merged, because the remaining conditions are human and review acts, not code
 **Human decisions still required (not taken by this wave):** `H1`, `H3`, `H4`, `H6`, `H8`,
 ratification of any `FLOW-ADR-*` (see [FLOW-ADR-012](../adr/FLOW-ADR-012-evidence-store-and-lock-protocol.md)),
 and `GO_PRODUCTION` itself.
+

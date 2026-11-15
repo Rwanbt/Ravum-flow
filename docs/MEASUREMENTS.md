@@ -4,7 +4,7 @@
 here is not a claim; a number that is here names its head, its platform and its evidence. Historical
 reports keep their own dated numbers on purpose (a record that follows the code is not a record).
 
-**Head of the merged line:** `3b0fb6a` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
+**Head of the merged line:** `422fad2` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
 **Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.2`, zero runtime
 dependencies.
 
@@ -12,10 +12,10 @@ dependencies.
 
 | Platform | Executed | Failed | Ignored | Evidence |
 |---|---|---|---|---|
-| Windows x86_64 (MSVC) | **537** | 0 | 0 | CI run `43705496705`, job `test windows-latest` (`executed_passed=537`) |
-| Linux x86_64 (GNU) | **546** | 0 | 0 | CI run `43705496705`, job `test ubuntu-latest` (`executed_passed=546`) |
-| macOS arm64 | **546** | 0 | 0 | CI run `43705496705`, job `test macos-latest` (`executed_passed=546`) |
-| Windows, local | 537 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
+| Windows x86_64 (MSVC) | **539** | 0 | 0 | CI run `43712727257`, job `test windows-latest` (`executed_passed=539`) |
+| Linux x86_64 (GNU) | **550** | 0 | 0 | CI run `43712727257`, job `test ubuntu-latest` (`executed_passed=550`) |
+| macOS arm64 | **550** | 0 | 0 | CI run `43712727257`, job `test macos-latest` (`executed_passed=550`) |
+| Windows, local | 539 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
 
 Differences are platform gates; the counts **include tests that print a runtime `SKIP` and return**.
 `ignored=0` proves that no `#[ignore]` existed, not that every counted test executed its body: the
@@ -27,14 +27,14 @@ evidence.
 **152 named gates** are required by name in CI; each one was verified to resolve to a real
 `fn <name>` in `crates/flow`.
 
-Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 537 / 546 / 546 and
+Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 539 / 550 / 550 and
 any `ignored` count fails the build).
 
 ## 2. Coverage (product-only, branch counters)
 
 | Platform | Gate | Result | Evidence |
 |---|---|---|---|
-| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43705496705`: **95.98 % lines (5372/5597) / 90.69 % branches (1003/1106)** |
+| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43712727257`: **95.95 % lines (5421/5650) / 90.52 % branches (1012/1118)** |
 
 The measurement is `cargo-llvm-cov --all-targets --branch` with
 `--ignore-filename-regex '[\/]tests[\/]'`, then `analyze_lcov.py --product-only`. Test code never
@@ -141,3 +141,4 @@ workflows stays `UNPROVEN` until `H4` fixes the S9 thresholds ([BENCHMARK_S9.md]
 Update it when a head changes the numbers, and cite the CI run id. Do not copy a number from this
 table into prose without its platform and its evidence: that is how four contradictory test counts
 appeared three times (R2-06, waves 5 and 8, then again on 2026-11-13).
+

@@ -4,13 +4,13 @@
 it does not take them. `docs/DECISION_REGISTER.md` remains the authority, and nothing here changes a
 row from `OPEN` to `HUMAN_DECIDED`.
 
-Context: the branch `feat/flow-production-hardening-fable` was green on every required CI check at
-head `7446e32` (run `43708083607`): 537 Windows / 546 Linux / 546 macOS executed, 0 ignored, and the
-product-only coverage gate at **96.00 % lines (5373/5597) / 90.69 % branches** with the thresholds
-unchanged and no waiver. The three product fixes found by the internal pre-review (unapproved context
-probes, publication of swapped/missing log evidence, `gc --keep` deleting fresh candidates) were
-applied afterwards; their CI evidence is recorded in the tracking report and `MEASUREMENTS.md` once
-that head is pushed. The remaining blockers are decisions and an independent review, not code.
+Context: the branch `feat/flow-production-hardening-fable` is green on every required CI check at
+head `422fad2` (run `43712727257`): 539 Windows / 550 Linux / 550 macOS executed, 0 ignored, and the
+product-only coverage gate at **95.95 % lines (5421/5650) / 90.52 % branches** with the thresholds
+unchanged and no waiver. The three fixes found by the internal pre-review (unapproved context probes,
+publication of swapped/missing log evidence, `gc --keep` deleting fresh candidates) and the two
+CI-found concurrency defects (worktree-admin race, staging-link `nlink` race) are applied and green on
+that head. The remaining blockers are decisions and an independent review, not code.
 
 ## H1 — architecture option
 
@@ -69,3 +69,4 @@ that head is pushed. The remaining blockers are decisions and an independent rev
 `H4=grant`, `H6=draft`, `H8=adopt`, `ADR-012=ratify after G10`) or state different choices. The
 answers will be recorded verbatim in `docs/DECISION_REGISTER.md` with the date and the evidence they
 rely on.
+

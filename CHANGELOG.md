@@ -29,9 +29,9 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `create_once` answers "not created" for an existing name before the guard.
 
 ### Changed
-- Coverage gate closed without lowering a threshold or adding a waiver: **96.00 % lines / 90.69 %
-  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 537 Windows / 546
-  Linux / 546 macOS.
+- Coverage gate closed without lowering a threshold or adding a waiver: **95.95 % lines / 90.52 %
+  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 539 Windows / 550
+  Linux / 550 macOS.
 - `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
 - Documentation corrections from the claims audit: 152 named gates (not 144), the runtime-`SKIP`
   caveat in `MEASUREMENTS.md`, FBL-004 is `PARTIAL`, FBL-009 no longer counts an unreachable branch
@@ -345,3 +345,4 @@ macOS is not tested, performance/productivity is not proven.
 ## [0.1.0] — 2026-11-09 — verified-tree foundation (unreleased)
 - Exact-tree receipts, CAS publication, durable intent/outcome journal, `reconcile`, bounded
   obligations, scratch isolation, policy/context binding, adoption of the MPL-2.0 licence.
+

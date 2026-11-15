@@ -1,7 +1,7 @@
 # Ravum Flow
 > **Status: `0.2.0-rc.2` merged into `dev` and `main`; gate verdict `PRODUCTION_PARTIAL` — local-trusted, not released.**  
 > `flow` is a small local CLI that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
-> **Measured on this line:** 537 tests on Windows, 546 on Linux, 546 on macOS (0 ignored, 152 named gates); the product-only coverage gate (95 % lines / 90 % branches) is green in CI — 96.00 % / 90.69 % on Linux, no waiver; a 25 000-file repository was verified and published end to end. The open gaps are listed in the [2026-11-13 verdict](docs/reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) and every number is sourced in [MEASUREMENTS](docs/MEASUREMENTS.md).  
+> **Measured on this line:** 539 tests on Windows, 550 on Linux, 550 on macOS (0 ignored, 152 named gates); the product-only coverage gate (95 % lines / 90 % branches) is green in CI — 95.95 % / 90.52 % on Linux, no waiver; a 25 000-file repository was verified and published end to end. The open gaps are listed in the [2026-11-13 verdict](docs/reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) and every number is sourced in [MEASUREMENTS](docs/MEASUREMENTS.md).  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
 **Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.
@@ -88,7 +88,7 @@ Each demo copies the fixture to a throw-away directory, runs `init --adopt-polic
 verifies, publishes, applies the fixture's documented red edit, and shows that
 `run` fails and `publish` is refused. Nothing is written into this repository.
 
-**Tested platforms:** **537 tests executed on Windows, 546 on Linux and 546 on macOS, 0 ignored** (the difference is the Windows-only PATH/PATHEXT gate against the Unix-only host-identity, `kill`, link and fault-injection gates; macOS has no packaged artefact yet), Rust **1.95.0** pinned by `rust-toolchain.toml` and by CI. Three platforms run in CI, where every GitHub Action is pinned to a commit SHA. The counts, the run ids, the OS and the command behind each row are in [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md). A claim that is not in that table is not a claim.
+**Tested platforms:** **539 tests executed on Windows, 550 on Linux and 550 on macOS, 0 ignored** (the difference is the Windows-only PATH/PATHEXT gate against the Unix-only host-identity, `kill`, link and fault-injection gates; macOS has no packaged artefact yet), Rust **1.95.0** pinned by `rust-toolchain.toml` and by CI. Three platforms run in CI, where every GitHub Action is pinned to a commit SHA. The counts, the run ids, the OS and the command behind each row are in [`docs/MEASUREMENTS.md`](docs/MEASUREMENTS.md). A claim that is not in that table is not a claim.
 
 See the [production gate report](docs/reviews/FLOW-PRODUCTION-GATE-REPORT.md), the [MVP 0.1 verification report](docs/reviews/FLOW-MVP-0.1-VERIFICATION-REPORT.md),
 the [user guide](docs/MVP-USER-GUIDE.md), the [CLI/JSON contract](docs/CLI-JSON.md)
