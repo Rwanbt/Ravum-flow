@@ -84,9 +84,20 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Hardened suite | same command | **498 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` | exit 0 |
-| Release suite | `cargo test --release --locked --offline --all-targets` | recorded in §9 |
+| Release suite | `cargo test --release --locked --offline --all-targets` | **498 passed**, 0 failed, 1 ignored (the journal measurement). The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
 | Journal measurement | `cargo test --bin flow measure_journal_append_cost -- --ignored --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
+| Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
+
+**Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
+
+1. `run` called `git write-tree` on the shared index; two concurrent runs made one fail with
+   `index.lock` ("Another git process seems to be running"). `run` now reads a private byte copy of
+   the index through `GIT_INDEX_FILE` and never writes the user's index (`index_tree_without_locking`).
+2. A burst of eight publishers could turn a transient/stale "dead" answer into a steal attempt and a
+   `LOCK_UNKNOWN` refusal at the budget boundary. Windows liveness now requires two consecutive
+   definitive "no such task" answers, a steal is re-checked against liveness before deleting anything,
+   and a claimed recovery has its own 15 s grace window (`STEAL_GRACE`).
 
 **Test-count caveat.** 489 → 498 is +9: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict
 policy test, two strict-refusal assertions and the ignored measurement test. No test was deleted or
@@ -121,8 +132,9 @@ subdirectory, host token), and each adaptation keeps or strengthens the asserted
 
 ## 9. Final head, CI and verdict
 
-**Final head:** `HEAD` of `feat/flow-production-hardening-fable` after the documentation commit; the
-exact SHA and the GitHub Actions run ids are appended here before the PR is opened.
+**Final head:** `c7ab4a3` (`fix(concurrency): lock-free index tree reads and conservative steal under burst`)
+plus this documentation commit; the exact branch head and the GitHub Actions run ids are recorded
+here before the PR is opened. The PR is a **draft** against `dev`; no merge is performed.
 
 **CI:** to be recorded from the push (Linux, Windows, macOS, polyglot, coverage). A red required
 check is a stop condition; it is not worked around.
