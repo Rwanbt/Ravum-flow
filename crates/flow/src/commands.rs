@@ -2064,7 +2064,35 @@ pub fn cmd_publish(
             ),
         ));
     }
-    // 5. the verification commit must still describe the same tree, when the
+    // 5. attribution: the receipt proves an exact tree, not necessarily the
+    //    candidate the operator names. When `--candidate` is given, the record
+    //    must name that candidate; otherwise the publication would report C2
+    //    while its evidence belongs to C1. Without `--candidate`, the receipt's
+    //    candidate is exposed in the output and journal instead of guessed.
+    let receipt_candidate_id = receipt
+        .json
+        .get("candidate_id")
+        .and_then(Json::as_str)
+        .unwrap_or("")
+        .to_string();
+    if let Some(record) = &candidate_record {
+        if receipt_candidate_id != record.candidate_id {
+            return Ok(refused_code(
+                "RECEIPT_CANDIDATE_MISMATCH",
+                format!(
+                    "the receipt for tree {tree} was written by candidate {:?}, but this publication names candidate {}: run `flow run --candidate {}` first, or publish without --candidate and read receipt_candidate_id",
+                    if receipt_candidate_id.is_empty() {
+                        "<index tree, no candidate>"
+                    } else {
+                        &receipt_candidate_id
+                    },
+                    record.candidate_id,
+                    record.candidate_id
+                ),
+            ));
+        }
+    }
+    // 6. the verification commit must still describe the same tree, when the
     //    object still exists (it may have been pruned; absence is not a failure).
     if !receipt.commit_oid.is_empty() {
         if let Ok(t) = git.capture(&["rev-parse", &format!("{}^{{tree}}", receipt.commit_oid)]) {
@@ -2140,6 +2168,7 @@ pub fn cmd_publish(
                     None => Json::Null,
                 },
             ),
+            ("receipt_candidate_id", Json::str(receipt_candidate_id.clone())),
             ("context_id", Json::str(receipt.context_id.clone())),
             ("policy_digest", Json::str(receipt.policy_digest.clone())),
             ("policy_version", Json::str(receipt.policy_version.clone())),
@@ -2206,6 +2235,14 @@ pub fn cmd_publish(
             ("old", Json::str(old.clone())),
             ("new", Json::str(commit.clone())),
             ("tree", Json::str(tree.clone())),
+            (
+                "candidate_id",
+                if receipt_candidate_id.is_empty() {
+                    Json::Null
+                } else {
+                    Json::str(receipt_candidate_id.clone())
+                },
+            ),
             ("at", Json::str(state::iso8601_now())),
         ]),
     )?;
@@ -2301,6 +2338,10 @@ pub fn cmd_publish(
         ),
         ("receipt_logs", Json::Num(receipt.logs.len() as f64)),
         ("receipt_run_id", Json::str(receipt.run_id.clone())),
+        (
+            "receipt_candidate_id",
+            Json::str(receipt_candidate_id.clone()),
+        ),
         ("receipt_started_at", Json::str(receipt.started_at.clone())),
         (
             "receipt_finished_at",

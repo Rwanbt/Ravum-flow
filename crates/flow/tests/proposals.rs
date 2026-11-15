@@ -348,6 +348,56 @@ fn hex(bytes: &[u8]) -> String {
     sha256::sha256_hex(bytes)
 }
 
+// ------------------------------------------------------------------------- M11
+/// A receipt proves the tree; the candidate is the attribution. Two candidates
+/// can build the same tree from different proposals, and publishing one with
+/// the other's receipt would report a false attribution. `--candidate` must be
+/// bound to the receipt's candidate (FBL-007).
+#[test]
+fn m11_publish_binds_the_receipt_to_the_named_candidate() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(
+        &repo.path,
+        &base,
+        &[("alpha.txt", Some("ONE\ntwo\nthree\n"))],
+        false,
+    );
+    let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k-a");
+    let (_, b) = propose(&repo.path, "agent-b", "T2", &base, &patch, "k-b");
+    let (_, c1) = assemble(&repo.path, &[&field(&a, "proposal_id")]);
+    let (_, c2) = assemble(&repo.path, &[&field(&b, "proposal_id")]);
+    let cid1 = field(&c1, "candidate_id");
+    let cid2 = field(&c2, "candidate_id");
+    assert_ne!(cid1, cid2, "different proposals, different candidates");
+    assert_eq!(
+        field(&c1, "tree_oid"),
+        field(&c2, "tree_oid"),
+        "the two candidates build the same tree"
+    );
+
+    let (code, run) = run_candidate(&repo.path, &cid1);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+    assert_eq!(field(&run, "candidate_id"), cid1);
+
+    // Publishing C2 would report C2 while the evidence names C1.
+    let (code, out) = publish_candidate(&repo.path, &cid2, &base, &[]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "RECEIPT_CANDIDATE_MISMATCH", "{out}");
+    assert_eq!(
+        tree_of(&repo.path, "refs/heads/main"),
+        tree_of(&repo.path, &base),
+        "a refused publication must not move the ref"
+    );
+
+    // The named candidate still publishes, and the output exposes the receipt's
+    // candidate explicitly.
+    let (code, out) = publish_candidate(&repo.path, &cid1, &base, &[]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(status_of(&out), "PUBLISHED");
+    assert_eq!(field(&out, "receipt_candidate_id"), cid1);
+}
+
 // ------------------------------------------------------------------------- M1
 #[test]
 fn m1_two_disjoint_agents_publish_exactly_the_verified_tree() {

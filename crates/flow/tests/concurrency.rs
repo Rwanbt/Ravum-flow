@@ -882,6 +882,140 @@ fn a_hostless_dead_lock_is_refused_not_stolen() {
     assert_eq!(fs::read_to_string(&lock).unwrap(), record);
 }
 
+// ------------------------------------------------------------ G2 (FBL-002)
+
+/// G2 — two concurrent `run`s on the same tree: each execution writes its own
+/// log directory, the surviving receipt binds every log by sha256, and a later
+/// tamper is reported instead of being accepted as evidence.
+#[test]
+fn g2_concurrent_runs_keep_separate_integrity_bound_evidence() {
+    let (repo, tree, _) = prepared_repo("g2");
+    let children: Vec<Child> = (0..2).map(|_| spawn_flow(&repo.path, &["run"])).collect();
+    let outputs = wait_all(children);
+    for (index, output) in outputs.iter().enumerate() {
+        let value = parse_output(&format!("g2[{index}]"), output);
+        assert_eq!(
+            status_of(&value),
+            "PASSED",
+            "both runs must pass on this fixture: {value}"
+        );
+    }
+
+    let logs = repo.path.join(".flow").join("logs").join(&tree);
+    let run_dirs: Vec<PathBuf> = fs::read_dir(&logs)
+        .expect("logs dir")
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .collect();
+    assert_eq!(
+        run_dirs.len(),
+        2,
+        "each execution must have its own log directory: {run_dirs:?}"
+    );
+
+    let receipt_path = receipt_for(&repo.path, &tree);
+    let receipt = json::parse(&fs::read_to_string(&receipt_path).expect("receipt exists"))
+        .expect("receipt parses");
+    let run_id = receipt
+        .get("run_id")
+        .and_then(Json::as_str)
+        .expect("receipt records its run id");
+    assert!(!run_id.is_empty());
+    assert!(
+        run_dirs
+            .iter()
+            .any(|dir| dir.file_name().and_then(|n| n.to_str()) == Some(run_id)),
+        "the receipt's run directory must exist: {run_dirs:?}"
+    );
+
+    let digests = receipt
+        .get("log_digests")
+        .and_then(Json::as_arr)
+        .expect("receipt records log digests");
+    assert!(!digests.is_empty(), "at least one obligation log");
+    let logs_list: Vec<String> = receipt
+        .get("logs")
+        .and_then(Json::as_arr)
+        .expect("receipt records logs")
+        .iter()
+        .filter_map(|v| v.as_str().map(str::to_string))
+        .collect();
+    for entry in digests {
+        let id = entry.get("id").and_then(Json::as_str).expect("log id");
+        for (suffix, key) in [("stdout", "stdout_sha256"), ("stderr", "stderr_sha256")] {
+            let recorded = entry.get(key).and_then(Json::as_str).expect("log digest");
+            let wanted = format!("/{id}.{suffix}.log");
+            let rel = logs_list
+                .iter()
+                .find(|p| p.ends_with(&wanted))
+                .unwrap_or_else(|| panic!("no {wanted} in {logs_list:?}"));
+            let bytes = fs::read(repo.path.join(rel)).expect("log exists");
+            assert_eq!(
+                sha256::sha256_hex(&bytes),
+                recorded,
+                "the log {rel} must still hash to the receipt digest"
+            );
+        }
+    }
+
+    // Swap one log: explain must report incomplete evidence, never PASSED.
+    let victim = logs_list
+        .iter()
+        .find(|p| p.ends_with(".stdout.log"))
+        .expect("a stdout log");
+    fs::write(repo.path.join(victim), b"tampered evidence\n").unwrap();
+    let (code, explain) = flow(&repo.path, &["explain", "--tree", &tree]);
+    assert_eq!(code, 0, "{explain}");
+    assert_eq!(
+        explain.get("log_integrity").and_then(Json::as_str),
+        Some("LOG_INTEGRITY_INVALID"),
+        "{explain}"
+    );
+    assert_eq!(
+        explain.get("evidence_complete").and_then(Json::as_bool),
+        Some(false),
+        "{explain}"
+    );
+}
+
+// ------------------------------------------------------------ G4 (FBL-004)
+
+/// G4 — an allowlisted environment change between `run` and `publish` makes the
+/// receipt stale: the publication is refused with CONTEXT_MISMATCH and the ref
+/// does not move.
+#[test]
+fn g4_environment_change_between_run_and_publish_refuses_context_mismatch() {
+    let (repo, tree, head_before) = prepared_repo("g4");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition run: {out}");
+    assert_eq!(status_of(&out), "PASSED");
+
+    let separator = if cfg!(windows) { ';' } else { ':' };
+    let changed_path = format!(
+        "{}{separator}{}",
+        std::env::var("PATH").unwrap_or_default(),
+        repo.path.display()
+    );
+    let (code, out) = flow_with_env(&repo.path, &["publish"], &[("PATH", &changed_path)]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        code_of(&out),
+        "CONTEXT_MISMATCH",
+        "a changed build environment must refuse the receipt: {out}"
+    );
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head_before,
+        "a refused publication must not move the ref"
+    );
+    assert!(
+        receipt_for(&repo.path, &tree).is_file(),
+        "the run receipt stays on disk as a record"
+    );
+}
+
 // ------------------------------------------------------------ host probes
 
 #[cfg(windows)]

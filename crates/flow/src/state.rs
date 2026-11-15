@@ -130,80 +130,188 @@ impl Config {
         ])
     }
 
+    /// Decode a policy strictly.
+    ///
+    /// A policy is what a `PASSED` *means*: an unknown key, a mistyped value, a
+    /// timeout outside `[1, 86400]` or a non-string argument is refused instead
+    /// of being silently dropped or clamped into a different command. Every
+    /// refusal names the field, so an operator can fix the file.
     pub fn from_json(value: &Json) -> Result<Config, String> {
+        let Json::Obj(pairs) = value else {
+            return Err("INVALID_POLICY: the policy must be a JSON object".into());
+        };
+        const POLICY_KEYS: [&str; 6] = [
+            "schema",
+            "policy_version",
+            "execution_boundary",
+            "obligations",
+            "context_probes",
+            "disabled",
+        ];
+        for (key, _) in pairs {
+            if !POLICY_KEYS.contains(&key.as_str()) {
+                return Err(format!(
+                    "INVALID_POLICY: unknown policy key {key:?}: refusing to guess what it means"
+                ));
+            }
+        }
         let schema = value.get("schema").and_then(Json::as_str).unwrap_or("");
         if schema != SCHEMA_CONFIG {
             return Err(format!("unsupported config schema {schema:?}"));
         }
-        let mut obligations = Vec::new();
-        if let Some(items) = value.get("obligations").and_then(Json::as_arr) {
-            for item in items {
-                let id = item
-                    .get("id")
-                    .and_then(Json::as_str)
-                    .unwrap_or("")
-                    .to_string();
-                let program = item
-                    .get("program")
-                    .and_then(Json::as_str)
-                    .unwrap_or("")
-                    .to_string();
-                if id.is_empty() || program.is_empty() {
-                    return Err("obligation needs a non-empty id and program".into());
-                }
-                let args = item
-                    .get("args")
-                    .and_then(Json::as_arr)
-                    .map(|a| {
-                        a.iter()
-                            .filter_map(|v| v.as_str().map(str::to_string))
-                            .collect()
-                    })
-                    .unwrap_or_default();
-                obligations.push(Obligation {
-                    id,
-                    program,
-                    args,
-                    required: item.get("required").and_then(Json::as_bool).unwrap_or(true),
-                    timeout_s: item
-                        .get("timeout_s")
-                        .and_then(Json::as_num)
-                        .unwrap_or(300.0) as u64,
-                });
-            }
+        let policy_version = match value.get("policy_version") {
+            None => POLICY_VERSION.to_string(),
+            Some(v) => v.as_str().map(str::to_string).ok_or_else(|| {
+                "INVALID_POLICY: policy_version must be a string".to_string()
+            })?,
+        };
+        if policy_version.trim().is_empty() {
+            return Err("INVALID_POLICY: policy_version must not be empty".into());
         }
-        Ok(Config {
-            policy_version: value
-                .get("policy_version")
-                .and_then(Json::as_str)
-                .unwrap_or(POLICY_VERSION)
-                .to_string(),
-            execution_boundary: value
-                .get("execution_boundary")
-                .and_then(Json::as_str)
-                .unwrap_or("local-trusted")
-                .to_string(),
-            obligations,
-            context_probes: value
-                .get("context_probes")
-                .and_then(Json::as_arr)
-                .map(|items| {
-                    items
-                        .iter()
-                        .filter_map(|probe| {
-                            probe.as_arr().map(|args| {
-                                args.iter()
-                                    .filter_map(|a| a.as_str().map(str::to_string))
-                                    .collect()
+        let execution_boundary = match value.get("execution_boundary") {
+            None => "local-trusted".to_string(),
+            Some(v) => {
+                let boundary = v.as_str().ok_or_else(|| {
+                    "INVALID_POLICY: execution_boundary must be a string".to_string()
+                })?;
+                if boundary != "local-trusted" {
+                    return Err(format!(
+                        "INVALID_POLICY: execution_boundary {boundary:?} is not implemented; only \"local-trusted\" is supported"
+                    ));
+                }
+                boundary.to_string()
+            }
+        };
+        let mut obligations = Vec::new();
+        match value.get("obligations") {
+            None => {}
+            Some(Json::Arr(items)) => {
+                const OBLIGATION_KEYS: [&str; 5] =
+                    ["id", "program", "args", "required", "timeout_s"];
+                for item in items {
+                    let Json::Obj(fields) = item else {
+                        return Err("INVALID_POLICY: every obligation must be an object".into());
+                    };
+                    for (key, _) in fields {
+                        if !OBLIGATION_KEYS.contains(&key.as_str()) {
+                            return Err(format!(
+                                "INVALID_POLICY: unknown obligation key {key:?}"
+                            ));
+                        }
+                    }
+                    let id = item
+                        .get("id")
+                        .and_then(Json::as_str)
+                        .ok_or_else(|| {
+                            "INVALID_POLICY: obligation id must be a string".to_string()
+                        })?
+                        .to_string();
+                    let program = item
+                        .get("program")
+                        .and_then(Json::as_str)
+                        .ok_or_else(|| {
+                            "INVALID_POLICY: obligation program must be a string".to_string()
+                        })?
+                        .to_string();
+                    if id.is_empty() || program.is_empty() {
+                        return Err("obligation needs a non-empty id and program".into());
+                    }
+                    let args = match item.get("args") {
+                        None => Vec::new(),
+                        Some(Json::Arr(values)) => values
+                            .iter()
+                            .map(|v| {
+                                v.as_str().map(str::to_string).ok_or_else(|| {
+                                    "INVALID_POLICY: every obligation argument must be a string"
+                                        .to_string()
+                                })
                             })
-                        })
-                        .collect()
-                })
-                .unwrap_or_default(),
-            disabled: value
-                .get("disabled")
-                .and_then(Json::as_bool)
-                .unwrap_or(false),
+                            .collect::<Result<Vec<_>, _>>()?,
+                        Some(_) => {
+                            return Err(
+                                "INVALID_POLICY: obligation args must be an array of strings"
+                                    .into(),
+                            )
+                        }
+                    };
+                    let required = match item.get("required") {
+                        None => true,
+                        Some(v) => v.as_bool().ok_or_else(|| {
+                            "INVALID_POLICY: obligation required must be a boolean".to_string()
+                        })?,
+                    };
+                    let timeout_s = match item.get("timeout_s") {
+                        None => 300u64,
+                        Some(v) => {
+                            let number = v.as_num().ok_or_else(|| {
+                                "INVALID_POLICY: obligation timeout_s must be a number".to_string()
+                            })?;
+                            if !number.is_finite()
+                                || number.fract() != 0.0
+                                || !(1.0..=86_400.0).contains(&number)
+                            {
+                                return Err(format!(
+                                    "INVALID_POLICY: obligation timeout_s {number} is outside the supported integer range [1, 86400]"
+                                ));
+                            }
+                            number as u64
+                        }
+                    };
+                    obligations.push(Obligation {
+                        id,
+                        program,
+                        args,
+                        required,
+                        timeout_s,
+                    });
+                }
+            }
+            Some(_) => return Err("INVALID_POLICY: obligations must be an array".into()),
+        }
+        let context_probes = match value.get("context_probes") {
+            None => Vec::new(),
+            Some(Json::Arr(probes)) => {
+                let mut out = Vec::new();
+                for probe in probes {
+                    let Json::Arr(args) = probe else {
+                        return Err(
+                            "INVALID_POLICY: every context probe must be an array".into()
+                        );
+                    };
+                    if args.is_empty() {
+                        return Err(
+                            "INVALID_POLICY: a context probe must name a program".into()
+                        );
+                    }
+                    out.push(
+                        args.iter()
+                            .map(|v| {
+                                v.as_str().map(str::to_string).ok_or_else(|| {
+                                    "INVALID_POLICY: every context probe argument must be a string"
+                                        .to_string()
+                                })
+                            })
+                            .collect::<Result<Vec<_>, _>>()?,
+                    );
+                }
+                out
+            }
+            Some(_) => {
+                return Err("INVALID_POLICY: context_probes must be an array of arrays".into())
+            }
+        };
+        let disabled = match value.get("disabled") {
+            None => false,
+            Some(v) => v.as_bool().ok_or_else(|| {
+                "INVALID_POLICY: disabled must be a boolean".to_string()
+            })?,
+        };
+        Ok(Config {
+            policy_version,
+            execution_boundary,
+            obligations,
+            context_probes,
+            disabled,
         })
     }
 }
@@ -1012,18 +1120,77 @@ mod tests {
     }
 
     #[test]
-    fn a_config_whose_obligations_are_not_a_list_keeps_the_declared_defaults() {
-        // A shape Flow does not understand is not an obligation set: the record
-        // still names its policy version and boundary, and declares nothing.
+    fn a_config_whose_obligations_are_not_a_list_is_refused() {
+        // A shape Flow does not understand is not an obligation set: guessing
+        // "no obligations" would silently accept a policy that runs nothing.
         let value = json::parse(
             r#"{"schema":"flow-config/1","obligations":"none","policy_version":"FLOW-POLICY-1"}"#,
         )
         .unwrap();
-        let config = Config::from_json(&value).unwrap();
-        assert_eq!(config.obligations.len(), 0);
-        assert_eq!(config.policy_version, POLICY_VERSION);
-        assert_eq!(config.execution_boundary, "local-trusted");
-        assert!(!config.disabled);
+        let reason = Config::from_json(&value)
+            .err()
+            .expect("a non-array obligations field must be refused");
+        assert!(reason.contains("obligations must be an array"), "{reason}");
+    }
+
+    #[test]
+    fn strict_policy_decoder_refuses_every_silent_coercion() {
+        let cases: &[(&str, &str)] = &[
+            (
+                "unknown top-level key",
+                r#"{"schema":"flow-config/1","requierd":false,"obligations":[]}"#,
+            ),
+            (
+                "unknown obligation key",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","timeout":1}]}"#,
+            ),
+            (
+                "mixed args",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","args":["test",5]}]}"#,
+            ),
+            (
+                "negative timeout",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","timeout_s":-1}]}"#,
+            ),
+            (
+                "fractional timeout",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","timeout_s":0.4}]}"#,
+            ),
+            (
+                "huge timeout",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","timeout_s":86401}]}"#,
+            ),
+            (
+                "string timeout",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","timeout_s":"60"}]}"#,
+            ),
+            (
+                "non-boolean required",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","required":"yes"}]}"#,
+            ),
+            (
+                "unsupported boundary",
+                r#"{"schema":"flow-config/1","execution_boundary":"untrusted","obligations":[]}"#,
+            ),
+            (
+                "non-boolean disabled",
+                r#"{"schema":"flow-config/1","disabled":"no","obligations":[]}"#,
+            ),
+            (
+                "bad probes",
+                r#"{"schema":"flow-config/1","context_probes":"rustc -Vv","obligations":[]}"#,
+            ),
+        ];
+        for (label, text) in cases {
+            let value = json::parse(text).unwrap();
+            let reason = Config::from_json(&value)
+                .err()
+                .unwrap_or_else(|| panic!("{label} must be refused"));
+            assert!(
+                reason.contains("INVALID_POLICY") || reason.contains("obligation needs"),
+                "{label}: {reason}"
+            );
+        }
     }
 
     #[test]
