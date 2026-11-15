@@ -182,7 +182,7 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | `commands.rs` modularisation (3.6k LOC) | **PARTIAL**: `commands/mod.rs` + `policy.rs` (policy identity, context, validation) + `checkout.rs` (tree listing, fidelity/mode/content certification, lock-free index read) extracted behaviour-constantly; the command bodies remain in `mod.rs` (~2.6k product lines) and can be split per command later |
 | Coverage gate | **CLOSED** on this line: 95.95 % lines / 90.52 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
 | Mutation | not re-run on the hardening modules; CI `flow-mutation.yml` stays report-mode. The new tests are not a mutation score |
-| Confirmatory S9 | `H4` decided 2026-11-15 (≥30 % less time, p<0.05, 10 pairs, 2 cores/8 GB); campaign **not run**, so productivity stays `UNPROVEN` |
+| Confirmatory S9 | **RUN 2026-11-15, NEGATIVE**: G median 4.925 s vs E 2.823 s, paired ratio 1.784, 10/10 pairs, p=0.000977 — the H4 criterion (≤0.70) failed. No productivity claim; see [the campaign summary](../../experiments/s9/CAMPAIGN-2026-11-15.md) |
 | **O3 workstream (`H1 = O3 complet`)** | **NOT IMPLEMENTED**: the delivered code is the O1 + O2 subset. O3 needs its own ADR, budget, threat model and P0 review; four shapes and their tradeoffs are compared in [FLOW-O3-PROPOSALS.md](FLOW-O3-PROPOSALS.md). No document may present O3 as delivered |
 | Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43712727257`; coverage also green (see §9) |
 

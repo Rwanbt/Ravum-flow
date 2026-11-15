@@ -14,7 +14,7 @@ No choice below is accepted merely because documentation has been uploaded. Mark
 | D0 | source, provenance and rights inventoried | PARTIAL | verify GitHub actual refs and rights | citations, SHA, 42 ADR audit |
 | D1 | independent contradictory review | DOCUMENT-CONDITIONAL | Claude V5 reviewed; V6 corrected afterwards | unresolved differences + provenance |
 | D2 | security and transactional contract | PROPOSED (ADR-012, plus the 2026-11-15 review notes) | tree/hook/context/receipt/fencing rules; probes in the approved policy; publish checks log bytes | negative test specifications; ADR-012 ratification is post-`G10` |
-| D3 | S9 protocol frozen | **FROZEN 2026-11-15 by `H4`** (thresholds + budget); campaign **NOT RUN** | paired benchmark with real worktrees and tools | run the pre-registered campaign; until then productivity is `UNPROVEN` |
+| D3 | S9 protocol frozen | **FROZEN + RUN 2026-11-15 (`H4`); result NEGATIVE** — G (Flow) slower than E (O0): median ratio 1.784, 10/10 pairs, p=0.000977 vs the ≤0.70 criterion | paired benchmark with real worktrees and tools | no productivity claim; a positive claim needs a new pre-registered protocol (see [campaign summary](../experiments/s9/CAMPAIGN-2026-11-15.md)) |
 | D4 | reviewed human decision and scoped GO | PARTIAL: human decisions `H1`/`H3`/`H4`/`H6`/`H8` recorded 2026-11-15; `G10` and `GO_PRODUCTION` outstanding | separate planning, fixture and implementation permissions | external review verdict + owner `GO_PRODUCTION` |
 
 ## Mandate of 2026-11-09 (bounded, second wave) — recorded, not ratified

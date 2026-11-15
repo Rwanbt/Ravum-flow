@@ -33,6 +33,13 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   microseconds) no longer makes the hard-link guard refuse a valid concurrent `propose`;
   `create_once` answers "not created" for an existing name before the guard.
 
+### Measured
+- **S9 confirmatory campaign** (frozen H4 protocol, 10 paired runs): arm G (Flow) vs arm E
+  (instrumented O0) on the synthetic `s9_workload`. G median `T_verified` **4.925 s** vs E **2.823 s**,
+  paired ratio **1.784**, G slower in **10/10** pairs, p = 0.000977 — the H4 criterion (ratio ≤ 0.70)
+  **failed**. No productivity advantage is claimed; the record is
+  `experiments/s9/out/campaign-h4.json`.
+
 ### Changed
 - Coverage gate closed without lowering a threshold or adding a waiver: **95.95 % lines / 90.52 %
   branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 539 Windows / 550

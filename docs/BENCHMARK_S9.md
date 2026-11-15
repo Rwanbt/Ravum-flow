@@ -1,7 +1,10 @@
-# S9 benchmark protocol — FROZEN 2026-11-15, CAMPAIGN NOT RUN
-**Status: `PROTOCOL FROZEN` by the human decision `H4` (2026-11-15); the campaign itself is `NOT RUN`,
-so no productivity number is claimed.** This file is the **single naming authority** for S9 arms
-(`X-06` resolved here). The frozen protocol is in [Protocol v1.0](#protocol-v10--frozen-2026-11-15).
+# S9 benchmark protocol — FROZEN 2026-11-15, CAMPAIGN RUN (negative result)
+**Status: protocol frozen by `H4`; campaign executed on 2026-11-15 and the H4 success criterion was
+NOT met** — arm G (Flow) was slower than arm E (instrumented O0) on the frozen workload. Raw record:
+[`experiments/s9/out/campaign-h4.json`](../../experiments/s9/out/campaign-h4.json), summary:
+[`experiments/s9/CAMPAIGN-2026-11-15.md`](../../experiments/s9/CAMPAIGN-2026-11-15.md). No
+productivity advantage is claimed. This file is the **single naming authority** for S9 arms (`X-06`
+resolved here); the frozen protocol is [Protocol v1.0](#protocol-v10--frozen-2026-11-15).
 
 ## Canonical arms (A–G)
 | Arm | Mechanism | Notes |
@@ -75,10 +78,16 @@ are seen invalidates the campaign and requires a new version.
 | Environment | Windows 11 reference host (16 logical CPUs, 16 GB) and Linux (CI runner or WSL) recorded separately; OS, `rustc`, `git`, `node`/`python` versions pinned per run. No scoring change after results. |
 | Result handling | A run that does not meet the success criterion is reported as such; the exploratory `n=5` pilot stays exploratory and is never merged into the confirmatory sample. |
 
-**Campaign state: NOT RUN.** Until it runs, productivity remains `UNPROVEN`; `D3` closes only when the
-campaign is executed and its artifact is stored under `experiments/quality/`.
+**Campaign state: RUN on 2026-11-15.** G median `T_verified` **4.925 s** vs E **2.823 s**; paired
+median ratio **1.784**, G slower in **10/10** pairs, one-sided sign test **p = 0.000977**. The H4
+criterion (ratio ≤ 0.70, p < 0.05) **failed**: no productivity advantage is claimed, and the
+comparison is dominated by Flow's isolated cold-cache candidate run on a conflict-free workload
+(see the campaign summary for the phase breakdown and the limitations). A future campaign needs a new
+protocol version (conflict-heavy workload, or warm-cache-equalised arms) and its own pre-registration.
 
 ## Gate
-`D3` closes only when the frozen protocol above is executed and its artifact is stored. An exploratory
-pilot may measure noise and orders of magnitude; it does not close `D3`.
+`D3` is **not closed as a positive result**. The pre-registered campaign ran and produced a negative
+result, which is recorded as evidence; any follow-up is a new protocol version, not a rerun scored
+after the fact. An exploratory pilot may measure noise and orders of magnitude; it does not close `D3`.
+
 

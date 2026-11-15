@@ -124,8 +124,12 @@ one immutable base produce one verified tree, and a real collision is refused by
 
 The CI budgets are regression tripwires, not performance claims. The journal append cost is bounded
 by construction since `FBL-012` (segmentation, 2026-11-15): an append rewrites at most one 256 KiB
-segment. Productivity against other workflows stays `UNPROVEN` until the frozen S9 campaign runs
-([BENCHMARK_S9.md](BENCHMARK_S9.md)); `H4` fixed its thresholds on 2026-11-15.
+segment. Productivity against other workflows is **not claimed**: the frozen S9 campaign ran on
+2026-11-15 and **failed its own criterion** — G (Flow) median 4.925 s vs E (O0) 2.823 s, paired ratio
+1.784, G slower in 10/10 pairs, p = 0.000977, against a required ratio ≤ 0.70. Raw record:
+`experiments/s9/out/campaign-h4.json`; summary: `experiments/s9/CAMPAIGN-2026-11-15.md`. The workload
+is single-host, conflict-free, and dominated by Flow's isolated cold-cache candidate run, so it is a
+negative result for this workload, not a universal ranking.
 
 ## 8. Security and supply chain
 
