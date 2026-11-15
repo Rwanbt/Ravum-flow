@@ -1647,6 +1647,19 @@ if [ "$mode" = "show-ref-moves" ] && [ "$3" = "rev-parse" ] && [ "$4" = "--verif
     exit 0
   fi
 fi
+if [ "$mode" = "worktree-race" ] && [ "$3" = "worktree" ] && [ "$4" = "add" ]; then
+  n=$(cat "{counter}" 2>/dev/null || echo 0)
+  n=$((n+1))
+  echo "$n" > "{counter}"
+  if [ "$n" -le 1 ]; then
+    echo "fatal: failed to read .git/worktrees/other/commondir: Success" >&2
+    exit 128
+  fi
+fi
+if [ "$mode" = "worktree-race-always" ] && [ "$3" = "worktree" ] && [ "$4" = "add" ]; then
+  echo "fatal: failed to read .git/worktrees/other/commondir: Success" >&2
+  exit 128
+fi
 exec "{git}" "$@"
 "#,
         counter = counter.display(),
@@ -1751,6 +1764,35 @@ fn publish_detects_a_ref_that_moved_between_intent_and_cas() {
     assert!(
         journal.contains("REFUSED_STALE"),
         "the intent must be closed with its stale outcome: {journal}"
+    );
+}
+
+/// Git's worktree admin is not internally locked: a `worktree add` racing another
+/// process's `worktree prune` fails with a transient "commondir" error, which is
+/// retried rather than reported as an unusable checkout.
+#[cfg(unix)]
+#[test]
+fn a_transient_worktree_admin_race_is_retried_instead_of_failing_the_run() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "worktree-race");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "worktree-race");
+    assert_eq!(code, 0, "the transient Git race must be retried: {run}");
+    assert_eq!(status_of(&run), "PASSED", "{run}");
+}
+
+/// When the race does not clear, the run must refuse by name instead of looping:
+/// a scratch directory that cannot be materialised is never verified.
+#[cfg(unix)]
+#[test]
+fn an_unresolved_worktree_admin_race_refuses_the_run_by_name() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let shim = shim_git(&repo.path, "worktree-race-always");
+    let (code, run) = flow_with_path(&repo.path, &shim, &["run"], "worktree-race-always");
+    assert_eq!(code, 1, "{run}");
+    assert_eq!(code_field(&run), "SCRATCH_REFUSED", "{run}");
+    assert!(
+        run.to_string().contains("cannot materialise"),
+        "the refusal must name the materialisation: {run}"
     );
 }
 
