@@ -382,6 +382,38 @@ mod tests {
         assert!(parse(r#"{"a":1,"b":2}"#).is_ok());
     }
     #[test]
+    fn every_escape_is_both_written_and_read_back() {
+        // The writer and the parser must agree on every escape the JSON spec
+        // defines, including the control characters a redacted log can contain.
+        let control = "a\rb\tc\u{8}d\u{c}e/f\\g\"h";
+        let written = Json::obj(vec![("k", Json::str(control))]).to_string_pretty();
+        assert!(written.contains("\\r"), "{written}");
+        assert!(written.contains("\\t"), "{written}");
+        assert!(written.contains("\\u0008"), "{written}");
+        assert!(written.contains("\\u000c"), "{written}");
+        assert!(written.contains('/'), "{written}");
+        assert_eq!(
+            parse(&written).unwrap().get("k").and_then(Json::as_str),
+            Some(control)
+        );
+
+        // Escapes in the input are decoded, not copied literally.
+        let parsed = parse(r#""a\/b\b\f\n\r\t""#).unwrap();
+        assert_eq!(
+            parsed.as_str(),
+            Some("a/b\u{8}\u{c}\n\r\t"),
+            "every escape must decode to the character it names"
+        );
+
+        // An unknown escape is a named parse error, never a literal backslash.
+        let reason = parse(r#""\q""#).expect_err("an unknown escape is refused");
+        assert!(reason.contains("bad escape"), "{reason}");
+        // A missing separator in an array is refused by its own message.
+        let reason = parse("[1 2]").expect_err("a missing comma is refused");
+        assert!(reason.contains("expected ',' or ']'"), "{reason}");
+    }
+
+    #[test]
     fn a_non_finite_number_is_refused_not_printed_as_inf() {
         // 1e999 overflows f64 to infinity; JSON cannot represent it, and printing
         // `inf` would produce output that is not JSON.

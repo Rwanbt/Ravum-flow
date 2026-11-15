@@ -1248,6 +1248,162 @@ mod tests {
     }
 
     #[test]
+    fn a_record_edited_after_it_was_written_is_refused_by_its_identity_or_seal() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-proposal-load-{}-{}",
+            std::process::id(),
+            state::unique_suffix()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(state::proposals_dir(&root)).unwrap();
+
+        let bytes = b"diff --git a/a b/a\n";
+        let digest = sha256_hex(bytes);
+        let base = "0".repeat(40);
+        let id = proposal_id_for("agent-a", "T", &base, "key-1");
+        let record = Json::obj(vec![
+            ("schema", Json::str(SCHEMA_PROPOSAL)),
+            ("status", Json::str("ADMITTED")),
+            ("proposal_id", Json::str(id.clone())),
+            ("agent_id", Json::str("agent-a")),
+            ("task_id", Json::str("T")),
+            ("idempotency_key", Json::str("key-1")),
+            ("base_commit", Json::str(base.clone())),
+            ("base_tree", Json::str("1".repeat(40))),
+            ("tree_oid", Json::str("2".repeat(40))),
+            ("content_digest", Json::str(digest.clone())),
+            ("changes", Json::Arr(Vec::new())),
+        ]);
+        let metadata = Proposal::metadata_path(&root, &id);
+        fs::write(Proposal::patch_path(&root, &id), bytes).unwrap();
+        fs::write(&metadata, record.to_string_pretty() + "\n").unwrap();
+        let loaded = Proposal::load(&root, &id)
+            .expect("a well-formed legacy record loads")
+            .expect("the record exists");
+        assert_eq!(loaded.content_digest, digest);
+
+        // A sealed record is verified on load: its own digest must still match.
+        let sealed = state::seal_record(&record);
+        fs::write(&metadata, sealed.to_string_pretty() + "\n").unwrap();
+        assert!(Proposal::load(&root, &id).unwrap().is_some());
+        let mut tampered = sealed.clone();
+        if let Json::Obj(pairs) = &mut tampered {
+            for (key, value) in pairs.iter_mut() {
+                if key == "tree_oid" {
+                    *value = Json::str("3".repeat(40));
+                }
+            }
+        }
+        fs::write(&metadata, tampered.to_string_pretty() + "\n").unwrap();
+        let reason = Proposal::load(&root, &id).expect_err("a broken seal is a refusal");
+        assert!(reason.contains("integrity"), "{reason}");
+
+        // A record whose `proposal_id` no longer recomputes to its file name was
+        // edited after admission: it is refused instead of attributed.
+        let mut edited = record.clone();
+        if let Json::Obj(pairs) = &mut edited {
+            for (key, value) in pairs.iter_mut() {
+                if key == "proposal_id" {
+                    *value = Json::str("f".repeat(32));
+                }
+            }
+        }
+        fs::write(&metadata, edited.to_string_pretty() + "\n").unwrap();
+        let reason = Proposal::load(&root, &id).expect_err("a forged identity is a refusal");
+        assert!(reason.contains("PROPOSAL_INTEGRITY"), "{reason}");
+
+        // A record whose patch bytes are gone cannot be attributed to anything.
+        let missing = proposal_id_for("agent-b", "T", &base, "key-2");
+        let mut missing_record = record.clone();
+        if let Json::Obj(pairs) = &mut missing_record {
+            for (key, value) in pairs.iter_mut() {
+                match key.as_str() {
+                    "proposal_id" => *value = Json::str(missing.clone()),
+                    "agent_id" => *value = Json::str("agent-b"),
+                    "idempotency_key" => *value = Json::str("key-2"),
+                    _ => {}
+                }
+            }
+        }
+        fs::write(
+            Proposal::metadata_path(&root, &missing),
+            missing_record.to_string_pretty(),
+        )
+        .unwrap();
+        let reason =
+            Proposal::load(&root, &missing).expect_err("a missing legacy patch is refused");
+        assert!(reason.contains("unreadable"), "{reason}");
+
+        // A metadata path that exists but cannot be read is a named error, never
+        // an empty proposal list entry.
+        let unreadable = proposal_id_for("agent-c", "T", &base, "key-3");
+        fs::create_dir_all(Proposal::metadata_path(&root, &unreadable)).unwrap();
+        let reason = Proposal::load(&root, &unreadable).expect_err("a directory is not a record");
+        assert!(reason.contains("cannot read"), "{reason}");
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_candidate_edited_after_assembly_is_refused_by_its_identity_or_seal() {
+        let root = std::env::temp_dir().join(format!(
+            "flow-candidate-load-{}-{}",
+            std::process::id(),
+            state::unique_suffix()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(state::candidates_dir(&root)).unwrap();
+
+        let base = "0".repeat(40);
+        let tree = "1".repeat(40);
+        let proposals = vec!["a".repeat(32)];
+        let id = candidate_id_for(&base, &tree, &proposals);
+        let record = Json::obj(vec![
+            ("schema", Json::str(SCHEMA_CANDIDATE)),
+            ("status", Json::str("ASSEMBLED")),
+            ("candidate_id", Json::str(id.clone())),
+            ("base_commit", Json::str(base.clone())),
+            ("base_tree", Json::str("2".repeat(40))),
+            ("tree_oid", Json::str(tree.clone())),
+            (
+                "proposals",
+                Json::Arr(proposals.iter().map(|p| Json::str(p.clone())).collect()),
+            ),
+            ("changes", Json::Arr(Vec::new())),
+            ("proposal_count", Json::Num(proposals.len() as f64)),
+        ]);
+        let path = Candidate::path(&root, &id);
+        fs::write(&path, record.to_string_pretty() + "\n").unwrap();
+        assert!(Candidate::load(&root, &id).unwrap().is_some());
+
+        let sealed = state::seal_record(&record);
+        fs::write(&path, sealed.to_string_pretty() + "\n").unwrap();
+        assert!(
+            Candidate::load(&root, &id).unwrap().is_some(),
+            "a sealed candidate verifies on load"
+        );
+
+        let mut edited = record.clone();
+        if let Json::Obj(pairs) = &mut edited {
+            for (key, value) in pairs.iter_mut() {
+                if key == "tree_oid" {
+                    *value = Json::str("3".repeat(40));
+                }
+            }
+        }
+        fs::write(&path, edited.to_string_pretty() + "\n").unwrap();
+        let reason = Candidate::load(&root, &id).expect_err("a forged candidate is a refusal");
+        assert!(reason.contains("CANDIDATE_INTEGRITY"), "{reason}");
+
+        let unreadable = candidate_id_for(&base, &tree, &["b".repeat(32)]);
+        fs::create_dir_all(Candidate::path(&root, &unreadable)).unwrap();
+        let reason = Candidate::load(&root, &unreadable).expect_err("a directory is not a record");
+        assert!(reason.contains("cannot read"), "{reason}");
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn raw_diffs_are_parsed_and_truncated_answers_are_refused() {
         let changes = parse_raw_diff(
             ":100644 100644 aaaa bbbb M\0a.txt\0:000000 100644 0000 cccc A\0b/c.txt\0",

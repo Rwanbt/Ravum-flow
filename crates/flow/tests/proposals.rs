@@ -398,6 +398,197 @@ fn m11_publish_binds_the_receipt_to_the_named_candidate() {
     assert_eq!(field(&out, "receipt_candidate_id"), cid1);
 }
 
+/// Rewrite an admitted record in place, dropping its seal first so the test
+/// exercises the *revalidation* path rather than the integrity digest.
+fn edit_record(repo: &Path, id: &str, mutate: impl FnOnce(&mut Json)) {
+    let path = repo
+        .join(".flow")
+        .join("proposals")
+        .join(format!("{id}.json"));
+    let mut value = json::parse(&fs::read_to_string(&path).unwrap()).unwrap();
+    if let Json::Obj(pairs) = &mut value {
+        pairs.retain(|(k, _)| k != "integrity");
+    }
+    mutate(&mut value);
+    fs::write(&path, value.to_string_pretty() + "\n").unwrap();
+}
+
+fn set_field(value: &mut Json, key: &str, new: Json) {
+    if let Json::Obj(pairs) = value {
+        match pairs.iter_mut().find(|(k, _)| k == key) {
+            Some(slot) => slot.1 = new,
+            None => pairs.push((key.to_string(), new)),
+        }
+    }
+}
+
+#[test]
+fn assembly_revalidates_the_record_it_applies() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(
+        &repo.path,
+        &base,
+        &[("alpha.txt", Some("ONE\ntwo\nthree\n"))],
+        false,
+    );
+    let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k-a");
+    let pid = field(&a, "proposal_id");
+    let record = repo
+        .path
+        .join(".flow")
+        .join("proposals")
+        .join(format!("{pid}.json"));
+    let original = fs::read_to_string(&record).unwrap();
+
+    // 1. A record whose `base_tree` is not the base commit's tree carries a false
+    //    assembly premise: refused before any patch is applied.
+    edit_record(&repo.path, &pid, |v| {
+        set_field(v, "base_tree", Json::str("0".repeat(40)))
+    });
+    let (code, out) = assemble(&repo.path, &[&pid]);
+    assert_eq!(code, 1, "{out}");
+    assert!(out.to_string().contains("PROPOSAL_INTEGRITY"), "{out}");
+
+    // 2. A record whose patch rebuilds a different tree than it records.
+    fs::write(&record, &original).unwrap();
+    edit_record(&repo.path, &pid, |v| {
+        set_field(v, "tree_oid", Json::str("1".repeat(40)))
+    });
+    let (code, out) = assemble(&repo.path, &[&pid]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "PROPOSAL_INTEGRITY", "{out}");
+
+    // 3. A record whose change list is not what its patch produces: the list is
+    //    not trusted for conflict detection.
+    fs::write(&record, &original).unwrap();
+    edit_record(&repo.path, &pid, |v| {
+        set_field(v, "changes", Json::Arr(Vec::new()))
+    });
+    let (code, out) = assemble(&repo.path, &[&pid]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "PROPOSAL_INTEGRITY", "{out}");
+    assert!(out.to_string().contains("change list"), "{out}");
+
+    // 4. A record whose patch blob no longer applies: the digest matches its
+    //    bytes (the store is honest), but the bytes are not a patch for this base.
+    let garbage = b"this is not a patch\n";
+    let digest = hex(garbage);
+    let blob_dir = repo.path.join(".flow").join("blobs").join(&digest[..2]);
+    fs::create_dir_all(&blob_dir).unwrap();
+    fs::write(blob_dir.join(&digest), garbage).unwrap();
+    fs::write(&record, &original).unwrap();
+    let blob_rel = format!(".flow/blobs/{}/{}", &digest[..2], digest);
+    edit_record(&repo.path, &pid, |v| {
+        set_field(v, "content_digest", Json::str(digest.clone()));
+        set_field(v, "patch_blob", Json::str(blob_rel.clone()));
+    });
+    let (code, out) = assemble(&repo.path, &[&pid]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "PROPOSAL_INTEGRITY", "{out}");
+    assert!(out.to_string().contains("no longer applies"), "{out}");
+}
+
+#[test]
+fn publish_plan_names_the_candidate_and_still_refuses_an_already_published_tree() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(
+        &repo.path,
+        &base,
+        &[("alpha.txt", Some("ONE\ntwo\nthree\n"))],
+        false,
+    );
+    let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k-a");
+    let (_, c) = assemble(&repo.path, &[&field(&a, "proposal_id")]);
+    let cid = field(&c, "candidate_id");
+    let (code, run) = run_candidate(&repo.path, &cid);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+
+    // A plan names the candidate it would publish and the candidate its receipt
+    // names: the two must be comparable before the ref moves.
+    let (code, plan) = flow(
+        &repo.path,
+        &[
+            "publish",
+            "--candidate",
+            &cid,
+            "--expected-old",
+            &base,
+            "--dry-run",
+        ],
+    );
+    assert_eq!(code, 0, "{plan}");
+    assert_eq!(status_of(&plan), "PLAN");
+    assert_eq!(field(&plan, "candidate_id"), cid);
+    assert_eq!(field(&plan, "receipt_candidate_id"), cid);
+    assert_eq!(
+        field(&plan, "tree"),
+        field(&run, "tree_oid"),
+        "the plan names the verified tree"
+    );
+
+    let (code, out) = publish_candidate(&repo.path, &cid, &base, &[]);
+    assert_eq!(code, 0, "{out}");
+    assert_eq!(status_of(&out), "PUBLISHED");
+
+    // Publishing the same verified tree again cannot add anything: the ref
+    // already carries it, and the refusal names the reason.
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    let (code, out) = publish_candidate(&repo.path, &cid, &head, &[]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "ALREADY_PUBLISHED", "{out}");
+
+    // A plan for an index-tree receipt (no candidate) reports an empty change
+    // list instead of inventing one from the receipt.
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    let (code, plan) = flow(
+        &repo.path,
+        &["publish", "--expected-old", &head, "--dry-run"],
+    );
+    assert_eq!(code, 0, "{plan}");
+    assert_eq!(status_of(&plan), "PLAN");
+    assert_eq!(
+        plan.get("changes").and_then(Json::as_arr).map(|a| a.len()),
+        Some(0),
+        "an index-tree plan has no candidate change list: {plan}"
+    );
+}
+
+#[test]
+fn publish_refuses_a_candidate_whose_receipt_names_no_candidate() {
+    let (repo, base) = new_repo();
+    let patch = make_patch(
+        &repo.path,
+        &base,
+        &[("alpha.txt", Some("ONE\ntwo\nthree\n"))],
+        false,
+    );
+    let (_, a) = propose(&repo.path, "agent-a", "T1", &base, &patch, "k-a");
+    let (_, c) = assemble(&repo.path, &[&field(&a, "proposal_id")]);
+    let cid = field(&c, "candidate_id");
+    // The candidate tree is also the index tree once the same edit is staged, so
+    // an ordinary `run` produces a receipt for that tree with no candidate.
+    fs::write(repo.path.join("alpha.txt"), "ONE\ntwo\nthree\n").unwrap();
+    git(&repo.path, &["add", "alpha.txt"]);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+    assert_eq!(
+        run.get("candidate_id").map(|v| v == &Json::Null),
+        Some(true),
+        "an index run names no candidate: {run}"
+    );
+
+    let (code, out) = publish_candidate(&repo.path, &cid, &base, &[]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_of(&out), "RECEIPT_CANDIDATE_MISMATCH", "{out}");
+    assert!(
+        out.to_string().contains("<index tree, no candidate>"),
+        "the refusal must name the empty side explicitly: {out}"
+    );
+}
+
 // ------------------------------------------------------------------------- M1
 #[test]
 fn m1_two_disjoint_agents_publish_exactly_the_verified_tree() {

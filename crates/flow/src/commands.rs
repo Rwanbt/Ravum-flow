@@ -2891,7 +2891,16 @@ pub fn cmd_gc(
             }
             let size = directory_bytes(&path);
             if !dry_run {
-                fs::remove_dir_all(&path).map_err(|e| format!("cannot remove logs/{name}: {e}"))?;
+                // `is_plain_entry` admits a plain file as well as a directory: a
+                // stray file under `logs/` is still named by the policy, and it
+                // must not turn `gc` into a failure (Windows refuses
+                // `remove_dir_all` on a file with ERROR_DIRECTORY).
+                let removed = if path.is_dir() {
+                    fs::remove_dir_all(&path)
+                } else {
+                    fs::remove_file(&path)
+                };
+                removed.map_err(|e| format!("cannot remove logs/{name}: {e}"))?;
             }
             bytes_freed += size;
             deleted.push(format!("logs/{name}/"));
@@ -4052,6 +4061,215 @@ mod tests {
             state::receipt_path(&root, &gc_tree_id(0)).exists(),
             "nothing is deleted during recovery"
         );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_collects_partial_receipts_plain_log_files_and_unnameable_candidates() {
+        let root = gc_repo("partial");
+        // A partial receipt from a selected run: never publishable, so it follows
+        // the age policy and is never allowed to displace a complete receipt.
+        let partial = state::receipts_dir(&root).join(format!(
+            "{}.partial.{}.json",
+            gc_tree_id(3),
+            "abcdef123456"
+        ));
+        fs::write(&partial, "{}").unwrap();
+        // A `.json` name that is not an object id is not Flow's to remove.
+        let foreign_json = state::receipts_dir(&root).join("not-an-oid.json");
+        fs::write(&foreign_json, "{}").unwrap();
+        // A log entry that is a plain file, not a directory: measurable, listable
+        // and removable without ever following a link.
+        let stray = state::logs_dir(&root).join("stray");
+        fs::write(&stray, "one byte").unwrap();
+        // Candidates: a non-JSON name is left alone, a `.json` name that is not a
+        // record id is reported as skipped, and a real record id is collected.
+        fs::write(state::candidates_dir(&root).join("notes.txt"), "x").unwrap();
+        fs::write(state::candidates_dir(&root).join("bad-name.json"), "{}").unwrap();
+        let candidate = state::candidates_dir(&root).join(format!("{}.json", "a".repeat(32)));
+        fs::write(&candidate, "{}").unwrap();
+
+        let value = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        let deleted = gc_deleted(&value);
+        assert!(
+            deleted.iter().any(|item| item.contains(".partial.")),
+            "{deleted:?}"
+        );
+        assert!(deleted.contains(&"logs/stray/".to_string()), "{deleted:?}");
+        assert!(
+            deleted.iter().any(|item| item.starts_with("candidates/")),
+            "{deleted:?}"
+        );
+        assert!(!partial.exists());
+        assert!(!stray.exists(), "a plain log entry is collected");
+        assert!(!candidate.exists());
+        assert!(foreign_json.exists(), "a non-object-id receipt stays");
+        assert!(state::candidates_dir(&root).join("notes.txt").exists());
+        assert!(state::candidates_dir(&root).join("bad-name.json").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_keeps_fresh_partial_receipts_candidates_and_logs_and_ages_the_rest() {
+        let root = gc_repo("partial-age");
+        // A fresh complete receipt keeps its log without touching the age policy.
+        gc_receipt(&root, 0);
+        gc_log(&root, 0);
+        // An old complete receipt is collected.
+        let old_complete = gc_receipt(&root, 1);
+        gc_age_days(&old_complete, 40);
+        // A fresh partial receipt protects the tree its name prefixes.
+        let fresh_partial = state::receipts_dir(&root).join(format!(
+            "{}.partial.{}.json",
+            gc_tree_id(4),
+            "abcdef123456"
+        ));
+        fs::write(&fresh_partial, "{}").unwrap();
+        gc_log(&root, 4);
+        // An old partial receipt is collected, but a log directory with a fresh
+        // mtime is not old evidence: it follows the age policy, not the receipt.
+        let old_partial = state::receipts_dir(&root).join(format!(
+            "{}.partial.{}.json",
+            gc_tree_id(5),
+            "abcdef123456"
+        ));
+        fs::write(&old_partial, "{}").unwrap();
+        gc_age_days(&old_partial, 40);
+        gc_log(&root, 5);
+        let fresh_candidate = state::candidates_dir(&root).join(format!("{}.json", "b".repeat(32)));
+        fs::write(&fresh_candidate, "{}").unwrap();
+        let old_candidate = state::candidates_dir(&root).join(format!("{}.json", "c".repeat(32)));
+        fs::write(&old_candidate, "{}").unwrap();
+        gc_age_days(&old_candidate, 40);
+
+        let value = cmd_gc(&root, None, Some(30), false).expect("a plan");
+        let deleted = gc_deleted(&value);
+        assert!(fresh_partial.exists(), "a fresh partial receipt is kept");
+        assert!(!old_partial.exists(), "an old partial receipt is aged out");
+        assert!(
+            state::logs_dir(&root).join(gc_tree_id(0)).exists(),
+            "the log of a kept receipt survives"
+        );
+        assert!(
+            state::logs_dir(&root).join(gc_tree_id(4)).exists(),
+            "the log of a fresh partial receipt survives"
+        );
+        assert!(
+            state::logs_dir(&root).join(gc_tree_id(5)).exists(),
+            "a log directory is judged by its own age, not by a deleted receipt"
+        );
+        assert!(fresh_candidate.exists(), "a fresh candidate is kept");
+        assert!(!old_candidate.exists(), "an old candidate is collected");
+        assert!(
+            deleted.iter().all(|item| !item.contains(&"b".repeat(32))),
+            "kept evidence is never reported as deleted: {deleted:?}"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_interprets_run_markers_and_clears_only_the_provably_stale_ones() {
+        let root = gc_repo("markers");
+        let runs = state::runs_dir(&root);
+        fs::create_dir_all(&runs).unwrap();
+        // A file that is not a marker is not read at all.
+        fs::write(runs.join("notes.txt"), "not a marker").unwrap();
+        // A marker that is a directory cannot be read. It names no run, so gc
+        // ignores it: an entry it cannot interpret is never a reason to delete
+        // evidence, and never a reason to invent a live run either.
+        fs::create_dir_all(runs.join("unreadable.active")).unwrap();
+        // A marker whose JSON is broken names no owner: ignored for the same reason.
+        fs::write(runs.join("broken.active"), "{not json").unwrap();
+        let value = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        assert_eq!(value.get("status").and_then(Json::as_str), Some("GC"));
+        assert!(
+            runs.join("unreadable.active").exists(),
+            "an unreadable marker is left for a human, not deleted"
+        );
+        assert!(runs.join("broken.active").exists());
+        fs::remove_dir_all(runs.join("unreadable.active")).unwrap();
+        fs::remove_file(runs.join("broken.active")).unwrap();
+
+        // A marker naming this very process is a live run: gc refuses by name.
+        let live = runs.join("live.active");
+        fs::write(
+            &live,
+            format!(
+                r#"{{"run_id":"run-live","pid":{},"started_at":"2026-01-01T00:00:00Z"}}"#,
+                std::process::id()
+            ),
+        )
+        .unwrap();
+        let value = cmd_gc(&root, Some(0), None, false).expect("a refusal is a document");
+        assert_eq!(value.get("code").and_then(Json::as_str), Some("RUN_ACTIVE"));
+        assert!(live.exists(), "a live marker is never cleared");
+        fs::remove_file(&live).unwrap();
+
+        // A marker whose pid is provably dead is stale: gc clears it and proceeds.
+        let stale = runs.join("stale.active");
+        fs::write(
+            &stale,
+            r#"{"run_id":"run-1","pid":4194304,"started_at":"2026-01-01T00:00:00Z"}"#,
+        )
+        .unwrap();
+        let value = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        assert_eq!(value.get("status").and_then(Json::as_str), Some("GC"));
+        assert!(!stale.exists(), "a provably stale marker is cleared");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn gc_refuses_to_follow_a_link_in_receipts_or_logs() {
+        use std::os::unix::fs::symlink;
+        let root = gc_repo("links");
+        let outside = std::env::temp_dir().join(format!(
+            "flow-gc-outside-{}-{}",
+            std::process::id(),
+            state::unique_suffix()
+        ));
+        let _ = fs::remove_dir_all(&outside);
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(outside.join("evidence.json"), "outside").unwrap();
+        let receipt_link = state::receipts_dir(&root).join(format!("{}.json", gc_tree_id(1)));
+        symlink(outside.join("evidence.json"), &receipt_link).unwrap();
+        let log_link = state::logs_dir(&root).join(gc_tree_id(2));
+        symlink(&outside, &log_link).unwrap();
+
+        let value = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        let skipped = value
+            .get("skipped")
+            .and_then(Json::as_arr)
+            .map(|a| a.len())
+            .unwrap_or(0);
+        assert!(skipped >= 2, "both links are reported as skipped: {value}");
+        assert!(
+            outside.join("evidence.json").exists(),
+            "a link is never followed out of the workspace"
+        );
+        assert!(
+            fs::symlink_metadata(&receipt_link).is_ok(),
+            "a link is never a removal target"
+        );
+        let _ = fs::remove_dir_all(&root);
+        let _ = fs::remove_dir_all(&outside);
+    }
+
+    #[test]
+    fn gc_refuses_on_a_lock_it_can_attribute_to_a_live_writer() {
+        let root = gc_repo("locked");
+        let host = crate::host::local_host_id().expect("the test host has an identity");
+        fs::write(
+            crate::lock::lock_path(&root),
+            format!(
+                "{} {} 0 testnonce gc host:{host}\n",
+                crate::lock::LOCK_SCHEMA,
+                std::process::id()
+            ),
+        )
+        .unwrap();
+        let value = cmd_gc(&root, Some(0), None, false).expect("a refusal is a document");
+        assert_eq!(value.get("code").and_then(Json::as_str), Some("LOCKED"));
         let _ = fs::remove_dir_all(&root);
     }
 

@@ -1191,6 +1191,160 @@ mod tests {
     }
 
     #[test]
+    fn every_optional_policy_field_has_an_explicit_default() {
+        // A policy that names only its schema is still a policy: every omitted
+        // field resolves to the documented default rather than to whatever the
+        // decoder happened to leave in an uninitialised variable.
+        let minimal = json::parse(r#"{"schema":"flow-config/1"}"#).unwrap();
+        let config = Config::from_json(&minimal).expect("a schema-only policy is complete");
+        assert_eq!(config.policy_version, POLICY_VERSION);
+        assert_eq!(config.execution_boundary, "local-trusted");
+        assert!(config.obligations.is_empty());
+        assert!(config.context_probes.is_empty());
+        assert!(!config.disabled);
+
+        let obligation =
+            json::parse(r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git"}]}"#)
+                .unwrap();
+        let config =
+            Config::from_json(&obligation).expect("args, required and timeout are optional");
+        assert!(config.obligations[0].args.is_empty());
+        assert!(config.obligations[0].required);
+        assert_eq!(config.obligations[0].timeout_s, 300);
+    }
+
+    #[test]
+    fn context_probes_round_trip_and_are_validated_as_lists_of_strings() {
+        let full = json::parse(
+            r#"{"schema":"flow-config/1","context_probes":[["rustc","-Vv"],["cargo","-V"]]}"#,
+        )
+        .unwrap();
+        let config = Config::from_json(&full).expect("a probe list of string lists is valid");
+        assert_eq!(config.context_probes.len(), 2);
+        // The writer must reproduce the probes it read: a policy that drops its
+        // probes on save would silently change the context identity.
+        let written = config.to_json();
+        assert_eq!(
+            Config::from_json(&written)
+                .expect("round trip")
+                .context_probes,
+            config.context_probes
+        );
+
+        for (label, text) in [
+            (
+                "a probe that is not a list",
+                r#"{"schema":"flow-config/1","context_probes":["rustc","-Vv"]}"#,
+            ),
+            (
+                "an empty probe",
+                r#"{"schema":"flow-config/1","context_probes":[[]]}"#,
+            ),
+            (
+                "a non-string probe argument",
+                r#"{"schema":"flow-config/1","context_probes":[["rustc",7]]}"#,
+            ),
+        ] {
+            let value = json::parse(text).unwrap();
+            let reason = Config::from_json(&value)
+                .err()
+                .unwrap_or_else(|| panic!("{label} must be refused"));
+            assert!(reason.contains("INVALID_POLICY"), "{label}: {reason}");
+        }
+    }
+
+    #[test]
+    fn the_decoder_refuses_every_malformed_policy_shape_by_name() {
+        let cases: &[(&str, &str, &str)] = &[
+            ("not an object", r#"[]"#, "the policy must be a JSON object"),
+            (
+                "empty policy version",
+                r#"{"schema":"flow-config/1","policy_version":""}"#,
+                "policy_version must not be empty",
+            ),
+            (
+                "non-string policy version",
+                r#"{"schema":"flow-config/1","policy_version":1}"#,
+                "policy_version must be a string",
+            ),
+            (
+                "non-string boundary",
+                r#"{"schema":"flow-config/1","execution_boundary":7}"#,
+                "execution_boundary must be a string",
+            ),
+            (
+                "obligation not an object",
+                r#"{"schema":"flow-config/1","obligations":[[]]}"#,
+                "every obligation must be an object",
+            ),
+            (
+                "program not a string",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":5}]}"#,
+                "obligation program must be a string",
+            ),
+            (
+                "id not a string",
+                r#"{"schema":"flow-config/1","obligations":[{"id":5,"program":"git"}]}"#,
+                "obligation id must be a string",
+            ),
+            (
+                "args not an array",
+                r#"{"schema":"flow-config/1","obligations":[{"id":"x","program":"git","args":"test"}]}"#,
+                "obligation args must be an array",
+            ),
+        ];
+        for (label, text, expected) in cases {
+            let value = json::parse(text).unwrap();
+            let reason = Config::from_json(&value)
+                .err()
+                .unwrap_or_else(|| panic!("{label} must be refused"));
+            assert!(reason.contains(expected), "{label}: {reason}");
+        }
+    }
+
+    #[test]
+    fn a_state_directory_that_is_a_plain_file_is_named_by_every_writer() {
+        let root = temp_root("state-as-file");
+        fs::write(root.join(".flow"), "not a directory").unwrap();
+        let config = Config::default();
+        let reason = save_config(&root, &config).expect_err("a file cannot hold the policy");
+        assert!(reason.contains("cannot create .flow"), "{reason}");
+        let record = json::parse(r#"{"schema":"flow-journal/1","event":"record"}"#).unwrap();
+        let reason = append_journal(&root, &record).expect_err("a file cannot hold the journal");
+        assert!(reason.contains("cannot create .flow"), "{reason}");
+        let receipt = json::parse(
+            r#"{"tree_oid":"0000000000000000000000000000000000000000","verification_scope":{"mode":"complete"}}"#,
+        )
+        .unwrap();
+        let reason = save_receipt(&root, &receipt).expect_err("a file cannot hold a receipt");
+        assert!(reason.contains("cannot create receipts dir"), "{reason}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_blob_store_refuses_a_collision_and_an_invalid_digest() {
+        let root = temp_root("blob-collision");
+        let bytes = b"first contents";
+        let digest = put_blob(&root, bytes).expect("the store accepts bytes");
+        assert_eq!(verified_blob(&root, &digest).unwrap(), bytes.to_vec());
+        // Someone replaced the object under its own name: that is a collision,
+        // never an alias for two contents.
+        let path = blob_path(&root, &digest).expect("a valid digest has a path");
+        fs::write(&path, b"other contents").unwrap();
+        let reason = put_blob(&root, bytes).expect_err("a replaced blob is a collision");
+        assert!(reason.contains("BLOB_COLLISION"), "{reason}");
+        let reason = verified_blob(&root, "not-a-digest").expect_err("a non-digest names nothing");
+        assert!(reason.contains("PROPOSAL_INTEGRITY"), "{reason}");
+        // A parent that is a plain file cannot hold a store entry.
+        let file = root.join("plain-file");
+        fs::write(&file, b"x").unwrap();
+        let reason =
+            create_once(&file.join("child"), b"data").expect_err("a file cannot hold an entry");
+        assert!(reason.contains("cannot create"), "{reason}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn measure_journal_append_cost() {
         // Measurement only: the CI gate forbids `ignored` tests, so this runs
         // when explicitly requested and is a no-op (a pass) otherwise.

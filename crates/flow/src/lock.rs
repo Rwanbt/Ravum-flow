@@ -667,6 +667,103 @@ mod tests {
     }
 
     #[test]
+    fn a_hostless_or_foreign_record_is_attributed_to_another_host() {
+        // A record written before the host token existed cannot be attributed to
+        // this machine: its pid space is not comparable, so `inspect` says so
+        // instead of claiming the writer is dead.
+        let root = temp_flow_dir("hostless");
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {} 0 deadbeef publish\n", std::process::id()),
+        )
+        .unwrap();
+        let info = inspect(&root);
+        assert!(info.present);
+        assert_eq!(info.attribution, "foreign", "{info:?}");
+        assert_eq!(info.pid, Some(std::process::id()));
+        // And it is never stolen, even though its pid is our own (which the
+        // "this process already holds it" check would otherwise report).
+        match acquire_lock(&root, "publish") {
+            Err(LockError::Held(m)) => assert!(m.contains("already holds"), "{m}"),
+            other => panic!("a host-less record naming our pid is still ours: {other:?}"),
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_steal_claimed_by_another_writer_is_waited_for_then_reported_unknown() {
+        let root = temp_flow_dir("claimed-steal");
+        let host = crate::host::local_host_id().expect("the test host has an identity");
+        // A provably dead owner on this host, and a marker that says someone else
+        // already owns its recovery. The second writer must not race it.
+        let dead = 4_194_304u32;
+        fs::write(
+            lock_path(&root),
+            format!("{LOCK_SCHEMA} {dead} 0 deadbeef publish host:{host}\n"),
+        )
+        .unwrap();
+        fs::write(
+            steal_marker_path(&lock_path(&root), "deadbeef"),
+            format!("{LOCK_SCHEMA} steal 1 0 other deadbeef\n"),
+        )
+        .unwrap();
+        let started = Instant::now();
+        let result = acquire_lock(&root, "publish");
+        match result {
+            Err(LockError::Unknown(m)) => assert!(m.contains("already claimed"), "{m}"),
+            other => panic!("a claimed recovery is never raced: {other:?}"),
+        }
+        assert!(
+            started.elapsed() >= STEAL_GRACE * 9 / 10,
+            "the second stealer must wait for the claimant: {:?}",
+            started.elapsed()
+        );
+        assert!(
+            lock_path(&root).is_file(),
+            "a refused steal leaves the dead record in place"
+        );
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn kill_liveness_answers_a_successful_probe_for_the_caller_group() {
+        // `kill -0 0` names the caller's own process group: a successful probe.
+        // This is the only portable way to observe the "probe says alive" branch
+        // without a /proc entry, and it proves the branch is not dead code.
+        assert_eq!(kill_liveness(0), Some(true));
+        // A pid that no process holds is provably gone: only that message is
+        // allowed to mean "dead".
+        assert_eq!(kill_liveness(4_194_304), Some(false));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_state_directory_that_cannot_be_written_is_an_io_refusal() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = temp_flow_dir("read-only");
+        let flow = root.join(".flow");
+        let mut perms = fs::metadata(&flow).unwrap().permissions();
+        perms.set_mode(0o555);
+        fs::set_permissions(&flow, perms).unwrap();
+        let result = acquire_lock(&root, "publish");
+        // Running as root ignores the permission bits; skip rather than lie.
+        if fs::write(flow.join("probe"), b"").is_err() {
+            match result {
+                Err(LockError::Io(m)) => assert!(m.contains("cannot create"), "{m}"),
+                other => panic!("an unwritable state directory is an IO refusal: {other:?}"),
+            }
+        } else {
+            println!("SKIP: this user can write to a 0o555 directory (running as root)");
+        }
+        let _ = fs::remove_file(flow.join("probe"));
+        let mut perms = fs::metadata(&flow).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(&flow, perms).unwrap();
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn a_lock_error_renders_its_message() {
         // A mutant that makes any of these render as "" would print an empty
         // error on the CLI: the operator would get no reason and no file name.
