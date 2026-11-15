@@ -105,7 +105,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
-| CI (head `2af4455`) | `gh run view 43726322606` | Linux **560**, Windows **549**, macOS **560** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.92 % lines / 90.38 % branches |
+| CI (head `28e80c7`) | `gh run view 43727797311` | Linux **560**, Windows **549**, macOS **560** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.96 % lines / 90.47 % branches |
 
 **Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
 
@@ -186,20 +186,20 @@ FBL-009 no longer counts an unreachable defensive branch as proof, and `CAPABILI
 | FBL-011 doctor diagnostic paths | **PARTIAL**; diagnostics, not persisted evidence |
 | FBL-008 host identity | **PARTIAL**; host name only, no boot id, PID reuse after reboot wedges the lock |
 | `commands.rs` modularisation (3.6k LOC) | **DONE**: `commands/mod.rs` (shared helpers, init/approve/doctor/status/reconcile/disable/propose/proposals/assemble, ~1.3k product lines) + `policy.rs` + `checkout.rs` + `run.rs` + `publish.rs` + `gc.rs` + `explain.rs`; behaviour-constant, full suite green |
-| Coverage gate | **CLOSED** on this line: 95.92 % lines / 90.38 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
+| Coverage gate | **CLOSED** on this line: 95.96 % lines / 90.47 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
 | Mutation | **RUN 2026-11-15** (`--bins`, lower bounds): `state` 85.5 %, `lock` 50.7 %, `proposal` 56.5 %, `scratch` 61.7 %, `commands-checkout` 68.0 %, `commands` 21.2 %, `commands-policy` 11.1 %. The low `commands*` rates are **by construction**: the workflow runs unit tests only and those modules are exercised by the integration suites. Two harness defects found and fixed (a moved file silently measured nothing; exit 3/timeouts treated as a broken campaign). CI stays report mode: no threshold yet |
 | Confirmatory S9 | **RUN 2026-11-15, NEGATIVE**: G median 4.925 s vs E 2.823 s, paired ratio 1.784, 10/10 pairs, p=0.000977 — the H4 criterion (≤0.70) failed. No productivity claim; see [the campaign summary](../../experiments/s9/CAMPAIGN-2026-11-15.md) |
 | **O3 workstream (`H1 = O3 complet`)** | **NOT IMPLEMENTED**: the delivered code is the O1 + O2 subset. O3 needs its own ADR, budget, threat model and P0 review; four shapes and their tradeoffs are compared in [FLOW-O3-PROPOSALS.md](FLOW-O3-PROPOSALS.md). No document may present O3 as delivered |
-| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43726322606`; coverage also green (see §9) |
+| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43727797311`; coverage also green (see §9) |
 
 ## 9. Final head, CI and verdict
 
-**Final code head:** `2af4455` (`fix(lock): attribute an explicit foreign host before probing its pid
-) plus this documentation commit. The PR is
+**Final head:** `28e80c7` (FBL-015 lock attribution, the completed `commands` split into
+`run`/`publish`/`gc`/`explain`, and the final numbers). The PR is
 **[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**, a **draft** against `dev`; no merge is
 performed. Tracking issue: [#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
 
-**CI on `2af4455` — run [`43726322606`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43726322606):**
+**CI on `28e80c7` — run [`43727797311`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43727797311):**
 
 | Job | Result |
 |---|---|
@@ -207,7 +207,7 @@ performed. Tracking issue: [#72](https://github.com/Rwanbt/Ravum-flow/issues/72)
 | `test windows-latest` | **success** — 549 executed, 0 ignored |
 | `test macos-latest` | **success** — 560 executed, 0 ignored |
 | `polyglot ubuntu-latest` / `polyglot windows-latest` | **success** / **success** |
-| `coverage (product-only gate)` | **success**: 95.92 % lines (5507/5741), 90.38 % branches (1034/1144), thresholds 95/90 unchanged, no waiver |
+| `coverage (product-only gate)` | **success**: 95.96 % lines (5509/5741), 90.47 % branches (1035/1144), thresholds 95/90 unchanged, no waiver |
 
 The branch is now mergeable **from a CI standpoint**: every required check is green on the head. It is
 not merged, because the remaining conditions are human and review acts, not code:
@@ -228,6 +228,7 @@ not merged, because the remaining conditions are human and review acts, not code
 `H4` = S9 thresholds and budget granted (campaign not yet run), `H6` = draft handoff authorized with
 no Ravum write, `H8` = review stop rule adopted, ADR-012 stays `PROPOSED` until after `G10`.
 `G10` and `GO_PRODUCTION` remain open.
+
 
 
 

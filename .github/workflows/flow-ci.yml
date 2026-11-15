@@ -91,8 +91,8 @@ jobs:
           # not run on Windows, so the floor is per-platform rather than a single
           # number that would silently shrink. Both numbers are measured, not
           # projected: **549 on Windows and 560 on Linux/macOS** (2026-11-15, the
-          # `executed_passed` line of each runner at head `2af4455`, run
-          # `43726322606`), 0 ignored. The floors move with the measured counts;
+          # `executed_passed` line of each runner at head `28e80c7`, run
+          # `43727797311`), 0 ignored. The floors move with the measured counts;
           # the macOS floor is the Unix count because every Unix-only gate
           # compiles and runs there.
           minimum=560
@@ -618,6 +618,7 @@ jobs:
           name: flow-coverage-lcov
           path: coverage-lcov.info
           if-no-files-found: warn
+
 
 
 

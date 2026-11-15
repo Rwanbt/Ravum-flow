@@ -17,8 +17,8 @@ owner's answers are kept verbatim there, including the one that departs from the
 `PRODUCTION_PARTIAL`.
 
 Context: the branch `feat/flow-production-hardening-fable` is green on every required CI check at
-head `2af4455` (run `43726322606`): 549 Windows / 560 Linux / 560 macOS executed, 0 ignored, and the
-product-only coverage gate at **95.92 % lines (5507/5741) / 90.38 % branches** with the thresholds
+head `28e80c7` (run `43727797311`): 549 Windows / 560 Linux / 560 macOS executed, 0 ignored, and the
+product-only coverage gate at **95.96 % lines (5509/5741) / 90.47 % branches** with the thresholds
 unchanged and no waiver. The three fixes found by the internal pre-review (unapproved context probes,
 publication of swapped/missing log evidence, `gc --keep` deleting fresh candidates) and the two
 CI-found concurrency defects (worktree-admin race, staging-link `nlink` race) are applied and green on
@@ -81,6 +81,8 @@ that head. The remaining blockers are the independent review and the O3 workstre
 `H4=grant`, `H6=draft`, `H8=adopt`, `ADR-012=ratify after G10`) or state different choices. The
 answers will be recorded verbatim in `docs/DECISION_REGISTER.md` with the date and the evidence they
 rely on.
+
+
 
 
 

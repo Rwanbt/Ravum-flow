@@ -45,7 +45,7 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   `experiments/s9/out/campaign-h4.json`.
 
 ### Changed
-- Coverage gate closed without lowering a threshold or adding a waiver: **95.92 % lines / 90.38 %
+- Coverage gate closed without lowering a threshold or adding a waiver: **95.96 % lines / 90.47 %
   branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 549 Windows / 560
   Linux / 560 macOS.
 - `commands.rs` is split into `commands/mod.rs` (shared helpers, init/approve/doctor/status/
@@ -366,6 +366,7 @@ macOS is not tested, performance/productivity is not proven.
 ## [0.1.0] — 2026-11-09 — verified-tree foundation (unreleased)
 - Exact-tree receipts, CAS publication, durable intent/outcome journal, `reconcile`, bounded
   obligations, scratch isolation, policy/context binding, adoption of the MPL-2.0 licence.
+
 
 
 

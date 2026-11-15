@@ -4,7 +4,7 @@
 here is not a claim; a number that is here names its head, its platform and its evidence. Historical
 reports keep their own dated numbers on purpose (a record that follows the code is not a record).
 
-**Head of the merged line:** `2af4455` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
+**Head of the merged line:** `28e80c7` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
 **Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.2`, zero runtime
 dependencies.
 
@@ -12,9 +12,9 @@ dependencies.
 
 | Platform | Executed | Failed | Ignored | Evidence |
 |---|---|---|---|---|
-| Windows x86_64 (MSVC) | **549** | 0 | 0 | CI run `43726322606`, job `test windows-latest` (`executed_passed=549`) |
-| Linux x86_64 (GNU) | **560** | 0 | 0 | CI run `43726322606`, job `test ubuntu-latest` (`executed_passed=560`) |
-| macOS arm64 | **560** | 0 | 0 | CI run `43726322606`, job `test macos-latest` (`executed_passed=560`) |
+| Windows x86_64 (MSVC) | **549** | 0 | 0 | CI run `43727797311`, job `test windows-latest` (`executed_passed=549`) |
+| Linux x86_64 (GNU) | **560** | 0 | 0 | CI run `43727797311`, job `test ubuntu-latest` (`executed_passed=560`) |
+| macOS arm64 | **560** | 0 | 0 | CI run `43727797311`, job `test macos-latest` (`executed_passed=560`) |
 | Windows, local | 549 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
 
 Differences are platform gates; the counts **include tests that print a runtime `SKIP` and return**.
@@ -34,7 +34,7 @@ any `ignored` count fails the build).
 
 | Platform | Gate | Result | Evidence |
 |---|---|---|---|
-| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43726322606`: **95.92 % lines (5507/5741) / 90.38 % branches (1034/1144)** |
+| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43727797311`: **95.96 % lines (5509/5741) / 90.47 % branches (1035/1144)** |
 
 The measurement is `cargo-llvm-cov --all-targets --branch` with
 `--ignore-filename-regex '[\/]tests[\/]'`, then `analyze_lcov.py --product-only`. Test code never
@@ -150,6 +150,9 @@ negative result for this workload, not a universal ranking.
 Update it when a head changes the numbers, and cite the CI run id. Do not copy a number from this
 table into prose without its platform and its evidence: that is how four contradictory test counts
 appeared three times (R2-06, waves 5 and 8, then again on 2026-11-13).
+
+
+
 
 
 

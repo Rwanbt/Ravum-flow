@@ -1,7 +1,7 @@
 # Ravum Flow
 > **Status: `0.2.0-rc.2` merged into `dev` and `main`; gate verdict `PRODUCTION_PARTIAL` — local-trusted, not released.**  
 > `flow` is a small local CLI that verifies an exact Git tree and publishes it behind a compare-and-swap receipt. It is **not** a VCS, a build scheduler or a sandbox, and no ADR/RFC is ratified.  
-> **Measured on this line:** 549 tests on Windows, 560 on Linux, 560 on macOS (0 ignored, 152 named gates); the product-only coverage gate (95 % lines / 90 % branches) is green in CI — 95.92 % / 90.38 % on Linux, no waiver; a 25 000-file repository was verified and published end to end. The open gaps are listed in the [2026-11-13 verdict](docs/reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) and every number is sourced in [MEASUREMENTS](docs/MEASUREMENTS.md).  
+> **Measured on this line:** 549 tests on Windows, 560 on Linux, 560 on macOS (0 ignored, 152 named gates); the product-only coverage gate (95 % lines / 90 % branches) is green in CI — 95.96 % / 90.47 % on Linux, no waiver; a 25 000-file repository was verified and published end to end. The open gaps are listed in the [2026-11-13 verdict](docs/reviews/FLOW-PRODUCTION-VERDICT-2026-11-13.md) and every number is sourced in [MEASUREMENTS](docs/MEASUREMENTS.md).  
 > Planning baseline: **V6 consolidated after Claude review (9 November 2026)**. All Flow ADRs/RFCs remain **PROPOSED**, never automatically accepted.
 
 **Ravum Flow** is an independent, local-first, Git-compatible and language-agnostic proposed workflow for humans and AI coding agents. Its purpose is to reduce **time to a verified deliverable**, preserve user edits, attribute concurrent proposals and avoid *mandatory persistent* Git worktrees **where safe and useful**.
@@ -136,6 +136,7 @@ gitlinks, escaping symlinks, reserved names) are refused, not repaired.
 H1 select a provisional option (OPEN); H2 licence — **decided by the owner on 2026-11-09: MPL-2.0** (provenance/clean-room review still required before reusing external source); H3 Windows/Linux sandbox guarantee (OPEN); H4 S9 confirmatory thresholds and budget (OPEN — the exploratory pilot ran without them); H5 disposable R0 fixtures (**granted 2026-11-09** by the owner for this branch); H6 P0 handoff to the separate Ravum session (OPEN); H7 internal-first use (OPEN); H8 stop rule for documentary reviews (OPEN). See the decision register.
 
 **License:** [Mozilla Public License 2.0](LICENSE) applies to original Ravum Flow material licensed by its rightsholders. Third-party materials retain their existing license terms. The H2 provenance/ownership and clean-room review remains open; no Ravum source may be copied into Flow without separate rights review.
+
 
 
 
