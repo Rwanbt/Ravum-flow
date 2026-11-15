@@ -41,6 +41,11 @@ Git, unsourced claim, P0 still open at the verdict).
 | `9c86ca2` | fix(run,gc,lock,context): per-run evidence, serialized gc, host-aware lock, richer context (FBL-002..005, FBL-008, FBL-011) |
 | `d3fcc9c` | fix(policy,publish): strict policy decoder and receipt-candidate binding (FBL-006, FBL-007) |
 | `4087e0e` | fix(privacy,evidence): relative persisted paths and journal cost measurement (FBL-011, FBL-012) |
+| `54ea806` | test(hardening): close the coverage gate on the new store, lock and publish edges |
+| `c084a20` | test(hardening): pin the G4 context probe, aggressive gc and legacy-receipt gates |
+| `ac38bfb` | test(hardening): expect the platform's honest host identity when no fallback exists |
+| `9baa72b` | fix(scratch): retry git's unlocked worktree-admin race instead of failing the run (FBL-013) |
+| `3b0fb6a` | style(scratch): restore the file's trailing newline after the clippy fix |
 | final HEAD | recorded at the end of this wave (see §9) |
 
 ## 4. FBL matrix
@@ -52,9 +57,9 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 |---|---|---|---|---|---|
 | FBL-001 | P0 | CONFIRMED_BY_TEST (G1 reproduced: 15/15 rounds multi-admit, 1 digest break) | patch bytes are content-addressed (`.flow/blobs/<2>/<sha256>`); the record is published once (`create_once` hard link); `load` re-hashes the patch; `assemble` rebuilds every proposal tree and change list before conflict detection | `tests/concurrency.rs::g1_concurrent_proposals_same_key_have_exactly_one_winner`: 15 rounds × 8 real processes, **exactly 1 ADMITTED + 7 IDEMPOTENCY_CONFLICT per round**, disk digest equals `content_digest`; tampered/missing blobs → `PROPOSAL_INTEGRITY` (`tests/error_paths.rs`) | **CLOSED** |
 | FBL-002 | P1 | CONFIRMED_BY_CODE | unique `run_id`; logs under `logs/<tree>/<run_id>/`; the sealed receipt records the run id and the sha256 of every log; an active marker is removed on every exit; `explain` verifies the digests | `tests/concurrency.rs::g2_concurrent_runs_keep_separate_integrity_bound_evidence` (2 concurrent runs, 2 run dirs, receipt digests verified, swapped log → `LOG_INTEGRITY_INVALID`) | **CLOSED** |
-| FBL-003 | P1 | CONFIRMED_BY_CODE, NOT_REPRODUCED (thread harness 0/60) | the steal is claimed by a per-generation marker (`lock.steal.<nonce>`); only that marker's creator may remove the exact observed lock; a dead lock is stolen only when the record names this host | `tests/concurrency.rs::g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder`: 8 real `publish` processes over a dead lock → 1 PUBLISHED, 7 named refusals, exactly 1 intent + 1 outcome, no lock artifact; `a_live_old_lock_is_never_stolen`, `a_foreign_host_lock_is_never_stolen`, `a_hostless_dead_lock_is_refused_not_stolen` | **CLOSED (by code + multi-process stress)**. The pre-fix overlap itself was never reproduced; G3 proves exclusion after the fix, not the old race |
-| FBL-004 | P1 | CONFIRMED_BY_CODE | `flow-context/3` hashes allowlisted env **values** (digests only), resolved obligation program bytes, and declared `context_probes`; publish recomputes it | `tests/concurrency.rs::g4_environment_change_between_run_and_publish_refuses_context_mismatch` (PATH change → `CONTEXT_MISMATCH`, ref unmoved) | **CLOSED** |
-| FBL-005 | P2 | CONFIRMED_BY_CODE | `gc` takes the publish/reconcile lock; it refuses `RUN_ACTIVE` while a live run marker exists and clears only provably dead markers; kept partial receipts keep their tree's logs | `tests/cli.rs::gc_refuses_while_a_live_run_marker_exists`; existing gc suite (dry-run, keep, age, pending intents, links) still green | **CLOSED**, with the documented race: `run` does not hold the lock (it is long-lived); a run that starts after gc's scan creates its logs afterwards and is never deleted |
+| FBL-003 | P1 | CONFIRMED_BY_CODE, NOT_REPRODUCED (thread harness 0/60) | the steal is claimed by a per-generation marker (`lock.steal.<nonce>`); only that marker's creator may remove the exact observed lock; a dead lock is stolen only when the record names this host; liveness is re-checked immediately before the removal | `tests/concurrency.rs::g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder` (8 real `publish` processes over a dead lock → 1 PUBLISHED, 7 named refusals, exactly 1 intent + 1 outcome, no lock artifact); `a_live_old_lock_is_never_stolen`, `a_foreign_host_lock_is_never_stolen`, `a_hostless_dead_lock_is_refused_not_stolen`; deterministic interleaving: `lock::tests::a_steal_claimed_by_another_writer_is_waited_for_then_reported_unknown` (a second stealer waits the full grace and never deletes the observed lock) and `kill_liveness_answers_a_successful_probe_for_the_caller_group` | **CLOSED (by code + multi-process stress + deterministic claim test)**. The pre-fix overlap itself was never reproduced; G3 proves exclusion after the fix, not the old race |
+| FBL-004 | P1 | CONFIRMED_BY_CODE | `flow-context/3` hashes allowlisted env **values** (digests only), resolved obligation program bytes, and declared `context_probes`; publish recomputes it | `tests/concurrency.rs::g4_environment_change_between_run_and_publish_refuses_context_mismatch` (PATH change → `CONTEXT_MISMATCH`, ref unmoved) and `tests/cli.rs::a_changed_context_probe_refuses_publication_without_a_policy_change`: the probe answers differently, the policy file is untouched, and publication is refused with `CONTEXT_MISMATCH` | **CLOSED** |
+| FBL-005 | P2 | CONFIRMED_BY_CODE | `gc` takes the publish/reconcile lock; it refuses `RUN_ACTIVE` while a live run marker exists and clears only provably dead markers; kept partial receipts keep their tree's logs; a plain file under `logs/` is removed as a file | `tests/cli.rs::gc_refuses_while_a_live_run_marker_exists` and `gc_refuses_while_a_verification_is_actually_running` (a real `flow run` is observed writing evidence, `gc` refuses `RUN_ACTIVE`, then succeeds after the marker is gone); the extended unit suite: partial receipts (`gc_collects_partial_receipts_plain_log_files_and_unnameable_candidates`, `gc_keeps_fresh_partial_receipts_candidates_and_logs_and_ages_the_rest`), markers (`gc_interprets_run_markers_and_clears_only_the_provably_stale_ones`), lock (`gc_refuses_on_a_lock_it_can_attribute_to_a_live_writer`) and links (`gc_refuses_to_follow_a_link_in_receipts_or_logs`) | **CLOSED**, with the documented race: `run` does not hold the lock (it is long-lived); a run that starts after gc's scan creates its logs afterwards and is never deleted |
 | FBL-006 | P2 | CONFIRMED_BY_CODE (= AUD-03) | `Config::from_json` is strict: closed key set, exact types, `timeout_s` integer in `[1, 86400]`, `execution_boundary` enum, probes shape; unknown/mistyped input → `INVALID_POLICY` | `state::tests::strict_policy_decoder_refuses_every_silent_coercion` (11 negative cases), `a_config_whose_obligations_are_not_a_list_is_refused` | **CLOSED** (G6) |
 | FBL-007 | P2 | CONFIRMED_BY_CODE (= AUD-04) | `publish --candidate` requires `receipt.candidate_id == candidate` (`RECEIPT_CANDIDATE_MISMATCH`); `receipt_candidate_id` is exposed in the plan, the published output and the journal intent | `tests/proposals.rs::m11_publish_binds_the_receipt_to_the_named_candidate` (C1 and C2 build the same tree; C2 with C1's receipt is refused; C1 publishes) | **CLOSED** |
 | FBL-008 | P2 | HYPOTHESIS | the lock record now carries a host token; a foreign or host-less record is `LOCK_UNKNOWN`, never stolen; same-host dead locks are recovered | concurrency tests above | **PARTIAL**: host identity is the host name hash, not a boot id; PID reuse after a reboot on the same host is still a wedge, and two machines with the same host name are indistinguishable. Multi-host `.flow` is **not supported** (G8) |
@@ -62,6 +67,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | FBL-010 | P2 | CONFIRMED_BY_CODE | proposal ids are recomputed at load; candidate ids are recomputed from base+tree+proposal list; records carry a seal; `assemble` re-derives each tree and change list; a tampered record is refused | `tests/error_paths.rs` (tampered candidate list/tree → `integrity digest`; tampered blob → `PROPOSAL_INTEGRITY`), `m11` | **CLOSED** |
 | FBL-011 | P3 | CONFIRMED_BY_CODE | persisted evidence uses workspace-relative paths: `patch_blob`, `receipt_path`, `journal`, `loc_path` in refusals, status config path; proposal records no longer store an absolute `patch_path` | relative paths asserted in the G1/G2 outputs; full suite | **PARTIAL**: `doctor` diagnostic *details* may still print absolute host paths (not persisted evidence); program resolution paths are hashed, never stored |
 | FBL-012 | P3 | CONFIRMED_BY_CODE (documented) | measured: `append_journal` ≈ **9 ms/append**, fsync-dominated, 2 000 appends = 17.97 s / 274 KB on this host; the per-append cost is flat in the measured range, so no quadratic behaviour was observed there | `state::measure_journal_append_cost` (env-gated with `FLOW_JOURNAL_BENCH=1`, counts as a pass otherwise) | **DEFERRED** (P3): segmentation/compaction is a separate, migration-bearing change; it is not required for the local-trusted P0/P1 envelope. No performance claim beyond the measurement |
+| FBL-013 | P2 | **DISCOVERED_BY_CI** (run `43704406911`, `g2` on Ubuntu) | `git worktree add` is not internally locked: it can read another process's half-written `.git/worktrees/<name>/commondir` while that process runs `git worktree prune`, and the loser failed a valid run with `SCRATCH_REFUSED` ("failed to read .../commondir"). `add_worktree` now retries exactly that transient error a bounded number of times and refuses by name when it persists | `tests/cli.rs::a_transient_worktree_admin_race_is_retried_instead_of_failing_the_run` and `an_unresolved_worktree_admin_race_refuses_the_run_by_name`, both driving a real `git` shim that fails the first/ every `worktree add` with Git's own message | **CLOSED (by fault injection)**. The underlying Git race is not removed by Flow; it is tolerated, and a host with a persistently broken worktree admin still fails closed |
 
 ## 5. Gates
 
@@ -69,11 +75,11 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 |---|---|
 | G1 | **PASS** — `g1_concurrent_proposals_same_key_have_exactly_one_winner` (15×8 real processes, one winner, conflict for losers, digest on disk); `assemble` refuses a corrupted/missing patch with `PROPOSAL_INTEGRITY` |
 | G2 | **PASS** — `g2_concurrent_runs_keep_separate_integrity_bound_evidence` (separate run dirs, receipt log digests verified, tamper detected by `explain`) |
-| G3 | **PASS (multi-process)** — `g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder`; never two holders observed, one intent/outcome; foreign/host-less locks refused |
-| G4 | **PASS** — `g4_environment_change_between_run_and_publish_refuses_context_mismatch`; program bytes and declared probes are part of the context (code-read + hashing) |
-| G5 | **PASS (bounded)** — tampered proposal blob, proposal record, candidate record, receipt and log are refused by name (`PROPOSAL_INTEGRITY`, `CANDIDATE_INTEGRITY`, `RECEIPT_INTEGRITY`, `LOG_INTEGRITY_INVALID`) |
-| G6 | **PASS** — strict policy decoder matrix (11 negative cases) |
-| G7 | **LOCAL PASS, CI PENDING** — `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --locked --offline --all-targets` green locally on Windows; GitHub Actions Linux/Windows/macOS results are recorded in §9 once the branch is pushed |
+| G3 | **PASS (multi-process + deterministic claim)** — `g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder`; never two holders observed, one intent/outcome; foreign/host-less locks refused; `a_steal_claimed_by_another_writer_is_waited_for_then_reported_unknown` pins the TOCTOU window deterministically: the second stealer waits `STEAL_GRACE` and never deletes a lock another process claimed |
+| G4 | **PASS (environment, program bytes and probes)** — `g4_environment_change_between_run_and_publish_refuses_context_mismatch`; `a_changed_context_probe_refuses_publication_without_a_policy_change` changes only what a declared probe answers and publication is refused with `CONTEXT_MISMATCH` |
+| G5 | **PASS (bounded)** — tampered proposal blob, proposal record, candidate record, receipt and log are refused by name (`PROPOSAL_INTEGRITY`, `CANDIDATE_INTEGRITY`, `RECEIPT_INTEGRITY`, `LOG_INTEGRITY_INVALID`); `assembly_revalidates_the_record_it_applies` covers the four tampered-record shapes |
+| G6 | **PASS** — strict policy decoder matrix (11 negative cases, plus omitted-field defaults and probe shapes) |
+| G7 | **PASS** — `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --locked --offline --all-targets` green locally on Windows; CI Linux/Windows/macOS and both polyglot jobs green in run `43705496705` (see §9) |
 | G8 | **DOCUMENTED** — local-trusted, single host; foreign/host-less locks are refused; no multi-host sync, no OS sandbox, no signed receipts |
 
 ## 6. Local evidence (Windows 11, 2026-11-15)
@@ -81,14 +87,14 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Check | Command | Result |
 |---|---|---|
 | Baseline suite | `cargo test --locked --offline --all-targets` | **489 passed**, 0 failed |
-| Hardened suite | same command | **507 passed**, 0 failed (see §9 for the exact head) |
+| Hardened suite | same command | **537 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` | exit 0 |
-| Release suite | `cargo test --release --locked --offline --all-targets` | **507 passed**, 0 failed, 0 ignored. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
+| Release suite | `cargo test --release --locked --offline --all-targets` | **507 passed**, 0 failed, 0 ignored at the pre-test-wave head. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
 | Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
-| CI (head `8283c9a`) | `gh run view 43668847304` | Linux, Windows, macOS and both polyglot jobs **green**; `coverage` **red** at 92.50 % lines / 86.04 % branches (gates 95/90) |
+| CI (head `3b0fb6a`) | `gh run view 43705496705` | Linux **546**, Windows **537**, macOS **546** executed, 0 ignored; both polyglot jobs **green**; `coverage` **green** at 95.98 % lines / 90.69 % branches |
 
 **Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
 
@@ -100,9 +106,18 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
    definitive "no such task" answers, a steal is re-checked against liveness before deleting anything,
    and a claimed recovery has its own 15 s grace window (`STEAL_GRACE`).
 
-**Test-count caveat.** 489 → 507 is +18 executed: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict policy test, the host-identity tests (foreign/host-less), the measurement test, and six unit tests covering the store, receipt fields, host identity, patch bytes and the context helpers (the shared host test runs in three suites). No test was deleted or
-weakened; four existing tests were adapted to the new authoritative storage (blob path, run
-subdirectory, host token), and each adaptation keeps or strengthens the asserted failure mode.
+**A third defect was found by CI on Ubuntu (FBL-013):** two concurrent runs in one repository can
+make `git worktree add` read another process's half-written `.git/worktrees/<name>/commondir` while
+that process prunes; the run was refused with `SCRATCH_REFUSED` although nothing was wrong with the
+requested tree. `add_worktree` now retries exactly that transient error (≤3 attempts, 150 ms apart)
+and refuses by name when it persists; two fault-injection tests drive both outcomes.
+
+**Test-count caveat.** 489 → 537 is +48 executed (Linux 546: the same suite plus the Unix-only
+gates). The test wave covers the store, lock, host, context, revalidation, gc, publish and migrate
+edges; no test was deleted or weakened, and four existing tests were adapted to the new authoritative
+storage (blob path, run subdirectory, host token), each adaptation keeping or strengthening the
+asserted failure mode. Raising the CI floors from 482/479/479 to 537/546/546 is the same change: a
+floor that does not move with the measured count stops protecting it.
 
 ## 7. Threat model and limits
 
@@ -126,41 +141,38 @@ subdirectory, host token), and each adaptation keeps or strengthens the asserted
 | FBL-011 doctor diagnostic paths | **PARTIAL**; diagnostics, not persisted evidence |
 | FBL-008 host identity | **PARTIAL**; host name only, no boot id, PID reuse after reboot wedges the lock |
 | `commands.rs` modularisation (3.6k LOC) | **DEFERRED**; behaviour-constant refactor, separate change |
-| Coverage/mutation gates | not re-run locally; CI owns them (95/90 coverage, mutation report mode) |
+| Coverage gate | **CLOSED** on this line: 95.98 % lines / 90.69 % branches on the CI Linux runner, no waiver, thresholds unchanged (were 92.46 / 86.04 before the test wave) |
+| Mutation | not re-run on the hardening modules; CI `flow-mutation.yml` stays report-mode. The new tests are not a mutation score |
 | Confirmatory S9 | still `H4` open; no productivity claim is made |
-| Multi-OS CI | **green on the code head**: Linux, Windows, macOS and both polyglot jobs pass in run `43668847304`; the coverage gate is red (see §9) |
+| Multi-OS CI | **green on the head**: Linux, Windows, macOS and both polyglot jobs pass in run `43705496705`; coverage also green (see §9) |
 
 ## 9. Final head, CI and verdict
 
-**Final code head:** `8283c9a` (`test(hardening): cover the new store, host, context and revalidation
-paths`), plus this documentation commit. The PR is **[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**,
-a **draft** against `dev`; no merge is performed. Tracking issue:
-[#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
+**Final code head:** `3b0fb6a` (`style(scratch): restore the file's trailing newline after the clippy
+fix`), plus this documentation commit. The PR is
+**[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**, a **draft** against `dev`; no merge is
+performed. Tracking issue: [#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
 
-**CI on `8283c9a` — run [`43668847304`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43668847304):**
+**CI on `3b0fb6a` — run [`43705496705`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43705496705):**
 
 | Job | Result |
 |---|---|
-| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** |
-| `test windows-latest` | **success** |
-| `test macos-latest` | **success** |
+| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** — 546 executed, 0 ignored |
+| `test windows-latest` | **success** — 537 executed, 0 ignored |
+| `test macos-latest` | **success** — 546 executed, 0 ignored |
 | `polyglot ubuntu-latest` / `polyglot windows-latest` | **success** / **success** |
-| `coverage (product-only gate)` | **failure**: lines 92.50 % (gate 95 %), branches 86.04 % (gate 90 %) |
+| `coverage (product-only gate)` | **success**: 95.98 % lines (5372/5597), 90.69 % branches (1003/1106), thresholds 95/90 unchanged, no waiver |
 
-The coverage gate is the one red required check. The new hardening code is ~1 000 product lines with
-many error/refusal branches; the two test waves raised coverage from 91.50/85.22 to 92.50/86.04 but did
-not close the gate. **A red required check is a stop condition**: the branch is not mergeable and the
-verdict is not promoted. Closing it is a bounded follow-up (targeted tests for the remaining refusal
-branches), not a design change; it was not done here because it is not required to *establish* the
-P0/P1 corrections, and the branch must not pretend the gate is green.
+The branch is now mergeable **from a CI standpoint**: every required check is green on the head. It is
+not merged, because the remaining conditions are human and review acts, not code:
 
 **Verdict: `PRODUCTION_PARTIAL`.**
 - No P0 remains (FBL-001 closed by G1).
-- All P1 findings are treated (FBL-002/003/004 closed; FBL-005 closed as P2), and all OS test jobs
-  are green on the code head.
-- The coverage gate is red, P2/P3 residuals are listed, and the human decisions are open: the branch
-  is **not** `PRODUCTION_READY_LOCAL_TRUSTED`. Promotion needs a green coverage gate on this line,
-  the human decisions below, and an independent final review.
+- All P1 findings are treated (FBL-002/003/004 closed; FBL-005 closed as P2), and every OS test job,
+  the polyglot jobs and the coverage gate are green on the head.
+- P2/P3 residuals are listed in §8, and the human decisions are open: the branch is **not**
+  `PRODUCTION_READY_LOCAL_TRUSTED`. Promotion needs the human decisions below, the ratification of
+  ADR-012 (or its rejection), and an independent final review (`G10`).
 - `NOT_READY` would be the verdict if a P0 were still open; it is not.
 
 **Human decisions still required (not taken by this wave):** `H1`, `H3`, `H4`, `H6`, `H8`,

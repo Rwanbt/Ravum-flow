@@ -90,16 +90,13 @@ jobs:
           # junction-helper gate) do not run on Linux, and the Unix-only tests do
           # not run on Windows, so the floor is per-platform rather than a single
           # number that would silently shrink. Both numbers are measured, not
-          # projected: **480 on Windows and 477 on Linux** (2026-11-11, wave 9,
-          # the `executed_passed` line of each runner at head `00f87b7`), 0
-          # ignored. Wave 8 measured 468/470; wave 9 adds eight tests (six
-          # cross-platform, one Windows-only, one Windows-only `.git` retry), so
-          # the floors move with the measured counts.
-          # macOS measured 479 executed tests on its first run (same count as Linux:
-          # the Unix-only gates all compile and run there). The floor is exact, not
-          # hedged, because the runner reported it.
-          minimum=479
-          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=482; fi
+          # projected: **537 on Windows and 546 on Linux/macOS** (2026-11-15, the
+          # `executed_passed` line of each runner at head `3b0fb6a`, run
+          # `43705496705`), 0 ignored. The floors move with the measured counts;
+          # the macOS floor is the Unix count because every Unix-only gate
+          # compiles and runs there.
+          minimum=546
+          if [ "${RUNNER_OS}" = "Windows" ]; then minimum=537; fi
           if [ "$passed" -lt "$minimum" ]; then
             echo "::error::expected at least $minimum executed passing tests, got $passed"
             exit 1

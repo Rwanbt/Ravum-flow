@@ -2,6 +2,27 @@
 
 All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 
+## [Unreleased] — post-Fable production hardening (branch `feat/flow-production-hardening-fable`)
+
+### Fixed
+- **FBL-001 (P0)**: a patch is content-addressed (`.flow/blobs/<2>/<sha256>`) and its proposal record is
+  published exactly once; a losing concurrent writer re-reads and reports `IDEMPOTENCY_CONFLICT`
+  instead of leaving its bytes under another writer's metadata.
+- **FBL-002**: every `run` has a `run_id`; logs live under `logs/<tree>/<run_id>/` and the sealed
+  receipt records their sha256; `explain` reports `LOG_INTEGRITY_INVALID` for a swapped log.
+- **FBL-003**: a dead lock is stolen only through a per-generation marker, with a liveness re-check
+  before the removal and a bounded grace window for a claimed recovery.
+- **FBL-004/FBL-006/FBL-007/FBL-010**: `flow-context/3` (env values, resolved program bytes, declared
+  probes), strict policy decoding, receipt↔candidate binding and re-derived record identities.
+- **FBL-013 (found by CI)**: `git worktree add` racing another process's `worktree prune` no longer
+  fails a valid run; the transient "commondir" error is retried a bounded number of times.
+
+### Changed
+- Coverage gate closed without lowering a threshold or adding a waiver: **95.98 % lines / 90.69 %
+  branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 537 Windows / 546
+  Linux / 546 macOS.
+- `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
+
 ## [0.2.0-rc.2] — 2026-11-13 — the merged, measured line
 
 ### Added

@@ -4,7 +4,7 @@
 here is not a claim; a number that is here names its head, its platform and its evidence. Historical
 reports keep their own dated numbers on purpose (a record that follows the code is not a record).
 
-**Head of the merged line:** `447b0c6` (2026-11-13), plus the documentation commits on top.
+**Head of the merged line:** `3b0fb6a` (2026-11-15, branch `feat/flow-production-hardening-fable`), plus the documentation commits on top.
 **Toolchain:** `rustc 1.95.0`, pinned by `rust-toolchain.toml`; crate `flow 0.2.0-rc.2`, zero runtime
 dependencies.
 
@@ -12,30 +12,37 @@ dependencies.
 
 | Platform | Executed | Failed | Ignored | Evidence |
 |---|---|---|---|---|
-| Windows x86_64 (MSVC) | **482** | 0 | 0 | CI run `43484905763`, job `test windows-latest` (`executed_passed=482`) |
-| Linux x86_64 (GNU) | **479** | 0 | 0 | CI run `43484905763`, job `test ubuntu-latest` (`executed_passed=479`) |
-| macOS arm64 | **479** | 0 | 0 | CI run `43484905763`, job `test macos-latest` (`executed_passed=479`; the job then failed on the *packaging* step, which macOS does not have yet) |
-| Windows, local | 482 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
+| Windows x86_64 (MSVC) | **537** | 0 | 0 | CI run `43705496705`, job `test windows-latest` (`executed_passed=537`) |
+| Linux x86_64 (GNU) | **546** | 0 | 0 | CI run `43705496705`, job `test ubuntu-latest` (`executed_passed=546`) |
+| macOS arm64 | **546** | 0 | 0 | CI run `43705496705`, job `test macos-latest` (`executed_passed=546`) |
+| Windows, local | 537 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
 
 Differences are platform gates, not skips: one Windows-only `PATH`/`PATHEXT` gate, and the
-non-UTF-8 checkout gate that skips on APFS because the filesystem refuses such a name.
+non-UTF-8 checkout gate that skips on APFS because the filesystem refuses such a name; the nine
+Unix-only tests (host-identity fallbacks, `kill` liveness, a read-only state directory, link
+refusal in `gc`, the Git fault-injection shims, the context-probe gate and the aggressive `gc`
+during a run) compile and run on Linux and macOS.
 **144 named gates** are required by name in CI; each one was verified to resolve to a real
 `fn <name>` in `crates/flow`.
 
-Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 482 / 479 / 479 and
+Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 537 / 546 / 546 and
 any `ignored` count fails the build).
 
 ## 2. Coverage (product-only, branch counters)
 
 | Platform | Gate | Result | Evidence |
 |---|---|---|---|
-| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43484905763` |
+| Linux (CI runner) | lines ≥ 95 %, branches ≥ 90 % | **green, no waiver** | CI job `coverage (product-only gate)`, run `43705496705`: **95.98 % lines (5372/5597) / 90.69 % branches (1003/1106)** |
 
 The measurement is `cargo-llvm-cov --all-targets --branch` with
 `--ignore-filename-regex '[\/]tests[\/]'`, then `analyze_lcov.py --product-only`. Test code never
 enters the product view. The last quoted figures on an earlier head were **95.91 % lines /
-93.68 % branches** (`00f87b7`, see [wave 9](reviews/FLOW-QUALITY-WAVE9.md)); the gate — not the
-decimal — is what CI enforces.
+93.68 % branches** (`00f87b7`, see [wave 9](reviews/FLOW-QUALITY-WAVE9.md)) — that head had no
+content-addressed store, run-scoped logs, host-tokened lock or strict policy decoder; the gate,
+not the decimal, is what CI enforces. The hardening wave closed the gate it had opened: the
+2026-11-15 measurements before the test wave were 92.46 % / 86.04 %, and the added tests raise
+the same instrumented tree above 95/90 without lowering a threshold or adding a waiver.
+
 
 ## 3. Mutation
 
@@ -69,13 +76,24 @@ debug binary only**. That is a limit, not a claim.
 ## 5. Retention (`flow gc`)
 
 Opt-in: `--keep N` and/or `--max-age-days D`, `--dry-run` to plan. Never collects the journal, the
-config, the adoption record or the proposals; refuses while a publication intent is unresolved.
-Covered by `gc_refuses_without_an_explicit_policy`, `gc_keeps_the_newest_receipts_and_their_logs`,
+config, the adoption record or the proposals; refuses while a publication intent is unresolved or
+while a run marker is live. A plain file under `logs/` is collected as a file (calling
+`remove_dir_all` on it without a type check is a Windows `ERROR_DIRECTORY` failure, found by the
+new tests). Covered by `gc_refuses_without_an_explicit_policy`,
+`gc_keeps_the_newest_receipts_and_their_logs`,
 `gc_dry_run_reports_the_same_plan_and_removes_nothing`,
 `gc_removes_old_evidence_and_keeps_fresh_evidence`,
 `gc_never_removes_a_file_it_cannot_name_or_a_link`,
-`gc_refuses_while_a_publication_intent_is_unresolved`, and the CLI gate
-`gc_requires_an_explicit_policy_and_reports_its_plan`.
+`gc_refuses_while_a_publication_intent_is_unresolved`,
+`gc_collects_partial_receipts_plain_log_files_and_unnameable_candidates`,
+`gc_keeps_fresh_partial_receipts_candidates_and_logs_and_ages_the_rest`,
+`gc_interprets_run_markers_and_clears_only_the_provably_stale_ones`,
+`gc_refuses_on_a_lock_it_can_attribute_to_a_live_writer`,
+`gc_refuses_to_follow_a_link_in_receipts_or_logs`,
+`gc_refuses_while_a_verification_is_actually_running`, the CLI gate
+`gc_requires_an_explicit_policy_and_reports_its_plan`, the usage gate
+`gc_refuses_retention_values_it_cannot_apply`, and the run-marker gate
+`gc_refuses_while_a_live_run_marker_exists`.
 
 ## 6. Real-project pilot (2026-11-13)
 
