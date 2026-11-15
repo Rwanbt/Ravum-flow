@@ -213,9 +213,17 @@ fn read_logs(repo: &Path, name: &str) -> String {
     let dir = repo.join(".flow").join("logs");
     if let Ok(trees) = fs::read_dir(&dir) {
         for tree in trees.flatten() {
-            let path = tree.path().join(name);
-            if let Ok(content) = fs::read_to_string(&path) {
+            // New layout: `logs/<tree>/<run_id>/<name>`; legacy: `logs/<tree>/<name>`.
+            let direct = tree.path().join(name);
+            if let Ok(content) = fs::read_to_string(&direct) {
                 text.push_str(&content);
+            }
+            if let Ok(runs) = fs::read_dir(tree.path()) {
+                for run in runs.flatten() {
+                    if let Ok(content) = fs::read_to_string(run.path().join(name)) {
+                        text.push_str(&content);
+                    }
+                }
             }
         }
     }

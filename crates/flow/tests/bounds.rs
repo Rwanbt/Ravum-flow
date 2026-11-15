@@ -374,12 +374,16 @@ fn obligation_stdout_is_bounded_through_the_cli() {
         "the receipt must record stdout_truncated: {receipt}"
     );
 
-    let log = repo
-        .path
-        .join(".flow")
-        .join("logs")
-        .join(&tree)
-        .join("flood.stdout.log");
+    // Logs are written per execution under `<tree>/<run_id>/`: pick the run
+    // directory this test just produced.
+    let log_dir = repo.path.join(".flow").join("logs").join(&tree);
+    let run_dir = fs::read_dir(&log_dir)
+        .expect("logs dir exists")
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|path| path.is_dir())
+        .expect("one run directory exists");
+    let log = run_dir.join("flood.stdout.log");
     let bytes = fs::metadata(&log).expect("stdout log exists").len() as usize;
     assert!(
         bytes <= OBLIGATION_CAP + 128,

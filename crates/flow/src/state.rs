@@ -33,7 +33,7 @@ pub const SCHEMA_STATUS: &str = "flow-status/1";
 pub const SCHEMA_PROPOSAL_LIST: &str = "flow-proposal-list/1";
 /// Identity of the way a context digest is computed. Part of the digest itself,
 /// so a future codec change invalidates older receipts instead of reusing them.
-pub const CONTEXT_CODEC: &str = "flow-context/2";
+pub const CONTEXT_CODEC: &str = "flow-context/3";
 
 /// A journal read failure, kept typed so the CLI can distinguish "the file
 /// could not be read" (outcome unknown) from "the file is torn" (corruption).
@@ -70,6 +70,10 @@ pub struct Config {
     pub policy_version: String,
     pub execution_boundary: String,
     pub obligations: Vec<Obligation>,
+    /// Declared toolchain probes: `[["rustc","-Vv"],["cargo","-V"]]`. Their
+    /// output is hashed into the build context, so a toolchain switch between
+    /// `run` and `publish` invalidates the receipt.
+    pub context_probes: Vec<Vec<String>>,
     pub disabled: bool,
 }
 
@@ -79,6 +83,7 @@ impl Default for Config {
             policy_version: POLICY_VERSION.to_string(),
             execution_boundary: "local-trusted".to_string(),
             obligations: Vec::new(),
+            context_probes: Vec::new(),
             disabled: false,
         }
     }
@@ -110,6 +115,17 @@ impl Config {
                 Json::str(self.execution_boundary.clone()),
             ),
             ("obligations", Json::Arr(obs)),
+            (
+                "context_probes",
+                Json::Arr(
+                    self.context_probes
+                        .iter()
+                        .map(|probe| {
+                            Json::Arr(probe.iter().map(|a| Json::str(a.clone())).collect())
+                        })
+                        .collect(),
+                ),
+            ),
             ("disabled", Json::Bool(self.disabled)),
         ])
     }
@@ -168,6 +184,22 @@ impl Config {
                 .unwrap_or("local-trusted")
                 .to_string(),
             obligations,
+            context_probes: value
+                .get("context_probes")
+                .and_then(Json::as_arr)
+                .map(|items| {
+                    items
+                        .iter()
+                        .filter_map(|probe| {
+                            probe.as_arr().map(|args| {
+                                args.iter()
+                                    .filter_map(|a| a.as_str().map(str::to_string))
+                                    .collect()
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
             disabled: value
                 .get("disabled")
                 .and_then(Json::as_bool)
@@ -194,6 +226,12 @@ pub fn receipts_dir(root: &Path) -> PathBuf {
 
 pub fn logs_dir(root: &Path) -> PathBuf {
     flow_dir(root).join("logs")
+}
+
+/// One marker per in-flight verification, used by `gc` to refuse while a run is
+/// writing evidence. A marker is removed by the run's guard, including on error.
+pub fn runs_dir(root: &Path) -> PathBuf {
+    flow_dir(root).join("runs")
 }
 
 pub fn proposals_dir(root: &Path) -> PathBuf {
@@ -613,8 +651,14 @@ pub struct Receipt {
     pub missing_required: Vec<String>,
     pub started_at: String,
     pub finished_at: String,
+    /// Identity of the execution that wrote this receipt, when the writer
+    /// recorded one. Older receipts have no run id and are still readable.
+    pub run_id: String,
     pub obligations: Vec<Json>,
     pub logs: Vec<String>,
+    /// `[{id, stdout_sha256, stderr_sha256}]`: the digest of every log the
+    /// receipt names, so a later reader can prove the evidence was not swapped.
+    pub log_digests: Vec<Json>,
     pub worktree_diff: Vec<String>,
     pub json: Json,
 }
@@ -672,12 +716,18 @@ impl Receipt {
                 .unwrap_or_default(),
             started_at: get("started_at"),
             finished_at: get("finished_at"),
+            run_id: get("run_id"),
             obligations: value
                 .get("obligations")
                 .and_then(Json::as_arr)
                 .map(<[Json]>::to_vec)
                 .unwrap_or_default(),
             logs: string_list(&value, "logs"),
+            log_digests: value
+                .get("log_digests")
+                .and_then(Json::as_arr)
+                .map(<[Json]>::to_vec)
+                .unwrap_or_default(),
             worktree_diff: string_list(&value, "worktree_diff"),
             json: value,
         }))

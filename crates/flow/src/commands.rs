@@ -37,6 +37,18 @@ fn refused_code(code: &str, why: impl Into<String>) -> Json {
     ])
 }
 
+/// Removes the run's active marker on every path out of `cmd_run`, including
+/// refusals and errors. `gc` refuses while a live marker names the tree.
+struct RunMarker {
+    path: PathBuf,
+}
+
+impl Drop for RunMarker {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.path);
+    }
+}
+
 fn short(digest: &str) -> String {
     digest.chars().take(12).collect()
 }
@@ -721,7 +733,175 @@ fn policy_digest(policy: &Json) -> String {
     sha256::sha256_hex(policy.to_string().as_bytes())
 }
 
-fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
+/// Resolve a declared program the way the obligation runner will: an explicit
+/// relative/absolute path is used as given, a bare name is searched on `PATH`
+/// (with `PATHEXT` on Windows). `None` means the program was not found.
+fn resolve_program_path(program: &str) -> Option<PathBuf> {
+    let as_path = Path::new(program);
+    let explicit = as_path.is_absolute() || program.contains('/') || program.contains('\\');
+    if explicit {
+        return if as_path.is_file() {
+            Some(as_path.canonicalize().unwrap_or_else(|_| as_path.to_path_buf()))
+        } else {
+            None
+        };
+    }
+    let path = std::env::var_os("PATH")?;
+    #[cfg(windows)]
+    let extensions: Vec<String> = std::env::var("PATHEXT")
+        .unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".to_string())
+        .split(';')
+        .filter(|e| !e.is_empty())
+        .map(|e| e.to_ascii_lowercase())
+        .collect();
+    for dir in std::env::split_paths(&path) {
+        #[cfg(windows)]
+        {
+            let mut candidates: Vec<PathBuf> = Vec::new();
+            if as_path.extension().is_some() {
+                candidates.push(dir.join(program));
+            } else {
+                for extension in &extensions {
+                    candidates.push(dir.join(format!("{program}{extension}")));
+                }
+                candidates.push(dir.join(program));
+            }
+            for candidate in candidates {
+                if candidate.is_file() {
+                    return Some(candidate.canonicalize().unwrap_or(candidate));
+                }
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let candidate = dir.join(program);
+            if candidate.is_file() {
+                if let Ok(meta) = candidate.metadata() {
+                    if meta.permissions().mode() & 0o111 != 0 {
+                        return Some(candidate.canonicalize().unwrap_or(candidate));
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Identity of a declared program: its resolved path and the digest of the
+/// bytes the obligation will execute. A replaced or upgraded binary changes the
+/// context, so a receipt written against the old one is refused at publish.
+fn program_identity(program: &str) -> Json {
+    let mut pairs = vec![("program", Json::str(program.to_string()))];
+    match resolve_program_path(program) {
+        Some(path) => {
+            pairs.push((
+                "resolved",
+                Json::str(path.to_string_lossy().into_owned()),
+            ));
+            let digest = fs::metadata(&path).ok().and_then(|meta| {
+                if meta.len() > 256 * 1024 * 1024 {
+                    Some(format!("TOO_LARGE:{}", meta.len()))
+                } else {
+                    fs::read(&path)
+                        .ok()
+                        .map(|bytes| sha256::sha256_hex(&bytes))
+                }
+            });
+            pairs.push((
+                "file_sha256",
+                match digest {
+                    Some(digest) => Json::str(digest),
+                    None => Json::Null,
+                },
+            ));
+        }
+        None => {
+            pairs.push(("resolved", Json::Null));
+            pairs.push(("file_sha256", Json::Null));
+        }
+    }
+    Json::obj(pairs)
+}
+
+/// The allowlisted environment, by name and value digest. The values themselves
+/// are never written: a path can still identify a machine, and the context is
+/// often copied into agent logs.
+fn env_identity() -> Json {
+    let entries: Vec<Json> = gitcli::env_allowlist()
+        .iter()
+        .map(|name| {
+            let digest = match std::env::var_os(name) {
+                Some(value) => format!(
+                    "sha256:{}",
+                    sha256::sha256_hex(value.to_string_lossy().as_bytes())
+                ),
+                None => "ABSENT".to_string(),
+            };
+            Json::obj(vec![
+                ("name", Json::str((*name).to_string())),
+                ("value_digest", Json::str(digest)),
+            ])
+        })
+        .collect();
+    Json::Arr(entries)
+}
+
+/// Declared toolchain probes, hashed. A probe is a policy-controlled command
+/// (`rustc -Vv`, `cargo -V`); it runs under the same allowlisted environment as
+/// an obligation and only its digest enters the context.
+fn probe_identity(config: &Config, root: &Path) -> Json {
+    let probes: Vec<Json> = config
+        .context_probes
+        .iter()
+        .map(|probe| {
+            let Some(program) = probe.first() else {
+                return Json::obj(vec![
+                    ("probe", Json::Arr(Vec::new())),
+                    ("status", Json::str("INVALID")),
+                ]);
+            };
+            let obligation = Obligation {
+                id: "context-probe".to_string(),
+                program: program.clone(),
+                args: probe[1..].to_vec(),
+                required: false,
+                timeout_s: 30,
+            };
+            let outcome = gitcli::run_obligation(&obligation, root);
+            Json::obj(vec![
+                (
+                    "probe",
+                    Json::Arr(probe.iter().map(|s| Json::str(s.clone())).collect()),
+                ),
+                ("status", Json::str(outcome.status)),
+                (
+                    "exit",
+                    outcome
+                        .exit
+                        .map(|c| Json::Num(c as f64))
+                        .unwrap_or(Json::Null),
+                ),
+                (
+                    "stdout_sha256",
+                    Json::str(sha256::sha256_hex(outcome.stdout.as_bytes())),
+                ),
+                (
+                    "stderr_sha256",
+                    Json::str(sha256::sha256_hex(outcome.stderr.as_bytes())),
+                ),
+            ])
+        })
+        .collect();
+    Json::Arr(probes)
+}
+
+fn build_context_id(git: &Git, tree: &str, policy: &Json, config: &Config, root: &Path) -> String {
+    let programs: Vec<Json> = config
+        .obligations
+        .iter()
+        .map(|obligation| program_identity(&obligation.program))
+        .collect();
     let context = Json::obj(vec![
         ("codec", Json::str(state::CONTEXT_CODEC)),
         ("tree_oid", Json::str(tree)),
@@ -729,6 +909,9 @@ fn build_context_id(git: &Git, tree: &str, policy: &Json) -> String {
         ("git_version", Json::str(git.version())),
         ("os", Json::str(std::env::consts::OS)),
         ("arch", Json::str(std::env::consts::ARCH)),
+        ("env", env_identity()),
+        ("programs", Json::Arr(programs)),
+        ("probes", probe_identity(config, root)),
     ]);
     sha256::sha256_hex(context.to_string().as_bytes())
 }
@@ -1394,6 +1577,21 @@ pub fn cmd_run(
         }
     }
     let started_at = state::iso8601_now();
+    // Identity of this execution. Every log goes under it, so two concurrent
+    // runs of the same tree can never overwrite one another's evidence.
+    let run_id = format!("{}-{:x}", std::process::id(), state::unique_suffix());
+    let runs_dir = state::runs_dir(root);
+    fs::create_dir_all(&runs_dir).map_err(|e| format!("cannot create runs dir: {e}"))?;
+    let marker_path = runs_dir.join(format!("{run_id}.active"));
+    let marker = Json::obj(vec![
+        ("schema", Json::str("flow-run-active/1")),
+        ("run_id", Json::str(run_id.clone())),
+        ("pid", Json::Num(std::process::id() as f64)),
+        ("tree", Json::str(tree.clone())),
+        ("started_at", Json::str(started_at.clone())),
+    ]);
+    state::write_atomic(&marker_path, &marker.to_string())?;
+    let _run_marker = RunMarker { path: marker_path };
 
     // Materialise the exact tree in a directory Flow owns and knows it created:
     // the `.git` link is removed so an obligation cannot reach the shared gitdir.
@@ -1416,10 +1614,11 @@ pub fn cmd_run(
 
     let policy = effective_policy(&config, &effective);
     let policy_digest = policy_digest(&policy);
-    let context_id = build_context_id(&git, &tree, &policy);
-    let log_dir = state::logs_dir(root).join(&tree);
+    let context_id = build_context_id(&git, &tree, &policy, &config, root);
+    let log_dir = state::logs_dir(root).join(&tree).join(&run_id);
     let mut outcomes = Vec::new();
     let mut logs = Vec::new();
+    let mut log_digests = Vec::new();
     let mut failed = false;
     let mut timed_out = false;
     let mut unsupported = false;
@@ -1427,8 +1626,8 @@ pub fn cmd_run(
         let outcome = gitcli::run_obligation(ob, scratch.path());
         let stdout_clean = gitcli::redact(&outcome.stdout);
         let stderr_clean = gitcli::redact(&outcome.stderr);
-        let stdout_rel = format!(".flow/logs/{tree}/{}.stdout.log", outcome.id);
-        let stderr_rel = format!(".flow/logs/{tree}/{}.stderr.log", outcome.id);
+        let stdout_rel = format!(".flow/logs/{tree}/{run_id}/{}.stdout.log", outcome.id);
+        let stderr_rel = format!(".flow/logs/{tree}/{run_id}/{}.stderr.log", outcome.id);
         fs::create_dir_all(&log_dir).map_err(|e| format!("cannot create log dir: {e}"))?;
         let _ = crate::paths::canonical_within(root, &log_dir)?;
         state::write_atomic(
@@ -1439,6 +1638,17 @@ pub fn cmd_run(
             &log_dir.join(format!("{}.stderr.log", outcome.id)),
             &stderr_clean,
         )?;
+        log_digests.push(Json::obj(vec![
+            ("id", Json::str(outcome.id.clone())),
+            (
+                "stdout_sha256",
+                Json::str(sha256::sha256_hex(stdout_clean.as_bytes())),
+            ),
+            (
+                "stderr_sha256",
+                Json::str(sha256::sha256_hex(stderr_clean.as_bytes())),
+            ),
+        ]));
         logs.push(stdout_rel);
         logs.push(stderr_rel);
         if ob.required {
@@ -1576,6 +1786,8 @@ pub fn cmd_run(
         ("verification_scope", scope),
         ("started_at", Json::str(started_at)),
         ("finished_at", Json::str(state::iso8601_now())),
+        ("run_id", Json::str(run_id.clone())),
+        ("log_digests", Json::Arr(log_digests)),
         ("obligations", Json::Arr(outcomes)),
         (
             "logs",
@@ -1599,12 +1811,13 @@ pub fn cmd_run(
         ),
     ]));
     let path = state::save_receipt(root, &receipt)?;
+    let relative = path
+        .strip_prefix(root)
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| path.to_string_lossy().into_owned());
     let mut out = receipt.clone();
     if let Json::Obj(pairs) = &mut out {
-        pairs.push((
-            "receipt_path".into(),
-            Json::str(path.to_string_lossy().to_string()),
-        ));
+        pairs.push(("receipt_path".into(), Json::str(relative)));
     }
     Ok(out)
 }
@@ -1801,7 +2014,7 @@ pub fn cmd_publish(
     // The context covers the toolchain and platform the run actually used; a Git
     // upgrade between run and publish changes it, and the receipt is then no
     // longer a statement about the tool that would publish.
-    let expected_context = build_context_id(&git, &tree, &policy);
+    let expected_context = build_context_id(&git, &tree, &policy, &config, root);
     if receipt.context_id != expected_context {
         return Ok(refused_code(
             "CONTEXT_MISMATCH",
@@ -1955,7 +2168,7 @@ pub fn cmd_publish(
             ),
             (
                 "journal",
-                Json::str(state::journal_path(root).to_string_lossy().to_string()),
+                Json::str(".flow/journal.jsonl".to_string()),
             ),
             (
                 "note",
@@ -2087,6 +2300,7 @@ pub fn cmd_publish(
             Json::str(receipt.execution_boundary.clone()),
         ),
         ("receipt_logs", Json::Num(receipt.logs.len() as f64)),
+        ("receipt_run_id", Json::str(receipt.run_id.clone())),
         ("receipt_started_at", Json::str(receipt.started_at.clone())),
         (
             "receipt_finished_at",
@@ -2423,6 +2637,59 @@ pub fn cmd_gc(
         ));
     }
     state::load_config(root)?;
+    // `gc` takes the same lock as `publish`/`reconcile`, so it can never collect
+    // the journal, a receipt or a log while a publication transaction is in
+    // flight. A verification (`run`) is long-lived and does not hold the lock:
+    // it advertises itself with a marker instead.
+    let _lock = match crate::lock::acquire_lock(root, "gc") {
+        Ok(guard) => guard,
+        Err(e) => return Ok(lock_refusal(root, e)),
+    };
+    let runs = state::runs_dir(root);
+    if let Ok(entries) = fs::read_dir(&runs) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_string();
+            if !name.ends_with(".active") {
+                continue;
+            }
+            let Ok(text) = fs::read_to_string(&path) else {
+                continue;
+            };
+            let Ok(value) = json::parse(&text) else {
+                continue;
+            };
+            let pid = value.get("pid").and_then(Json::as_num).unwrap_or(0.0) as u32;
+            let run_id = value
+                .get("run_id")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            match crate::lock::pid_alive(pid) {
+                Some(true) => {
+                    return Ok(crate::proposal::refusal(
+                        "RUN_ACTIVE",
+                        format!(
+                            "flow gc refuses while run {run_id} (pid {pid}) is writing evidence: it would delete logs or a candidate that the run still needs. Re-run gc after the run finishes"
+                        ),
+                    ));
+                }
+                Some(false) => {
+                    // The writer is gone: the marker is stale and safe to clear.
+                    let _ = fs::remove_file(&path);
+                }
+                None => {
+                    return Ok(crate::proposal::refusal(
+                        "RUN_ACTIVE",
+                        format!(
+                            "flow gc cannot prove that run {run_id} (pid {pid}) is finished, so it refuses to collect evidence. Inspect {} and remove the marker by hand only if no flow process is running",
+                            path.display()
+                        ),
+                    ));
+                }
+            }
+        }
+    }
     let pending = pending_intents(root)?;
     if !pending.is_empty() {
         return Ok(crate::proposal::refusal(
@@ -2455,6 +2722,7 @@ pub fn cmd_gc(
     let mut skipped: Vec<String> = Vec::new();
     let mut bytes_freed = 0u64;
     let mut kept_receipts: BTreeSet<String> = BTreeSet::new();
+    let mut kept_partial_trees: BTreeSet<String> = BTreeSet::new();
     let mut kept_partials = 0usize;
     let mut kept_candidates = 0usize;
 
@@ -2508,6 +2776,11 @@ pub fn cmd_gc(
     for path in partial {
         if !expired(&path) {
             kept_partials += 1;
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if let Some(tree) = name.split(".partial.").next() {
+                    kept_partial_trees.insert(tree.to_string());
+                }
+            }
             continue;
         }
         let name = path
@@ -2529,7 +2802,10 @@ pub fn cmd_gc(
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_string();
             let path = entry.path();
-            if kept_receipts.contains(&name) || !expired(&path) {
+            if kept_receipts.contains(&name)
+                || kept_partial_trees.contains(&name)
+                || !expired(&path)
+            {
                 continue;
             }
             if !is_plain_entry(&path) {
@@ -2678,41 +2954,85 @@ pub fn cmd_explain(
     // A receipt is evidence only if its content still matches its digest and the
     // logs it names are present. Inspection must say so explicitly: displaying a
     // tampered receipt as `PASSED` is the false green Flow refuses at publication.
-    let (receipt_json, receipt_trust, receipt_display, evidence_complete, missing_logs) =
-        match &receipt {
-            None => (
-                Json::Null,
-                "NO_RECEIPT",
-                Json::Null,
-                false,
-                Vec::<String>::new(),
-            ),
-            Some(r) => {
-                let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
-                let missing: Vec<String> = r
-                    .logs
-                    .iter()
-                    .filter(|rel| !root.join(rel.as_str()).is_file())
-                    .cloned()
-                    .collect();
-                let display = if integrity_ok {
-                    Json::str(r.status.clone())
-                } else {
-                    Json::str("RECEIPT_INTEGRITY_INVALID")
-                };
-                (
-                    r.json.clone(),
-                    if integrity_ok {
-                        "INTEGRITY_OK"
-                    } else {
-                        "RECEIPT_INTEGRITY_INVALID"
-                    },
-                    display,
-                    integrity_ok && missing.is_empty(),
-                    missing,
-                )
+    let (
+        receipt_json,
+        receipt_trust,
+        receipt_display,
+        evidence_complete,
+        missing_logs,
+        log_integrity,
+        tampered_logs,
+    ) = match &receipt {
+        None => (
+            Json::Null,
+            "NO_RECEIPT",
+            Json::Null,
+            false,
+            Vec::<String>::new(),
+            "NO_RECEIPT",
+            Vec::<String>::new(),
+        ),
+        Some(r) => {
+            let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
+            let missing: Vec<String> = r
+                .logs
+                .iter()
+                .filter(|rel| !root.join(rel.as_str()).is_file())
+                .cloned()
+                .collect();
+            // A receipt that names log digests is only trustworthy if the files
+            // still hash to them: swapped evidence is not evidence.
+            let mut log_ok = true;
+            let mut tampered: Vec<String> = Vec::new();
+            for entry in &r.log_digests {
+                let id = entry.get("id").and_then(Json::as_str).unwrap_or("");
+                for (suffix, key) in [("stdout", "stdout_sha256"), ("stderr", "stderr_sha256")] {
+                    let Some(recorded) = entry.get(key).and_then(Json::as_str) else {
+                        log_ok = false;
+                        continue;
+                    };
+                    let wanted = format!("/{id}.{suffix}.log");
+                    let Some(rel) = r.logs.iter().find(|p| p.ends_with(&wanted)) else {
+                        log_ok = false;
+                        continue;
+                    };
+                    let actual = std::fs::read(root.join(rel)).ok();
+                    match actual {
+                        Some(bytes) if sha256::sha256_hex(&bytes) == recorded => {}
+                        _ => {
+                            log_ok = false;
+                            tampered.push(rel.clone());
+                        }
+                    }
+                }
             }
-        };
+            let log_integrity = if r.log_digests.is_empty() {
+                "NO_LOG_DIGESTS"
+            } else if log_ok {
+                "OK"
+            } else {
+                "LOG_INTEGRITY_INVALID"
+            };
+            let display = if integrity_ok {
+                Json::str(r.status.clone())
+            } else {
+                Json::str("RECEIPT_INTEGRITY_INVALID")
+            };
+            (
+                r.json.clone(),
+                if integrity_ok {
+                    "INTEGRITY_OK"
+                } else {
+                    "RECEIPT_INTEGRITY_INVALID"
+                },
+                display,
+                integrity_ok && missing.is_empty() && log_ok,
+                missing,
+                log_integrity,
+                tampered,
+            )
+        }
+    };
     Ok(Json::obj(vec![
         ("status", Json::str("EXPLAIN")),
         ("tree", Json::str(tree)),
@@ -2733,8 +3053,20 @@ pub fn cmd_explain(
         ("proposals", proposals),
         ("receipt", receipt_json),
         ("receipt_trust", Json::str(receipt_trust)),
+        (
+            "run_id",
+            match &receipt {
+                Some(r) => Json::str(r.run_id.clone()),
+                None => Json::Null,
+            },
+        ),
         ("receipt_status_display", receipt_display),
         ("evidence_complete", Json::Bool(evidence_complete)),
+        ("log_integrity", Json::str(log_integrity)),
+        (
+            "tampered_logs",
+            Json::Arr(tampered_logs.into_iter().map(Json::str).collect()),
+        ),
         (
             "missing_logs",
             Json::Arr(missing_logs.into_iter().map(Json::str).collect()),

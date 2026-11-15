@@ -422,11 +422,11 @@ fn a_dead_owners_lock_is_recovered() {
     }
 
     let lock = repo.path.join(".flow").join("lock");
-    fs::write(
-        &lock,
-        format!("flow-lock/2 {pid} 0 canary-dead-nonce publish\n"),
-    )
-    .unwrap();
+    let record = format!(
+        "flow-lock/2 {pid} 0 canary-dead-nonce publish host:{}\n",
+        local_host_token()
+    );
+    fs::write(&lock, &record).unwrap();
 
     let (publish_code, publish) = flow(&repo.path, &["publish"]);
     assert_eq!(
@@ -714,6 +714,172 @@ fn g1_concurrent_proposals_same_key_have_exactly_one_winner() {
             );
         }
     }
+}
+
+/// The host token the product writes: `sha256("flow-host/1\n<name>\n<os>")[..16]`.
+/// A test that rewrites a lock record must speak the same dialect.
+fn local_host_token() -> String {
+    let name = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .expect("the test host has a name");
+    let name = name.trim();
+    assert!(!name.is_empty(), "the test host name is not empty");
+    let digest = sha256::sha256_hex(
+        format!("flow-host/1\n{name}\n{}", std::env::consts::OS).as_bytes(),
+    );
+    digest[..16].to_string()
+}
+
+/// G3 — a provably dead owner's lock and eight real `publish` processes: exactly
+/// one publication, every loser refused by name, one intent/outcome pair, and no
+/// lock artifact left behind. The steal is serialized by a per-generation marker,
+/// so no two publishers can both believe they own the critical section.
+#[test]
+fn g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder() {
+    let (repo, tree, head_before) = prepared_repo("g3-steal");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert_eq!(status_of(&out), "PASSED");
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP g3_dead_lock_recovery_with_eight_publishers_keeps_one_holder: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    fs::write(
+        &lock,
+        format!(
+            "flow-lock/2 {pid} 0 canary-g3-nonce publish host:{}\n",
+            local_host_token()
+        ),
+    )
+    .unwrap();
+
+    let children: Vec<Child> = (0..8)
+        .map(|_| spawn_flow(&repo.path, &["publish"]))
+        .collect();
+    let outputs = wait_all(children);
+    assert_eq!(outputs.len(), 8);
+
+    let mut published = 0;
+    for (index, output) in outputs.iter().enumerate() {
+        let value = parse_output(&format!("g3[{index}]"), output);
+        let exit = output.status.code().unwrap_or(-1);
+        match status_of(&value).as_str() {
+            "PUBLISHED" => published += 1,
+            "REFUSED" => {
+                assert_ne!(exit, 0, "a refusal exits nonzero: {value}");
+                let code = code_of(&value);
+                assert!(
+                    code == "LOCKED" || code == "ALREADY_PUBLISHED",
+                    "a loser must be a named refusal, got {code:?}: {value}"
+                );
+            }
+            other => panic!("unexpected publish status {other:?}: {value}"),
+        }
+    }
+    assert_eq!(published, 1, "exactly one recovered writer may publish");
+
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+    assert_ne!(head, head_before, "the recovered writer must publish");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD^{tree}"]), tree);
+
+    // One intent, one outcome: a double holder would interleave or duplicate
+    // these read-modify-write appends.
+    let records = journal_lines(&repo.path);
+    assert_eq!(count_event(&records, "intent"), 1, "{records:?}");
+    assert_eq!(count_event(&records, "outcome"), 1, "{records:?}");
+
+    assert!(!lock.exists(), "the recovered lock must be released");
+    let leftovers: Vec<String> = fs::read_dir(repo.path.join(".flow"))
+        .unwrap()
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().to_string())
+        .filter(|name| name.starts_with("lock"))
+        .collect();
+    assert!(
+        leftovers.is_empty(),
+        "no lock or steal artifact may survive: {leftovers:?}"
+    );
+}
+
+/// A lock record written by another host is never stolen, even when its PID is
+/// provably dead on this machine: the PID spaces are not comparable.
+#[test]
+fn a_foreign_host_lock_is_never_stolen() {
+    let (repo, tree, head_before) = prepared_repo("foreign-lock");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert!(receipt_for(&repo.path, &tree).is_file());
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP a_foreign_host_lock_is_never_stolen: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    let record = format!("flow-lock/2 {pid} 0 foreign-nonce publish host:0000000000000000\n");
+    fs::write(&lock, &record).unwrap();
+
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(
+        code_of(&out),
+        "LOCK_UNKNOWN",
+        "a foreign lock is unattributable, not dead: {out}"
+    );
+    assert_eq!(
+        out.get("manual_required").and_then(Json::as_bool),
+        Some(true)
+    );
+    assert_eq!(
+        fs::read_to_string(&lock).unwrap(),
+        record,
+        "a foreign lock must be left exactly in place"
+    );
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head_before);
+}
+
+/// A dead lock written before the host token existed cannot be attributed to
+/// this machine, so it is refused (a named LOCK_UNKNOWN) rather than stolen.
+#[test]
+fn a_hostless_dead_lock_is_refused_not_stolen() {
+    let (repo, tree, _) = prepared_repo("hostless-lock");
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "precondition: run must pass: {out}");
+    assert!(receipt_for(&repo.path, &tree).is_file());
+
+    let pid = spawn_and_reap_short_lived();
+    match pid_is_dead(pid) {
+        Some(true) => {}
+        other => {
+            println!(
+                "SKIP a_hostless_dead_lock_is_refused_not_stolen: cannot prove pid {pid} is dead (liveness probe said {other:?})"
+            );
+            return;
+        }
+    }
+    let lock = repo.path.join(".flow").join("lock");
+    let record = format!("flow-lock/2 {pid} 0 legacy-nonce publish\n");
+    fs::write(&lock, &record).unwrap();
+
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(status_of(&out), "REFUSED");
+    assert_eq!(code_of(&out), "LOCK_UNKNOWN", "{out}");
+    assert_eq!(fs::read_to_string(&lock).unwrap(), record);
 }
 
 // ------------------------------------------------------------ host probes

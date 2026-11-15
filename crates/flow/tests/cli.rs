@@ -1515,7 +1515,14 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
         .to_string();
     let log_dir = repo.path.join(".flow").join("logs").join(&tree);
     for entry in fs::read_dir(&log_dir).unwrap().flatten() {
-        fs::remove_file(entry.path()).unwrap();
+        let path = entry.path();
+        if path.is_dir() {
+            for file in fs::read_dir(&path).unwrap().flatten() {
+                fs::remove_file(file.path()).unwrap();
+            }
+        } else {
+            fs::remove_file(path).unwrap();
+        }
     }
     let (code, status) = flow(&repo.path, &["status"]);
     assert_eq!(code, 0, "{status}");
