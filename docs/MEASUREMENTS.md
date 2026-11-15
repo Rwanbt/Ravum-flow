@@ -17,12 +17,14 @@ dependencies.
 | macOS arm64 | **546** | 0 | 0 | CI run `43705496705`, job `test macos-latest` (`executed_passed=546`) |
 | Windows, local | 537 | 0 | 0 | `cargo test --locked --offline --all-targets` on this host |
 
-Differences are platform gates, not skips: one Windows-only `PATH`/`PATHEXT` gate, and the
-non-UTF-8 checkout gate that skips on APFS because the filesystem refuses such a name; the nine
-Unix-only tests (host-identity fallbacks, `kill` liveness, a read-only state directory, link
-refusal in `gc`, the Git fault-injection shims, the context-probe gate and the aggressive `gc`
-during a run) compile and run on Linux and macOS.
-**144 named gates** are required by name in CI; each one was verified to resolve to a real
+Differences are platform gates; the counts **include tests that print a runtime `SKIP` and return**.
+`ignored=0` proves that no `#[ignore]` existed, not that every counted test executed its body: the
+non-UTF-8 checkout gate on APFS, and a few environment-dependent harness gates, print `SKIP` and are
+still counted as executed (the lines are in each job's log and artifact). The `g3` stress test
+self-skips only if the liveness probe cannot answer; on the supported runners it answers. This caveat
+was added after the internal claims audit (2026-11-15) flagged that "not skips" overstated the
+evidence.
+**152 named gates** are required by name in CI; each one was verified to resolve to a real
 `fn <name>` in `crates/flow`.
 
 Reproduce: `cargo test --locked --offline --all-targets` (the CI floors are 537 / 546 / 546 and

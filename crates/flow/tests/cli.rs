@@ -1694,7 +1694,6 @@ fn flow_with_path(repo: &Path, shim: &Path, args: &[&str], mode: &str) -> (i32, 
     (out.status.code().unwrap_or(-1), parsed)
 }
 
-#[cfg(unix)]
 fn code_field(value: &Json) -> String {
     value
         .get("code")
@@ -1794,6 +1793,79 @@ fn an_unresolved_worktree_admin_race_refuses_the_run_by_name() {
         run.to_string().contains("cannot materialise"),
         "the refusal must name the materialisation: {run}"
     );
+}
+
+/// A `context_probes` entry is an arbitrary program Flow executes between `run`
+/// and `publish`; adding one to `.flow/config.json` after `flow approve` must be
+/// refused as an unapproved policy change *before* anything runs.
+#[cfg(unix)]
+#[test]
+fn an_unapproved_context_probe_is_never_executed() {
+    use std::os::unix::fs::PermissionsExt;
+    let repo = new_repo();
+    flow(&repo.path, &["init"]);
+    exclude_flow(&repo.path);
+    write_config(&repo.path, GREEN);
+    let canary = repo.path.join("probe-executed");
+    let probe = repo.path.join("probe.sh");
+    fs::write(
+        &probe,
+        format!("#!/bin/sh\necho ran > \"{}\"\n", canary.display()),
+    )
+    .unwrap();
+    fs::set_permissions(&probe, fs::Permissions::from_mode(0o755)).unwrap();
+    // The cloned/edited policy gains a probe the working copy never approved.
+    fs::write(
+        repo.path.join(".flow/config.json"),
+        format!(
+            r#"{{"schema":"flow-config/1","policy_version":"FLOW-POLICY-1","execution_boundary":"local-trusted","obligations":[{GREEN}],"context_probes":[["{}"]]}}"#,
+            probe.display()
+        ),
+    )
+    .unwrap();
+    fs::write(repo.path.join("verified.txt"), "under verification\n").unwrap();
+    git(&repo.path, &["add", "-A"]);
+    let (code, out) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "POLICY_NOT_APPROVED", "{out}");
+    assert!(
+        !canary.exists(),
+        "an unapproved probe must never be executed: {out}"
+    );
+}
+
+/// The publication gate must be at least as strict as `explain`: a receipt whose
+/// log was swapped or deleted proves nothing, so the ref cannot move.
+#[test]
+fn publish_refuses_swapped_or_missing_evidence() {
+    let (repo, _, _) = prepared_repo(GREEN);
+    let (code, run) = flow(&repo.path, &["run"]);
+    assert_eq!(code, 0, "{run}");
+    assert_eq!(status_of(&run), "PASSED");
+    let logs = run
+        .get("logs")
+        .and_then(Json::as_arr)
+        .expect("the receipt names its logs")
+        .to_vec();
+    let first = logs[0].as_str().expect("a log path").to_string();
+    let second = logs[1].as_str().expect("a log path").to_string();
+    let head = git(&repo.path, &["rev-parse", "HEAD"]);
+
+    fs::write(repo.path.join(&first), "swapped evidence\n").unwrap();
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "LOG_INTEGRITY_INVALID", "{out}");
+    assert_eq!(
+        git(&repo.path, &["rev-parse", "HEAD"]),
+        head,
+        "swapped evidence must not move the ref"
+    );
+
+    fs::remove_file(repo.path.join(&second)).unwrap();
+    let (code, out) = flow(&repo.path, &["publish"]);
+    assert_eq!(code, 1, "{out}");
+    assert_eq!(code_field(&out), "MISSING_LOGS", "{out}");
+    assert_eq!(git(&repo.path, &["rev-parse", "HEAD"]), head);
 }
 
 #[test]
@@ -2186,12 +2258,15 @@ fn explain_reports_missing_logs_as_incomplete_evidence() {
             .unwrap_or(false),
         "the missing logs must be listed: {explain}"
     );
-    // Publication still works: the receipt is intact, the logs are evidence that
-    // is displayed as incomplete. This is a documentation decision, not a gate.
+    // Publication now refuses incomplete evidence: the receipt names the logs it
+    // hashed, and a publication that cannot re-read them would move a ref on
+    // evidence nobody can check. This gate is the one `explain` already applied.
     let (code, published) = flow(&repo.path, &["publish"]);
-    assert_eq!(
-        code, 0,
-        "publish does not depend on log retention: {published}"
+    assert_eq!(code, 1, "deleted evidence is not publishable: {published}");
+    assert_eq!(code_field(&published), "MISSING_LOGS", "{published}");
+    assert!(
+        published.to_string().contains("re-run `flow run`"),
+        "the refusal must name the remedy: {published}"
     );
 }
 

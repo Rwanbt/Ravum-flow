@@ -17,11 +17,22 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - **FBL-013 (found by CI)**: `git worktree add` racing another process's `worktree prune` no longer
   fails a valid run; the transient "commondir" error is retried a bounded number of times.
 
+### Fixed after the internal adversarial pre-review
+- **`context_probes` are part of the approved policy.** Adding a probe to `.flow/config.json` after
+  `flow approve` is `POLICY_NOT_APPROVED` and nothing executes; `flow approve` now lists the probes.
+- **`publish` checks the log bytes it names.** A receipt whose log was deleted or swapped is refused
+  (`MISSING_LOGS`, `LOG_INTEGRITY_INVALID`) before the intent, exactly as `explain` already reported.
+- **`gc --keep N` no longer deletes fresh candidates or partial receipts.** Only an explicit age
+  policy collects them; `--keep` governs receipts and their logs.
+
 ### Changed
-- Coverage gate closed without lowering a threshold or adding a waiver: **95.98 % lines / 90.69 %
+- Coverage gate closed without lowering a threshold or adding a waiver: **96.00 % lines / 90.69 %
   branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 537 Windows / 546
   Linux / 546 macOS.
 - `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
+- Documentation corrections from the claims audit: 152 named gates (not 144), the runtime-`SKIP`
+  caveat in `MEASUREMENTS.md`, FBL-004 is `PARTIAL`, FBL-009 no longer counts an unreachable branch
+  as proof, and the retention claim is scoped to receipts/logs/candidates.
 
 ## [0.2.0-rc.2] — 2026-11-13 — the merged, measured line
 

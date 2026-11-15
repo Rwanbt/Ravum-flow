@@ -12,7 +12,10 @@
 //!
 //! Attribution rules (the whole point of v2):
 //!
-//! * a lock whose owner is provably alive is **never** stolen, whatever its age;
+//! * a lock whose owner is provably alive **on this host** is **never** stolen,
+//!   whatever its age. "This host" is the host-name hash of `flow-lock/2`; two
+//!   machines that share a host name are indistinguishable, which is why a shared
+//!   `.flow/` across machines is unsupported rather than "protected";
 //! * a dead lock is stolen only when its record names **this host** and the steal
 //!   itself is claimed by a per-generation marker (`lock.steal.<nonce>`): the
 //!   marker's creator alone may remove that exact lock, so two stealers can

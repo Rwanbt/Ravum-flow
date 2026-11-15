@@ -218,8 +218,18 @@ pub fn cmd_approve(root: &Path) -> Result<Json, String> {
             ),
         ),
         (
+            "context_probes",
+            Json::Arr(
+                config
+                    .context_probes
+                    .iter()
+                    .map(|probe| Json::str(probe.join(" ")))
+                    .collect(),
+            ),
+        ),
+        (
             "note",
-            Json::str("this working copy now approves exactly these obligations; editing .flow/config.json again requires `flow approve`"),
+            Json::str("this working copy now approves exactly these obligations and context probes; editing .flow/config.json again requires `flow approve`"),
         ),
     ]))
 }
@@ -720,6 +730,21 @@ fn effective_policy(config: &Config, obligations: &[Obligation]) -> Json {
                 gitcli::env_allowlist()
                     .iter()
                     .map(|n| Json::str(*n))
+                    .collect(),
+            ),
+        ),
+        // A declared probe is an arbitrary program Flow executes between `run`
+        // and `publish`; it changes what a `PASSED` receipt means, so it belongs
+        // to the approved policy, not only to the context. Without this, adding a
+        // probe to a cloned `.flow/config.json` would execute code that was never
+        // approved (found by the adversarial pre-review).
+        (
+            "context_probes",
+            Json::Arr(
+                config
+                    .context_probes
+                    .iter()
+                    .map(|probe| Json::Arr(probe.iter().map(|a| Json::str(a.clone())).collect()))
                     .collect(),
             ),
         ),
@@ -2061,7 +2086,7 @@ pub fn cmd_publish(
         return Ok(refused_code(
             "CONTEXT_MISMATCH",
             format!(
-                "the receipt context is {} but this environment now computes {}: the toolchain or platform changed since the run",
+                "the receipt context is {} but this environment now computes {}: an allowlisted environment value, an obligation program's bytes, a declared probe's answer, or the platform changed since the run",
                 short(&receipt.context_id),
                 short(&expected_context)
             ),
@@ -2148,6 +2173,30 @@ pub fn cmd_publish(
                 ));
             }
         }
+    }
+
+    // The evidence the receipt names must still be there and unchanged. The seal
+    // covers the names and hashes, not the bytes on disk: a deleted or swapped log
+    // is not evidence, and publication must be at least as strict as `explain`.
+    let (missing_logs, tampered_logs, logs_ok) = verify_receipt_logs(root, &receipt);
+    if !missing_logs.is_empty() {
+        return Ok(refused_code(
+            "MISSING_LOGS",
+            format!(
+                "the receipt for tree {tree} names {} log(s) that no longer exist (for example {:?}): the evidence is incomplete, re-run `flow run`",
+                missing_logs.len(),
+                &missing_logs[..missing_logs.len().min(3)]
+            ),
+        ));
+    }
+    if !logs_ok {
+        return Ok(refused_code(
+            "LOG_INTEGRITY_INVALID",
+            format!(
+                "the receipt for tree {tree} names log(s) whose bytes no longer hash to the recorded digest (for example {:?}): refusing to publish swapped evidence",
+                &tampered_logs[..tampered_logs.len().min(3)]
+            ),
+        ));
     }
 
     let old = match expected_old {
@@ -2794,6 +2843,22 @@ pub fn cmd_gc(
             None => true,
         }
     };
+    // Partial receipts and candidate records are not publishable evidence: only
+    // an explicit age policy may collect them. `--keep` alone must never delete a
+    // candidate the operator assembled and has not run yet (found by the
+    // adversarial pre-review: `gc --keep N` removed every candidate).
+    let expired_by_age = |path: &Path| -> bool {
+        let Some(limit) = max_age else {
+            return false;
+        };
+        match entry_mtime(path) {
+            Some(mtime) => now
+                .duration_since(mtime)
+                .map(|age| age.as_secs() >= limit)
+                .unwrap_or(false),
+            None => true,
+        }
+    };
 
     let mut deleted: Vec<String> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
@@ -2851,7 +2916,7 @@ pub fn cmd_gc(
         deleted.push(format!("receipts/{name}"));
     }
     for path in partial {
-        if !expired(&path) {
+        if !expired_by_age(&path) {
             kept_partials += 1;
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 if let Some(tree) = name.split(".partial.").next() {
@@ -2921,7 +2986,7 @@ pub fn cmd_gc(
                 skipped.push(format!("candidates/{name} (not a record)"));
                 continue;
             }
-            if !expired(&path) {
+            if !expired_by_age(&path) {
                 kept_candidates += 1;
                 continue;
             }
@@ -2986,6 +3051,46 @@ pub fn cmd_gc(
 }
 
 // ----------------------------------------------------------------- explain
+/// The receipt's own evidence check, shared by `explain` and `publish`.
+///
+/// A sealed receipt names the logs it hashed; the seal covers the *names and
+/// hashes*, not the files on disk. Publication therefore checks the bytes as
+/// well: a receipt whose log was deleted or swapped proves nothing, and the
+/// publication gate must not be weaker than the diagnostic (found by the
+/// adversarial pre-review).
+fn verify_receipt_logs(root: &Path, receipt: &Receipt) -> (Vec<String>, Vec<String>, bool) {
+    let missing: Vec<String> = receipt
+        .logs
+        .iter()
+        .filter(|rel| !root.join(rel.as_str()).is_file())
+        .cloned()
+        .collect();
+    let mut ok = true;
+    let mut tampered: Vec<String> = Vec::new();
+    for entry in &receipt.log_digests {
+        let id = entry.get("id").and_then(Json::as_str).unwrap_or("");
+        for (suffix, key) in [("stdout", "stdout_sha256"), ("stderr", "stderr_sha256")] {
+            let Some(recorded) = entry.get(key).and_then(Json::as_str) else {
+                ok = false;
+                continue;
+            };
+            let wanted = format!("/{id}.{suffix}.log");
+            let Some(rel) = receipt.logs.iter().find(|p| p.ends_with(&wanted)) else {
+                ok = false;
+                continue;
+            };
+            match std::fs::read(root.join(rel)).ok() {
+                Some(bytes) if sha256::sha256_hex(&bytes) == recorded => {}
+                _ => {
+                    ok = false;
+                    tampered.push(rel.clone());
+                }
+            }
+        }
+    }
+    (missing, tampered, ok)
+}
+
 pub fn cmd_explain(
     root: &Path,
     tree: Option<String>,
@@ -3060,38 +3165,9 @@ pub fn cmd_explain(
         ),
         Some(r) => {
             let integrity_ok = state::verify_receipt_integrity(&r.json).is_ok();
-            let missing: Vec<String> = r
-                .logs
-                .iter()
-                .filter(|rel| !root.join(rel.as_str()).is_file())
-                .cloned()
-                .collect();
             // A receipt that names log digests is only trustworthy if the files
             // still hash to them: swapped evidence is not evidence.
-            let mut log_ok = true;
-            let mut tampered: Vec<String> = Vec::new();
-            for entry in &r.log_digests {
-                let id = entry.get("id").and_then(Json::as_str).unwrap_or("");
-                for (suffix, key) in [("stdout", "stdout_sha256"), ("stderr", "stderr_sha256")] {
-                    let Some(recorded) = entry.get(key).and_then(Json::as_str) else {
-                        log_ok = false;
-                        continue;
-                    };
-                    let wanted = format!("/{id}.{suffix}.log");
-                    let Some(rel) = r.logs.iter().find(|p| p.ends_with(&wanted)) else {
-                        log_ok = false;
-                        continue;
-                    };
-                    let actual = std::fs::read(root.join(rel)).ok();
-                    match actual {
-                        Some(bytes) if sha256::sha256_hex(&bytes) == recorded => {}
-                        _ => {
-                            log_ok = false;
-                            tampered.push(rel.clone());
-                        }
-                    }
-                }
-            }
+            let (missing, tampered, log_ok) = verify_receipt_logs(root, r);
             let log_integrity = if r.log_digests.is_empty() {
                 "NO_LOG_DIGESTS"
             } else if log_ok {
@@ -4089,23 +4165,61 @@ mod tests {
         let candidate = state::candidates_dir(&root).join(format!("{}.json", "a".repeat(32)));
         fs::write(&candidate, "{}").unwrap();
 
-        let value = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        // `--keep` alone governs receipts and logs; it must not collect a fresh
+        // candidate or a fresh partial receipt the operator still needs.
+        let keep_only = cmd_gc(&root, Some(0), None, false).expect("a plan");
+        let deleted = gc_deleted(&keep_only);
+        assert!(
+            partial.exists(),
+            "--keep alone must not delete a fresh partial receipt: {deleted:?}"
+        );
+        assert!(
+            candidate.exists(),
+            "--keep alone must not delete a fresh candidate: {deleted:?}"
+        );
+        assert!(deleted.contains(&"logs/stray/".to_string()), "{deleted:?}");
+        assert!(!stray.exists(), "a plain log entry is collected");
+
+        // An explicit age policy collects them.
+        gc_age_days(&partial, 40);
+        gc_age_days(&candidate, 40);
+        let value = cmd_gc(&root, Some(0), Some(30), false).expect("a plan");
         let deleted = gc_deleted(&value);
         assert!(
             deleted.iter().any(|item| item.contains(".partial.")),
             "{deleted:?}"
         );
-        assert!(deleted.contains(&"logs/stray/".to_string()), "{deleted:?}");
         assert!(
             deleted.iter().any(|item| item.starts_with("candidates/")),
             "{deleted:?}"
         );
         assert!(!partial.exists());
-        assert!(!stray.exists(), "a plain log entry is collected");
         assert!(!candidate.exists());
         assert!(foreign_json.exists(), "a non-object-id receipt stays");
         assert!(state::candidates_dir(&root).join("notes.txt").exists());
         assert!(state::candidates_dir(&root).join("bad-name.json").exists());
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn gc_keep_only_keeps_fresh_candidates_and_partial_receipts() {
+        let root = gc_repo("keep-only");
+        let partial = state::receipts_dir(&root).join(format!(
+            "{}.partial.{}.json",
+            gc_tree_id(8),
+            "abcdef123456"
+        ));
+        fs::write(&partial, "{}").unwrap();
+        let candidate = state::candidates_dir(&root).join(format!("{}.json", "d".repeat(32)));
+        fs::write(&candidate, "{}").unwrap();
+        let value = cmd_gc(&root, Some(1), None, false).expect("a plan");
+        assert_eq!(
+            value.get("status").and_then(Json::as_str),
+            Some("GC"),
+            "{value}"
+        );
+        assert!(partial.exists(), "no age policy: a partial receipt is kept");
+        assert!(candidate.exists(), "no age policy: a candidate is kept");
         let _ = fs::remove_dir_all(&root);
     }
 

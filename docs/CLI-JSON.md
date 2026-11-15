@@ -892,6 +892,7 @@ unless stated otherwise; the older records remain readable (`CODE_READ`, tests i
 - `tampered_logs`: the relative log paths whose bytes no longer hash to the receipt.
 - `run_id`: the execution named by the receipt.
 - `evidence_complete` is false when a named log is missing **or** tampered.
+- `publish` applies the same check before its intent: `MISSING_LOGS` or `LOG_INTEGRITY_INVALID`.
 
 ### 13.4 `publish`
 
@@ -899,6 +900,8 @@ unless stated otherwise; the older records remain readable (`CODE_READ`, tests i
   must name that candidate or the refusal is `RECEIPT_CANDIDATE_MISMATCH`.
 - The journal intent records the receipt's `candidate_id` (or `null`).
 - The dry-run plan's `journal` is the workspace-relative `.flow/journal.jsonl`.
+- The receipt's log bytes are re-hashed before the intent: `MISSING_LOGS` (a named log is gone) or
+  `LOG_INTEGRITY_INVALID` (a named log no longer matches its digest) refuses publication.
 
 ### 13.5 Policy (`flow-config/1`, strict)
 
@@ -907,6 +910,8 @@ Allowed top-level keys: `schema`, `policy_version`, `execution_boundary`, `oblig
 `timeout_s`. `timeout_s` is an integer in `[1, 86400]`; `execution_boundary` is `local-trusted`;
 `context_probes` is an array of non-empty string arrays (e.g. `[["rustc","-Vv"]]`). Anything else is
 `INVALID_POLICY`, exit 1.
+The **approved policy digest** includes `context_probes`: adding or editing a probe after
+`flow approve` is `POLICY_NOT_APPROVED` and nothing executes. `flow approve` lists the approved probes.
 
 ### 13.6 Build context
 
