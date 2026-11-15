@@ -65,6 +65,25 @@ product requirement rather than an optional study.
 thresholds and budget), `H6` (Ravum handoff), `H8` (review stop rule), any `RAVUM-ADR-*` or `FLOW-ADR-*`, and
 `G10` (which requires a reviewer outside the team). `GO_PRODUCTION` itself remains the owner's act.
 
+## Mandate of 2026-11-15 (Fable hardening) — granted by the owner in session
+The owner granted the following scoped GO on 2026-11-15, after reading the Fable counter-audit
+(`RAVUM_FLOW_FABLE_AUDIT.md`, SHA `1952325c`). It is recorded here verbatim; it is a **production
+hardening** authorization, not `GO_PRODUCTION` and not a release decision.
+
+| Field | Value |
+|---|---|
+| `GO(scope)` | Corrections FBL-001..FBL-012 du contre-audit Fable du 2026-11-15 ; tests de régression G1–G8 ; adaptations de schémas et migration ; refactoring strictement nécessaire ; CI/documentation/ADR ; benchmarks bornés ; commits et PR sur une branche feature. Périmètre produit : local-trusted mono-hôte, Git en sous-processus, aucune promesse de sandbox OS ni de système multi-hôtes. |
+| `repository` | `Rwanbt/Ravum-flow` uniquement ; `Rwanbt/Ravum` reste en lecture seule, hors périmètre |
+| `branch` | `feat/flow-production-hardening-fable` créée depuis `origin/dev` (`2ab79c7`) ; branches courtes dérivées autorisées ; aucun force-push, aucun merge `dev`/`main` |
+| `allowed_paths` | `crates/flow/**`, `tests/**`, `docs/**`, `.github/**`, `scripts/**`, `examples/**`, `experiments/quality/**` |
+| `budgets` | machine de référence 16 Go RAM ; pas de campagnes Cargo lourdes concurrentes ; benchmarks et fuzz bornés (local ou CI), aucun run illimité |
+| `evidence` | `docs/reviews/FLOW-POST-FABLE-PRODUCTION-HARDENING.md` ; commandes, OS, exit codes, digests, run ids CI, résultats G1–G8 |
+| `stop_conditions` | check requis rouge ; secret réel dans un log/fixture ; écriture dans `Rwanbt/Ravum` ; opération Git destructive sur fichiers utilisateur ; affirmation non traçable à une mesure ; P0 encore ouvert au verdict final |
+
+**Explicitly excluded by the owner:** merges into protected branches, tags, releases, and any change
+to `Rwanbt/Ravum`. **Still not ratified:** `H1`, `H3`, `H4`, `H6`, `H8`, any `FLOW-ADR-*` /
+`RAVUM-ADR-*`, coverage/mutation thresholds, and `GO_PRODUCTION` itself.
+
 ## Decisions this GOAL does **not** ratify
 The owner's operational GOAL is not a ratification of `H1`, `H3`, `H4`, `H6`, `H7`, `H8`, of any `RAVUM-ADR-*`, or of any `FLOW-ADR-*`. `H2` was decided separately by the owner (MPL-2.0, PRs #49/#50). The GOAL does not close `D3` and does not authorize a merge into `dev` or `main`.
 
