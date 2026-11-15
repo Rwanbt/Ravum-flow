@@ -14,6 +14,11 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
   before the removal and a bounded grace window for a claimed recovery.
 - **FBL-004/FBL-006/FBL-007/FBL-010**: `flow-context/3` (env values, resolved program bytes, declared
   probes), strict policy decoding, receipt↔candidate binding and re-derived record identities.
+- **FBL-005..012** — gc coordination (`RUN_ACTIVE`, stale markers, links), strict policy decoding,
+  receipt↔candidate binding, re-derived identities and seals, relative persisted paths, and
+  **FBL-012**: the journal is segmented (active segment ≤ 256 KiB, archives
+  `journal.<20-digit>.jsonl` read in order and never deleted), so one append no longer rewrites the
+  whole history; destructive compaction is rejected because it would break recovery and audit.
 - **FBL-013 (found by CI)**: `git worktree add` racing another process's `worktree prune` no longer
   fails a valid run; the transient "commondir" error is retried a bounded number of times.
 
@@ -32,6 +37,9 @@ All notable changes to the `flow` CLI. Dates are ISO-8601 (Europe/Paris).
 - Coverage gate closed without lowering a threshold or adding a waiver: **95.95 % lines / 90.52 %
   branches** on the CI Linux runner (was 92.46 / 86.04), test floors raised to 539 Windows / 550
   Linux / 550 macOS.
+- `commands.rs` is split into `commands/mod.rs`, `commands/policy.rs` (policy identity, effective
+  digest, build context, obligation validation) and `commands/checkout.rs` (tree listing, fidelity,
+  mode and content certification, lock-free index read). Behaviour-constant.
 - `gc` collects a plain file under `logs/` as a file (the previous `remove_dir_all` failed on Windows).
 - Documentation corrections from the claims audit: 152 named gates (not 144), the runtime-`SKIP`
   caveat in `MEASUREMENTS.md`, FBL-004 is `PARTIAL`, FBL-009 no longer counts an unreachable branch

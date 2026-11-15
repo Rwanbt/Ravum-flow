@@ -38,8 +38,10 @@ sections for length; they are not byte-for-byte copies.
    helps nor fails. Do not infer that the planned flag is implemented.
 5. Receipt files are stored at `.flow/receipts/<tree_oid>.json`; selective runs
    at `.flow/receipts/<tree_oid>.partial.<context-prefix>.json`. Logs at
-   `.flow/logs/<tree_oid>/<obligation-id>.<stdout|stderr>.log`. Journal at
-   `.flow/journal.jsonl`. Lock at `.flow/lock`.
+   `.flow/logs/<tree_oid>/<run_id>/<obligation-id>.<stdout|stderr>.log`. Journal at
+   `.flow/journal.jsonl` (active segment, bounded to 256 KiB) plus archived
+   `journal.<20-digit sequence>.jsonl` segments, read oldest first then the
+   active one. Lock at `.flow/lock`.
 
 ## 2. Exit codes
 

@@ -62,14 +62,17 @@ sandbox (`H3`), ni les seuils S9 (`H4`), ni la gouvernance de release.
   conservativement. Un verrou OS reste une évolution possible.
 - **Rename atomique du verrou mort** : ne fournit pas de compare-and-delete portable (écrasement par
   renommage variable selon l'OS) ; rejeté.
-- **Segmentation du journal** : différée (P3, `FBL-012`) ; la mesure locale donne ~9 ms/append,
-  dominé par fsync, jusqu'à 2 000 enregistrements. Une compaction exige un protocole de reprise
-  distinct.
+- **Segmentation du journal** : **implémentée le 2026-11-15** (`FBL-012`) — segment actif borné à
+  256 Kio, archives `journal.<20 chiffres>.jsonl` lues dans l'ordre et jamais supprimées. Une
+  compaction destructive (suppression d'intents/outcomes clos) est **rejetée** : elle casserait la
+  reprise et l'audit. Le coût d'un append est borné par la taille du segment, plus par l'âge.
 
 ## Consequences and tradeoffs
 
 - Le store grandit (blobs orphelins possibles après un crash entre `put_blob` et `create_once`) ;
   `gc` ne les collecte **pas** pour ne pas courir avec un `propose` concurrent. Coût borné, documenté.
+- Le journal est segmenté : un append ne réécrit que le segment actif (≤ 256 Kio), et les archives
+  ne sont jamais supprimées. `gc` ne les collecte pas : ce sont des preuves de reprise.
 - `assemble` double approximativement le nombre d'applications Git (re-dérivation par proposition) :
   coût accepté au nom de la fidélité de l'attribution.
 - Les reçus écrits avant `flow-context/3` sont refusés à la publication (`CONTEXT_MISMATCH`) : c'est

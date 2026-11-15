@@ -120,9 +120,12 @@ one immutable base produce one verified tree, and a real collision is refused by
 |---|---|---|
 | `flow version` | < 1 s | CI fails above 2 s (Linux) |
 | `flow doctor` | < 5 s | CI fails above 5 s (Linux) |
+| `append_journal` | ≈ 9 ms/append at 2 000 records (fsync-dominated, 274 KB), now **bounded** by the 256 KiB active segment instead of growing with the whole history | env-gated `measure_journal_append_cost`; segmentation tests |
 
-The CI budgets are regression tripwires, not performance claims. Productivity against other
-workflows stays `UNPROVEN` until `H4` fixes the S9 thresholds ([BENCHMARK_S9.md](BENCHMARK_S9.md)).
+The CI budgets are regression tripwires, not performance claims. The journal append cost is bounded
+by construction since `FBL-012` (segmentation, 2026-11-15): an append rewrites at most one 256 KiB
+segment. Productivity against other workflows stays `UNPROVEN` until the frozen S9 campaign runs
+([BENCHMARK_S9.md](BENCHMARK_S9.md)); `H4` fixed its thresholds on 2026-11-15.
 
 ## 8. Security and supply chain
 
