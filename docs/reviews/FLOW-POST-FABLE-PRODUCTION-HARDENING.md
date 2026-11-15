@@ -81,13 +81,14 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
 | Check | Command | Result |
 |---|---|---|
 | Baseline suite | `cargo test --locked --offline --all-targets` | **489 passed**, 0 failed |
-| Hardened suite | same command | **499 passed**, 0 failed (see §9 for the exact head) |
+| Hardened suite | same command | **507 passed**, 0 failed (see §9 for the exact head) |
 | Formatting | `cargo fmt --check` | exit 0 |
 | Lints | `cargo clippy --locked --offline --all-targets -- -D warnings` | exit 0 |
-| Release suite | `cargo test --release --locked --offline --all-targets` | **499 passed**, 0 failed, 0 ignored. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
+| Release suite | `cargo test --release --locked --offline --all-targets` | **507 passed**, 0 failed, 0 ignored. The six crash-injection tests report a named `SKIP` in release because `FLOW_TEST_CRASH` is inert there by design; CI proves the released binary ignores the hook from outside |
 | Journal measurement | `FLOW_JOURNAL_BENCH=1 cargo test --bin flow measure_journal_append_cost -- --nocapture` | `n=500 4.5 s`; `n=1000 9.0 s`; `n=2000 17.97 s`, 274 KB (env-gated, counts as a pass otherwise) |
 | Fable G1-equivalent | `g1_...` | 15 rounds × 8 processes: 1 winner/round, digest verified |
 | Release stress | `cargo test --release --test concurrency` × 6 consecutive runs | 6/6 green after the two fixes below |
+| CI (head `8283c9a`) | `gh run view 43668847304` | Linux, Windows, macOS and both polyglot jobs **green**; `coverage` **red** at 92.50 % lines / 86.04 % branches (gates 95/90) |
 
 **Two real defects were found by the release-mode stress, not by the audit, and fixed on this branch:**
 
@@ -99,8 +100,7 @@ proves the failure mode is gone; `PARTIAL` names what is not covered; `DEFERRED`
    definitive "no such task" answers, a steal is re-checked against liveness before deleting anything,
    and a claimed recovery has its own 15 s grace window (`STEAL_GRACE`).
 
-**Test-count caveat.** 489 → 499 is +10: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict
-policy test, the host-identity tests (foreign/host-less), and the measurement test. No test was deleted or
+**Test-count caveat.** 489 → 507 is +18 executed: G1, G2, G3, G4, M11, the gc RUN_ACTIVE test, the strict policy test, the host-identity tests (foreign/host-less), the measurement test, and six unit tests covering the store, receipt fields, host identity, patch bytes and the context helpers (the shared host test runs in three suites). No test was deleted or
 weakened; four existing tests were adapted to the new authoritative storage (blob path, run
 subdirectory, host token), and each adaptation keeps or strengthens the asserted failure mode.
 
@@ -128,23 +128,39 @@ subdirectory, host token), and each adaptation keeps or strengthens the asserted
 | `commands.rs` modularisation (3.6k LOC) | **DEFERRED**; behaviour-constant refactor, separate change |
 | Coverage/mutation gates | not re-run locally; CI owns them (95/90 coverage, mutation report mode) |
 | Confirmatory S9 | still `H4` open; no productivity claim is made |
-| Multi-OS CI | Linux/Windows/macOS results pending on the pushed head (§9) |
+| Multi-OS CI | **green on the code head**: Linux, Windows, macOS and both polyglot jobs pass in run `43668847304`; the coverage gate is red (see §9) |
 
 ## 9. Final head, CI and verdict
 
-**Final head:** `c7ab4a3` (`fix(concurrency): lock-free index tree reads and conservative steal under burst`)
-plus this documentation commit; the exact branch head and the GitHub Actions run ids are recorded
-here before the PR is opened. The PR is a **draft** against `dev`; no merge is performed.
+**Final code head:** `8283c9a` (`test(hardening): cover the new store, host, context and revalidation
+paths`), plus this documentation commit. The PR is **[#71](https://github.com/Rwanbt/Ravum-flow/pull/71)**,
+a **draft** against `dev`; no merge is performed. Tracking issue:
+[#72](https://github.com/Rwanbt/Ravum-flow/issues/72).
 
-**CI:** to be recorded from the push (Linux, Windows, macOS, polyglot, coverage). A red required
-check is a stop condition; it is not worked around.
+**CI on `8283c9a` — run [`43668847304`](https://github.com/Rwanbt/Ravum-flow/actions/runs/43668847304):**
+
+| Job | Result |
+|---|---|
+| `test ubuntu-latest` (incl. the external crash harness on the release binary) | **success** |
+| `test windows-latest` | **success** |
+| `test macos-latest` | **success** |
+| `polyglot ubuntu-latest` / `polyglot windows-latest` | **success** / **success** |
+| `coverage (product-only gate)` | **failure**: lines 92.50 % (gate 95 %), branches 86.04 % (gate 90 %) |
+
+The coverage gate is the one red required check. The new hardening code is ~1 000 product lines with
+many error/refusal branches; the two test waves raised coverage from 91.50/85.22 to 92.50/86.04 but did
+not close the gate. **A red required check is a stop condition**: the branch is not mergeable and the
+verdict is not promoted. Closing it is a bounded follow-up (targeted tests for the remaining refusal
+branches), not a design change; it was not done here because it is not required to *establish* the
+P0/P1 corrections, and the branch must not pretend the gate is green.
 
 **Verdict: `PRODUCTION_PARTIAL`.**
 - No P0 remains (FBL-001 closed by G1).
-- All P1 findings are treated (FBL-002/003/004 closed; FBL-005 closed as P2).
-- P2/P3 residuals are explicitly listed, not hidden; the local-trusted single-host envelope is
-  better protected but **not** promoted to `PRODUCTION_READY_LOCAL_TRUSTED`: that promotion needs the
-  green multi-OS CI on this head, the human decisions below, and an independent final review.
+- All P1 findings are treated (FBL-002/003/004 closed; FBL-005 closed as P2), and all OS test jobs
+  are green on the code head.
+- The coverage gate is red, P2/P3 residuals are listed, and the human decisions are open: the branch
+  is **not** `PRODUCTION_READY_LOCAL_TRUSTED`. Promotion needs a green coverage gate on this line,
+  the human decisions below, and an independent final review.
 - `NOT_READY` would be the verdict if a P0 were still open; it is not.
 
 **Human decisions still required (not taken by this wave):** `H1`, `H3`, `H4`, `H6`, `H8`,
